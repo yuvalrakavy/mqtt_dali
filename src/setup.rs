@@ -143,7 +143,13 @@ impl BusConfig {
 
                         for _ in dali_bus_iterator {
                             let default_short_address = self.get_unused_short_address();
-                            let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
+                            let short_address = loop {
+                                let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
+                                if let None = self.get_channel_index(short_address) {
+                                    break short_address;
+                                }
+                                println!("Short address is already used");
+                            };
                             let description = Config::prompt_for_string("Description",Some(&format!("Channel {}", short_address)))?;
 
                             dali_manager.program_short_address(self.bus, short_address);
@@ -155,7 +161,13 @@ impl BusConfig {
 
                         for _ in dali_bus_iterator {
                             let default_short_address = self.get_unused_short_address();
-                            let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
+                            let short_address = loop {
+                                let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
+                                if let None = self.get_channel_index(short_address) {
+                                    break short_address;
+                                }
+                                println!("Short address is already used");
+                            };
                             let description = Config::prompt_for_string("Description",Some(&format!("Channel {}", short_address)))?;
 
                             dali_manager.program_short_address(self.bus, short_address);
@@ -171,7 +183,7 @@ impl BusConfig {
                                     }
                                     if new_short_address != short_address {
                                         if let Some(_) = self.find_channel(new_short_address) {
-                                            println!("There is already a channel with this address");
+                                            println!("Short address is already used");
                                         }
                                         else {
                                             let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus , DaliDeviceSelection::Address(short_address));
