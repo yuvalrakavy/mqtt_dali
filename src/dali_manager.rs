@@ -58,12 +58,20 @@ impl<'a> DaliManager<'a> {
         if group < 16 { 0x80 | (group << 1 ) } else { panic!("Invlid DALI group# {}", group) }
     }
 
-    pub async fn set_light_brightness(&mut self, bus: usize, channel: u8, value: u8) -> DaliBusResult {
+    pub async fn set_light_brightness_async(&mut self, bus: usize, channel: u8, value: u8) -> DaliBusResult {
         self.controller.send_2_bytes(bus, DaliManager::to_light_short_address(channel), value)
     }
 
-    pub async fn set_group_brightness(&mut self, bus: usize, group: u8, value: u8) -> DaliBusResult {
+    pub fn set_light_brightness(&self, bus: usize, short_address: u8, level: u8) -> DaliBusResult {
+        self.controller.send_2_bytes(bus, DaliManager::to_light_short_address(short_address), level)
+    }
+
+    pub async fn set_group_brightness_async(&mut self, bus: usize, group: u8, value: u8) -> DaliBusResult {
         self.controller.send_2_bytes(bus, DaliManager::to_light_group_address(group), value)
+    }
+
+    pub fn set_group_brightness(&self, bus: usize, group_address: u8, level: u8) -> DaliBusResult {
+        self.controller.send_2_bytes(bus, DaliManager::to_light_group_address(group_address), level)
     }
 
     pub fn send_command_to_address(&self, bus: usize, command: u16, short_address: u8, repeat: bool) -> DaliBusResult {

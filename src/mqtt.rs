@@ -61,8 +61,8 @@ impl <'a> MqttDali<'a> {
                         Ok(command) => {
                             println!("Got command {:?}", command);
                             let _ = match command {
-                                DaliCommand::SetLightBrightness { bus, channel, value} => self.dali_manager.set_light_brightness(bus, channel, value).await,
-                                DaliCommand::SetGroupBrightness { bus, group, value } => self.dali_manager.set_group_brightness(bus, group, value).await,
+                                DaliCommand::SetLightBrightness { bus, channel, value} => self.dali_manager.set_light_brightness_async(bus, channel, value).await,
+                                DaliCommand::SetGroupBrightness { bus, group, value } => self.dali_manager.set_group_brightness_async(bus, group, value).await,
                             };
                         },
                         Err(e) => println!("Invalid payload received on {}: {}", command_topic, e),

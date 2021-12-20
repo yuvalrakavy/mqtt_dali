@@ -7,7 +7,7 @@
       "channels": [
         {
           "short_address": 0,
-          "description": "Channel 0"
+          "description": "Main"
         },
         {
           "short_address": 1,

@@ -44,6 +44,25 @@ impl BusConfig {
         self.channels.iter().find(|c| c.short_address == channel)
     }
 
+    fn display_channels(&self) {
+        println!("  Channels:");
+        for i in 0..self.channels.len() {
+            if i % BusConfig::CHANNELS_PER_LINE == 0 {
+                print!("    ");
+            }
+
+            print!("{:18}", self.channels[i].to_string());
+
+            if (i+1) % BusConfig::CHANNELS_PER_LINE == 0 {
+                println!();
+            }
+        }
+
+        if self.channels.len() % BusConfig::CHANNELS_PER_LINE != 0 {
+            println!();
+        }
+    }
+
     fn display_group(&self, group: &Group) {
         println!("    {} ({}):", group.group_address, group.description);
         for i in 0..group.channels.len() {
@@ -73,22 +92,7 @@ impl BusConfig {
             println!("  No channels");
         }
         else {
-            println!("  Channels:");
-            for i in 0..self.channels.len() {
-                if i % BusConfig::CHANNELS_PER_LINE == 0 {
-                    print!("    ");
-                }
-
-                print!("{:18}", self.channels[i].to_string());
-
-                if (i+1) % BusConfig::CHANNELS_PER_LINE == 0 {
-                    println!();
-                }
-            }
-
-            if self.channels.len() % BusConfig::CHANNELS_PER_LINE != 0 {
-                println!();
-            }
+            self.display_channels();
         }
 
         if self.groups.is_empty() {
@@ -307,9 +311,12 @@ impl BusConfig {
     }
 
     pub fn interactive_setup_groups(&mut self, dali_manager: &DaliManager, bus_number: usize) -> Result<(), SetupError> {
+        let mut last_group_address: Option<u8> = None;
+        let mut default_level = 255u8;
+
         loop {
             self.display(bus_number);
-            let command = Config::prompt_for_string("Groups: n=new, d=delete, e=edit, b=back", Some("b"))?;
+            let command = Config::prompt_for_string("Groups: n=new, d=delete, e=edit, s=set-level, b=back", Some("b"))?;
 
             if let Some(command) = command.chars().next() {
                 match command {
@@ -317,6 +324,15 @@ impl BusConfig {
                     'n' => {
                         if let Some(group_address) = self.prompt_for_new_group_address("Add group")? {
                             self.new_group(dali_manager, group_address)?;
+                        }
+                    },
+                    's' => {
+                        if let Some(group_address) = self.prompt_for_existing_group_address("Group address", last_group_address)? {
+                            let level = Config::prompt_for_number("Level", &Some(default_level))?;
+
+                            dali_manager.set_group_brightness(self.bus, group_address, level);
+                            default_level = 255-level;
+                            last_group_address = Some(group_address);
                         }
                     },
                     'd' => {
@@ -336,10 +352,61 @@ impl BusConfig {
         }
     }
 
+    fn prompt_for_existing_short_address(&self, prompt: &str, default_value: Option<u8>) -> Result<Option<u8>, SetupError> {
+        Ok(loop {
+            match Config::prompt_for_short_address(prompt, &default_value) {
+                Ok(short_address) => {
+                    if self.get_channel_index(short_address).is_none() {
+                        println!("No light with this address");
+                    }
+                    else { break Some(short_address) }
+                },
+                Err(SetupError::UserQuit) => break None,
+                Err(e) => return Err(e),
+            }
+        })
+    }
+
+    pub fn interactive_setup_lights(&mut self, dali_manager: &DaliManager, bus_number: usize) -> Result<(), SetupError> {
+        let mut last_short_address: Option<u8> = None;
+        let mut default_level = 255u8;
+
+        loop {
+            self.display(bus_number);
+            let command = Config::prompt_for_string("Lights: r=rename, s=set-level, b=back", Some("b"))?;
+
+            if let Some(command) = command.chars().next() {
+                match command {
+                    'b' => return Ok(()),
+                    'r' => {
+                        if let Some(short_address) = self.prompt_for_existing_short_address("Rename", last_short_address)? {
+                            let index = self.get_channel_index(short_address).unwrap();
+                            let description = Config::prompt_for_string("Description: ", Some(&self.channels[index].description))?;
+
+                            self.channels[index].description = description;
+                            last_short_address = Some(short_address);
+                        }                        
+                    },
+                    's' => {
+                        if let Some(short_address) = self.prompt_for_existing_short_address("Address", last_short_address)? {
+                            let level = Config::prompt_for_number("Level", &Some(default_level))?;
+
+                            dali_manager.set_light_brightness(self.bus, short_address, level);
+                            default_level = 255-level;
+                            last_short_address = Some(short_address);
+                        }
+                    },
+                    _ => println!("Invalid command"),
+                }
+            }
+        }
+
+    }
+
     pub fn interactive_setup(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), SetupError> {
         loop {
             self.display(bus_number);
-            let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, g=groups, b=back", Some("b"))?;
+            let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, b=back", Some("b"))?;
 
             if let Some(command) = command.chars().next() {
                 match command {
@@ -347,6 +414,7 @@ impl BusConfig {
                     'r' => self.description = Config::prompt_for_string("Description", Some(&self.description))?,
                     'a' => self.assign_addresses(dali_manager)?,
                     'g' => self.interactive_setup_groups(dali_manager, bus_number)?,
+                    'l' => self.interactive_setup_lights(dali_manager, bus_number)?,
                     _ => println!("Invalid command"),
                 }
             }
