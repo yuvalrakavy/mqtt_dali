@@ -1,7 +1,5 @@
 
-use crate::dali_emulator::DaliControllerEmulator;
 use crate::dali_commands;
-use crate::config_payload::Config;
 
 pub enum DaliBusResult {
     None,
@@ -18,12 +16,12 @@ pub trait DaliController {
     fn send_2_bytes_repeat(&self, bus: usize, b1: u8, b2: u8) -> DaliBusResult;
 }
 
-pub struct DaliManager {
-    controller: Box<dyn DaliController>,
+pub struct DaliManager<'a> {
+    controller: &'a dyn DaliController,
 }
 
 pub struct DaliBusIterator<'a> {
-    manager: &'a DaliManager,
+    manager: &'a DaliManager<'a>,
     bus: usize,
     previous_low_byte: Option<u8>,
     previous_mid_byte: Option<u8>,
@@ -37,13 +35,9 @@ pub enum DaliDeviceSelection {
     Address(u8),
 }
 
-impl DaliManager {
-    pub fn new() -> DaliManager {
-        DaliManager { controller: Box::new(DaliControllerEmulator::new(1, 3)) }
-    }
-
-    pub fn new_with_config(config: &Config) -> DaliManager {
-        DaliManager { controller: Box::new(DaliControllerEmulator::new_with_config(config)) }
+impl<'a> DaliManager<'a> {
+    pub fn new(controller: &'a dyn DaliController) -> DaliManager {
+        DaliManager { controller }
     }
 
     #[allow(dead_code)]
@@ -72,8 +66,7 @@ impl DaliManager {
         self.controller.send_2_bytes(bus, DaliManager::to_light_group_address(group), value)
     }
 
-    #[allow(dead_code)]
-    fn send_commad_to_address(&mut self, bus: usize, command: u16, short_address: u8, repeat: bool) -> DaliBusResult {
+    pub fn send_command_to_address(&self, bus: usize, command: u16, short_address: u8, repeat: bool) -> DaliBusResult {
         if command > 0xff { return DaliBusResult::InvalidCommand }
         if short_address >= 64 { return DaliBusResult::InvalidAddress }
 
@@ -88,7 +81,7 @@ impl DaliManager {
     }
 
     #[allow(dead_code)]
-    fn send_command_to_group(&mut self, bus: usize, command: u16, group: u8, repeat: bool) -> DaliBusResult {
+    pub fn send_command_to_group(&self, bus: usize, command: u16, group: u8, repeat: bool) -> DaliBusResult {
         if command > 0xff { return DaliBusResult::InvalidCommand }
         if group >= 64 { return DaliBusResult::InvalidGroup }
 
@@ -152,7 +145,13 @@ impl DaliManager {
         self.broadcast_command(bus, dali_commands::DALI_WITHDRAW, 0, false);
     }
 
+    pub fn remove_from_group(&self, bus: usize, group_address:u8, short_address:u8) -> DaliBusResult {
+        self.send_command_to_address(bus, dali_commands::DALI_REMOVE_FROM_GROUP0+(group_address as u16), short_address, true)
+    }
 
+    pub fn add_to_group(&self, bus: usize, group_address:u8, short_address:u8) -> DaliBusResult {
+        self.send_command_to_address(bus, dali_commands::DALI_ADD_TO_GROUP0+(group_address as u16), short_address, true)
+    }
 }
 
 impl<'a> DaliBusIterator<'a> {

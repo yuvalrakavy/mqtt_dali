@@ -1,6 +1,5 @@
-use std::{path::Path, fs::File, io, io::Write};
+use std::{path::Path, fs::File, io, io::Write, fmt};
 use crate::{config_payload::{Config, BusConfig, Channel, Group}, dali_manager::{DaliManager, DaliDeviceSelection}};
-use serde_json;
 
 #[derive(Debug)]
 pub enum SetupError {
@@ -21,35 +20,9 @@ impl From<std::io::Error> for SetupError {
     }
 }
 
-impl Channel {
-    pub fn to_string(&self) -> String {
-        format!("{} - {}", self.short_address, self.description)
-    }
-}
-
-impl Group {
-    const CHANNELS_PER_LINE: usize = 4;
-
-    pub fn display(&self, bus_config: &BusConfig) {
-        println!("{} ({}):", self.group, self.description);
-        for i in 0..self.channels.len() {
-            if i % Group::CHANNELS_PER_LINE == 0 {
-                print!("  ");
-            }
-
-            match bus_config.find_channel(self.channels[i]) {
-                Some(channel) => print!("{:18}", channel.to_string()),
-                _ => print!("Missing {:10}", self.channels[i]),
-            }
-
-            if (i+1) % Group::CHANNELS_PER_LINE == 0 {
-                println!();
-            }
-        }
-
-        if self.channels.len() % Group::CHANNELS_PER_LINE != 0 {
-            println!();
-        }
+impl fmt::Display for Channel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} - {}", self.short_address, self.description)
     }
 }
 
@@ -71,6 +44,28 @@ impl BusConfig {
         self.channels.iter().find(|c| c.short_address == channel)
     }
 
+    fn display_group(&self, group: &Group) {
+        println!("    {} ({}):", group.group_address, group.description);
+        for i in 0..group.channels.len() {
+            if i % BusConfig::CHANNELS_PER_LINE == 0 {
+                print!("      ");
+            }
+
+            match self.find_channel(group.channels[i]) {
+                Some(channel) => print!("{:18}", channel.to_string()),
+                _ => print!("Missing {:10}", self.channels[i]),
+            }
+
+            if (i+1) % BusConfig::CHANNELS_PER_LINE == 0 {
+                println!();
+            }
+        }
+
+        if self.channels.len() % BusConfig::CHANNELS_PER_LINE != 0 {
+            println!();
+        }
+    }
+
     pub fn display(&self, bus_number: usize) {
         println!("{}: DALI bus: {}", bus_number+1, self.description);
 
@@ -81,7 +76,7 @@ impl BusConfig {
             println!("  Channels:");
             for i in 0..self.channels.len() {
                 if i % BusConfig::CHANNELS_PER_LINE == 0 {
-                    print!("  ");
+                    print!("    ");
                 }
 
                 print!("{:18}", self.channels[i].to_string());
@@ -100,9 +95,9 @@ impl BusConfig {
                 println!("  No groups");
         }
         else {
-            println!("{} groups:", self.groups.len());
+            println!("  groups:");
             for group in self.groups.iter() {
-                group.display(self);
+                self.display_group(group);
             }
         }
     }
@@ -111,20 +106,21 @@ impl BusConfig {
         self.channels.iter().position(|channel| channel.short_address == short_address)
     }
 
+    fn get_group_index(&self, group_address: u8) -> Option<usize> {
+        self.groups.iter().position(|group| group.group_address == group_address)
+    }
     fn get_unused_short_address(&self) -> Option<u8> {
-        for short_address in 0..64u8 {
-            if let None = self.get_channel_index(short_address) {
-                return Some(short_address);
-            }
-        }
+        (0..64u8).find(|short_address| self.get_channel_index(*short_address).is_none())
+    }
 
-        None
+    fn get_unused_group_address(&self) -> Option<u8> {
+        (0..16u8).find(|group_address| self.get_group_index(*group_address).is_none())
     }
 
     pub fn assign_addresses(&mut self, dali_manager: &mut DaliManager) -> Result<(), SetupError> {
         loop {
-            let command = Config::prompt_for_string("a=All m=missing, #=change light's address, d=change light's description, b=back", Some("m"))?;
-            if let Some(command) = command.chars().nth(0) {
+            let command = Config::prompt_for_string("Assign short addresses: a=All m=missing, #=change light's address, d=change light's description, b=back", Some("m"))?;
+            if let Some(command) = command.chars().next() {
                 match command {
                     'b' => return Ok(()),
                     'd' => {
@@ -145,7 +141,7 @@ impl BusConfig {
                             let default_short_address = self.get_unused_short_address();
                             let short_address = loop {
                                 let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
-                                if let None = self.get_channel_index(short_address) {
+                                if self.get_channel_index(short_address).is_none() {
                                     break short_address;
                                 }
                                 println!("Short address is already used");
@@ -163,7 +159,7 @@ impl BusConfig {
                             let default_short_address = self.get_unused_short_address();
                             let short_address = loop {
                                 let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
-                                if let None = self.get_channel_index(short_address) {
+                                if self.get_channel_index(short_address).is_none() {
                                     break short_address;
                                 }
                                 println!("Short address is already used");
@@ -182,7 +178,7 @@ impl BusConfig {
                                         println!("Invalid new address");
                                     }
                                     if new_short_address != short_address {
-                                        if let Some(_) = self.find_channel(new_short_address) {
+                                        if self.find_channel(new_short_address).is_some() {
                                             println!("Short address is already used");
                                         }
                                         else {
@@ -215,14 +211,125 @@ impl BusConfig {
         //let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, dali_manager::DaliDeviceSelection::)
     }
 
-    pub fn interactive_setup_groups(&mut self, _dali_manager: &DaliManager, bus_number: usize) -> Result<(), SetupError> {
+    fn delete_group(&mut self, dali_manager: &DaliManager, group_address: u8) {
+        if let Some(group_index) = self.get_group_index(group_address) {
+            let group = &self.groups[group_index];
+
+            for short_address in group.channels.iter() {
+                dali_manager.remove_from_group(self.bus, group_address, *short_address);
+            }
+
+            self.groups.remove(group_index);
+        }
+    }
+
+    fn new_group(&mut self, dali_manager: &DaliManager, group_address: u8) -> Result<(), SetupError> {
+        let description = Config::prompt_for_string("Description", Some(&format!("Group {}", group_address)))?;
+        self.groups.push(Group { description, group_address, channels: Vec::new() });
+        self.edit_group(dali_manager, group_address)?;
+        Ok(())
+    }
+
+    fn edit_group(&mut self, dali_manager: &DaliManager, group_address: u8) -> Result<(), SetupError> {
+        if let Some(group_index) = self.get_group_index(group_address) {
+
+            loop {
+
+                self.display_group(&self.groups[group_index]);
+                let command = Config::prompt_for_string("Group members: a=add, d=delete, b=back", Some("b"))?;
+
+                if let Some(command) = command.chars().next() {
+                    match command {
+                        'a' => {
+                            let short_address = Config::prompt_for_short_address("Add to group", &None)?;
+                            let group = & self.groups[group_index];
+
+                            if self.get_channel_index(short_address).is_none() {
+                                println!("No light with this address");
+                            } else if group.channels.contains(&short_address) {
+                                println!("Already in group");
+                            } else {
+                                let group = & mut self.groups[group_index];
+                                group.channels.push(short_address);
+                                dali_manager.add_to_group(self.bus, group_address, short_address);
+                            }
+                        },
+                        'd' => {
+                            let group = & mut self.groups[group_index];
+                            let short_address = Config::prompt_for_short_address("Detete from group", &None)?;
+                            let index = group.channels.iter().position(|a| *a == short_address);
+
+                            if let Some(index) = index {
+                                group.channels.remove(index);
+                                dali_manager.remove_from_group(self.bus, group_address, short_address);
+                            }
+                            else {
+                                println!("Not in group");
+                            }
+                        },
+                        'b' => break,
+                        _ => println!("Invalid command"),
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn prompt_for_existing_group_address(&self, prompt: &str, default_value: Option<u8>) -> Result<Option<u8>, SetupError> {
+        Ok(loop {
+            match Config::prompt_for_group_address(prompt, &default_value) {
+                Ok(group_address) => {
+                    if self.get_group_index(group_address).is_none() {
+                        println!("This group is not defined");
+                    }
+                    else { break Some(group_address) }
+                },
+                Err(SetupError::UserQuit) => break None,
+                Err(e) => return Err(e),
+            }
+        })
+    }
+
+    fn prompt_for_new_group_address(&self, prompt: &str) -> Result<Option<u8>, SetupError> {
+        Ok(loop {
+            match Config::prompt_for_group_address(prompt, &self.get_unused_group_address()) {
+                Ok(group_address) => {
+                    if self.get_group_index(group_address).is_some() {
+                        println!("This group is already defined");
+                    }
+                    else { break Some(group_address) }
+                },
+                Err(SetupError::UserQuit) => break None,
+                Err(e) => return Err(e),
+            }
+        })
+    }
+
+    pub fn interactive_setup_groups(&mut self, dali_manager: &DaliManager, bus_number: usize) -> Result<(), SetupError> {
         loop {
             self.display(bus_number);
-            let command = Config::prompt_for_string("a=add, d=delete, e=edit, b=back", Some("b"))?;
+            let command = Config::prompt_for_string("Groups: n=new, d=delete, e=edit, b=back", Some("b"))?;
 
-            if let Some(command) = command.chars().nth(0) {
+            if let Some(command) = command.chars().next() {
                 match command {
                     'b' => return Ok(()),
+                    'n' => {
+                        if let Some(group_address) = self.prompt_for_new_group_address("Add group")? {
+                            self.new_group(dali_manager, group_address)?;
+                        }
+                    },
+                    'd' => {
+                        if let Some(group_address) = self.prompt_for_existing_group_address("Delete group", None)? {
+                            self.delete_group(dali_manager, group_address);
+                        }
+                    },
+                    'e' => {
+                        if let Some(group_address) = self.prompt_for_existing_group_address("Edit group", None)? {
+                            self.edit_group(dali_manager, group_address)?;
+                        }
+
+                    }
                     _ => println!("Invalid command"),
                 }
             }
@@ -232,9 +339,9 @@ impl BusConfig {
     pub fn interactive_setup(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), SetupError> {
         loop {
             self.display(bus_number);
-            let command = Config::prompt_for_string("r=rename, a=assign addresses, g=groups, b=back", Some("b"))?;
+            let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, g=groups, b=back", Some("b"))?;
 
-            if let Some(command) = command.chars().nth(0) {
+            if let Some(command) = command.chars().next() {
                 match command {
                     'b' => return Ok(()),
                     'r' => self.description = Config::prompt_for_string("Description", Some(&self.description))?,
@@ -251,7 +358,7 @@ impl Config {
     pub fn new(name: &str, bus_count: usize) -> Config {
         Config { 
             name: name.to_owned(),
-            buses: Vec::from_iter((0..bus_count).map(|bus| BusConfig::new(bus))),
+            buses: Vec::from_iter((0..bus_count).map(BusConfig::new)),
         }
     }
 
@@ -304,8 +411,8 @@ impl Config {
             let value = Config::get_input()?;
 
             if value.is_empty() {
-                if default_value.is_some() {
-                    return Ok(default_value.unwrap().to_owned());
+                if let Some(default_value) = default_value {
+                    return Ok(default_value.to_owned());
                 }
 
                 println!("Value cannot be empty");
@@ -344,9 +451,21 @@ impl Config {
             let short_address = Config::prompt_for_number(prompt, default_value)?;
 
             if short_address >= 64 {
-                println!("Invalid short address (0-63)");
+                println!("Invalid short address (valid is 0-63)");
             } else {
                 break Ok(short_address);
+            }
+        }
+    }
+
+    pub fn prompt_for_group_address(prompt: &str, default_value: &Option<u8>) -> Result<u8, SetupError> {
+        loop {
+            let group = Config::prompt_for_number(prompt, default_value)?;
+
+            if group >= 16 {
+                println!("Invalid group number (valid is 0-15)");
+            } else {
+                break Ok(group);
             }
         }
     }
@@ -371,9 +490,9 @@ impl Config {
         loop {
             self.display();
 
-            let command = Config::prompt_for_string("Command (r=rename, b=bus setup, q=quit, s=start): ", Some("s"))?;
+            let command = Config::prompt_for_string("Controller: r=rename, b=bus setup, q=quit, s=start", Some("s"))?;
 
-            if let Some(command) = command.chars().nth(0) {
+            if let Some(command) = command.chars().next() {
                 match command {
                     's' => return Ok(()),
                     'q' => return Err(SetupError::UserQuit),
@@ -391,7 +510,7 @@ impl Config {
                         else {
                             self.buses[bus_number].interactive_setup(dali_manager, bus_number)?;
                         }
-                    }
+                    },
                     _ => println!("Invalid command"),
                 }
             }

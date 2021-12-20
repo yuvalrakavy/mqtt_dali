@@ -6,7 +6,7 @@ use crate::config_payload::{BusConfig, Config};
 
 #[derive(Debug)]
 struct DaliLightEmulator {
-    light_number: u8,
+    light_number: usize,
     initialize_mode: bool,
     brightness: u8,
     short_address: u8,
@@ -20,7 +20,7 @@ struct DaliLightEmulator {
 
 #[derive(Debug)]
 pub struct DaliBusEmulator {
-    bus_number: u8,
+    bus_number: usize,
     lights: RefCell<Vec<DaliLightEmulator>>,
 }
 
@@ -29,7 +29,7 @@ pub struct DaliControllerEmulator {
 }
 
 impl DaliLightEmulator {
-    fn new(light_number: u8) -> DaliLightEmulator {
+    fn new(light_number: usize) -> DaliLightEmulator {
         DaliLightEmulator {
              light_number,
              initialize_mode: false,
@@ -44,7 +44,7 @@ impl DaliLightEmulator {
         }
     }
 
-    fn new_with_config(light_number: u8, short_address: u8, group_mask: u16) -> DaliLightEmulator {
+    fn new_with_config(light_number: usize, short_address: u8, group_mask: u16) -> DaliLightEmulator {
         DaliLightEmulator {
             light_number,
             initialize_mode: false,
@@ -81,7 +81,7 @@ impl DaliLightEmulator {
     }
 
     fn is_special_command(b1: u8) -> bool {
-        0b10100000 <= b1 && b1 <= 0b11001011 || 0b11001100 <= b1 && b1 <= 0b11111011
+        (0b10100000..=0b11001011).contains(&b1) || (0b11001100..=0b11111011).contains(&b1)
     }
 
     // Receive 2 bytes DALI command
@@ -231,7 +231,7 @@ impl DaliLightEmulator {
 }
 
 impl DaliBusEmulator {
-    pub fn new(bus_number: u8, light_count: u8) -> DaliBusEmulator {
+    pub fn new(bus_number: usize, light_count: usize) -> DaliBusEmulator {
         let mut lights: Vec<DaliLightEmulator> = Vec::new();
 
         for light_number in 0..light_count {
@@ -243,22 +243,20 @@ impl DaliBusEmulator {
 
     pub fn new_with_config(bus_config: &BusConfig) -> DaliBusEmulator {
         let mut lights: Vec<DaliLightEmulator> = Vec::new();
-        let mut light_number = 0;
 
-        for channel in bus_config.channels.iter() {
+        for (light_number, channel) in bus_config.channels.iter().enumerate() {
             let mut group_mask = 0u16;
 
             for group in bus_config.groups.iter() {
                 if group.channels.iter().any(|short_address| *short_address == channel.short_address) {
-                    group_mask |= 1 << group.group;
+                    group_mask |= 1 << group.group_address;
                 }
             }
 
             lights.push(DaliLightEmulator::new_with_config(light_number, channel.short_address, group_mask));
-            light_number += 1;
         }
 
-        DaliBusEmulator { bus_number: bus_config.bus as u8, lights: RefCell::new(lights) }
+        DaliBusEmulator { bus_number: bus_config.bus, lights: RefCell::new(lights) }
     }
 
     pub fn send_2_bytes(&self, b1: u8, b2: u8) -> DaliBusResult {
@@ -283,7 +281,7 @@ impl DaliBusEmulator {
 }
 
 impl DaliControllerEmulator {
-    pub fn new(bus_count: u8, light_count: u8) -> DaliControllerEmulator {
+    pub fn new(bus_count: usize, light_count: usize) -> DaliControllerEmulator {
         let mut buses: Vec<DaliBusEmulator> = Vec::new();
 
         for bus_number in 0..bus_count {

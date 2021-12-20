@@ -9,11 +9,11 @@ pub struct MqttDali<'a> {
     config: &'a Config,
     mqtt_client: AsyncClient,
     mqtt_events: EventLoop,
-    dali_manager: &'a mut DaliManager,
+    dali_manager: &'a mut DaliManager<'a>,
 }
 
 impl <'a> MqttDali<'a> {
-    pub fn new(dali_manager: &'a mut DaliManager, config: &'a Config, mqtt_broker: &str) -> MqttDali<'a> {
+    pub fn new(dali_manager: &'a mut DaliManager<'a>, config: &'a Config, mqtt_broker: &str) -> MqttDali<'a> {
         let mut mqtt_options = MqttOptions::new(&config.name, mqtt_broker, 1883);
         mqtt_options.set_keep_alive(Duration::from_secs(5));
 
