@@ -119,10 +119,10 @@ impl<'a> DaliManager<'a> {
     /// 
     /// # example
     /// ```
-    ///     let dali_bus_iterator = manager.get_dali_bus_iter(0, DaliDeviceSelection::All);
+    ///     let dali_bus_iterator = manager.get_dali_bus_iter(/*bus: */0, DaliDeviceSelection::All);
     /// 
     ///     for short_address in dali_bus_iterator {
-    ///         dali_bus_iterator.program_short_address(short_address);
+    ///         manager.program_short_address(/*bus: */0, short_address);
     ///     }
     /// ```
     /// 
