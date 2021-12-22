@@ -123,7 +123,8 @@ impl BusConfig {
 
     pub fn assign_addresses(&mut self, dali_manager: &mut DaliManager) -> Result<(), SetupError> {
         loop {
-            let command = Config::prompt_for_string("Assign short addresses: a=All m=missing, #=change light's address, d=change light's description, b=back", Some("m"))?;
+            let default_assign = if self.channels.len() == 0 { Some("a") } else { Some("b") };
+            let command = Config::prompt_for_string("Assign short addresses: a=All m=missing, #=change light's address, d=change light's description, b=back", default_assign)?;
             if let Some(command) = command.chars().next() {
                 match command {
                     'b' => return Ok(()),
@@ -138,23 +139,46 @@ impl BusConfig {
                         }
                     },
                     'a' => {
+                        let mut count = 0;
+                        let prompt_for_each = Config::prompt_for_string("Assign all: a=auto p=prompt for short-address/description", Some("a"))?;
+                        let prompt_for_each = prompt_for_each.chars().next() != Some('a');
+
                         let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::All);
                         self.channels = Vec::new();
 
                         for _ in dali_bus_iterator {
                             let default_short_address = self.get_unused_short_address();
-                            let short_address = loop {
-                                let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
-                                if self.get_channel_index(short_address).is_none() {
-                                    break short_address;
+
+                            let short_address = if !prompt_for_each && default_short_address.is_some() {
+                                 default_short_address.unwrap()
+                            } else { 
+                                loop {
+                                    let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
+                                    if self.get_channel_index(short_address).is_none() {
+                                        break short_address;
+                                    }
+                                    println!("Short address is already used");
                                 }
-                                println!("Short address is already used");
                             };
-                            let description = Config::prompt_for_string("Description",Some(&format!("Channel {}", short_address)))?;
+                            let default_description = format!("Light {}", short_address);
+
+                            let description = if prompt_for_each {
+                                Config::prompt_for_string("Description",Some(&default_description))?
+                            } else {
+                                default_description
+                            };
+
+                            if !prompt_for_each {
+                                println!("  assigning address {} to {}", short_address, description);
+                            }
 
                             dali_manager.program_short_address(self.bus, short_address);
                             self.channels.push(Channel{ description, short_address });
+
+                            count += 1;
                         }
+
+                        println!("Found {} devices on bus", count);
                     }
                     'm' => {
                         let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::WithoutShortAddress);
@@ -168,7 +192,7 @@ impl BusConfig {
                                 }
                                 println!("Short address is already used");
                             };
-                            let description = Config::prompt_for_string("Description",Some(&format!("Channel {}", short_address)))?;
+                            let description = Config::prompt_for_string("Description",Some(&format!("Light {}", short_address)))?;
 
                             dali_manager.program_short_address(self.bus, short_address);
                             self.channels.push(Channel{ description, short_address });

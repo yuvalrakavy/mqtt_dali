@@ -7,27 +7,18 @@
       "channels": [
         {
           "short_address": 0,
-          "description": "Main"
+          "description": "Light 0"
         },
         {
           "short_address": 1,
-          "description": "Channel 1"
+          "description": "Main"
         },
         {
           "short_address": 2,
-          "description": "Channel 2"
+          "description": "Light 2"
         }
       ],
-      "groups": [
-        {
-          "group_address": 0,
-          "description": "Group 0",
-          "members": [
-            0,
-            2
-          ]
-        }
-      ]
+      "groups": []
     }
   ]
 }
