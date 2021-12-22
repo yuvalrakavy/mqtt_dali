@@ -222,6 +222,7 @@ impl<'a> Iterator for DaliBusIterator<'a> {
         if !self.is_random_address_le(0) {
             search_address += 1;
             self.send_search_address(search_address);
+            self.is_random_address_le(0);
         }
 
         if search_address > 0xffffff {
