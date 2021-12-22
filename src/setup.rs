@@ -40,7 +40,7 @@ impl BusConfig {
         }
     }
 
-    pub fn find_channel(&self, channel: u8) -> Option<&Channel> {
+    pub fn find_member(&self, channel: u8) -> Option<&Channel> {
         self.channels.iter().find(|c| c.short_address == channel)
     }
 
@@ -70,7 +70,7 @@ impl BusConfig {
                 print!("      ");
             }
 
-            match self.find_channel(group.members[i]) {
+            match self.find_member(group.members[i]) {
                 Some(channel) => print!("{:18}", channel.to_string()),
                 _ => print!("Missing {:10}", self.channels[i]),
             }
@@ -182,7 +182,7 @@ impl BusConfig {
                                         println!("Invalid new address");
                                     }
                                     if new_short_address != short_address {
-                                        if self.find_channel(new_short_address).is_some() {
+                                        if self.find_member(new_short_address).is_some() {
                                             println!("Short address is already used");
                                         }
                                         else {
