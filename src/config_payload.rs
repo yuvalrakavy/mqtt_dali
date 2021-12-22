@@ -11,7 +11,7 @@ pub struct Channel {
 pub struct Group {
     pub group_address: u8,              // Group number
     pub description: String,
-    pub channels: Vec<u8>,      // Channel list
+    pub members: Vec<u8>,      // Channel list
 }
 
 #[derive(Debug, Serialize, Deserialize)]

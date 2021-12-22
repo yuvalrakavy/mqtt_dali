@@ -65,12 +65,12 @@ impl BusConfig {
 
     fn display_group(&self, group: &Group) {
         println!("    {} ({}):", group.group_address, group.description);
-        for i in 0..group.channels.len() {
+        for i in 0..group.members.len() {
             if i % BusConfig::CHANNELS_PER_LINE == 0 {
                 print!("      ");
             }
 
-            match self.find_channel(group.channels[i]) {
+            match self.find_channel(group.members[i]) {
                 Some(channel) => print!("{:18}", channel.to_string()),
                 _ => print!("Missing {:10}", self.channels[i]),
             }
@@ -219,7 +219,7 @@ impl BusConfig {
         if let Some(group_index) = self.get_group_index(group_address) {
             let group = &self.groups[group_index];
 
-            for short_address in group.channels.iter() {
+            for short_address in group.members.iter() {
                 dali_manager.remove_from_group(self.bus, group_address, *short_address);
             }
 
@@ -229,7 +229,7 @@ impl BusConfig {
 
     fn new_group(&mut self, dali_manager: &DaliManager, group_address: u8) -> Result<(), SetupError> {
         let description = Config::prompt_for_string("Description", Some(&format!("Group {}", group_address)))?;
-        self.groups.push(Group { description, group_address, channels: Vec::new() });
+        self.groups.push(Group { description, group_address, members: Vec::new() });
         self.edit_group(dali_manager, group_address)?;
         Ok(())
     }
@@ -250,21 +250,21 @@ impl BusConfig {
 
                             if self.get_channel_index(short_address).is_none() {
                                 println!("No light with this address");
-                            } else if group.channels.contains(&short_address) {
+                            } else if group.members.contains(&short_address) {
                                 println!("Already in group");
                             } else {
                                 let group = & mut self.groups[group_index];
-                                group.channels.push(short_address);
+                                group.members.push(short_address);
                                 dali_manager.add_to_group(self.bus, group_address, short_address);
                             }
                         },
                         'd' => {
                             let group = & mut self.groups[group_index];
                             let short_address = Config::prompt_for_short_address("Detete from group", &None)?;
-                            let index = group.channels.iter().position(|a| *a == short_address);
+                            let index = group.members.iter().position(|a| *a == short_address);
 
                             if let Some(index) = index {
-                                group.channels.remove(index);
+                                group.members.remove(index);
                                 dali_manager.remove_from_group(self.bus, group_address, short_address);
                             }
                             else {

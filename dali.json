@@ -22,7 +22,7 @@
         {
           "group_address": 0,
           "description": "Group 0",
-          "channels": [
+          "members": [
             0,
             2
           ]

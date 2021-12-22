@@ -248,7 +248,7 @@ impl DaliBusEmulator {
             let mut group_mask = 0u16;
 
             for group in bus_config.groups.iter() {
-                if group.channels.iter().any(|short_address| *short_address == channel.short_address) {
+                if group.members.iter().any(|short_address| *short_address == channel.short_address) {
                     group_mask |= 1 << group.group_address;
                 }
             }
