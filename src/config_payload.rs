@@ -3,15 +3,15 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Channel {
-    pub short_address: u8,            // Channel number
+    pub short_address: u8,
     pub description: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Group {
-    pub group_address: u8,              // Group number
+    pub group_address: u8,     // Group number
     pub description: String,
-    pub members: Vec<u8>,      // Channel list
+    pub members: Vec<u8>,      // Members list (short addresses of lights in this group)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
