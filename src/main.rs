@@ -19,8 +19,8 @@ async fn main()  {
         param mqtt:String, desc: "MQTT broker to connect";
         opt emulation:bool = true, desc: "Use hardware emulation (for debugging)";
         opt setup:bool=false, desc: "Setup mode";
-        opt config: String = String::from("dali.json"), desc: "Coniguration filename (dali.json)";
-        opt update: bool=false, desc: "force update MQTT configuration topic (/DALI/Config/ContollerName)";
+        opt config: String = String::from("dali.json"), desc: "Configuration filename (dali.json)";
+        opt update: bool=false, desc: "force update MQTT configuration topic (/DALI/Config/ControllerName)";
     }.parse_or_exit();
 
     let mut setup = args.setup;
@@ -49,7 +49,7 @@ async fn main()  {
     let mut dali_manager = dali_manager::DaliManager::new(&controller);
 
     if setup {
-        let setup_result = config.iteractive_setup(&mut dali_manager);
+        let setup_result = config.interactive_setup(&mut dali_manager);
 
         if let Ok(_) | Err(setup::SetupError::UserQuit) = setup_result {
             config.save(&args.config).unwrap();

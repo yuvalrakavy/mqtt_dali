@@ -123,8 +123,9 @@ impl BusConfig {
 
     pub fn assign_addresses(&mut self, dali_manager: &mut DaliManager) -> Result<(), SetupError> {
         loop {
-            let default_assign = if self.channels.len() == 0 { Some("a") } else { Some("b") };
+            let default_assign = if self.channels.is_empty() { Some("a") } else { Some("b") };
             let command = Config::prompt_for_string("Assign short addresses: a=All, m=missing, #=change light's address, d=change light's description, b=back", default_assign)?;
+
             if let Some(command) = command.chars().next() {
                 match command {
                     'b' => return Ok(()),
@@ -141,7 +142,7 @@ impl BusConfig {
                     'a' => {
                         let mut count = 0;
                         let prompt_for_each = Config::prompt_for_string("Assign all: a=auto, p=prompt for short-address/description", Some("a"))?;
-                        let prompt_for_each = prompt_for_each.chars().next() != Some('a');
+                        let prompt_for_each = !prompt_for_each.starts_with('a');
 
                         let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::All);
                         self.channels = Vec::new();
@@ -149,15 +150,16 @@ impl BusConfig {
                         for _ in dali_bus_iterator {
                             let default_short_address = self.get_unused_short_address();
 
-                            let short_address = if !prompt_for_each && default_short_address.is_some() {
-                                 default_short_address.unwrap()
-                            } else { 
-                                loop {
-                                    let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
-                                    if self.get_channel_index(short_address).is_none() {
-                                        break short_address;
+                            let short_address = match default_short_address {
+                                Some(default_short_address) if !prompt_for_each => default_short_address,
+                                _ => { 
+                                    loop {
+                                        let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
+                                        if self.get_channel_index(short_address).is_none() {
+                                            break short_address;
+                                        }
+                                        println!("Short address is already used");
                                     }
-                                    println!("Short address is already used");
                                 }
                             };
                             let default_description = format!("Light {}", short_address);
@@ -284,7 +286,7 @@ impl BusConfig {
                         },
                         'd' => {
                             let group = & mut self.groups[group_index];
-                            let short_address = Config::prompt_for_short_address("Detete from group", &None)?;
+                            let short_address = Config::prompt_for_short_address("Delete from group", &None)?;
                             let index = group.members.iter().position(|a| *a == short_address);
 
                             if let Some(index) = index {
@@ -577,7 +579,7 @@ impl Config {
         Ok(Config::new(&controller_name, bus_count))
     }
 
-    pub fn iteractive_setup(&mut self, dali_manager: &mut DaliManager) -> Result<(), SetupError> {
+    pub fn interactive_setup(&mut self, dali_manager: &mut DaliManager) -> Result<(), SetupError> {
 
         loop {
             self.display();
