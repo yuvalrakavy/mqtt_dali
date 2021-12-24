@@ -55,7 +55,7 @@ impl<'a> DaliManager<'a> {
     }
 
     fn to_light_group_address(group: u8) -> u8 {
-        if group < 16 { 0x80 | (group << 1 ) } else { panic!("Invlid DALI group# {}", group) }
+        if group < 16 { 0x80 | (group << 1 ) } else { panic!("Invalid DALI group# {}", group) }
     }
 
     pub async fn set_light_brightness_async(&mut self, bus: usize, channel: u8, value: u8) -> DaliBusResult {
@@ -191,7 +191,7 @@ impl<'a> DaliBusIterator<'a> {
             DaliBusResult::None => if retry == 0 { false } else { self.is_random_address_le(retry-1) },               // No answer
             DaliBusResult::Collision => true,           // More than one yes reply
             DaliBusResult::Value(0xff) => true,         // Yes answer
-            _ => panic!("Unexpected replyf for DALI compare command"),
+            _ => panic!("Unexpected reply for DALI compare command"),
         }
     }
 }

@@ -153,7 +153,7 @@ impl DaliLightEmulator {
     fn start_initialize_mode(&mut self, parameter: u8) {
         
         if (parameter == 0xff && self.short_address == 0xff) || parameter == 0 || ((parameter & 0x01) != 0 && (parameter >> 1) == self.short_address) {
-            println!("DALI light {} start initization mode", self.light_number);
+            println!("DALI light {} start initialization mode", self.light_number);
             self.initialize_mode = true;
             self.enable_compare = true;
             self.selected = false;
@@ -161,7 +161,7 @@ impl DaliLightEmulator {
     }
 
     fn terminate_initialize_mode(&mut self) {
-        println!("DALI light {} terminate initization mode", self.light_number);
+        println!("DALI light {} terminate initialization mode", self.light_number);
         self.initialize_mode =false;
         self.enable_compare = false;
     }
@@ -189,7 +189,7 @@ impl DaliLightEmulator {
             self.selected = self.random_address == self.search_address;
             if self.random_address <= self.search_address { Some(0xff) } else { None }
         } else {
-            println!("DALI light {} not paricipating in compare", self.light_number);
+            println!("DALI light {} not participating in compare", self.light_number);
             None
         }
     }
