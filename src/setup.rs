@@ -124,7 +124,7 @@ impl BusConfig {
     pub fn assign_addresses(&mut self, dali_manager: &mut DaliManager) -> Result<(), SetupError> {
         loop {
             let default_assign = if self.channels.len() == 0 { Some("a") } else { Some("b") };
-            let command = Config::prompt_for_string("Assign short addresses: a=All m=missing, #=change light's address, d=change light's description, b=back", default_assign)?;
+            let command = Config::prompt_for_string("Assign short addresses: a=All, m=missing, #=change light's address, d=change light's description, b=back", default_assign)?;
             if let Some(command) = command.chars().next() {
                 match command {
                     'b' => return Ok(()),
@@ -140,7 +140,7 @@ impl BusConfig {
                     },
                     'a' => {
                         let mut count = 0;
-                        let prompt_for_each = Config::prompt_for_string("Assign all: a=auto p=prompt for short-address/description", Some("a"))?;
+                        let prompt_for_each = Config::prompt_for_string("Assign all: a=auto, p=prompt for short-address/description", Some("a"))?;
                         let prompt_for_each = prompt_for_each.chars().next() != Some('a');
 
                         let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::All);
