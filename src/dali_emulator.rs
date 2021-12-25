@@ -277,6 +277,12 @@ impl DaliBusEmulator {
             }
         }
 
+        if !self.debug { 
+            // Emulate real time - bus speed is 1200bps, transaction is (2 bytes message + 1 byte reply = 30 bits (inc stop bits)) total of 1200/30 = 40 messages per second, so
+            // each message is 1000/40 = 25 milliseconds 
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+
         result
     }
 }

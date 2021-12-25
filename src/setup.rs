@@ -144,10 +144,20 @@ impl BusConfig {
                         let prompt_for_each = Config::prompt_for_string("Assign all: a=auto, p=prompt for short-address/description", Some("a"))?;
                         let prompt_for_each = !prompt_for_each.starts_with('a');
 
-                        let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::All);
+                        let dali_bus_iterator  = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::All,
+                             if dali_manager.debug { None } else { 
+                                    Some(Box::new(|n, s| {
+                                        print!("\r{:2} [{:23}]", n, "*".repeat(s as usize + 1));
+                                        io::stdout().flush().unwrap();
+                                    })) 
+                                });
                         self.channels = Vec::new();
 
                         for _ in dali_bus_iterator {
+                            if !dali_manager.debug {
+                                println!();
+                            }
+
                             let default_short_address = self.get_unused_short_address();
 
                             let short_address = match default_short_address {
@@ -171,7 +181,7 @@ impl BusConfig {
                             };
 
                             if !prompt_for_each {
-                                println!("  assigning address {} to {}", short_address, description);
+                                println!("     assigning address {} to {}", short_address, description);
                             }
 
                             dali_manager.program_short_address(self.bus, short_address);
@@ -180,10 +190,11 @@ impl BusConfig {
                             count += 1;
                         }
 
+                        println!();
                         println!("Found {} devices on bus", count);
                     }
                     'm' => {
-                        let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::WithoutShortAddress);
+                        let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::WithoutShortAddress, None);
 
                         for _ in dali_bus_iterator {
                             let default_short_address = self.get_unused_short_address();
@@ -212,7 +223,7 @@ impl BusConfig {
                                             println!("Short address is already used");
                                         }
                                         else {
-                                            let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus , DaliDeviceSelection::Address(short_address));
+                                            let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus , DaliDeviceSelection::Address(short_address), None);
                                             let mut done = false;
 
                                             for _ in dali_bus_iterator {

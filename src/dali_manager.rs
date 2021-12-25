@@ -19,11 +19,14 @@ pub trait DaliController {
 pub struct DaliManager<'a> {
     controller: &'a dyn DaliController,
     #[allow(dead_code)]
-    debug: bool,
+    pub debug: bool,
 }
+
+pub type DaliBusProgressCallback = dyn Fn(u8, u8);
 
 pub struct DaliBusIterator<'a> {
     manager: &'a DaliManager<'a>,
+    progress: Option<Box<DaliBusProgressCallback>>,
     bus: usize,
     previous_low_byte: Option<u8>,
     previous_mid_byte: Option<u8>,
@@ -128,7 +131,7 @@ impl<'a> DaliManager<'a> {
     ///     }
     /// ```
     /// 
-    pub fn get_dali_bus_iter(&self, bus: usize, selection: DaliDeviceSelection) -> DaliBusIterator {
+    pub fn get_dali_bus_iter(&self, bus: usize, selection: DaliDeviceSelection, progress: Option<Box<DaliBusProgressCallback>>) -> DaliBusIterator {
         let parameter = match selection {
             DaliDeviceSelection::All => 0,
             DaliDeviceSelection::WithoutShortAddress => 0xff,
@@ -141,6 +144,8 @@ impl<'a> DaliManager<'a> {
         DaliBusIterator {
             bus,
             manager: self,
+            progress,
+
             previous_low_byte: None,
             previous_mid_byte: None,
             previous_high_byte: None,
@@ -205,6 +210,7 @@ impl<'a> Iterator for DaliBusIterator<'a> {
         // Find next device by trying to match its random address
         let mut search_address = 0x00800000;        // Start in half the range (24 bits)
         let mut delta = 0x00400000;
+        let mut step = 0;
 
         while delta > 0 {
             self.send_search_address(search_address);
@@ -217,7 +223,13 @@ impl<'a> Iterator for DaliBusIterator<'a> {
                 search_address += delta;
             }
 
-            delta >>= 1; 
+            delta >>= 1;
+
+            if let Some(progress) = self.progress.as_ref() {
+                progress(self.short_address, step);
+            }
+
+            step += 1;
         }
 
         self.send_search_address(search_address);
