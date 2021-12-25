@@ -7,6 +7,7 @@ use crate::config_payload::{BusConfig, Config};
 #[derive(Debug)]
 struct DaliLightEmulator {
     light_number: usize,
+    debug: bool,
     initialize_mode: bool,
     brightness: u8,
     short_address: u8,
@@ -22,6 +23,7 @@ struct DaliLightEmulator {
 pub struct DaliBusEmulator {
     bus_number: usize,
     lights: RefCell<Vec<DaliLightEmulator>>,
+    debug: bool,
 }
 
 pub struct DaliControllerEmulator {
@@ -29,9 +31,10 @@ pub struct DaliControllerEmulator {
 }
 
 impl DaliLightEmulator {
-    fn new(light_number: usize) -> DaliLightEmulator {
+    fn new(light_number: usize, debug: bool) -> DaliLightEmulator {
         DaliLightEmulator {
              light_number,
+             debug,
              initialize_mode: false,
              brightness: 0,
              short_address: 0xff,
@@ -44,9 +47,10 @@ impl DaliLightEmulator {
         }
     }
 
-    fn new_with_config(light_number: usize, short_address: u8, group_mask: u16) -> DaliLightEmulator {
+    fn new_with_config(light_number: usize, short_address: u8, group_mask: u16, debug: bool) -> DaliLightEmulator {
         DaliLightEmulator {
             light_number,
+            debug,
             initialize_mode: false,
             brightness: 0,
             short_address,
@@ -129,10 +133,9 @@ impl DaliLightEmulator {
     /// 
     fn set_short_address(&mut self) {
         if self.dtr[0] < 63 {
-            println!("DALI light {} set to short address {}", self.light_number, self.dtr[0])
-        } else {
-            println!("DALI light {} Attempt to set short address {} which is invalid", self.light_number, self.dtr[0])
-        }
+            if self.debug { println!("DALI light {} set to short address {}", self.light_number, self.dtr[0]) }
+            self.short_address = self.dtr[0];
+        } else if self.debug { println!("DALI light {} Attempt to set short address {} which is invalid", self.light_number, self.dtr[0]) }
     }
 
     fn set_brightness(&mut self, level: u8) {
@@ -141,19 +144,19 @@ impl DaliLightEmulator {
     }
 
     fn add_to_group(&mut self, group_number: u16) {
-        println!("DALI light {}:{} added to group {}", self.light_number, self.short_address, group_number);
+        if self.debug { println!("DALI light {}:{} added to group {}", self.light_number, self.short_address, group_number); }
         self.group_mask |= 1 << group_number;
     }
 
     fn remove_from_group(&mut self, group_number: u16) {
-        println!("DALI light {}:{} removed from group {}", self.light_number, self.short_address, group_number);
+        if self.debug { println!("DALI light {}:{} removed from group {}", self.light_number, self.short_address, group_number); }
         self.group_mask &= !(1 << group_number);
     }
 
     fn start_initialize_mode(&mut self, parameter: u8) {
         
         if (parameter == 0xff && self.short_address == 0xff) || parameter == 0 || ((parameter & 0x01) != 0 && (parameter >> 1) == self.short_address) {
-            println!("DALI light {} start initialization mode", self.light_number);
+            if self.debug { println!("DALI light {} start initialization mode", self.light_number) };
             self.initialize_mode = true;
             self.enable_compare = true;
             self.selected = false;
@@ -161,13 +164,13 @@ impl DaliLightEmulator {
     }
 
     fn terminate_initialize_mode(&mut self) {
-        println!("DALI light {} terminate initialization mode", self.light_number);
+        if self.debug { println!("DALI light {} terminate initialization mode", self.light_number); }
         self.initialize_mode =false;
         self.enable_compare = false;
     }
 
     fn set_dtr(&mut self, dtr_number: u8, value: u8) {
-        println!("DALI light {} set DTR{} to {}", self.light_number, dtr_number, value);
+        if self.debug { println!("DALI light {} set DTR{} to {}", self.light_number, dtr_number, value); }
 
         if dtr_number < 3 {
             self.dtr[dtr_number as usize] = value;
@@ -180,50 +183,48 @@ impl DaliLightEmulator {
         let mut rng = rand::thread_rng();
 
         self.random_address = rng.gen_range(0..=0x0fff);
-        println!("DALI light {} randomized address set to {}", self.light_number, self.random_address)
+        if self.debug { println!("DALI light {} randomized address set to {}", self.light_number, self.random_address) }
     }
 
     fn compare(&mut self) -> Option<u8> {
         if self.enable_compare {
-            println!("DALI light {} check if random {} <= search {} ", self.light_number, self.random_address, self.search_address);
+            if self.debug { println!("DALI light {} check if random {} <= search {} ", self.light_number, self.random_address, self.search_address) };
             self.selected = self.random_address == self.search_address;
             if self.random_address <= self.search_address { Some(0xff) } else { None }
         } else {
-            println!("DALI light {} not participating in compare", self.light_number);
+            if self.debug { println!("DALI light {} not participating in compare", self.light_number) };
             None
         }
     }
 
     fn withdraw(&mut self) {
         if self.selected {
-            println!("DALI light {} withdrawing from compare process", self.light_number);
+            if self.debug { println!("DALI light {} withdrawing from compare process", self.light_number); }
             self.enable_compare = false;
-        } else {
-            println!("DALI light {} not withdrawing from compare process", self.light_number);
-        }
+        } else if self.debug { println!("DALI light {} not withdrawing from compare process", self.light_number) };
     }
 
     fn set_search_address_low(&mut self, value: u8) {
-        println!("DALI light {} set search address low byte to {}", self.light_number, value);
+        if self.debug { println!("DALI light {} set search address low byte to {}", self.light_number, value); }
         self.search_address &= 0xffff00;
         self.search_address |= value as u32;
     }
 
     fn set_search_address_middle(&mut self, value: u8) {
-        println!("DALI light {} set search address middle byte to {}", self.light_number, value);
+        if self.debug { println!("DALI light {} set search address middle byte to {}", self.light_number, value); }
         self.search_address &= 0xff00ff;
         self.search_address |= (value as u32) << 8;
     }
 
     fn set_search_address_high(&mut self, value: u8) {
-        println!("DALI light {} set search address high byte to {}", self.light_number, value);
+        if self.debug { println!("DALI light {} set search address high byte to {}", self.light_number, value); }
         self.search_address &= 0x00ffff;
         self.search_address |= (value as u32) << 16;
     }
 
     fn program_short_address(&mut self, short_address: u8) {
         if self.selected {
-            println!("DALI light {} is selected, set short address to {}", self.light_number, short_address);
+            if self.debug { println!("DALI light {} is selected, set short address to {}", self.light_number, short_address); }
             self.short_address = short_address;
         }
     }
@@ -231,17 +232,17 @@ impl DaliLightEmulator {
 }
 
 impl DaliBusEmulator {
-    pub fn new(bus_number: usize, light_count: usize) -> DaliBusEmulator {
+    pub fn new(bus_number: usize, light_count: usize, debug: bool) -> DaliBusEmulator {
         let mut lights: Vec<DaliLightEmulator> = Vec::new();
 
         for light_number in 0..light_count {
-            lights.push(DaliLightEmulator::new(light_number));
+            lights.push(DaliLightEmulator::new(light_number, debug));
         }
 
-        DaliBusEmulator { bus_number, lights: RefCell::new(lights) }
+        DaliBusEmulator { bus_number, lights: RefCell::new(lights), debug }
     }
 
-    pub fn new_with_config(bus_config: &BusConfig) -> DaliBusEmulator {
+    pub fn new_with_config(bus_config: &BusConfig, debug: bool) -> DaliBusEmulator {
         let mut lights: Vec<DaliLightEmulator> = Vec::new();
 
         for (light_number, channel) in bus_config.channels.iter().enumerate() {
@@ -253,14 +254,14 @@ impl DaliBusEmulator {
                 }
             }
 
-            lights.push(DaliLightEmulator::new_with_config(light_number, channel.short_address, group_mask));
+            lights.push(DaliLightEmulator::new_with_config(light_number, channel.short_address, group_mask, debug));
         }
 
-        DaliBusEmulator { bus_number: bus_config.bus, lights: RefCell::new(lights) }
+        DaliBusEmulator { bus_number: bus_config.bus, lights: RefCell::new(lights), debug }
     }
 
     pub fn send_2_bytes(&self, b1: u8, b2: u8) -> DaliBusResult {
-        println!("DALI Bus#{} send {:#02x},{:#02x}", self.bus_number, b1, b2);
+        if self.debug { println!("DALI Bus#{} send {:#02x},{:#02x}", self.bus_number, b1, b2); }
 
         let mut result = DaliBusResult::None;
 
@@ -281,21 +282,21 @@ impl DaliBusEmulator {
 }
 
 impl DaliControllerEmulator {
-    pub fn new(bus_count: usize, light_count: usize) -> DaliControllerEmulator {
+    pub fn new(bus_count: usize, light_count: usize, debug: bool) -> DaliControllerEmulator {
         let mut buses: Vec<DaliBusEmulator> = Vec::new();
 
         for bus_number in 0..bus_count {
-            buses.push(DaliBusEmulator::new(bus_number, light_count))
+            buses.push(DaliBusEmulator::new(bus_number, light_count, debug))
         }
 
         DaliControllerEmulator{ buses }
     }
 
-    pub fn new_with_config(config: &Config) -> DaliControllerEmulator {
+    pub fn new_with_config(config: &Config, debug: bool) -> DaliControllerEmulator {
         let mut buses: Vec<DaliBusEmulator> = Vec::new();
 
         for bus_config in config.buses.iter() {
-            buses.push(DaliBusEmulator::new_with_config(bus_config))
+            buses.push(DaliBusEmulator::new_with_config(bus_config, debug))
         }
 
         DaliControllerEmulator{ buses }

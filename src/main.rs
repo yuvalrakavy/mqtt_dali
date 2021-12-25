@@ -20,7 +20,7 @@ async fn main()  {
         opt emulation:bool = true, desc: "Use hardware emulation (for debugging)";
         opt setup:bool=false, desc: "Setup mode";
         opt config: String = String::from("dali.json"), desc: "Configuration filename (dali.json)";
-        opt update: bool=false, desc: "force update MQTT configuration topic (/DALI/Config/ControllerName)";
+        opt debug: bool=false, desc: "Generate debug output";
     }.parse_or_exit();
 
     let mut setup = args.setup;
@@ -38,15 +38,15 @@ async fn main()  {
     let controller = if args.emulation {
         if new_config {
             let lights_count = Config::prompt_for_number("Number of lights to emulate", &Some(3)).unwrap();
-            DaliControllerEmulator::new(config.buses.len(), lights_count)
+            DaliControllerEmulator::new(config.buses.len(), lights_count, args.debug)
         } else {
-            DaliControllerEmulator::new_with_config(&config)
+            DaliControllerEmulator::new_with_config(&config, args.debug)
         }
     } else { 
         panic!("Only emulation is supported at this stage");
     };
 
-    let mut dali_manager = dali_manager::DaliManager::new(&controller);
+    let mut dali_manager = dali_manager::DaliManager::new(&controller, args.debug);
 
     if setup {
         let setup_result = config.interactive_setup(&mut dali_manager);

@@ -18,6 +18,8 @@ pub trait DaliController {
 
 pub struct DaliManager<'a> {
     controller: &'a dyn DaliController,
+    #[allow(dead_code)]
+    debug: bool,
 }
 
 pub struct DaliBusIterator<'a> {
@@ -36,8 +38,8 @@ pub enum DaliDeviceSelection {
 }
 
 impl<'a> DaliManager<'a> {
-    pub fn new(controller: &'a dyn DaliController) -> DaliManager {
-        DaliManager { controller }
+    pub fn new(controller: &'a dyn DaliController, debug: bool) -> DaliManager {
+        DaliManager { controller, debug }
     }
 
     #[allow(dead_code)]
