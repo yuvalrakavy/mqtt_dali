@@ -1,5 +1,5 @@
 use std::time::Duration;
-use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish};
+use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, LastWill};
 use std::error::Error;
 use crate::{dali_manager::DaliManager, command_payload::DaliCommand};
 use crate::config_payload::Config;
@@ -15,7 +15,8 @@ pub struct MqttDali<'a> {
 impl <'a> MqttDali<'a> {
     pub fn new(dali_manager: &'a mut DaliManager<'a>, config: &'a Config, mqtt_broker: &str) -> MqttDali<'a> {
         let mut mqtt_options = MqttOptions::new(&config.name, mqtt_broker, 1883);
-        mqtt_options.set_keep_alive(Duration::from_secs(5));
+        let last_will = LastWill::new(MqttDali::get_status_topic(&config.name), "false".as_bytes(), QoS::AtLeastOnce, true);
+        mqtt_options.set_keep_alive(Duration::from_secs(5)).set_last_will(last_will);
 
         let (mqtt_client, mqtt_events) = AsyncClient::new(mqtt_options, 10);
 
@@ -44,10 +45,18 @@ impl <'a> MqttDali<'a> {
         topic
     }
 
+    fn get_status_topic(name: &str) -> String {
+        let mut topic = "DALI/Active/".to_owned();
+
+        topic.push_str(name);
+        topic
+    }
+
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         let config_topic = &self.get_config_topic();
 
         self.mqtt_client.publish(config_topic, QoS::AtLeastOnce, true, serde_json::to_vec(self.config)?).await?;
+        self.mqtt_client.publish(&MqttDali::get_status_topic(&self.config.name), QoS::AtLeastOnce, true, "true".as_bytes()).await?;
 
         let command_topic = &self.get_command_topic();
         self.mqtt_client.subscribe(command_topic, QoS::AtLeastOnce).await?;
