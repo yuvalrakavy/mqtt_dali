@@ -2,7 +2,7 @@ use rand::Rng;
 use std::cell::RefCell;
 use crate::dali_commands::{self};
 use crate::dali_manager::{DaliBusResult, DaliController};
-use crate::config_payload::{BusConfig, Config};
+use crate::config_payload::{BusConfig, BusStatus, Config};
 
 #[derive(Debug)]
 struct DaliLightEmulator {
@@ -268,9 +268,9 @@ impl DaliBusEmulator {
         for dali_light in self.lights.borrow_mut().iter_mut() {
             result = match dali_light.receive_2_bytes(b1, b2) {
                 Some(x) => match result {
-                    DaliBusResult::None => DaliBusResult::Value(x),
-                    DaliBusResult::Value(_) => DaliBusResult::Collision,
-                    DaliBusResult::Collision => DaliBusResult::Collision,
+                    DaliBusResult::None => DaliBusResult::Value8(x),
+                    DaliBusResult::Value8(_) => DaliBusResult::ReceiveCollision,
+                    DaliBusResult::ReceiveCollision => DaliBusResult::ReceiveCollision,
                     _ => result,
                 },
                 _ => result,
@@ -288,37 +288,42 @@ impl DaliBusEmulator {
 }
 
 impl DaliControllerEmulator {
-    pub fn new(bus_count: usize, light_count: usize, debug: bool) -> DaliControllerEmulator {
+    pub fn try_new(config: &mut Config, debug: bool) -> Result<Box<dyn DaliController>, Box<dyn std::error::Error>> {
         let mut buses: Vec<DaliBusEmulator> = Vec::new();
 
-        for bus_number in 0..bus_count {
-            buses.push(DaliBusEmulator::new(bus_number, light_count, debug))
+        if config.buses.is_empty() {
+            let bus_count: usize = Config::prompt_for_number("Number of DALI buses supported (1, 2 or 4)", &Some(1)).unwrap();
+            let light_count = Config::prompt_for_number("Number of lights to emulate", &Some(3)).unwrap();
+
+            for bus_number in 0..bus_count {
+                config.buses.push(BusConfig::new(bus_number, BusStatus::Active));
+                buses.push(DaliBusEmulator::new(bus_number, light_count, debug));
+            }
+        }
+        else {
+            for bus_config in config.buses.iter() {
+                buses.push(DaliBusEmulator::new_with_config(bus_config, debug))
+            }
         }
 
-        DaliControllerEmulator{ buses }
-    }
-
-    pub fn new_with_config(config: &Config, debug: bool) -> DaliControllerEmulator {
-        let mut buses: Vec<DaliBusEmulator> = Vec::new();
-
-        for bus_config in config.buses.iter() {
-            buses.push(DaliBusEmulator::new_with_config(bus_config, debug))
-        }
-
-        DaliControllerEmulator{ buses }
+        Ok(Box::new(DaliControllerEmulator{ buses }))
     }
 }
 
 impl DaliController for DaliControllerEmulator {
-    fn send_2_bytes(&self, bus: usize, b1: u8, b2: u8) -> DaliBusResult {
+    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
         if bus >= self.buses.len() {
             panic!("Send to invalid bus {}", bus);
         }
 
-        self.buses[bus].send_2_bytes(b1, b2)
+        Ok(self.buses[bus].send_2_bytes(b1, b2))
     }
 
-    fn send_2_bytes_repeat(&self, bus: usize, b1: u8, b2: u8) -> DaliBusResult {
+    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
         self.send_2_bytes(bus, b1, b2)
+    }
+
+    fn get_bus_status(&mut self, _bus: usize) -> Result<BusStatus, Box<dyn std::error::Error>> {
+        Ok(BusStatus::Active)
     }
 }

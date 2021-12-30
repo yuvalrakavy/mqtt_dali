@@ -2,6 +2,13 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum BusStatus {
+    Active,
+    NoPower,
+    Overloaded,
+    Unknown,
+}
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Channel {
     pub short_address: u8,
     pub description: String,
@@ -17,6 +24,7 @@ pub struct Group {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BusConfig {
     pub description: String,
+    pub status: BusStatus,
     pub bus: usize,                // Bus number
     pub channels: Vec<Channel>,
     #[serde(default)]

@@ -10,9 +10,12 @@
         "POSSIBLEG",
         "RANDOMISE",
         "REFARENCE",
+        "rppal",
         "rumqttc",
         "SEARCHADDRH",
         "SEARCHADDRL",
-        "SEARCHADDRM"
+        "SEARCHADDRM",
+        "Uart",
+        "Vxxyyzz"
     ]
 }

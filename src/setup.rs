@@ -1,5 +1,5 @@
 use std::{path::Path, fs::File, io, io::Write, fmt};
-use crate::{config_payload::{Config, BusConfig, Channel, Group}, dali_manager::{DaliManager, DaliDeviceSelection}};
+use crate::{config_payload::{Config, BusConfig, BusStatus, Channel, Group}, dali_manager::{DaliManager, DaliBusIterator, DaliDeviceSelection}};
 
 #[derive(Debug)]
 pub enum SetupError {
@@ -20,21 +20,51 @@ impl From<std::io::Error> for SetupError {
     }
 }
 
+impl std::fmt::Display for SetupError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &*self {
+            SetupError::JsonError(e) => write!(f, "Json error: {}", e),
+            SetupError::IoError(e) => write!(f, "IO error: {}", e),
+            SetupError::UserQuit => write!(f, "User quit"),
+        }
+    }
+}
+
+impl std::error::Error for SetupError { }
+
 impl fmt::Display for Channel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} - {}", self.short_address, self.description)
     }
 }
 
+impl fmt::Display for BusStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BusStatus::Active => write!(f, "Active"),
+            BusStatus::NoPower => write!(f, "No power"),
+            BusStatus::Overloaded => write!(f, "Overloaded"),
+            BusStatus::Unknown => write!(f, "Unknown status"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum SetupAction {
+    Quit,
+    Start,
+}
+
 impl BusConfig {
     const CHANNELS_PER_LINE: usize = 4;
 
-    fn new(bus: usize) -> BusConfig {
-        let description = format!("Bus-{}", bus+1);
+    pub fn new(bus_number: usize, status: BusStatus) -> BusConfig {
+        let description = format!("Bus-{}", bus_number+1);
 
         BusConfig {
             description,
-            bus,
+            status,
+            bus: bus_number,
             channels: Vec::new(),
             groups: Vec::new(),
         }
@@ -86,7 +116,7 @@ impl BusConfig {
     }
 
     pub fn display(&self, bus_number: usize) {
-        println!("{}: DALI bus: {}", bus_number+1, self.description);
+        println!("{}: DALI bus: {} ({})", bus_number+1, self.description, self.status);
 
         if self.channels.is_empty() {
             println!("  No channels");
@@ -121,7 +151,7 @@ impl BusConfig {
         (0..16u8).find(|group_address| self.get_group_index(*group_address).is_none())
     }
 
-    pub fn assign_addresses(&mut self, dali_manager: &mut DaliManager) -> Result<(), SetupError> {
+    pub fn assign_addresses(&mut self, dali_manager: &mut DaliManager) -> Result<(), Box<dyn std::error::Error>> {
         loop {
             let default_assign = if self.channels.is_empty() { Some("a") } else { Some("b") };
             let command = Config::prompt_for_string("Assign short addresses: a=All, m=missing, #=change light's address, d=change light's description, b=back", default_assign)?;
@@ -143,17 +173,18 @@ impl BusConfig {
                         let mut count = 0;
                         let prompt_for_each = Config::prompt_for_string("Assign all: a=auto, p=prompt for short-address/description", Some("a"))?;
                         let prompt_for_each = !prompt_for_each.starts_with('a');
+                        let debug = dali_manager.debug;
 
-                        let dali_bus_iterator  = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::All,
-                             if dali_manager.debug { None } else { 
+                        let mut dali_bus_iterator  = DaliBusIterator::new(dali_manager, self.bus, DaliDeviceSelection::All,
+                             if debug { None } else { 
                                     Some(Box::new(|n, s| {
                                         print!("\r{:2} [{:23}]", n, "*".repeat(s as usize + 1));
                                         io::stdout().flush().unwrap();
                                     })) 
-                                });
+                                }).expect("Error while initializing DALI bus iteration");
                         self.channels = Vec::new();
 
-                        for _ in dali_bus_iterator {
+                        while dali_bus_iterator.find_next_device(dali_manager)?.is_some() {
                             if !dali_manager.debug {
                                 println!();
                             }
@@ -184,7 +215,7 @@ impl BusConfig {
                                 println!("     assigning address {} to {}", short_address, description);
                             }
 
-                            dali_manager.program_short_address(self.bus, short_address);
+                            dali_manager.program_short_address(self.bus, short_address).unwrap_or_else(|e| println!("Error when programming address: {}", e));
                             self.channels.push(Channel{ description, short_address });
 
                             count += 1;
@@ -194,9 +225,11 @@ impl BusConfig {
                         println!("Found {} devices on bus", count);
                     }
                     'm' => {
-                        let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, DaliDeviceSelection::WithoutShortAddress, None);
+                        let mut dali_bus_iterator = 
+                            DaliBusIterator::new(dali_manager, self.bus, DaliDeviceSelection::WithoutShortAddress, None).
+                            expect("Error while initializing DALI bus iteration");
 
-                        for _ in dali_bus_iterator {
+                        while dali_bus_iterator.find_next_device(dali_manager)?.is_some() {
                             let default_short_address = self.get_unused_short_address();
                             let short_address = loop {
                                 let short_address = Config::prompt_for_short_address("Short address", &default_short_address)?;
@@ -207,7 +240,7 @@ impl BusConfig {
                             };
                             let description = Config::prompt_for_string("Description",Some(&format!("Light {}", short_address)))?;
 
-                            dali_manager.program_short_address(self.bus, short_address);
+                            dali_manager.program_short_address(self.bus, short_address).unwrap_or_else(|e| println!("Error when programming address: {}", e));
                             self.channels.push(Channel{ description, short_address });
                         }
                     }
@@ -223,12 +256,13 @@ impl BusConfig {
                                             println!("Short address is already used");
                                         }
                                         else {
-                                            let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus , DaliDeviceSelection::Address(short_address), None);
+                                            let mut dali_bus_iterator = 
+                                                DaliBusIterator::new(dali_manager, self.bus , DaliDeviceSelection::Address(short_address), None).expect("Error while initializing DALI bus iteration");
                                             let mut done = false;
 
-                                            for _ in dali_bus_iterator {
+                                            while dali_bus_iterator.find_next_device(dali_manager)?.is_some() {
                                                 if !done {
-                                                    dali_manager.program_short_address(self.bus, new_short_address);
+                                                    dali_manager.program_short_address(self.bus, new_short_address).unwrap_or_else(|e| println!("Error when programming address: {}", e));
                                                     self.channels[index].short_address = new_short_address;     // Update configuration
                                                     done = true;
                                                 } else {
@@ -252,26 +286,27 @@ impl BusConfig {
         //let dali_bus_iterator = dali_manager.get_dali_bus_iter(self.bus, dali_manager::DaliDeviceSelection::)
     }
 
-    fn delete_group(&mut self, dali_manager: &DaliManager, group_address: u8) {
+    fn delete_group(&mut self, dali_manager: &mut DaliManager, group_address: u8) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(group_index) = self.get_group_index(group_address) {
             let group = &self.groups[group_index];
 
             for short_address in group.members.iter() {
-                dali_manager.remove_from_group(self.bus, group_address, *short_address);
+                dali_manager.remove_from_group(self.bus, group_address, *short_address)?;
             }
 
             self.groups.remove(group_index);
         }
+        Ok(())
     }
 
-    fn new_group(&mut self, dali_manager: &DaliManager, group_address: u8) -> Result<(), SetupError> {
+    fn new_group(&mut self, dali_manager: &mut DaliManager, group_address: u8) -> Result<(), Box<dyn std::error::Error>> {
         let description = Config::prompt_for_string("Description", Some(&format!("Group {}", group_address)))?;
         self.groups.push(Group { description, group_address, members: Vec::new() });
         self.edit_group(dali_manager, group_address)?;
         Ok(())
     }
 
-    fn edit_group(&mut self, dali_manager: &DaliManager, group_address: u8) -> Result<(), SetupError> {
+    fn edit_group(&mut self, dali_manager: &mut DaliManager, group_address: u8) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(group_index) = self.get_group_index(group_address) {
 
             loop {
@@ -292,7 +327,7 @@ impl BusConfig {
                             } else {
                                 let group = & mut self.groups[group_index];
                                 group.members.push(short_address);
-                                dali_manager.add_to_group(self.bus, group_address, short_address);
+                                dali_manager.add_to_group(self.bus, group_address, short_address)?;
                             }
                         },
                         'd' => {
@@ -302,7 +337,7 @@ impl BusConfig {
 
                             if let Some(index) = index {
                                 group.members.remove(index);
-                                dali_manager.remove_from_group(self.bus, group_address, short_address);
+                                dali_manager.remove_from_group(self.bus, group_address, short_address)?;
                             }
                             else {
                                 println!("Not in group");
@@ -317,7 +352,7 @@ impl BusConfig {
         Ok(())
     }
 
-    fn prompt_for_existing_group_address(&self, prompt: &str, default_value: Option<u8>) -> Result<Option<u8>, SetupError> {
+    fn prompt_for_existing_group_address(&self, prompt: &str, default_value: Option<u8>) -> Result<Option<u8>, Box<dyn std::error::Error>> {
         Ok(loop {
             match Config::prompt_for_group_address(prompt, &default_value) {
                 Ok(group_address) => {
@@ -326,13 +361,12 @@ impl BusConfig {
                     }
                     else { break Some(group_address) }
                 },
-                Err(SetupError::UserQuit) => break None,
                 Err(e) => return Err(e),
             }
         })
     }
 
-    fn prompt_for_new_group_address(&self, prompt: &str) -> Result<Option<u8>, SetupError> {
+    fn prompt_for_new_group_address(&self, prompt: &str) -> Result<Option<u8>, Box<dyn std::error::Error>> {
         Ok(loop {
             match Config::prompt_for_group_address(prompt, &self.get_unused_group_address()) {
                 Ok(group_address) => {
@@ -341,13 +375,12 @@ impl BusConfig {
                     }
                     else { break Some(group_address) }
                 },
-                Err(SetupError::UserQuit) => break None,
                 Err(e) => return Err(e),
             }
         })
     }
 
-    pub fn interactive_setup_groups(&mut self, dali_manager: &DaliManager, bus_number: usize) -> Result<(), SetupError> {
+    pub fn interactive_setup_groups(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), Box<dyn std::error::Error>> {
         let mut last_group_address: Option<u8> = None;
         let mut default_level = 255u8;
 
@@ -367,14 +400,14 @@ impl BusConfig {
                         if let Some(group_address) = self.prompt_for_existing_group_address("Group address", last_group_address)? {
                             let level = Config::prompt_for_number("Level", &Some(default_level))?;
 
-                            dali_manager.set_group_brightness(self.bus, group_address, level);
+                            dali_manager.set_group_brightness(self.bus, group_address, level)?;
                             default_level = 255-level;
                             last_group_address = Some(group_address);
                         }
                     },
                     'd' => {
                         if let Some(group_address) = self.prompt_for_existing_group_address("Delete group", None)? {
-                            self.delete_group(dali_manager, group_address);
+                            self.delete_group(dali_manager, group_address)?;
                         }
                     },
                     'e' => {
@@ -389,7 +422,7 @@ impl BusConfig {
         }
     }
 
-    fn prompt_for_existing_short_address(&self, prompt: &str, default_value: Option<u8>) -> Result<Option<u8>, SetupError> {
+    fn prompt_for_existing_short_address(&self, prompt: &str, default_value: Option<u8>) -> Result<Option<u8>, Box<dyn std::error::Error>> {
         Ok(loop {
             match Config::prompt_for_short_address(prompt, &default_value) {
                 Ok(short_address) => {
@@ -398,13 +431,12 @@ impl BusConfig {
                     }
                     else { break Some(short_address) }
                 },
-                Err(SetupError::UserQuit) => break None,
                 Err(e) => return Err(e),
             }
         })
     }
 
-    pub fn interactive_setup_lights(&mut self, dali_manager: &DaliManager, bus_number: usize) -> Result<(), SetupError> {
+    pub fn interactive_setup_lights(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), Box<dyn std::error::Error>> {
         let mut last_short_address: Option<u8> = None;
         let mut default_level = 255u8;
 
@@ -428,7 +460,7 @@ impl BusConfig {
                         if let Some(short_address) = self.prompt_for_existing_short_address("Address", last_short_address)? {
                             let level = Config::prompt_for_number("Level", &Some(default_level))?;
 
-                            dali_manager.set_light_brightness(self.bus, short_address, level);
+                            dali_manager.set_light_brightness(self.bus, short_address, level)?;
                             default_level = 255-level;
                             last_short_address = Some(short_address);
                         }
@@ -440,7 +472,7 @@ impl BusConfig {
 
     }
 
-    pub fn interactive_setup(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), SetupError> {
+    pub fn interactive_setup(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), Box<dyn std::error::Error>> {
         loop {
             self.display(bus_number);
             let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, b=back", Some("b"))?;
@@ -460,10 +492,10 @@ impl BusConfig {
 }
 
 impl Config {
-    pub fn new(name: &str, bus_count: usize) -> Config {
+    pub fn new(name: &str) -> Config {
         Config { 
             name: name.to_owned(),
-            buses: Vec::from_iter((0..bus_count).map(BusConfig::new)),
+            buses: Vec::new(),
         }
     }
 
@@ -503,14 +535,14 @@ impl Config {
         io::stdout().flush().unwrap();
     }
 
-    fn get_input() -> Result<String, SetupError> {
+    fn get_input() -> Result<String, Box<dyn std::error::Error>> {
         let mut value = String::new();
         io::stdin().read_line(&mut value)?;
 
         Ok(value.trim_end().to_owned())
     }
 
-    pub fn prompt_for_string(prompt: &str, default_value: Option<&str>) -> Result<String, SetupError> {
+    pub fn prompt_for_string(prompt: &str, default_value: Option<&str>) -> Result<String, Box<dyn std::error::Error>> {
         loop {
             Config::display_prompt(prompt, &default_value);
             let value = Config::get_input()?;
@@ -528,7 +560,7 @@ impl Config {
         }
     }
 
-    pub fn prompt_for_number<T: std::str::FromStr + std::fmt::Display + Copy>(prompt: &str, default_value: &Option<T>) -> Result<T, SetupError> {
+    pub fn prompt_for_number<T: std::str::FromStr + std::fmt::Display + Copy>(prompt: &str, default_value: &Option<T>) -> Result<T, Box<dyn std::error::Error>> {
         loop {
             Config::display_prompt(prompt, default_value);
 
@@ -538,7 +570,7 @@ impl Config {
                 if !default_value.is_none() {
                     return Ok(default_value.unwrap().to_owned());
                 } else {
-                    return Err(SetupError::UserQuit);
+                    return Err(Box::new(SetupError::UserQuit));
                 }
             }
 
@@ -551,7 +583,7 @@ impl Config {
         }
     }
 
-    pub fn prompt_for_short_address(prompt: &str, default_value: &Option<u8>) -> Result<u8, SetupError> {
+    pub fn prompt_for_short_address(prompt: &str, default_value: &Option<u8>) -> Result<u8, Box<dyn std::error::Error>> {
         loop {
             let short_address = Config::prompt_for_number(prompt, default_value)?;
 
@@ -563,7 +595,7 @@ impl Config {
         }
     }
 
-    pub fn prompt_for_group_address(prompt: &str, default_value: &Option<u8>) -> Result<u8, SetupError> {
+    pub fn prompt_for_group_address(prompt: &str, default_value: &Option<u8>) -> Result<u8, Box<dyn std::error::Error>> {
         loop {
             let group = Config::prompt_for_number(prompt, default_value)?;
 
@@ -575,32 +607,36 @@ impl Config {
         }
     }
 
-    pub fn interactive_new() -> Result<Config, SetupError> {
+    pub fn interactive_new() -> Result<Config, Box<dyn std::error::Error>> {
         let controller_name = Config::prompt_for_string("Controller name", None)?;
 
-        let bus_count = loop {
-            let bus_count: usize = Config::prompt_for_number("Number of DALI buses supported (1, 2 or 4)", &Some(1))?;
-
-            match bus_count {
-                1 | 2 | 4 => break bus_count,
-                _ => println!("Valid values are 1, 2, or 4"),
-            }
-        };
-
-        Ok(Config::new(&controller_name, bus_count))
+        Ok(Config::new(&controller_name))
     }
 
-    pub fn interactive_setup(&mut self, dali_manager: &mut DaliManager) -> Result<(), SetupError> {
+    fn update_bus_status(&mut self, dali_manager: &mut DaliManager) -> Result<(), Box<dyn std::error::Error>> {
+
+        for (bus_number, bus) in self.buses.iter_mut().enumerate() {
+            bus.status = dali_manager.controller.get_bus_status(bus_number)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn interactive_setup(&mut self, dali_manager: &mut DaliManager) -> Result<SetupAction, Box<dyn std::error::Error>> {
 
         loop {
+            if let Err(e) = self.update_bus_status(dali_manager) {
+                println!("Warning: error when trying to obtain bus status: {}", e);
+            }
+            
             self.display();
 
             let command = Config::prompt_for_string("Controller: r=rename, b=bus setup, q=quit, s=start", Some("s"))?;
 
             if let Some(command) = command.chars().next() {
                 match command {
-                    's' => return Ok(()),
-                    'q' => return Err(SetupError::UserQuit),
+                    's' => return Ok(SetupAction::Start),
+                    'q' => return Ok(SetupAction::Quit),
                     'r' => {
                         self.name = Config::prompt_for_string("Name", Some(&self.name))?;
                     },
@@ -620,27 +656,5 @@ impl Config {
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::setup::Config;
-
-    #[test]
-    fn test_create_new_config() {
-        let config = Config::new("test", 4);
-
-        config.save("dali.json").expect("Save failed");
-    }
-
-    #[test]
-    fn test_load_config() {
-        test_create_new_config();
-
-        let config = Config::load("dali.json").expect("Loading failed");
-
-        assert_eq!(config.name, "test");
-        assert_eq!(config.buses[0].description, "Bus-1");
     }
 }
