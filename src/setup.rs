@@ -473,18 +473,35 @@ impl BusConfig {
     }
 
     pub fn interactive_setup(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), Box<dyn std::error::Error>> {
-        loop {
-            self.display(bus_number);
-            let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, b=back", Some("b"))?;
+        if !matches!(self.status, BusStatus::Active) {
+            loop {
+                self.display(bus_number);
+                println!("Bus {}!", if matches!(self.status,BusStatus::NoPower) { "has no power"} else { "is overloaded"});
+                let command = Config::prompt_for_string("Bus: r=rename, b=back", Some("b"))?;
 
-            if let Some(command) = command.chars().next() {
-                match command {
-                    'b' => return Ok(()),
-                    'r' => self.description = Config::prompt_for_string("Description", Some(&self.description))?,
-                    'a' => self.assign_addresses(dali_manager)?,
-                    'g' => self.interactive_setup_groups(dali_manager, bus_number)?,
-                    'l' => self.interactive_setup_lights(dali_manager, bus_number)?,
-                    _ => println!("Invalid command"),
+                if let Some(command) = command.chars().next() {
+                    match command {
+                        'b' => return Ok(()),
+                        'r' => self.description = Config::prompt_for_string("Description", Some(&self.description))?,
+                        _ => println!("Invalid command"),
+                    }
+                }
+            }
+        }
+        else {
+            loop {
+                self.display(bus_number);
+                let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, b=back", Some("b"))?;
+
+                if let Some(command) = command.chars().next() {
+                    match command {
+                        'b' => return Ok(()),
+                        'r' => self.description = Config::prompt_for_string("Description", Some(&self.description))?,
+                        'a' => self.assign_addresses(dali_manager)?,
+                        'g' => self.interactive_setup_groups(dali_manager, bus_number)?,
+                        'l' => self.interactive_setup_lights(dali_manager, bus_number)?,
+                        _ => println!("Invalid command"),
+                    }
                 }
             }
         }
