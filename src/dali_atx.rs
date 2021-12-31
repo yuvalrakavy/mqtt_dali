@@ -46,12 +46,20 @@ pub struct DaliAtx {
 }
 
 impl DaliController for DaliAtx {
-    fn send_2_bytes(&mut self, _bus: usize, _b1: u8, _b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
-        todo!()
+    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+        self.send_command(bus, 'h')?;
+        self.send_byte_value(b1)?;
+        self.send_byte_value(b2)?;
+        self.send_nl()?;
+        self.receive_reply(bus)
     }
 
-    fn send_2_bytes_repeat(&mut self, _bus: usize, _b1: u8, _b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
-        todo!()
+    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+        self.send_command(bus, 't')?;
+        self.send_byte_value(b1)?;
+        self.send_byte_value(b2)?;
+        self.send_nl()?;
+        self.receive_reply(bus)
     }
 
     fn get_bus_status(&mut self, bus: usize) -> Result<BusStatus, Box<dyn std::error::Error>> {
@@ -73,8 +81,12 @@ impl DaliController for DaliAtx {
 
 impl DaliAtx {
     pub fn try_new(config: &mut Config, debug: bool) -> Result<Box<dyn DaliController>, Box<dyn std::error::Error>> {
-        let mut uart = Uart::with_path("/dev/serial0", 19200, rppal::uart::Parity::None, 8, 1).unwrap();
+        let mut uart = Uart::with_path("/dev/serial0", 19200, rppal::uart::Parity::None, 8, 1)?;
         let mut buffer = [0u8; 8];
+
+        // Read any pending characters
+        uart.set_read_mode(0,Duration::from_millis(0))?;
+        uart.read(&mut buffer)?;
 
         // Send v\n command to get board hardware version, firmware version and number of DALI buses
         // Expected reply is Vxxyyzz\n where:
@@ -183,7 +195,7 @@ impl DaliAtx {
         ) 
     }
 
-    fn receive_reply(&mut self, expected_bus: usize) -> Result<DaliBusResult, DaliAtxError> {
+    fn receive_reply(&mut self, expected_bus: usize) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
         self.uart.set_read_mode(1, Duration::from_secs(1))?;
 
         let (bus, reply_type) = {
@@ -222,11 +234,11 @@ impl DaliAtx {
                 'Z' => { self.receive_nl()?; Ok(DaliBusResult::TransmitCollision) },
                 'N' => { self.receive_nl()?; Ok(DaliBusResult::None) },
 
-                _ => Err(DaliAtxError::UnexpectedReply(reply_type))
+                _ => Err(Box::new(DaliAtxError::UnexpectedReply(reply_type)))
             }
 
         } else {
-            Err(DaliAtxError::UnexpectedBus(expected_bus, bus))
+            Err(Box::new(DaliAtxError::UnexpectedBus(expected_bus, bus)))
         }
     }
 }
