@@ -10,7 +10,6 @@ pub enum DaliBusResult {
     Value8 (u8),
     Value16 (u16),
     Value24 (u32),
-
 }
 
 #[derive(Debug)]
@@ -44,6 +43,7 @@ pub struct DaliManager<'a> {
     pub debug: bool,
 }
 
+// Callback: (short_address, step)
 pub type DaliBusProgressCallback = dyn Fn(u8, u8);
 
 pub struct DaliBusIterator {

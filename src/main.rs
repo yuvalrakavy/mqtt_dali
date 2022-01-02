@@ -53,7 +53,7 @@ async fn main()  {
         }
     }
 
-    let mut mqtt = mqtt::MqttDali::new(&mut dali_manager, &config, &args.mqtt);
+    let mut mqtt = mqtt::MqttDali::new(&mut dali_manager, &mut config, &args.mqtt);
 
     mqtt.run().await.unwrap();
 }
