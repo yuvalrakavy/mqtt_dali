@@ -287,7 +287,7 @@ impl <'a> MqttDali<'a> {
                         Ok(command) => {
                             println!("Got command {:?}", command);
                             let command_result = match command {
-                                DaliCommand::SetLightBrightness { bus, channel, value} => { republish_config = false;  self.dali_manager.set_light_brightness_async(bus, channel, value).await },
+                                DaliCommand::SetLightBrightness { bus, address, value} => { republish_config = false;  self.dali_manager.set_light_brightness_async(bus, address, value).await },
                                 DaliCommand::SetGroupBrightness { bus, group, value } => { republish_config = false; self.dali_manager.set_group_brightness_async(bus, group, value).await },
                                 DaliCommand::UpdateBusStatus => self.update_bus_status(),
                                 DaliCommand::RenameBus { bus: bus_number, ref name } => self.rename_bus(bus_number, name),

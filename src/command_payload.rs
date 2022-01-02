@@ -6,7 +6,7 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 #[serde(tag="command")]
 pub enum DaliCommand {
-    SetLightBrightness{bus: usize, channel: u8, value: u8},    
+    SetLightBrightness{bus: usize, address: u8, value: u8},    
     SetGroupBrightness{bus: usize, group: u8, value: u8},
 
     UpdateBusStatus,
@@ -39,7 +39,7 @@ mod tests {
 
         let c: DaliCommand = serde_json::from_str(&json).unwrap();
         match c {
-            DaliCommand::SetLightBrightness { bus: 1, channel: 5, value: 48 } => assert!(true),
+            DaliCommand::SetLightBrightness { bus: 1, address: 5, value: 48 } => assert!(true),
             _ => assert!(false),
         }
     }
