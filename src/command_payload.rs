@@ -12,16 +12,14 @@ pub enum DaliCommand {
     UpdateBusStatus,
     RenameBus {bus: usize, name: String},
     RenameLight {bus: usize, address: u8, name: String},
-    RenameGroup {bus: usize, address: u8, name: String},
+    RenameGroup {bus: usize, group: u8, name: String},
     NewGroup { bus: usize, group: u8},
     AddToGroup {bus: usize, group: u8, address: u8},
     RemoveGroup { bus: usize, group: u8},
     RemoveFromGroup {bus: usize, group: u8, address: u8},
     FindAllLights {bus: usize},
     FindNewLights {bus: usize},
-
 }
-
 #[cfg(test)]
 mod tests {
     use crate::command_payload::DaliCommand;

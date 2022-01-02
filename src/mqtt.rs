@@ -68,11 +68,9 @@ impl <'a> MqttDali<'a> {
     }
 
     fn get_status_topic(&self) -> String {
-        let mut topic = "DALI/Controllers/".to_owned();
+        let mut topic = "DALI/Status/".to_owned();
     
         topic.push_str(&self.config.name);
-        topic.push_str("/Status");
-    
         topic
     }
 
@@ -266,7 +264,7 @@ impl <'a> MqttDali<'a> {
         Ok(DaliBusResult::None)
     }
 
-    pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn run(&mut self, config_filename: &str) -> Result<(), Box<dyn Error>> {
         let config_topic = &self.get_config_topic();
         let status_topic = &self.get_status_topic();
 
@@ -292,7 +290,7 @@ impl <'a> MqttDali<'a> {
                                 DaliCommand::UpdateBusStatus => self.update_bus_status(),
                                 DaliCommand::RenameBus { bus: bus_number, ref name } => self.rename_bus(bus_number, name),
                                 DaliCommand::RenameLight { bus, address, ref name } => self.rename_light(bus, address, name),
-                                DaliCommand::RenameGroup { bus, address, ref name } => self.rename_group(bus, address, name),
+                                DaliCommand::RenameGroup { bus, group, ref name } => self.rename_group(bus, group, name),
                                 DaliCommand::NewGroup { bus, group } => self.new_group(bus, group),
                                 DaliCommand::RemoveGroup { bus, group } => self.remove_group(bus, group),
                                 DaliCommand::AddToGroup {bus, group, address} => { self.add_to_group(bus, group, address) },
@@ -302,14 +300,15 @@ impl <'a> MqttDali<'a> {
                             };
 
                             if let Err(e) = command_result {
-                                let error_message = format!("Command {:?} completed with error {}", command, e);
+                                let error_message = serde_json::to_string(&format!("Command {:?} completed with error {}", command, e))?;
 
                                 println!("{}", error_message);
                                 self.mqtt_client.publish(status_topic, QoS::AtMostOnce, false, error_message.as_bytes()).await?;
                             } else {
-                                self.mqtt_client.publish(status_topic, QoS::AtMostOnce, false, "OK".as_bytes()).await?;
+                                self.mqtt_client.publish(status_topic, QoS::AtMostOnce, false, "\"OK\"".as_bytes()).await?;
                                 if republish_config {
                                     MqttDali::publish_config(&self.mqtt_client, config_topic, self.config).await?;
+                                    self.config.save(config_filename).expect("Saving config file");
                                 }
                             }
                         },
