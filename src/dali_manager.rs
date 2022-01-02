@@ -84,8 +84,8 @@ impl<'manager> DaliManager<'manager> {
         if group < 16 { 0x80 | (group << 1 ) } else { panic!("Invalid DALI group# {}", group) }
     }
 
-    pub async fn set_light_brightness_async(&mut self, bus: usize, channel: u8, value: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
-        self.controller.send_2_bytes(bus, DaliManager::to_light_short_address(channel), value)
+    pub async fn set_light_brightness_async(&mut self, bus: usize, short_address: u8, value: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+        self.controller.send_2_bytes(bus, DaliManager::to_light_short_address(short_address), value)
     }
 
     pub fn set_light_brightness(&mut self, bus: usize, short_address: u8, level: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
