@@ -25,10 +25,7 @@ async fn main()  {
         opt debug: bool=false, desc: "Generate debug output";
     }.parse_or_exit();
 
-    let mut setup = args.setup;
-
     let mut config = if !std::path::Path::new(&args.config).exists() {
-        setup = true;
         Config::interactive_new().unwrap()
     }
     else {
@@ -43,7 +40,7 @@ async fn main()  {
 
     let mut dali_manager = dali_manager::DaliManager::new(controller.as_mut(), args.debug);
 
-    if setup {
+    if args.setup {
         let setup_result = config.interactive_setup(& mut dali_manager).expect("Setup failed");
 
         config.save(&args.config).unwrap();
