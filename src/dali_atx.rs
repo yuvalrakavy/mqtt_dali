@@ -185,7 +185,7 @@ impl DaliAtx {
     }
 
     fn receive_value8(&self, buffer: &[u8]) -> Result<u8, DaliAtxError> {
-        DaliAtx::get_byte_value(&buffer)
+        DaliAtx::get_byte_value(buffer)
     }
 
     fn receive_value16(&self, buffer: &[u8]) -> Result<u16, DaliAtxError> {
@@ -235,7 +235,7 @@ impl DaliAtx {
                 let reply_type = line[i];
                 i += 1;
 
-                (0 as usize, reply_type)
+                (0, reply_type)
             }
         };
 

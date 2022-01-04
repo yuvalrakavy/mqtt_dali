@@ -177,11 +177,9 @@ impl <'a> MqttDali<'a> {
                 let group = bus.groups.get_mut(index).unwrap();
 
                 // If group is not empty, remove membership of all members from this group
-                if group.members.len() > 0 {
-                    if MqttDali::check_bus_status(bus_number, &bus.status).is_ok() {
-                        for short_address in group.members.iter() {
-                            self.dali_manager.remove_from_group(bus_number, group_address, *short_address)?;
-                        }
+                if !group.members.is_empty() && MqttDali::check_bus_status(bus_number, &bus.status).is_ok() {
+                    for short_address in group.members.iter() {
+                        self.dali_manager.remove_from_group(bus_number, group_address, *short_address)?;
                     }
                 }
 
@@ -204,7 +202,7 @@ impl <'a> MqttDali<'a> {
 
             // Create group if not found
             if group.is_none() {
-                bus.groups.push( Group { description: format!("Group {}", group_address), group_address: group_address, members: Vec::new()});
+                bus.groups.push( Group { description: format!("Group {}", group_address), group_address, members: Vec::new()});
             }
 
             MqttDali::check_bus_status(bus_number, &bus.status)?;
@@ -250,7 +248,7 @@ impl <'a> MqttDali<'a> {
 
         while device_iterator.find_next_device(self.dali_manager)?.is_some() {
             let short_address = (0..64u8).find(|short_address|
-                self.config.buses[bus_number].channels.iter().find(|channel| channel.short_address == *short_address).is_none()
+                !self.config.buses[bus_number].channels.iter().any(|channel| channel.short_address == *short_address)
             ).expect("Unable to find unused short address!!");
 
             self.dali_manager.program_short_address(bus_number, short_address)?;
