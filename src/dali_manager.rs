@@ -1,4 +1,4 @@
-
+use log::{debug, trace};
 use crate::dali_commands;
 use crate::config_payload::BusStatus;
 
@@ -39,8 +39,6 @@ pub trait DaliController {
 
 pub struct DaliManager<'a> {
     pub controller: &'a mut dyn DaliController,
-    #[allow(dead_code)]
-    pub debug: bool,
 }
 
 // Callback: (short_address, step)
@@ -62,8 +60,8 @@ pub enum DaliDeviceSelection {
 }
 
 impl<'manager> DaliManager<'manager> {
-    pub fn new(controller: &'manager mut dyn DaliController, debug: bool) -> DaliManager {
-        DaliManager { controller, debug }
+    pub fn new(controller: &'manager mut dyn DaliController) -> DaliManager {
+        DaliManager { controller }
     }
 
     #[allow(dead_code)]
@@ -133,9 +131,7 @@ impl<'manager> DaliManager<'manager> {
         let b1 = if (command & 0x100) != 0 { (command & 0xff) as u8 } else { 0xff };
         let b2 = if (command & 0x100) != 0 { parameter } else { command as u8 };
 
-        if self.debug { 
-            println!("Send: {}", description);
-        }
+        debug!("Send: {}", description);
 
         if repeat {
             self.controller.send_2_bytes_repeat(bus, b1, b2)
@@ -222,9 +218,7 @@ impl DaliBusIterator {
         let mut step = 0;
 
         while delta > 0 {
-            if dali_manager.debug {
-                println!("find_next_device: Send search address {}", search_address);
-            }
+            trace!("find_next_device: Send search address {}", search_address);
 
             self.send_search_address(dali_manager, search_address)?;
 

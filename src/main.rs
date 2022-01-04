@@ -22,9 +22,10 @@ async fn main()  {
         opt emulation:bool = false, desc: "Use hardware emulation (for debugging)";
         opt setup:bool=false, desc: "Setup mode";
         opt config: String = String::from("dali.json"), desc: "Configuration filename (dali.json)";
-        opt debug: bool=false, desc: "Generate debug output";
     }.parse_or_exit();
 
+    env_logger::init();
+    
     let mut config = if !std::path::Path::new(&args.config).exists() {
         Config::interactive_new().unwrap()
     }
@@ -33,12 +34,12 @@ async fn main()  {
     };
 
     let mut controller = if args.emulation {
-        DaliControllerEmulator::try_new(&mut config, args.debug)
+        DaliControllerEmulator::try_new(&mut config)
     } else { 
-        DaliAtx::try_new(&mut config, args.debug)
+        DaliAtx::try_new(&mut config)
     }.expect("Error when initializing DALI controller");
 
-    let mut dali_manager = dali_manager::DaliManager::new(controller.as_mut(), args.debug);
+    let mut dali_manager = dali_manager::DaliManager::new(controller.as_mut());
 
     if args.setup {
         let setup_result = config.interactive_setup(& mut dali_manager).expect("Setup failed");

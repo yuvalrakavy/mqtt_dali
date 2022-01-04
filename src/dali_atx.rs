@@ -1,6 +1,7 @@
 use std::ascii::escape_default;
 use std::str;
 use std::time::Duration;
+use log::{trace, log_enabled, Level::Trace};
 use rppal::{uart, uart::Uart};
 
 use crate::dali_manager::{DaliController, DaliBusResult};
@@ -43,8 +44,6 @@ impl From<uart::Error> for DaliAtxError {
 
 pub struct DaliAtx {
     uart: Uart,
-    debug: bool,
-
     debug_write_buffer: Vec<u8>,
 }
 
@@ -83,7 +82,7 @@ impl DaliController for DaliAtx {
 }
 
 impl DaliAtx {
-    pub fn try_new(config: &mut Config, debug: bool) -> Result<Box<dyn DaliController>, Box<dyn std::error::Error>> {
+    pub fn try_new(config: &mut Config) -> Result<Box<dyn DaliController>, Box<dyn std::error::Error>> {
         let mut uart = Uart::with_path("/dev/serial0", 19200, rppal::uart::Parity::None, 8, 1)?;
         let mut buffer = [0u8; 8];
 
@@ -114,7 +113,7 @@ impl DaliAtx {
             return Err(Box::new(DaliAtxError::MismatchBusCount(config.buses.len(), bus_count)))
         }
 
-        Ok(Box::new(DaliAtx { uart, debug, debug_write_buffer: Vec::new() }))
+        Ok(Box::new(DaliAtx { uart, debug_write_buffer: Vec::new() }))
     }
 
     fn to_nice_string(bs: &[u8]) -> String {
@@ -127,12 +126,12 @@ impl DaliAtx {
     }
     
     fn flush_debug_write(&mut self) {
-        println!("UART sent: {}", DaliAtx::to_nice_string(self.debug_write_buffer.as_slice()));
+        trace!("UART sent: {}", DaliAtx::to_nice_string(self.debug_write_buffer.as_slice()));
         self.debug_write_buffer.clear();
     }
 
     fn do_write(&mut self, buffer: &[u8]) -> rppal::uart::Result<usize> {
-        if self.debug {
+        if log_enabled!(Trace) {
             for b in buffer {
                 self.debug_write_buffer.push(*b);
                 if *b == b'\n' {
@@ -213,9 +212,7 @@ impl DaliAtx {
             line.push(byte_buffer[0]);
 
             if byte_buffer[0] == b'\n' {
-                if self.debug {
-                    println!("Got reply {}", DaliAtx::to_nice_string(line.as_slice()));
-                }
+                trace!("Got reply {}", DaliAtx::to_nice_string(line.as_slice()));
                 break line;
             }
         })

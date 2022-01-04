@@ -1,3 +1,4 @@
+use log::{log_enabled, Level::Trace};
 use std::{path::Path, fs::File, io, io::Write, fmt};
 use crate::{config_payload::{Config, BusConfig, BusStatus, Channel, Group}, dali_manager::{DaliManager, DaliBusIterator, DaliDeviceSelection}};
 
@@ -173,10 +174,9 @@ impl BusConfig {
                         let mut count = 0;
                         let prompt_for_each = Config::prompt_for_string("Assign all: a=auto, p=prompt for short-address/description", Some("a"))?;
                         let prompt_for_each = !prompt_for_each.starts_with('a');
-                        let debug = dali_manager.debug;
 
                         let mut dali_bus_iterator  = DaliBusIterator::new(dali_manager, self.bus, DaliDeviceSelection::All,
-                             if debug { None } else { 
+                             if log_enabled!(Trace) { None } else { 
                                     Some(Box::new(|n, s| {
                                         print!("\r{:2} [{:23}]", n, "*".repeat(s as usize + 1));
                                         io::stdout().flush().unwrap();
@@ -185,7 +185,7 @@ impl BusConfig {
                         self.channels = Vec::new();
 
                         while dali_bus_iterator.find_next_device(dali_manager)?.is_some() {
-                            if !dali_manager.debug {
+                            if !log_enabled!(Trace) {
                                 println!();
                             }
 

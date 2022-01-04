@@ -1,4 +1,5 @@
 use std::time::Duration;
+use log::{error, debug};
 use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, LastWill};
 use std::error::Error;
 use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection};
@@ -283,7 +284,7 @@ impl <'a> MqttDali<'a> {
 
                     match serde_json::from_slice(payload.as_ref()) as serde_json::Result<DaliCommand> {
                         Ok(command) => {
-                            println!("Got command {:?}", command);
+                            debug!("Got command {:?}", command);
                             let command_result = match command {
                                 DaliCommand::SetLightBrightness { bus, address, value} => { republish_config = false;  self.dali_manager.set_light_brightness_async(bus, address, value).await },
                                 DaliCommand::SetGroupBrightness { bus, group, value } => { republish_config = false; self.dali_manager.set_group_brightness_async(bus, group, value).await },
@@ -302,7 +303,7 @@ impl <'a> MqttDali<'a> {
                             if let Err(e) = command_result {
                                 let error_message = serde_json::to_string(&format!("Command {:?} completed with error {}", command, e))?;
 
-                                println!("{}", error_message);
+                                error!("{}", error_message);
                                 self.mqtt_client.publish(status_topic, QoS::AtMostOnce, false, error_message.as_bytes()).await?;
                             } else {
                                 self.mqtt_client.publish(status_topic, QoS::AtMostOnce, false, "\"OK\"".as_bytes()).await?;
@@ -312,12 +313,12 @@ impl <'a> MqttDali<'a> {
                                 }
                             }
                         },
-                        Err(e) => println!("Invalid payload received on {}: {}", command_topic, e),
+                        Err(e) => error!("Invalid payload received on {}: {}", command_topic, e),
                     }
                         
                 }
                 else {
-                    println!("Got publish on unexpected topic {}", topic);
+                    error!("Got publish on unexpected topic {}", topic);
                 }
             }
         }
