@@ -1,0 +1,29 @@
+
+# Remeber to do:
+#
+#  systemctl enable systemd-networkd.service systemd-networkd-wait-online.service
+#
+# In /etc/systemd/network directory add a file named local.network with:
+#
+# [Match]
+# Name=eth0 | wlan0 
+#
+# [Network]
+# DHCP=v4
+#
+
+[Unit]
+Description=DALI controller
+After=systemd-networkd-wait-online.service
+Wants=systemd-networkd-wait-online.service
+
+[Service]
+ExecStart=/home/pi/mqtt_dali control-bz
+WorkingDirectory=/home/pi
+StandardOutput=file:/home/pi/logs/dali.log
+StandardError=file:/home/pi/logs/dali.log
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
