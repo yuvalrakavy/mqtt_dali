@@ -196,9 +196,9 @@ impl DaliBusIterator {
         self.previous_mid_byte = Some((search_address >> 8) as u8);
         self.previous_high_byte = Some((search_address >> 16) as u8);
 
-        if let Some(low) = low { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRL, low, false, &format!("Set seach address low: {}", low))?; }
-        if let Some(mid) = mid { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRM, mid, false, &format!("Set seach address mid: {}", mid))?; }
-        if let Some(high) = high { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRH, high, false, &format!("Set seach address high: {}", high))?; }
+        if let Some(low) = low { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRL, low, false, &format!("Set search address low: {}", low))?; }
+        if let Some(mid) = mid { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRM, mid, false, &format!("Set search address mid: {}", mid))?; }
+        if let Some(high) = high { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRH, high, false, &format!("Set search address high: {}", high))?; }
 
         Ok(DaliBusResult::None)
     }
