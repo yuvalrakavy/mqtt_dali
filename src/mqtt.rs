@@ -1,5 +1,5 @@
 use std::time::Duration;
-use log::{error, debug};
+use log::{error, debug, trace};
 use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, LastWill};
 use std::error::Error;
 use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection};
@@ -22,7 +22,7 @@ enum CommandError {
     BusHasNoPower(usize),
     BusOverloaded(usize),
     InvalidBusStatus(usize),
-    GroupAleadyExist(usize, u8),
+    GroupAlreadyExist(usize, u8),
     NoSuchGroup(usize, u8),
 }
 
@@ -35,7 +35,7 @@ impl std::fmt::Display for CommandError {
             CommandError::BusHasNoPower(bus_number) => write!(f, "Bus {} has no power", bus_number),
             CommandError::BusOverloaded(bus_number) => write!(f, "Bus {} is overloaded", bus_number),
             CommandError::InvalidBusStatus(bus_number) => write!(f, "Bus {} has invalid status", bus_number),
-            CommandError::GroupAleadyExist(bus_number, group_address) => write!(f, "Bus {} has already has group {}", bus_number, group_address),
+            CommandError::GroupAlreadyExist(bus_number, group_address) => write!(f, "Bus {} has already has group {}", bus_number, group_address),
             CommandError::NoSuchGroup(bus_number, group_address) => write!(f, "Bus {} has no group {} ", bus_number, group_address),
         }
     }
@@ -159,7 +159,7 @@ impl <'a> MqttDali<'a> {
     fn new_group(&mut self, bus_number: usize, group_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             if bus.groups.iter().any(|g| g.group_address == group_address) {
-                Err(Box::new(CommandError::GroupAleadyExist(bus_number, group_address)))
+                Err(Box::new(CommandError::GroupAlreadyExist(bus_number, group_address)))
             } else {
                 bus.groups.push( Group { description: format!("Group {}", group_address), group_address, members: Vec::new() });
                 Ok(DaliBusResult::None)
@@ -207,7 +207,9 @@ impl <'a> MqttDali<'a> {
             self.dali_manager.add_to_group(bus_number, group_address, short_address)?;
 
             let group = bus.groups.iter_mut().find(|g| g.group_address == group_address).unwrap();
-            group.members.push(short_address);
+            if !group.members.contains(&short_address) {
+                group.members.push(short_address);
+            }
 
             Ok(DaliBusResult::None)
         }  else {
@@ -231,6 +233,47 @@ impl <'a> MqttDali<'a> {
         }  else {
             Err(Box::new(CommandError::BusNumber(bus_number)))
         }
+    }
+
+    fn match_group(&mut self, bus_number: usize, group_address: u8, light_name_pattern: &str) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+        let re = regex::Regex::new(light_name_pattern)?;
+
+        if let Some(bus) = self.config.buses.get_mut(bus_number) {
+            MqttDali::check_bus_status(bus_number, &bus.status)?;
+
+            let group = bus.groups.iter_mut().find(|g| g.group_address == group_address);
+
+            // Create group if not found
+            if group.is_none() {
+                bus.groups.push( Group { description: format!("Group {}", group_address), group_address, members: Vec::new()});
+            }
+
+            let group = bus.groups.iter_mut().find(|g| g.group_address == group_address).unwrap();
+
+            for light in bus.channels.iter() {
+                if re.is_match(&light.description) {
+                    // If this light is not member of the group, add it
+                    if !group.members.contains(&light.short_address) {
+                        trace!("Light {}: {} matches {} - added to group {}", light.short_address, light.description, light_name_pattern, group_address);
+                        self.dali_manager.add_to_group(bus_number, group_address, light.short_address)?;
+                        group.members.push(light.short_address);
+                    }
+
+                } else {
+                    // If this light is member of the group, remove it since its name does not match the pattern
+                    if let Some(index) = group.members.iter().position(|short_address|  *short_address == light.short_address) {
+                        trace!("Light {}: {} does not match {} - removed from group {}", light.short_address, light.description, light_name_pattern, group_address);
+                        self.dali_manager.remove_from_group(bus_number, group_address, light.short_address)?;
+                        group.members.remove(index);
+                    }
+                }
+            }
+
+            Ok(DaliBusResult::None)
+        }  else {
+            Err(Box::new(CommandError::BusNumber(bus_number)))
+        }
+
     }
 
     async fn find_lights(&mut self, config_topic: &str, bus_number: usize, selection: DaliDeviceSelection) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
@@ -289,6 +332,7 @@ impl <'a> MqttDali<'a> {
                                 DaliCommand::RenameLight { bus, address, ref name } => self.rename_light(bus, address, name),
                                 DaliCommand::RenameGroup { bus, group, ref name } => self.rename_group(bus, group, name),
                                 DaliCommand::NewGroup { bus, group } => self.new_group(bus, group),
+                                DaliCommand::MatchGroup { bus, group, ref light_name_pattern} => self.match_group(bus, group, light_name_pattern),
                                 DaliCommand::RemoveGroup { bus, group } => self.remove_group(bus, group),
                                 DaliCommand::AddToGroup {bus, group, address} => { self.add_to_group(bus, group, address) },
                                 DaliCommand::RemoveFromGroup {bus, group, address} => { self.remove_from_group(bus, group, address) },

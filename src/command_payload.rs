@@ -15,6 +15,7 @@ pub enum DaliCommand {
     RenameGroup {bus: usize, group: u8, name: String},
     NewGroup { bus: usize, group: u8},
     AddToGroup {bus: usize, group: u8, address: u8},
+    MatchGroup {bus: usize, group: u8, light_name_pattern: String},
     RemoveGroup { bus: usize, group: u8},
     RemoveFromGroup {bus: usize, group: u8, address: u8},
     FindAllLights {bus: usize},

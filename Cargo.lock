@@ -226,6 +226,7 @@ dependencies = [
  "env_logger",
  "log",
  "rand",
+ "regex",
  "rppal",
  "rumqttc",
  "rustop",
