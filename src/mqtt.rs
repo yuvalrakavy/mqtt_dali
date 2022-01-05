@@ -195,8 +195,6 @@ impl <'a> MqttDali<'a> {
     }
 
     fn add_to_group(&mut self, bus_number: usize, group_address: u8, short_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
-        self.update_bus_status()?;
-
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             let group = bus.groups.iter_mut().find(|g| g.group_address == group_address);
 
