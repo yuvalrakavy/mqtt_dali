@@ -22,7 +22,7 @@ enum CommandError {
     BusHasNoPower(usize),
     BusOverloaded(usize),
     InvalidBusStatus(usize),
-    GroupAlreadyExist(usize, u8),
+    NoMoreGroups(usize),
     NoSuchGroup(usize, u8),
 }
 
@@ -35,7 +35,7 @@ impl std::fmt::Display for CommandError {
             CommandError::BusHasNoPower(bus_number) => write!(f, "Bus {} has no power", bus_number),
             CommandError::BusOverloaded(bus_number) => write!(f, "Bus {} is overloaded", bus_number),
             CommandError::InvalidBusStatus(bus_number) => write!(f, "Bus {} has invalid status", bus_number),
-            CommandError::GroupAlreadyExist(bus_number, group_address) => write!(f, "Bus {} has already has group {}", bus_number, group_address),
+            CommandError::NoMoreGroups(bus_number) => write!(f, "No more groups can be added to bus {}", bus_number),
             CommandError::NoSuchGroup(bus_number, group_address) => write!(f, "Bus {} has no group {} ", bus_number, group_address),
         }
     }
@@ -156,13 +156,16 @@ impl <'a> MqttDali<'a> {
         }
     }
 
-    fn new_group(&mut self, bus_number: usize, group_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn new_group(&mut self, bus_number: usize) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
-            if bus.groups.iter().any(|g| g.group_address == group_address) {
-                Err(Box::new(CommandError::GroupAlreadyExist(bus_number, group_address)))
-            } else {
+            let group_address = (0u8..16u8).find(|group_address| !bus.groups.iter().any(|group| group.group_address == *group_address));
+
+            if let Some(group_address) = group_address {
                 bus.groups.push( Group { description: format!("Group {}", group_address), group_address, members: Vec::new() });
                 Ok(DaliBusResult::None)
+                
+            } else {
+                Err(Box::new(CommandError::NoMoreGroups(bus_number)))
             }
         }  else {
             Err(Box::new(CommandError::BusNumber(bus_number)))
@@ -170,9 +173,9 @@ impl <'a> MqttDali<'a> {
     }
 
     fn remove_group(&mut self, bus_number: usize, group_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
-        self.update_bus_status()?;
-
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
+            MqttDali::check_bus_status(bus_number, &bus.status)?;
+
             if let Some(index) = bus.groups.iter().position(|g| g.group_address == group_address) {
                 let group = bus.groups.get_mut(index).unwrap();
 
@@ -331,8 +334,8 @@ impl <'a> MqttDali<'a> {
                                 DaliCommand::RenameBus { bus: bus_number, ref name } => self.rename_bus(bus_number, name),
                                 DaliCommand::RenameLight { bus, address, ref name } => self.rename_light(bus, address, name),
                                 DaliCommand::RenameGroup { bus, group, ref name } => self.rename_group(bus, group, name),
-                                DaliCommand::NewGroup { bus, group } => self.new_group(bus, group),
-                                DaliCommand::MatchGroup { bus, group, ref light_name_pattern} => self.match_group(bus, group, light_name_pattern),
+                                DaliCommand::NewGroup { bus } => self.new_group(bus),
+                                DaliCommand::MatchGroup { bus, group, ref pattern} => self.match_group(bus, group, pattern),
                                 DaliCommand::RemoveGroup { bus, group } => self.remove_group(bus, group),
                                 DaliCommand::AddToGroup {bus, group, address} => { self.add_to_group(bus, group, address) },
                                 DaliCommand::RemoveFromGroup {bus, group, address} => { self.remove_from_group(bus, group, address) },
