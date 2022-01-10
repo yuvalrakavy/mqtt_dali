@@ -17,6 +17,7 @@ pub enum DaliManagerError {
     ShortAddress(u8),
     GroupAddress(u8),
     Command(u16),
+    UnexpectedStatus(DaliBusResult),
 }
 
 impl std::fmt::Display for DaliManagerError {
@@ -25,6 +26,7 @@ impl std::fmt::Display for DaliManagerError {
             DaliManagerError::ShortAddress(short_address) => write!(f, "Invalid short address: {}", short_address),
             DaliManagerError::GroupAddress(group_address) => write!(f, "Invalid group address: {}", group_address),
             DaliManagerError::Command(command) => write!(f, "Invalid command: {}", command),
+            DaliManagerError::UnexpectedStatus(bus_result) => write!(f, "Unexpected light status {:?}", bus_result),
         }
     }
 }
@@ -57,6 +59,48 @@ pub enum DaliDeviceSelection {
     All,
     WithoutShortAddress,
     Address(u8),
+}
+
+#[derive(Debug)]
+pub struct LightStatus(u8);
+
+impl From<u8> for LightStatus {
+    fn from(v: u8) -> Self {
+        LightStatus(v)
+    }
+}
+
+impl std::fmt::Display for LightStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut d = String::new();
+
+        if (self.0 & 0x01) != 0 {
+            d.push_str(" Not-OK");
+        }
+        if (self.0 & 0x02) != 0 {
+            d.push_str(" Lamp-Failure");
+        }
+        if (self.0 & 0x04) != 0 {
+            d.push_str(" Lamp-ON");
+        }
+        if (self.0 & 0x08) != 0 {
+            d.push_str(" Limit-error");
+        }
+        if (self.0 & 0x10) != 0 {
+            d.push_str(" Fade-In-Progress");
+        }
+        if (self.0 & 0x20) != 0 {
+            d.push_str(" Reset-state");
+        }
+        if (self.0 & 0x40) != 0 {
+            d.push_str(" Missing-short-address");
+        }
+        if (self.0 & 0x80) != 0 {
+            d.push_str(" Power-Failure");
+        }
+
+        write!(f, "{:#04x}: {}", self.0, d)
+    }
 }
 
 impl<'manager> DaliManager<'manager> {
@@ -156,6 +200,14 @@ impl<'manager> DaliManager<'manager> {
     pub fn add_to_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
         self.send_command_to_address(bus, dali_commands::DALI_ADD_TO_GROUP0+(group_address as u16), short_address, true)
     }
+
+    pub fn query_status(&mut self, bus: usize, short_address: u8) -> Result<LightStatus, Box<dyn std::error::Error>> {
+        match self.send_command_to_address(bus, dali_commands::DALI_QUERY_STATUS, short_address, false) {
+            Ok(DaliBusResult::Value8(v)) => Ok(LightStatus::from(v)),
+            Ok(bus_result) => Err(Box::new(DaliManagerError::UnexpectedStatus(bus_result))),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 impl DaliBusIterator {
@@ -167,7 +219,9 @@ impl DaliBusIterator {
         };
 
         dali_manager.broadcast_command(bus, dali_commands::DALI_INITIALISE, parameter, true, "Initialize")?;
+        std::thread::sleep(std::time::Duration::from_millis(200));
         dali_manager.broadcast_command(bus, dali_commands::DALI_RANDOMISE, 0, true, "Randomize")?;
+        std::thread::sleep(std::time::Duration::from_millis(200));
 
         Ok(DaliBusIterator {
             bus,
@@ -196,14 +250,14 @@ impl DaliBusIterator {
         self.previous_mid_byte = Some((search_address >> 8) as u8);
         self.previous_high_byte = Some((search_address >> 16) as u8);
 
-        if let Some(low) = low { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRL, low, false, &format!("Set seach address low: {}", low))?; }
-        if let Some(mid) = mid { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRM, mid, false, &format!("Set seach address mid: {}", mid))?; }
-        if let Some(high) = high { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRH, high, false, &format!("Set seach address high: {}", high))?; }
+        if let Some(low) = low { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRL, low, false, &format!("Set search address low: {}", low))?; }
+        if let Some(mid) = mid { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRM, mid, false, &format!("Set search address mid: {}", mid))?; }
+        if let Some(high) = high { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRH, high, false, &format!("Set search address high: {}", high))?; }
 
         Ok(DaliBusResult::None)
     }
 
-    fn is_random_address_le(& mut self, dali_manager: &mut DaliManager, retry: u8) -> Result<bool, Box<dyn std::error::Error>> {
+    fn is_random_address_le(&mut self, dali_manager: &mut DaliManager, retry: u8) -> Result<bool, Box<dyn std::error::Error>> {
         match dali_manager.broadcast_command(self.bus, dali_commands::DALI_COMPARE, 0, false, "Is random address le") {
             Ok(DaliBusResult::None) => if retry == 0 { Ok(false) } else { self.is_random_address_le(dali_manager, retry-1) },               // No answer
             Ok(_) => Ok(true),    // More than one yes reply

@@ -183,6 +183,7 @@ impl BusConfig {
                                     })) 
                                 }).expect("Error while initializing DALI bus iteration");
                         self.channels = Vec::new();
+                        self.groups = Vec::new();
 
                         while dali_bus_iterator.find_next_device(dali_manager)?.is_some() {
                             if !log_enabled!(Trace) {
@@ -442,7 +443,7 @@ impl BusConfig {
 
         loop {
             self.display(bus_number);
-            let command = Config::prompt_for_string("Lights: r=rename, s=set-level, b=back", Some("b"))?;
+            let command = Config::prompt_for_string("Lights: r=rename, s=set-level, q=query, *=query all, b=back", Some("b"))?;
 
             if let Some(command) = command.chars().next() {
                 match command {
@@ -465,6 +466,28 @@ impl BusConfig {
                             last_short_address = Some(short_address);
                         }
                     },
+                    'q' => {
+                        if let Some(short_address) = self.prompt_for_existing_short_address("Address", last_short_address)? {
+                            let status = dali_manager.query_status(self.bus, short_address);
+
+                            match status {
+                                Ok(status) => {
+                                    println!("Status {}", status);
+                                },
+                                Err(e) => println!("Error: {}", e),
+                            }
+                        }
+                    },
+                    '*' => {
+                        for light in self.channels.iter() {
+                            let status = dali_manager.query_status(self.bus, light.short_address);
+
+                            match status {
+                                Ok(status) => println!("Light {} ({}) - {}", light.description, light.short_address, status),
+                                Err(e) =>  println!("Light {} ({}) - Error: {}", light.description, light.short_address, e),
+                            }
+                        }
+                    }
                     _ => println!("Invalid command"),
                 }
             }

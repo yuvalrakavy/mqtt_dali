@@ -258,17 +258,21 @@ impl <'a> MqttDali<'a> {
                     // If this light is not member of the group, add it
                     if !group.members.contains(&light.short_address) {
                         trace!("Light {}: {} matches {} - added to group {}", light.short_address, light.description, light_name_pattern, group_address);
-                        self.dali_manager.add_to_group(bus_number, group_address, light.short_address)?;
                         group.members.push(light.short_address);
                     }
+
+                    std::thread::sleep(std::time::Duration::from_millis(1));
+                    self.dali_manager.add_to_group(bus_number, group_address, light.short_address)?;
 
                 } else {
                     // If this light is member of the group, remove it since its name does not match the pattern
                     if let Some(index) = group.members.iter().position(|short_address|  *short_address == light.short_address) {
                         trace!("Light {}: {} does not match {} - removed from group {}", light.short_address, light.description, light_name_pattern, group_address);
-                        self.dali_manager.remove_from_group(bus_number, group_address, light.short_address)?;
                         group.members.remove(index);
                     }
+
+                    std::thread::sleep(std::time::Duration::from_millis(1));
+                    self.dali_manager.remove_from_group(bus_number, group_address, light.short_address)?;
                 }
             }
 
