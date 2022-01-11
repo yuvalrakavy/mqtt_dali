@@ -1,6 +1,7 @@
 use log::{debug, trace};
 use crate::dali_commands;
 use crate::config_payload::BusStatus;
+use crate::command_payload::LightStatus;
 
 #[derive(Debug, Clone, Copy)]
 pub enum DaliBusResult {
@@ -59,48 +60,6 @@ pub enum DaliDeviceSelection {
     All,
     WithoutShortAddress,
     Address(u8),
-}
-
-#[derive(Debug)]
-pub struct LightStatus(u8);
-
-impl From<u8> for LightStatus {
-    fn from(v: u8) -> Self {
-        LightStatus(v)
-    }
-}
-
-impl std::fmt::Display for LightStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut d = String::new();
-
-        if (self.0 & 0x01) != 0 {
-            d.push_str(" Not-OK");
-        }
-        if (self.0 & 0x02) != 0 {
-            d.push_str(" Lamp-Failure");
-        }
-        if (self.0 & 0x04) != 0 {
-            d.push_str(" Lamp-ON");
-        }
-        if (self.0 & 0x08) != 0 {
-            d.push_str(" Limit-error");
-        }
-        if (self.0 & 0x10) != 0 {
-            d.push_str(" Fade-In-Progress");
-        }
-        if (self.0 & 0x20) != 0 {
-            d.push_str(" Reset-state");
-        }
-        if (self.0 & 0x40) != 0 {
-            d.push_str(" Missing-short-address");
-        }
-        if (self.0 & 0x80) != 0 {
-            d.push_str(" Power-Failure");
-        }
-
-        write!(f, "{:#04x}: {}", self.0, d)
-    }
 }
 
 impl<'manager> DaliManager<'manager> {
@@ -201,7 +160,7 @@ impl<'manager> DaliManager<'manager> {
         self.send_command_to_address(bus, dali_commands::DALI_ADD_TO_GROUP0+(group_address as u16), short_address, true)
     }
 
-    pub fn query_status(&mut self, bus: usize, short_address: u8) -> Result<LightStatus, Box<dyn std::error::Error>> {
+    pub fn query_light_status(&mut self, bus: usize, short_address: u8) -> Result<LightStatus, Box<dyn std::error::Error>> {
         match self.send_command_to_address(bus, dali_commands::DALI_QUERY_STATUS, short_address, false) {
             Ok(DaliBusResult::Value8(v)) => Ok(LightStatus::from(v)),
             Ok(bus_result) => Err(Box::new(DaliManagerError::UnexpectedStatus(bus_result))),

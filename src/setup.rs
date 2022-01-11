@@ -468,7 +468,7 @@ impl BusConfig {
                     },
                     'q' => {
                         if let Some(short_address) = self.prompt_for_existing_short_address("Address", last_short_address)? {
-                            let status = dali_manager.query_status(self.bus, short_address);
+                            let status = dali_manager.query_light_status(self.bus, short_address);
 
                             match status {
                                 Ok(status) => {
@@ -480,7 +480,7 @@ impl BusConfig {
                     },
                     '*' => {
                         for light in self.channels.iter() {
-                            let status = dali_manager.query_status(self.bus, light.short_address);
+                            let status = dali_manager.query_light_status(self.bus, light.short_address);
 
                             match status {
                                 Ok(status) => println!("Light {} ({}) - {}", light.description, light.short_address, status),

@@ -3,7 +3,7 @@ use log::{error, debug, trace};
 use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, LastWill};
 use std::error::Error;
 use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection};
-use crate::command_payload::{DaliCommand};
+use crate::command_payload::{DaliCommand, QueryLightReply};
 use crate::config_payload::{Config,  Group, BusStatus};
 
 
@@ -60,34 +60,23 @@ impl <'a> MqttDali<'a> {
     }
 
     fn get_command_topic(&self) -> String {
-        let mut topic = "DALI/Controllers/".to_owned();
-    
-        topic.push_str(&self.config.name);
-        topic.push_str("/Command");
-    
-        topic
+        format!("DALI/Controllers/{}/Command", self.config.name)
     }
 
     fn get_status_topic(&self) -> String {
-        let mut topic = "DALI/Status/".to_owned();
-    
-        topic.push_str(&self.config.name);
-        topic
+        format!("DALI/Status/{}", self.config.name)
     }
 
     fn get_config_topic(&self) -> String {
-        let mut topic = "DALI/Config/".to_owned();
-
-        topic.push_str(&self.config.name);
-
-        topic
+        format!("DALI/Config/{}", self.config.name)
     }
 
     fn get_is_active_topic(name: &str) -> String {
-        let mut topic = "DALI/Active/".to_owned();
+        format!("DALI/Active/{}", name)
+    }
 
-        topic.push_str(name);
-        topic
+    fn get_light_reply_topic(&self, command: &str, bus: usize, short_address: u8) -> String {
+        format!("DALI/Reply/{}/{}/Bus_{}/Address_{}", command, self.config.name, bus, short_address)
     }
 
     async fn publish_config(client: &AsyncClient, config_topic: &str, config: &Config) -> Result<(), Box<dyn Error>> {
@@ -283,6 +272,19 @@ impl <'a> MqttDali<'a> {
 
     }
 
+    async fn query_light_status(&mut self, bus: usize, short_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+        let light_status = self.dali_manager.query_light_status(bus, short_address);
+        let query_light_reply = match light_status {
+            Ok(light_status) => QueryLightReply::new(&self.config.name, bus, short_address, light_status),
+            Err(e) => QueryLightReply::new_failure(&self.config.name, bus, short_address, e),
+        };
+        let topic = self.get_light_reply_topic("QueryLightStatus", bus, short_address);
+
+        self.mqtt_client.publish(topic, QoS::AtMostOnce, false, serde_json::to_vec(&query_light_reply)?).await?;
+
+        Ok(DaliBusResult::None)
+    }
+
     async fn find_lights(&mut self, config_topic: &str, bus_number: usize, selection: DaliDeviceSelection) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
         self.check_bus(bus_number)?;
 
@@ -341,10 +343,11 @@ impl <'a> MqttDali<'a> {
                                 DaliCommand::NewGroup { bus } => self.new_group(bus),
                                 DaliCommand::MatchGroup { bus, group, ref pattern} => self.match_group(bus, group, pattern),
                                 DaliCommand::RemoveGroup { bus, group } => self.remove_group(bus, group),
-                                DaliCommand::AddToGroup {bus, group, address} => { self.add_to_group(bus, group, address) },
-                                DaliCommand::RemoveFromGroup {bus, group, address} => { self.remove_from_group(bus, group, address) },
+                                DaliCommand::AddToGroup {bus, group, address} => self.add_to_group(bus, group, address),
+                                DaliCommand::RemoveFromGroup {bus, group, address} => self.remove_from_group(bus, group, address),
                                 DaliCommand::FindAllLights { bus } => self.find_lights(config_topic, bus, DaliDeviceSelection::All).await,
                                 DaliCommand::FindNewLights { bus } => self.find_lights(config_topic, bus, DaliDeviceSelection::WithoutShortAddress).await,
+                                DaliCommand::QueryLightStatus { bus, address } => { republish_config = false; self.query_light_status(bus, address).await },
                             };
 
                             if let Err(e) = command_result {
