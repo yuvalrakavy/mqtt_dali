@@ -170,7 +170,7 @@ impl DaliAtx {
         }
     }
 
-    const HEX_DIGITS: &'static [u8; 16] = b"0123456789abcdef";
+    const HEX_DIGITS: &'static [u8; 16] = b"0123456789ABCDEF";
 
     #[allow(dead_code)]
     fn send_byte_value(&mut self, value: u8) -> Result<usize, DaliAtxError> {

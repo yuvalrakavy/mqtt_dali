@@ -167,6 +167,20 @@ impl<'manager> DaliManager<'manager> {
             Err(e) => Err(e),
         }
     }
+
+    pub fn query_group_membership(&mut self, bus: usize, short_address: u8) -> Result<u16, Box<dyn std::error::Error>> {
+        let groups_0to7 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_0_7, short_address, false)? {
+            DaliBusResult::Value8(mask) => mask,
+            bus_status => return Err(Box::new(DaliManagerError::UnexpectedStatus(bus_status))),
+        };
+
+        let groups_8to15 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_8_15, short_address, false)? {
+            DaliBusResult::Value8(mask) => mask,
+            bus_status => return Err(Box::new(DaliManagerError::UnexpectedStatus(bus_status))),
+        };
+
+        Ok(((groups_8to15 as u16) << 8) | (groups_0to7 as u16))
+    }
 }
 
 impl DaliBusIterator {

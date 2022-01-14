@@ -381,13 +381,49 @@ impl BusConfig {
         })
     }
 
+    fn fix_group_membership(&self, dali_manager: &mut DaliManager) {
+        for light in self.channels.iter() {
+            match dali_manager.query_group_membership(self.bus, light.short_address) {
+                Ok(group_mask) => {
+                    // First, look if light is member in groups which are not defined in the configuration, if so, remove them
+                    let mut mask = 1u16;
+                    for group_number in 0..16 {
+                        if (group_mask & mask) != 0 && !self.groups.iter().any(|g| g.group_address == group_number) {
+                            println!("Light {} is member of group {} which is not in configuration:", light.short_address, group_number);
+                            match dali_manager.remove_from_group(self.bus, group_number, light.short_address) {
+                                Ok(_) => println!("  removed!"),
+                                Err(e) => println!(" error: {}", e),
+                            }
+                        }
+
+                        mask <<= 1;
+                    }
+
+                    // Now ensure that light is indeed member in groups it is supposed to be member of
+                    for group in self.groups.iter() {
+                        let mask = 1 << group.group_address;
+
+                        if group.members.iter().any(|m| light.short_address == *m) && (group_mask & mask) == 0 {
+                            println!("Light {} should be member of group {}, however it is not:", light.short_address, group.description);
+                            match dali_manager.add_to_group(self.bus, group.group_address, light.short_address) {
+                                Ok(_) => println!("  added!"),
+                                Err(e) => println!(" error: {}", e),
+                            }
+                        }
+                    }
+
+                },
+                Err(e) =>  println!("Error obtaining group membership of light {}: {}", light.short_address, e),
+            }
+        }
+    }
     pub fn interactive_setup_groups(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), Box<dyn std::error::Error>> {
         let mut last_group_address: Option<u8> = None;
         let mut default_level = 255u8;
 
         loop {
             self.display(bus_number);
-            let command = Config::prompt_for_string("Groups: n=new, d=delete, e=edit, s=set-level, b=back", Some("b"))?;
+            let command = Config::prompt_for_string("Groups: n=new, d=delete, e=edit, s=set-level, f=fix, b=back", Some("b"))?;
 
             if let Some(command) = command.chars().next() {
                 match command {
@@ -416,7 +452,8 @@ impl BusConfig {
                             self.edit_group(dali_manager, group_address)?;
                         }
 
-                    }
+                    },
+                    'f' => self.fix_group_membership(dali_manager),
                     _ => println!("Invalid command"),
                 }
             }
@@ -437,13 +474,62 @@ impl BusConfig {
         })
     }
 
-    pub fn interactive_setup_lights(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), Box<dyn std::error::Error>> {
+    fn do_query_light(&self, dali_manager: &mut DaliManager, short_address: u8) {
+        let status = dali_manager.query_light_status(self.bus, short_address);
+
+        print!("{:2}: ", short_address);
+
+        let status = match status {
+            Ok(status) => Some(status),
+            Err(_) => None,
+        };
+
+        if let Some(status) = status {
+            print!("{} ", status);
+
+            let group_mask = dali_manager.query_group_membership(self.bus, short_address);
+
+            if let Ok(group_mask) = group_mask {
+                print!("groups: {:#06x}", group_mask);
+
+                let mut mask = 1u16;
+                for group_number in 0..16 {
+                    let group = self.groups.iter().find(|g| g.group_address == group_number);
+
+                    if (group_mask & mask) != 0 {
+                        if let Some(group) = group {
+                            print!(" {}", group.description);
+                        } else {        // Light reports membership, but it is not reflected in the configuration 
+                            print!(" _Group_{}", group_number);
+                        }
+                    }
+
+                    mask <<= 1;
+                }   
+            } else {
+                print!("Error getting groups");
+            }
+        } else {
+            print!(" not found");
+        }
+
+        println!();
+    }
+    
+    fn query_bus(&self, dali_manager: &mut DaliManager) {
+        for light in self.channels.iter() {
+            self.do_query_light(dali_manager, light.short_address);
+        }
+    }
+
+    fn interactive_setup_lights(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), Box<dyn std::error::Error>> {
         let mut last_short_address: Option<u8> = None;
         let mut default_level = 255u8;
 
+        self.display(bus_number);
+
         loop {
-            self.display(bus_number);
-            let command = Config::prompt_for_string("Lights: r=rename, s=set-level, q=query, *=query all, b=back", Some("b"))?;
+            let command = Config::prompt_for_string("Lights: r=rename, s=set-level, q=query, b=back", Some("b"))?;
 
             if let Some(command) = command.chars().next() {
                 match command {
@@ -468,26 +554,9 @@ impl BusConfig {
                     },
                     'q' => {
                         if let Some(short_address) = self.prompt_for_existing_short_address("Address", last_short_address)? {
-                            let status = dali_manager.query_light_status(self.bus, short_address);
-
-                            match status {
-                                Ok(status) => {
-                                    println!("Status {}", status);
-                                },
-                                Err(e) => println!("Error: {}", e),
-                            }
+                            self.do_query_light(dali_manager,short_address);
                         }
                     },
-                    '*' => {
-                        for light in self.channels.iter() {
-                            let status = dali_manager.query_light_status(self.bus, light.short_address);
-
-                            match status {
-                                Ok(status) => println!("Light {} ({}) - {}", light.description, light.short_address, status),
-                                Err(e) =>  println!("Light {} ({}) - Error: {}", light.description, light.short_address, e),
-                            }
-                        }
-                    }
                     _ => println!("Invalid command"),
                 }
             }
@@ -514,7 +583,7 @@ impl BusConfig {
         else {
             loop {
                 self.display(bus_number);
-                let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, b=back", Some("b"))?;
+                let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, q=query, b=back", Some("b"))?;
 
                 if let Some(command) = command.chars().next() {
                     match command {
@@ -523,6 +592,7 @@ impl BusConfig {
                         'a' => self.assign_addresses(dali_manager)?,
                         'g' => self.interactive_setup_groups(dali_manager, bus_number)?,
                         'l' => self.interactive_setup_lights(dali_manager, bus_number)?,
+                        'q' => self.query_bus(dali_manager),
                         _ => println!("Invalid command"),
                     }
                 }
