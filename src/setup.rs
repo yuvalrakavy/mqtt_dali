@@ -522,6 +522,44 @@ impl BusConfig {
         }
     }
 
+    fn fix_config(&mut self, dali_manager: &mut DaliManager) -> Result<(), Box<dyn std::error::Error>> {
+        let mut all_lights_ok = true;
+        let mut remove_list = Vec::<u8>::new();
+
+        for light in self.channels.iter() {
+            match dali_manager.query_light_status(self.bus, light.short_address) {
+                Ok(_) => {},
+                Err(_) => {
+                    all_lights_ok = false;
+                    let remove_light = loop {
+                        if let Some(reply) = Config::prompt_for_string(&format!("Light at address {} does not response, remove it from the configuration", light.short_address), Some("n"))?.chars().next() {
+                            match  reply {
+                                'y' => break true,
+                                _ => break false,
+                            };
+                        }
+                    };
+
+                    if remove_light {
+                        remove_list.push(light.short_address);
+                    }
+                }
+            }
+        }
+
+        if all_lights_ok {
+            println!("All {} light{} were found", self.channels.len(), if self.channels.len() > 1 { "s" } else { ""});
+        } else {
+            for short_address_to_remove in remove_list.iter() {
+                if let Some(index) = self.channels.iter().position(|l| l.short_address == *short_address_to_remove) {
+                    self.channels.remove(index);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn interactive_setup_lights(&mut self, dali_manager: &mut DaliManager, bus_number: usize) -> Result<(), Box<dyn std::error::Error>> {
         let mut last_short_address: Option<u8> = None;
         let mut default_level = 255u8;
@@ -557,6 +595,7 @@ impl BusConfig {
                             self.do_query_light(dali_manager,short_address);
                         }
                     },
+                    '?' => self.display(bus_number),
                     _ => println!("Invalid command"),
                 }
             }
@@ -583,7 +622,7 @@ impl BusConfig {
         else {
             loop {
                 self.display(bus_number);
-                let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, q=query, b=back", Some("b"))?;
+                let command = Config::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, q=query, f=fix, b=back", Some("b"))?;
 
                 if let Some(command) = command.chars().next() {
                     match command {
@@ -593,6 +632,7 @@ impl BusConfig {
                         'g' => self.interactive_setup_groups(dali_manager, bus_number)?,
                         'l' => self.interactive_setup_lights(dali_manager, bus_number)?,
                         'q' => self.query_bus(dali_manager),
+                        'f' => self.fix_config(dali_manager)?,
                         _ => println!("Invalid command"),
                     }
                 }
