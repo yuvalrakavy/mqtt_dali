@@ -548,7 +548,7 @@ impl BusConfig {
         }
 
         if all_lights_ok {
-            println!("All {} light{} were found", self.channels.len(), if self.channels.len() > 1 { "s" } else { ""});
+            println!("All lights were found ({})", self.channels.len());
         } else {
             for short_address_to_remove in remove_list.iter() {
                 if let Some(index) = self.channels.iter().position(|l| l.short_address == *short_address_to_remove) {
