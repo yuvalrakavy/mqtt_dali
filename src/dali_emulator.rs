@@ -2,6 +2,7 @@ use rand::Rng;
 use std::cell::RefCell;
 use log::{trace, error, log_enabled, Level::Trace};
 use crate::dali_commands::{self};
+use crate::dali_manager;
 use crate::dali_manager::{DaliBusResult, DaliController};
 use crate::config_payload::{BusConfig, BusStatus, Config};
 
@@ -289,7 +290,7 @@ impl DaliBusEmulator {
 }
 
 impl DaliControllerEmulator {
-    pub fn try_new(config: &mut Config) -> Result<Box<dyn DaliController>, Box<dyn std::error::Error>> {
+    pub fn try_new(config: &mut Config) -> dali_manager::Result<Box<dyn DaliController>> {
         let mut buses: Vec<DaliBusEmulator> = Vec::new();
 
         if config.buses.is_empty() {
@@ -312,7 +313,7 @@ impl DaliControllerEmulator {
 }
 
 impl DaliController for DaliControllerEmulator {
-    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
         if bus >= self.buses.len() {
             panic!("Send to invalid bus {}", bus);
         }
@@ -320,11 +321,11 @@ impl DaliController for DaliControllerEmulator {
         Ok(self.buses[bus].send_2_bytes(b1, b2))
     }
 
-    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
         self.send_2_bytes(bus, b1, b2)
     }
 
-    fn get_bus_status(&mut self, _bus: usize) -> Result<BusStatus, Box<dyn std::error::Error>> {
+    fn get_bus_status(&mut self, _bus: usize) -> dali_manager::Result<BusStatus> {
         Ok(BusStatus::Active)
     }
 }

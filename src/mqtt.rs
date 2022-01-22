@@ -1,8 +1,8 @@
 use std::time::Duration;
 use log::{error, debug, trace};
-use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, LastWill};
-use std::error::Error;
-use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection};
+use thiserror::Error;
+use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, LastWill, ClientError, ConnectionError};
+use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection, DaliManagerError};
 use crate::command_payload::{DaliCommand, QueryLightReply};
 use crate::config_payload::{Config,  Group, BusStatus};
 
@@ -14,34 +14,49 @@ pub struct MqttDali<'a> {
     dali_manager: &'a mut DaliManager<'a>,
 }
 
-#[derive(Debug)]
-enum CommandError {
+#[derive(Debug, Error)]
+pub enum CommandError {
+    #[error("Invalid bus number: {0}")]
     BusNumber(usize),
+
+    #[error("Invalid short address: {0}")]
     ShortAddress(u8),
+
+    #[error("Invalid group address: {0}")]
     GroupAddress(u8),
+
+    #[error("Bus {0} has no power")]
     BusHasNoPower(usize),
+
+    #[error("Bus {0} is overloaded")]
     BusOverloaded(usize),
+
+    #[error("Bus {0} has invalid status")]
     InvalidBusStatus(usize),
+
+    #[error("No more groups can be added to bus {0}")]
     NoMoreGroups(usize),
+
+    #[error("Bus {} has no group {0}")]
     NoSuchGroup(usize, u8),
+
+    #[error("DALI error: {0:?}")]
+    DaliManagerError(#[from] DaliManagerError),
+
+    #[error("MQTT client error {0}")]
+    MqttClientError(#[from] ClientError),
+
+    #[error("MQTT connection error {0}")]
+    MqttConnectionError(#[from] ConnectionError),
+
+    #[error("Json Error {0}")]
+    JsonError(#[from] serde_json::Error),
+
+    #[error("Pattern (regex) error: {0}")]
+    RegExError(#[from] regex::Error),
 }
 
-impl std::fmt::Display for CommandError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CommandError::BusNumber(bus_number) => write!(f, "Invalid bus number: {}", bus_number),
-            CommandError::ShortAddress(short_address) => write!(f, "Invalid short address: {}", short_address),
-            CommandError::GroupAddress(group_address) => write!(f, "Invalid group address: {}", group_address),
-            CommandError::BusHasNoPower(bus_number) => write!(f, "Bus {} has no power", bus_number),
-            CommandError::BusOverloaded(bus_number) => write!(f, "Bus {} is overloaded", bus_number),
-            CommandError::InvalidBusStatus(bus_number) => write!(f, "Bus {} has invalid status", bus_number),
-            CommandError::NoMoreGroups(bus_number) => write!(f, "No more groups can be added to bus {}", bus_number),
-            CommandError::NoSuchGroup(bus_number, group_address) => write!(f, "Bus {} has no group {} ", bus_number, group_address),
-        }
-    }
-}
-
-impl std::error::Error for CommandError {}
+type Result<T> = std::result::Result<T, CommandError>;
 
 impl <'a> MqttDali<'a> {
     pub fn new(dali_manager: &'a mut DaliManager<'a>, config: &'a mut Config, mqtt_broker: &str) -> MqttDali<'a> {
@@ -79,11 +94,11 @@ impl <'a> MqttDali<'a> {
         format!("DALI/Reply/{}/{}/Bus_{}/Address_{}", command, self.config.name, bus, short_address)
     }
 
-    async fn publish_config(client: &AsyncClient, config_topic: &str, config: &Config) -> Result<(), Box<dyn Error>> {
+    async fn publish_config(client: &AsyncClient, config_topic: &str, config: &Config) -> Result<()> {
         Ok(client.publish(config_topic, QoS::AtLeastOnce, true, serde_json::to_vec(config)?).await?)
     }
 
-    fn update_bus_status(&mut self) -> Result<DaliBusResult, Box<dyn Error>> {
+    fn update_bus_status(&mut self) -> Result<DaliBusResult> {
         for (bus_number, bus) in self.config.buses.iter_mut().enumerate() {
             bus.status = self.dali_manager.controller.get_bus_status(bus_number)?;
         }
@@ -91,61 +106,61 @@ impl <'a> MqttDali<'a> {
         Ok(DaliBusResult::None)
     }
 
-    fn check_bus_status(bus_number: usize, status: &BusStatus) -> Result<DaliBusResult, Box<dyn Error>> {
+    fn check_bus_status(bus_number: usize, status: &BusStatus) -> Result<DaliBusResult> {
         match status {
             BusStatus::Active => Ok(DaliBusResult::None),
-            BusStatus::NoPower => Err(Box::new(CommandError::BusHasNoPower(bus_number))),
-            BusStatus::Overloaded => Err(Box::new(CommandError::BusOverloaded(bus_number))),
-            BusStatus::Unknown => Err(Box::new(CommandError::InvalidBusStatus(bus_number))),
+            BusStatus::NoPower => Err(CommandError::BusHasNoPower(bus_number)),
+            BusStatus::Overloaded => Err(CommandError::BusOverloaded(bus_number)),
+            BusStatus::Unknown => Err(CommandError::InvalidBusStatus(bus_number)),
         }
 
     }
-    fn check_bus(&mut self, bus_number: usize) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn check_bus(&mut self, bus_number: usize) -> Result<DaliBusResult> {
         self.update_bus_status()?;
 
         if let Some(bus) = self.config.buses.get(bus_number) {
             MqttDali::check_bus_status(bus_number, &bus.status)
         } else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
     }
  
-    fn rename_bus(&mut self, bus_number: usize, name: &str) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn rename_bus(&mut self, bus_number: usize, name: &str) -> Result<DaliBusResult> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             bus.description = name.to_owned();
             Ok(DaliBusResult::None)
         } else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
     }
 
-    fn rename_light(&mut self, bus_number: usize, short_address: u8, name: &str) ->  Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn rename_light(&mut self, bus_number: usize, short_address: u8, name: &str) ->  Result<DaliBusResult> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             if let Some(channel) = bus.channels.iter_mut().find(|c| c.short_address == short_address) {
                 channel.description = name.to_owned();
                 Ok(DaliBusResult::None)
             } else {
-                Err(Box::new(CommandError::ShortAddress(short_address)))
+                Err(CommandError::ShortAddress(short_address))
             }
         } else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
     }
 
-    fn rename_group(&mut self, bus_number: usize, group_address: u8, name: &str) ->  Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn rename_group(&mut self, bus_number: usize, group_address: u8, name: &str) ->  Result<DaliBusResult> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             if let Some(group) = bus.groups.iter_mut().find(|g| g.group_address == group_address) {
                 group.description = name.to_owned();
                 Ok(DaliBusResult::None)
             } else {
-                Err(Box::new(CommandError::GroupAddress(group_address)))
+                Err(CommandError::GroupAddress(group_address))
             }
         } else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
     }
 
-    fn new_group(&mut self, bus_number: usize) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn new_group(&mut self, bus_number: usize) -> Result<DaliBusResult> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             let group_address = (0u8..16u8).find(|group_address| !bus.groups.iter().any(|group| group.group_address == *group_address));
 
@@ -154,14 +169,14 @@ impl <'a> MqttDali<'a> {
                 Ok(DaliBusResult::None)
                 
             } else {
-                Err(Box::new(CommandError::NoMoreGroups(bus_number)))
+                Err(CommandError::NoMoreGroups(bus_number))
             }
         }  else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
     }
 
-    fn remove_group(&mut self, bus_number: usize, group_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn remove_group(&mut self, bus_number: usize, group_address: u8) -> Result<DaliBusResult> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             MqttDali::check_bus_status(bus_number, &bus.status)?;
 
@@ -178,15 +193,15 @@ impl <'a> MqttDali<'a> {
                 bus.groups.remove(index);
                 Ok(DaliBusResult::None)
             } else {
-                Err(Box::new(CommandError::NoSuchGroup(bus_number, group_address)))
+                Err(CommandError::NoSuchGroup(bus_number, group_address))
             }
         }  else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
 
     }
 
-    fn add_to_group(&mut self, bus_number: usize, group_address: u8, short_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn add_to_group(&mut self, bus_number: usize, group_address: u8, short_address: u8) -> Result<DaliBusResult> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             let group = bus.groups.iter_mut().find(|g| g.group_address == group_address);
 
@@ -205,11 +220,11 @@ impl <'a> MqttDali<'a> {
 
             Ok(DaliBusResult::None)
         }  else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
     }
 
-    fn remove_from_group(&mut self, bus_number: usize, group_address: u8, short_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn remove_from_group(&mut self, bus_number: usize, group_address: u8, short_address: u8) -> Result<DaliBusResult> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             if let Some(group) = bus.groups.iter_mut().find(|g| g.group_address == group_address) {
                 if let Some(index) = group.members.iter().position(|m| *m== short_address) {
@@ -219,15 +234,15 @@ impl <'a> MqttDali<'a> {
                 }
                 Ok(DaliBusResult::None)
             } else {
-                Err(Box::new(CommandError::NoSuchGroup(bus_number, group_address)))
+                Err(CommandError::NoSuchGroup(bus_number, group_address))
             }
 
         }  else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
     }
 
-    fn match_group(&mut self, bus_number: usize, group_address: u8, light_name_pattern: &str) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn match_group(&mut self, bus_number: usize, group_address: u8, light_name_pattern: &str) -> Result<DaliBusResult> {
         let re = regex::Regex::new(light_name_pattern)?;
 
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
@@ -267,12 +282,12 @@ impl <'a> MqttDali<'a> {
 
             Ok(DaliBusResult::None)
         }  else {
-            Err(Box::new(CommandError::BusNumber(bus_number)))
+            Err(CommandError::BusNumber(bus_number))
         }
 
     }
 
-    async fn query_light_status(&mut self, bus: usize, short_address: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    async fn query_light_status(&mut self, bus: usize, short_address: u8) -> Result<DaliBusResult> {
         let light_status = self.dali_manager.query_light_status(bus, short_address);
         let query_light_reply = match light_status {
             Ok(light_status) => QueryLightReply::new(&self.config.name, bus, short_address, light_status),
@@ -285,7 +300,7 @@ impl <'a> MqttDali<'a> {
         Ok(DaliBusResult::None)
     }
 
-    async fn find_lights(&mut self, config_topic: &str, bus_number: usize, selection: DaliDeviceSelection) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    async fn find_lights(&mut self, config_topic: &str, bus_number: usize, selection: DaliDeviceSelection) -> Result<DaliBusResult> {
         self.check_bus(bus_number)?;
 
         if matches!(selection, DaliDeviceSelection::All) {
@@ -313,7 +328,7 @@ impl <'a> MqttDali<'a> {
         Ok(DaliBusResult::None)
     }
 
-    pub async fn run(&mut self, config_filename: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn run(&mut self, config_filename: &str) -> Result<()> {
         let config_topic = &self.get_config_topic();
         let status_topic = &self.get_status_topic();
 
@@ -333,9 +348,15 @@ impl <'a> MqttDali<'a> {
                     match serde_json::from_slice(payload.as_ref()) as serde_json::Result<DaliCommand> {
                         Ok(command) => {
                             debug!("Got command {:?}", command);
-                            let command_result = match command {
-                                DaliCommand::SetLightBrightness { bus, address, value} => { republish_config = false;  self.dali_manager.set_light_brightness_async(bus, address, value).await },
-                                DaliCommand::SetGroupBrightness { bus, group, value } => { republish_config = false; self.dali_manager.set_group_brightness_async(bus, group, value).await },
+                            let command_result: Result<DaliBusResult> = match command {
+                                DaliCommand::SetLightBrightness { bus, address, value} => { 
+                                    republish_config = false;
+                                    self.dali_manager.set_light_brightness_async(bus, address, value).await.map_err(CommandError::DaliManagerError)
+                                },
+                                DaliCommand::SetGroupBrightness { bus, group, value } => {
+                                    republish_config = false;
+                                    self.dali_manager.set_group_brightness_async(bus, group, value).await.map_err(CommandError::DaliManagerError)
+                                },
                                 DaliCommand::UpdateBusStatus => self.update_bus_status(),
                                 DaliCommand::RenameBus { bus: bus_number, ref name } => self.rename_bus(bus_number, name),
                                 DaliCommand::RenameLight { bus, address, ref name } => self.rename_light(bus, address, name),

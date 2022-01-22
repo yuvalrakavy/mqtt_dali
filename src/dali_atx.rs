@@ -2,45 +2,51 @@ use std::ascii::escape_default;
 use std::str;
 use std::time::Duration;
 use log::{trace, log_enabled, Level::Trace};
+use thiserror::Error;
 use rppal::{uart, uart::Uart};
 
-use crate::dali_manager::{DaliController, DaliBusResult};
+
+use crate::dali_manager;
+use crate::dali_manager::{DaliController, DaliManagerError, DaliBusResult};
 use crate::config_payload::{Config, BusConfig, BusStatus};
 
-#[derive(Debug)]
-enum DaliAtxError {
-    UartError(uart::Error),
+#[derive(Debug, Error)]
+pub enum DaliAtxError {
+    #[error("UART error: {0}")]
+    UartError(#[from] uart::Error),
+
+    #[error("Invalid hex digit {0}")]
     InvalidHexDigit(u8),
+
+    #[error("Reply from unexpected bus (expected {0}, reply from {1})")]
     UnexpectedBus(usize, usize),
+
+    #[error("Unexpected DALI HAT reply: {0}")]
     UnexpectedReply(u8),
+   
+    #[error("Unexpected bus result {0:?}")]
     UnexpectedBusResult(DaliBusResult),
+
+    #[error("Unexpected bus status: {0}")]
     UnexpectedBusStatus(u8),
+
+    #[error("Configured for {0} while hardware reports {1}")]
     MismatchBusCount(usize, usize),
 }
 
-impl std::fmt::Display for DaliAtxError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-
-        match self {
-            DaliAtxError::InvalidHexDigit(d) => write!(f, "Invalid hex digit {}", d),
-            DaliAtxError::MismatchBusCount(config_buses, hw_buses) => write!(f, "Configured for {} while hardware reports {}",
-              DaliAtx::to_bus_count_string(*config_buses), DaliAtx::to_bus_count_string(*hw_buses)),
-            DaliAtxError::UnexpectedBus(expected, actual) => write!(f, "Reply from unexpected bus (expected {}, reply from {})", expected, actual),
-            DaliAtxError::UnexpectedReply(reply) => write!(f, "Unexpected DALI HAT reply: {}", reply),
-            DaliAtxError::UnexpectedBusResult(bus_result) => write!(f, "Unexpected bus result {:?}", bus_result),
-            DaliAtxError::UnexpectedBusStatus(status) => write!(f, "Unexpected bus status: {}", status),
-            DaliAtxError::UartError(uart_error) => write!(f, "UART error {}", uart_error),
-        }
+impl From<DaliAtxError> for DaliManagerError {
+    fn from(e: DaliAtxError) -> Self {
+        DaliManagerError::DaliInterfaceError(Box::new(e))
     }
 }
 
-impl std::error::Error for DaliAtxError {}
-
-impl From<uart::Error> for DaliAtxError {
+impl From<uart::Error> for DaliManagerError {
     fn from(e: uart::Error) -> Self {
-        DaliAtxError::UartError(e)
+        DaliManagerError::DaliInterfaceError(Box::new(DaliAtxError::UartError(e)))
     }
 }
+
+pub type Result<T> = std::result::Result<T, DaliAtxError>;
 
 pub struct DaliAtx {
     uart: Uart,
@@ -48,23 +54,23 @@ pub struct DaliAtx {
 }
 
 impl DaliController for DaliAtx {
-    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
         self.send_command(bus, 'h')?;
         self.send_byte_value(b1)?;
         self.send_byte_value(b2)?;
         self.send_nl()?;
-        self.receive_reply(bus)
+        self.receive_reply(bus).map_err(|e| DaliManagerError::DaliInterfaceError(Box::new(e)))
     }
 
-    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
         self.send_command(bus, 't')?;
         self.send_byte_value(b1)?;
         self.send_byte_value(b2)?;
         self.send_nl()?;
-        self.receive_reply(bus)
+        self.receive_reply(bus).map_err(|e| DaliManagerError::DaliInterfaceError(Box::new(e)))
     }
 
-    fn get_bus_status(&mut self, bus: usize) -> Result<BusStatus, Box<dyn std::error::Error>> {
+    fn get_bus_status(&mut self, bus: usize) -> dali_manager::Result<BusStatus> {
         self.send_command(bus, 'd')?;
         self.send_nl()?;
 
@@ -75,14 +81,14 @@ impl DaliController for DaliAtx {
                 0 => Ok(BusStatus::NoPower),
                 1 => Ok(BusStatus::Overloaded),
                 2 => Ok(BusStatus::Active),
-                s => Err(Box::new(DaliAtxError::UnexpectedBusStatus(s))),
+                s => Err(DaliManagerError::DaliInterfaceError(Box::new(DaliAtxError::UnexpectedBusStatus(s)))),
             }
-        } else { Err(Box::new(DaliAtxError::UnexpectedBusResult(bus_result))) }
+        } else { Err(DaliManagerError::DaliInterfaceError(Box::new(DaliAtxError::UnexpectedBusResult(bus_result)))) }
     }
 }
 
 impl DaliAtx {
-    pub fn try_new(config: &mut Config) -> Result<Box<dyn DaliController>, Box<dyn std::error::Error>> {
+    pub fn try_new(config: &mut Config) -> dali_manager::Result<Box<dyn DaliController>> {
         let mut uart = Uart::with_path("/dev/serial0", 19200, rppal::uart::Parity::None, 8, 1)?;
         let mut buffer = [0u8; 8];
 
@@ -110,7 +116,7 @@ impl DaliAtx {
                 config.buses.push(BusConfig::new(bus_number, BusStatus::Unknown));
             }
         } else if config.buses.len() != bus_count {
-            return Err(Box::new(DaliAtxError::MismatchBusCount(config.buses.len(), bus_count)))
+            return Err(DaliManagerError::DaliInterfaceError(Box::new(DaliAtxError::MismatchBusCount(config.buses.len(), bus_count))))
         }
 
         Ok(Box::new(DaliAtx { uart, debug_write_buffer: Vec::new() }))
@@ -147,7 +153,7 @@ impl DaliAtx {
         if n == 1 { "1 DALI bus".to_string() } else { format!("{} DALI buses", n)}
     }
 
-    fn get_digit(b: u8) -> Result<u8, DaliAtxError> {
+    fn get_digit(b: u8) -> Result<u8> {
         match b as char {
             'A'..='F' => Ok(b - (b'A') + 10),
             'a'..='f' => Ok(b - (b'a') + 10),
@@ -156,11 +162,11 @@ impl DaliAtx {
         }
     }
 
-    fn get_byte_value(buffer: &[u8]) -> Result<u8, DaliAtxError> {
+    fn get_byte_value(buffer: &[u8]) -> Result<u8> {
         Ok(DaliAtx::get_digit(buffer[0])? * 16 + DaliAtx::get_digit(buffer[1])?)
     }
 
-    fn send_command(&mut self, bus: usize, command: char) -> Result<usize, DaliAtxError>  {
+    fn send_command(&mut self, bus: usize, command: char) -> Result<usize>  {
         if bus == 0 {
             let command_buffer = [command as u8];
             Ok(self.do_write(&command_buffer)?)
@@ -173,26 +179,26 @@ impl DaliAtx {
     const HEX_DIGITS: &'static [u8; 16] = b"0123456789ABCDEF";
 
     #[allow(dead_code)]
-    fn send_byte_value(&mut self, value: u8) -> Result<usize, DaliAtxError> {
+    fn send_byte_value(&mut self, value: u8) -> Result<usize> {
         let buffer = [DaliAtx::HEX_DIGITS[(value >> 4) as usize] as u8, DaliAtx::HEX_DIGITS[(value & 0xf) as usize]];
 
         Ok(self.do_write(&buffer)?)
     }
 
-    fn send_nl(&mut self) -> Result<usize, DaliAtxError> {
+    fn send_nl(&mut self) -> Result<usize> {
         let buffer = [b'\n'];
         Ok(self.do_write(&buffer)?)
     }
 
-    fn receive_value8(&self, buffer: &[u8]) -> Result<u8, DaliAtxError> {
+    fn receive_value8(&self, buffer: &[u8]) -> Result<u8> {
         DaliAtx::get_byte_value(buffer)
     }
 
-    fn receive_value16(&self, buffer: &[u8]) -> Result<u16, DaliAtxError> {
+    fn receive_value16(&self, buffer: &[u8]) -> Result<u16> {
         Ok((DaliAtx::get_byte_value(&buffer[0..=1])? as u16) << 8 | DaliAtx::get_byte_value(&buffer[2..=3])? as u16) 
     }
 
-    fn receive_value24(&self, buffer: &[u8]) -> Result<u32, DaliAtxError> {
+    fn receive_value24(&self, buffer: &[u8]) -> Result<u32> {
         Ok(
             (DaliAtx::get_byte_value(&buffer[0..=1])? as u32) << 16 | 
             (DaliAtx::get_byte_value(&buffer[2..=3])? as u32) <<  8 | 
@@ -200,7 +206,7 @@ impl DaliAtx {
         ) 
     }
 
-    fn get_line(&mut self) -> Result<Vec<u8>, DaliAtxError> {
+    fn get_line(&mut self) -> Result<Vec<u8>> {
         let mut line = Vec::new();
 
         self.uart.set_read_mode(1, Duration::from_secs(1))?;
@@ -218,7 +224,7 @@ impl DaliAtx {
         })
     }
 
-    fn receive_reply(&mut self, expected_bus: usize) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn receive_reply(&mut self, expected_bus: usize) -> Result<DaliBusResult> {
         let line = self.get_line()?;
         let mut i = 0;
 
@@ -257,11 +263,11 @@ impl DaliAtx {
                 b'Z' => Ok(DaliBusResult::TransmitCollision),
                 b'N' => Ok(DaliBusResult::None),
 
-                _ => Err(Box::new(DaliAtxError::UnexpectedReply(reply_type)))
+                _ => Err(DaliAtxError::UnexpectedReply(reply_type))
             }
 
         } else {
-            Err(Box::new(DaliAtxError::UnexpectedBus(expected_bus, bus)))
+            Err(DaliAtxError::UnexpectedBus(expected_bus, bus))
         }
     }
 }

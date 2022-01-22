@@ -1,4 +1,5 @@
 use log::{debug, trace};
+use thiserror::Error;
 use crate::dali_commands;
 use crate::config_payload::BusStatus;
 use crate::command_payload::LightStatus;
@@ -13,31 +14,30 @@ pub enum DaliBusResult {
     Value24 (u32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum DaliManagerError {
+    #[error("Invalid short address: {0}")]
     ShortAddress(u8),
+
+    #[error("Invalid group address: {0}")]
     GroupAddress(u8),
+
+    #[error("Invalid command: {0}")]
     Command(u16),
+
+    #[error("Unexpected light status {0:?}")]
     UnexpectedStatus(DaliBusResult),
+
+    #[error("DALI interface error: {0:?}")]
+    DaliInterfaceError(#[source] Box<dyn std::error::Error>),
 }
 
-impl std::fmt::Display for DaliManagerError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            DaliManagerError::ShortAddress(short_address) => write!(f, "Invalid short address: {}", short_address),
-            DaliManagerError::GroupAddress(group_address) => write!(f, "Invalid group address: {}", group_address),
-            DaliManagerError::Command(command) => write!(f, "Invalid command: {}", command),
-            DaliManagerError::UnexpectedStatus(bus_result) => write!(f, "Unexpected light status {:?}", bus_result),
-        }
-    }
-}
-
-impl std::error::Error for DaliManagerError {}
+pub type Result<T> = std::result::Result<T, DaliManagerError>;
 
 pub trait DaliController {
-    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>>;
-    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>>;
-    fn get_bus_status(&mut self, bus: usize) -> Result<BusStatus, Box<dyn std::error::Error>>;
+    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult>;
+    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult>;
+    fn get_bus_status(&mut self, bus: usize) -> Result<BusStatus>;
 }
 
 pub struct DaliManager<'a> {
@@ -85,25 +85,25 @@ impl<'manager> DaliManager<'manager> {
         if group < 16 { 0x80 | (group << 1 ) } else { panic!("Invalid DALI group# {}", group) }
     }
 
-    pub async fn set_light_brightness_async(&mut self, bus: usize, short_address: u8, value: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    pub async fn set_light_brightness_async(&mut self, bus: usize, short_address: u8, value: u8) -> Result<DaliBusResult> {
         self.controller.send_2_bytes(bus, DaliManager::to_light_short_address(short_address), value)
     }
 
-    pub fn set_light_brightness(&mut self, bus: usize, short_address: u8, level: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    pub fn set_light_brightness(&mut self, bus: usize, short_address: u8, level: u8) -> Result<DaliBusResult> {
         self.controller.send_2_bytes(bus, DaliManager::to_light_short_address(short_address), level)
     }
 
-    pub async fn set_group_brightness_async(&mut self, bus: usize, group: u8, value: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    pub async fn set_group_brightness_async(&mut self, bus: usize, group: u8, value: u8) -> Result<DaliBusResult> {
         self.controller.send_2_bytes(bus, DaliManager::to_light_group_address(group), value)
     }
 
-    pub fn set_group_brightness(&mut self, bus: usize, group_address: u8, level: u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    pub fn set_group_brightness(&mut self, bus: usize, group_address: u8, level: u8) -> Result<DaliBusResult> {
         self.controller.send_2_bytes(bus, DaliManager::to_light_group_address(group_address), level)
     }
 
-    pub fn send_command_to_address(&mut self, bus: usize, command: u16, short_address: u8, repeat: bool) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
-        if command > 0xff { return Err(Box::new(DaliManagerError::Command(command))) }
-        if short_address >= 64 { return Err(Box::new(DaliManagerError::ShortAddress(short_address))); }
+    pub fn send_command_to_address(&mut self, bus: usize, command: u16, short_address: u8, repeat: bool) -> Result<DaliBusResult> {
+        if command > 0xff { return Err(DaliManagerError::Command(command)) }
+        if short_address >= 64 { return Err(DaliManagerError::ShortAddress(short_address)); }
 
         let b1 = DaliManager::to_command_short_address(short_address);
         let b2 = (command & 0xff) as u8;
@@ -116,9 +116,9 @@ impl<'manager> DaliManager<'manager> {
     }
 
     #[allow(dead_code)]
-    pub fn send_command_to_group(&mut self, bus: usize, command: u16, group_address: u8, repeat: bool) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
-        if command > 0xff { return Err(Box::new(DaliManagerError::Command(command))) }
-        if group_address >= 64 { return Err(Box::new(DaliManagerError::GroupAddress(group_address))); }
+    pub fn send_command_to_group(&mut self, bus: usize, command: u16, group_address: u8, repeat: bool) -> Result<DaliBusResult> {
+        if command > 0xff { return Err(DaliManagerError::Command(command)) }
+        if group_address >= 64 { return Err(DaliManagerError::GroupAddress(group_address)); }
 
         let b1 = DaliManager::to_command_group_address(group_address);
         let b2 = (command & 0xff) as u8;
@@ -130,7 +130,7 @@ impl<'manager> DaliManager<'manager> {
         }
     }
 
-    fn broadcast_command(&mut self, bus: usize, command: u16, parameter: u8, repeat: bool, description: &str) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn broadcast_command(&mut self, bus: usize, command: u16, parameter: u8, repeat: bool, description: &str) -> Result<DaliBusResult> {
         let b1 = if (command & 0x100) != 0 { (command & 0xff) as u8 } else { 0xff };
         let b2 = if (command & 0x100) != 0 { parameter } else { command as u8 };
 
@@ -143,7 +143,7 @@ impl<'manager> DaliManager<'manager> {
         }
     }
 
-    pub fn program_short_address(&mut self, bus: usize, short_address: u8) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn program_short_address(&mut self, bus: usize, short_address: u8) -> Result<()> {
         if short_address >= 64 { panic!("Invalid short address") }
 
         self.broadcast_command(bus, dali_commands::DALI_PROGRAM_SHORT_ADDRESS, (short_address << 1) | 0x01, false, &format!("Program short address {}", short_address))?;
@@ -152,31 +152,31 @@ impl<'manager> DaliManager<'manager> {
         Ok(())
     }
 
-    pub fn remove_from_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    pub fn remove_from_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
         self.send_command_to_address(bus, dali_commands::DALI_REMOVE_FROM_GROUP0+(group_address as u16), short_address, true)
     }
 
-    pub fn add_to_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    pub fn add_to_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
         self.send_command_to_address(bus, dali_commands::DALI_ADD_TO_GROUP0+(group_address as u16), short_address, true)
     }
 
-    pub fn query_light_status(&mut self, bus: usize, short_address: u8) -> Result<LightStatus, Box<dyn std::error::Error>> {
+    pub fn query_light_status(&mut self, bus: usize, short_address: u8) -> Result<LightStatus> {
         match self.send_command_to_address(bus, dali_commands::DALI_QUERY_STATUS, short_address, false) {
             Ok(DaliBusResult::Value8(v)) => Ok(LightStatus::from(v)),
-            Ok(bus_result) => Err(Box::new(DaliManagerError::UnexpectedStatus(bus_result))),
+            Ok(bus_result) => Err(DaliManagerError::UnexpectedStatus(bus_result)),
             Err(e) => Err(e),
         }
     }
 
-    pub fn query_group_membership(&mut self, bus: usize, short_address: u8) -> Result<u16, Box<dyn std::error::Error>> {
+    pub fn query_group_membership(&mut self, bus: usize, short_address: u8) -> Result<u16> {
         let groups_0to7 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_0_7, short_address, false)? {
             DaliBusResult::Value8(mask) => mask,
-            bus_status => return Err(Box::new(DaliManagerError::UnexpectedStatus(bus_status))),
+            bus_status => return Err(DaliManagerError::UnexpectedStatus(bus_status)),
         };
 
         let groups_8to15 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_8_15, short_address, false)? {
             DaliBusResult::Value8(mask) => mask,
-            bus_status => return Err(Box::new(DaliManagerError::UnexpectedStatus(bus_status))),
+            bus_status => return Err(DaliManagerError::UnexpectedStatus(bus_status)),
         };
 
         Ok(((groups_8to15 as u16) << 8) | (groups_0to7 as u16))
@@ -184,7 +184,7 @@ impl<'manager> DaliManager<'manager> {
 }
 
 impl DaliBusIterator {
-    pub fn new(dali_manager: &mut DaliManager, bus: usize, selection: DaliDeviceSelection, progress: Option<Box<DaliBusProgressCallback>>) -> Result<DaliBusIterator, Box<dyn std::error::Error>> {
+    pub fn new(dali_manager: &mut DaliManager, bus: usize, selection: DaliDeviceSelection, progress: Option<Box<DaliBusProgressCallback>>) -> Result<DaliBusIterator> {
         let parameter = match selection {
             DaliDeviceSelection::All => 0,
             DaliDeviceSelection::WithoutShortAddress => 0xff,
@@ -214,7 +214,7 @@ impl DaliBusIterator {
         }
     }
 
-    fn send_search_address(&mut self, dali_manager: &mut DaliManager, search_address: u32) -> Result<DaliBusResult, Box<dyn std::error::Error>> {
+    fn send_search_address(&mut self, dali_manager: &mut DaliManager, search_address: u32) -> Result<DaliBusResult> {
         let low = DaliBusIterator::diff_value(self.previous_low_byte, search_address as u8);
         let mid = DaliBusIterator::diff_value(self.previous_mid_byte, (search_address >> 8) as u8);
         let high = DaliBusIterator::diff_value(self.previous_high_byte, (search_address >> 16) as u8);
@@ -230,7 +230,7 @@ impl DaliBusIterator {
         Ok(DaliBusResult::None)
     }
 
-    fn is_random_address_le(&mut self, dali_manager: &mut DaliManager, retry: u8) -> Result<bool, Box<dyn std::error::Error>> {
+    fn is_random_address_le(&mut self, dali_manager: &mut DaliManager, retry: u8) -> Result<bool> {
         match dali_manager.broadcast_command(self.bus, dali_commands::DALI_COMPARE, 0, false, "Is random address le") {
             Ok(DaliBusResult::None) => if retry == 0 { Ok(false) } else { self.is_random_address_le(dali_manager, retry-1) },               // No answer
             Ok(_) => Ok(true),    // More than one yes reply
@@ -238,7 +238,7 @@ impl DaliBusIterator {
         }
     }
 
-    pub fn find_next_device(&mut self, dali_manager: &mut DaliManager) -> Result<Option<u8>, Box<dyn std::error::Error>> {
+    pub fn find_next_device(&mut self, dali_manager: &mut DaliManager) -> Result<Option<u8>> {
         // Find next device by trying to match its random address
         let mut search_address = 0x00800000;        // Start in half the range (24 bits)
         let mut delta = 0x00400000;
