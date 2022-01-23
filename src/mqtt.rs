@@ -1,5 +1,5 @@
 use std::time::Duration;
-use log::{error, debug, trace};
+use log::{error, debug};
 use thiserror::Error;
 use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, LastWill, ClientError, ConnectionError};
 use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection, DaliManagerError};
@@ -51,9 +51,6 @@ pub enum CommandError {
 
     #[error("Json Error {0}")]
     JsonError(#[from] serde_json::Error),
-
-    #[error("Pattern (regex) error: {0}")]
-    RegExError(#[from] regex::Error),
 }
 
 type Result<T> = std::result::Result<T, CommandError>;
@@ -243,48 +240,14 @@ impl <'a> MqttDali<'a> {
     }
 
     fn match_group(&mut self, bus_number: usize, group_address: u8, light_name_pattern: &str) -> Result<DaliBusResult> {
-        let re = regex::Regex::new(light_name_pattern)?;
-
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             MqttDali::check_bus_status(bus_number, &bus.status)?;
 
-            let group = bus.groups.iter_mut().find(|g| g.group_address == group_address);
-
-            // Create group if not found
-            if group.is_none() {
-                bus.groups.push( Group { description: format!("Group {}", group_address), group_address, members: Vec::new()});
-            }
-
-            let group = bus.groups.iter_mut().find(|g| g.group_address == group_address).unwrap();
-
-            for light in bus.channels.iter() {
-                if re.is_match(&light.description) {
-                    // If this light is not member of the group, add it
-                    if !group.members.contains(&light.short_address) {
-                        trace!("Light {}: {} matches {} - added to group {}", light.short_address, light.description, light_name_pattern, group_address);
-                        group.members.push(light.short_address);
-                    }
-
-                    std::thread::sleep(std::time::Duration::from_millis(1));
-                    self.dali_manager.add_to_group(bus_number, group_address, light.short_address)?;
-
-                } else {
-                    // If this light is member of the group, remove it since its name does not match the pattern
-                    if let Some(index) = group.members.iter().position(|short_address|  *short_address == light.short_address) {
-                        trace!("Light {}: {} does not match {} - removed from group {}", light.short_address, light.description, light_name_pattern, group_address);
-                        group.members.remove(index);
-                    }
-
-                    std::thread::sleep(std::time::Duration::from_millis(1));
-                    self.dali_manager.remove_from_group(bus_number, group_address, light.short_address)?;
-                }
-            }
-
+            self.dali_manager.match_group(bus, group_address, light_name_pattern)?;
             Ok(DaliBusResult::None)
         }  else {
             Err(CommandError::BusNumber(bus_number))
         }
-
     }
 
     async fn query_light_status(&mut self, bus: usize, short_address: u8) -> Result<DaliBusResult> {

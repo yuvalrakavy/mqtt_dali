@@ -313,7 +313,7 @@ impl BusConfig {
             loop {
 
                 self.display_group(&self.groups[group_index]);
-                let command = Config::prompt_for_string("Group members: a=add, d=delete, b=back", Some("b"))?;
+                let command = Config::prompt_for_string("Group members: a=add, d=delete, b=back, p=by Pattern", Some("b"))?;
 
                 if let Some(command) = command.chars().next() {
                     match command {
@@ -344,6 +344,12 @@ impl BusConfig {
                                 println!("Not in group");
                             }
                         },
+                        'p' => {
+                            let light_name_pattern = Config::prompt_for_string("Group members are lights whose names match", None)?;
+
+                            dali_manager.match_group(self, group_address, &light_name_pattern)?;
+
+                        }
                         'b' => break,
                         _ => println!("Invalid command"),
                     }

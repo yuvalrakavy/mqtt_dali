@@ -1,7 +1,7 @@
 use log::{debug, trace};
 use thiserror::Error;
 use crate::dali_commands;
-use crate::config_payload::BusStatus;
+use crate::config_payload::{BusStatus, BusConfig, Group};
 use crate::command_payload::LightStatus;
 
 #[derive(Debug, Clone, Copy)]
@@ -27,6 +27,9 @@ pub enum DaliManagerError {
 
     #[error("Unexpected light status {0:?}")]
     UnexpectedStatus(DaliBusResult),
+
+    #[error("Pattern (regex) error: {0}")]
+    RegExError(#[from] regex::Error),
 
     #[error("DALI interface error: {0:?}")]
     DaliInterfaceError(#[source] Box<dyn std::error::Error>),
@@ -158,6 +161,38 @@ impl<'manager> DaliManager<'manager> {
 
     pub fn add_to_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
         self.send_command_to_address(bus, dali_commands::DALI_ADD_TO_GROUP0+(group_address as u16), short_address, true)
+    }
+
+    pub fn match_group(&mut self, bus_config: &mut BusConfig, group_address: u8, light_name_pattern: &str) -> Result<DaliBusResult> {
+        let re = regex::Regex::new(light_name_pattern)?;
+        let group = bus_config.groups.iter_mut().find(|g| g.group_address == group_address);
+
+        // Create group if not found
+        if group.is_none() {
+            bus_config.groups.push( Group { description: format!("New-Group {}", group_address), group_address, members: Vec::new()});
+        }
+
+        let group = bus_config.groups.iter_mut().find(|g| g.group_address == group_address).unwrap();
+
+        for light in bus_config.channels.iter() {
+            if re.is_match(&light.description) {
+                // If this light is not member of the group, add it
+                if !group.members.contains(&light.short_address) {
+                    trace!("Light {}: {} matches {} - added to group {}", light.short_address, light.description, light_name_pattern, group_address);
+                    self.add_to_group(bus_config.bus, group_address, light.short_address)?;
+                    group.members.push(light.short_address);
+                }
+            } else {
+                // If this light is member of the group, remove it since its name does not match the pattern
+                if let Some(index) = group.members.iter().position(|short_address|  *short_address == light.short_address) {
+                    trace!("Light {}: {} does not match {} - removed from group {}", light.short_address, light.description, light_name_pattern, group_address);
+                    self.remove_from_group(bus_config.bus, group_address, light.short_address)?;
+                    group.members.remove(index);
+                }
+            }
+        }
+
+        Ok(DaliBusResult::None)
     }
 
     pub fn query_light_status(&mut self, bus: usize, short_address: u8) -> Result<LightStatus> {
