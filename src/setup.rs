@@ -1,6 +1,7 @@
 use log::{log_enabled, Level::Trace};
 use std::{path::Path, fs::File, io, io::Write, fmt};
 use crate::{config_payload::{Config, BusConfig, BusStatus, Channel, Group}, dali_manager::{DaliManager, DaliBusIterator, DaliDeviceSelection}};
+use crate::dali_manager::{MatchGroupAction};
 
 #[derive(Debug)]
 pub enum SetupError {
@@ -347,9 +348,15 @@ impl BusConfig {
                         'p' => {
                             let light_name_pattern = Config::prompt_for_string("Group members are lights whose names match", None)?;
 
-                            dali_manager.match_group(self, group_address, &light_name_pattern)?;
+                            dali_manager.match_group(self, group_address, &light_name_pattern, Some(Box::new(|action, _| {
+                                    match action {
+                                        MatchGroupAction::AddMember(light, _) => println!("  Adding {}", light),
+                                        MatchGroupAction::RemoveMember(light, _) => println!("  Remove {}", light),
+                                    }
+                                }))
+                            )?;
 
-                        }
+                        },
                         'b' => break,
                         _ => println!("Invalid command"),
                     }

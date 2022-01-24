@@ -36,6 +36,8 @@ pub enum DaliManagerError {
 }
 
 pub type Result<T> = std::result::Result<T, DaliManagerError>;
+pub type FindDeviceProgress = Box<dyn Fn(u8, u8)>;
+pub type MatchGroupProgress = Box<dyn Fn(MatchGroupAction, &str)>;
 
 pub trait DaliController {
     fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult>;
@@ -47,11 +49,8 @@ pub struct DaliManager<'a> {
     pub controller: &'a mut dyn DaliController,
 }
 
-// Callback: (short_address, step)
-pub type DaliBusProgressCallback = dyn Fn(u8, u8);
-
 pub struct DaliBusIterator {
-    progress: Option<Box<DaliBusProgressCallback>>,
+    progress: Option<FindDeviceProgress>,
     bus: usize,
     previous_low_byte: Option<u8>,
     previous_mid_byte: Option<u8>,
@@ -63,6 +62,11 @@ pub enum DaliDeviceSelection {
     All,
     WithoutShortAddress,
     Address(u8),
+}
+
+pub enum MatchGroupAction<'a> {
+    AddMember(&'a str, &'a str),
+    RemoveMember(&'a str, &'a str),
 }
 
 impl<'manager> DaliManager<'manager> {
@@ -163,7 +167,7 @@ impl<'manager> DaliManager<'manager> {
         self.send_command_to_address(bus, dali_commands::DALI_ADD_TO_GROUP0+(group_address as u16), short_address, true)
     }
 
-    pub fn match_group(&mut self, bus_config: &mut BusConfig, group_address: u8, light_name_pattern: &str) -> Result<DaliBusResult> {
+    pub fn match_group(&mut self, bus_config: &mut BusConfig, group_address: u8, light_name_pattern: &str, progress: Option<MatchGroupProgress>) -> Result<DaliBusResult> {
         let re = regex::Regex::new(light_name_pattern)?;
         let group = bus_config.groups.iter_mut().find(|g| g.group_address == group_address);
 
@@ -178,13 +182,25 @@ impl<'manager> DaliManager<'manager> {
             if re.is_match(&light.description) {
                 // If this light is not member of the group, add it
                 if !group.members.contains(&light.short_address) {
-                    trace!("Light {}: {} matches {} - added to group {}", light.short_address, light.description, light_name_pattern, group_address);
-                    self.add_to_group(bus_config.bus, group_address, light.short_address)?;
-                    group.members.push(light.short_address);
+                    if let Some(progress) = &progress {
+                        progress(MatchGroupAction::AddMember(
+                            &format!("{} ({})", light.description, light.short_address),
+                            &format!("{} ({})", group.description, group.group_address)
+                        ), light_name_pattern)
+                    }
                 }
+                trace!("Light {}: {} matches {} - added to group {}", light.short_address, light.description, light_name_pattern, group_address);
+                self.add_to_group(bus_config.bus, group_address, light.short_address)?;
+                group.members.push(light.short_address);
             } else {
                 // If this light is member of the group, remove it since its name does not match the pattern
                 if let Some(index) = group.members.iter().position(|short_address|  *short_address == light.short_address) {
+                    if let Some(progress) = &progress {
+                        progress(MatchGroupAction::RemoveMember(
+                            &format!("{} ({})", light.description, light.short_address),
+                            &format!("{} ({})", group.description, group.group_address)
+                        ), light_name_pattern)
+                    }
                     trace!("Light {}: {} does not match {} - removed from group {}", light.short_address, light.description, light_name_pattern, group_address);
                     self.remove_from_group(bus_config.bus, group_address, light.short_address)?;
                     group.members.remove(index);
@@ -219,7 +235,7 @@ impl<'manager> DaliManager<'manager> {
 }
 
 impl DaliBusIterator {
-    pub fn new(dali_manager: &mut DaliManager, bus: usize, selection: DaliDeviceSelection, progress: Option<Box<DaliBusProgressCallback>>) -> Result<DaliBusIterator> {
+    pub fn new(dali_manager: &mut DaliManager, bus: usize, selection: DaliDeviceSelection, progress: Option<FindDeviceProgress>) -> Result<DaliBusIterator>  {
         let parameter = match selection {
             DaliDeviceSelection::All => 0,
             DaliDeviceSelection::WithoutShortAddress => 0xff,

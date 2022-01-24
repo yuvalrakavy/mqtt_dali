@@ -2,7 +2,7 @@ use std::time::Duration;
 use log::{error, debug};
 use thiserror::Error;
 use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, LastWill, ClientError, ConnectionError};
-use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection, DaliManagerError};
+use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection, DaliManagerError, MatchGroupAction};
 use crate::command_payload::{DaliCommand, QueryLightReply};
 use crate::config_payload::{Config,  Group, BusStatus};
 
@@ -243,7 +243,7 @@ impl <'a> MqttDali<'a> {
         if let Some(bus) = self.config.buses.get_mut(bus_number) {
             MqttDali::check_bus_status(bus_number, &bus.status)?;
 
-            self.dali_manager.match_group(bus, group_address, light_name_pattern)?;
+            self.dali_manager.match_group(bus, group_address, light_name_pattern, Option::<Box<dyn Fn(MatchGroupAction, &str)>>::None)?;
             Ok(DaliBusResult::None)
         }  else {
             Err(CommandError::BusNumber(bus_number))
@@ -272,7 +272,7 @@ impl <'a> MqttDali<'a> {
             bus.channels.clear();
         }
 
-        let mut device_iterator = DaliBusIterator::new(self.dali_manager, bus_number, selection, None)?;
+        let mut device_iterator = DaliBusIterator::new(self.dali_manager, bus_number, selection, Option::<Box<dyn Fn(u8, u8)>>::None)?;
 
         while device_iterator.find_next_device(self.dali_manager)?.is_some() {
             let short_address = (0..64u8).find(|short_address|
