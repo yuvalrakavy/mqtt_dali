@@ -29,7 +29,7 @@ pub enum DaliManagerError {
     UnexpectedStatus(DaliBusResult),
 
     #[error("Pattern (regex) error: {0}")]
-    RegExError(#[from] regex::Error),
+    RegExError(#[from] #[source] regex::Error),
 
     #[error("DALI interface error: {0:?}")]
     DaliInterfaceError(#[source] Box<dyn std::error::Error>),

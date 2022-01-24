@@ -13,7 +13,7 @@ use crate::config_payload::{Config, BusConfig, BusStatus};
 #[derive(Debug, Error)]
 pub enum DaliAtxError {
     #[error("UART error: {0}")]
-    UartError(#[from] uart::Error),
+    UartError(#[from] #[source] uart::Error),
 
     #[error("Invalid hex digit {0}")]
     InvalidHexDigit(u8),
