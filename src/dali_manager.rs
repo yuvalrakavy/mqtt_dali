@@ -3,6 +3,7 @@ use thiserror::Error;
 use crate::dali_commands;
 use crate::config_payload::{BusStatus, BusConfig, Group};
 use crate::command_payload::LightStatus;
+use std::{thread::sleep, time::Duration};
 
 #[derive(Debug, Clone, Copy)]
 pub enum DaliBusResult {
@@ -33,6 +34,12 @@ pub enum DaliManagerError {
 
     #[error("DALI interface error: {0:?}")]
     DaliInterfaceError(#[source] Box<dyn std::error::Error>),
+
+    #[error("Add to group failed (light {0} group {1})")]
+    GroupAddFailed(u8, u8),
+
+    #[error("Remove from group failed (light {0} group {1})")]
+    GroupRemoveFailed(u8, u8),
 }
 
 pub type Result<T> = std::result::Result<T, DaliManagerError>;
@@ -159,12 +166,76 @@ impl<'manager> DaliManager<'manager> {
         Ok(())
     }
 
+    pub fn query_group_membership(&mut self, bus: usize, short_address: u8) -> Result<u16> {
+        let groups_0to7 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_0_7, short_address, false)? {
+            DaliBusResult::Value8(mask) => mask,
+            bus_status => return Err(DaliManagerError::UnexpectedStatus(bus_status)),
+        };
+
+        let groups_8to15 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_8_15, short_address, false)? {
+            DaliBusResult::Value8(mask) => mask,
+            bus_status => return Err(DaliManagerError::UnexpectedStatus(bus_status)),
+        };
+
+        Ok(((groups_8to15 as u16) << 8) | (groups_0to7 as u16))
+    }
+
+    pub fn is_group_member(&mut self, bus: usize, short_address: u8, group_address: u8) -> Result<bool> {
+        let membership_mask = self.query_group_membership(bus, short_address)?;
+
+        Ok((1 << group_address) & membership_mask != 0)
+    }
+
     pub fn remove_from_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
         self.send_command_to_address(bus, dali_commands::DALI_REMOVE_FROM_GROUP0+(group_address as u16), short_address, true)
     }
 
+    pub fn remove_from_group_and_verify(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
+        let mut retry_count = 3;
+
+        loop {
+            self.remove_from_group(bus, group_address, short_address)?;
+
+            if !self.is_group_member(bus, short_address, group_address)? {
+                break Ok(DaliBusResult::None)
+            } else {
+                trace!("Remove light {short_address} from group {group_address} failed, retry again");
+
+                retry_count -= 1;
+
+                if retry_count == 0 {
+                    break Err(DaliManagerError::GroupRemoveFailed(short_address, group_address))
+                }
+
+                sleep(Duration::from_millis(200));
+            }
+        }
+    }
+
     pub fn add_to_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
         self.send_command_to_address(bus, dali_commands::DALI_ADD_TO_GROUP0+(group_address as u16), short_address, true)
+    }
+
+    pub fn add_to_group_and_verify(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
+        let mut retry_count = 3;
+
+        loop {
+            self.add_to_group(bus, group_address, short_address)?;
+
+            if self.is_group_member(bus, short_address, group_address)? {
+                break Ok(DaliBusResult::None)
+            } else {
+                trace!("Add light {short_address} to group {group_address} failed, retry again");
+
+                retry_count -= 1;
+
+                if retry_count == 0 {
+                    break Err(DaliManagerError::GroupAddFailed(short_address, group_address))
+                }
+
+                sleep(Duration::from_millis(200));
+            }
+        }
     }
 
     pub fn match_group(&mut self, bus_config: &mut BusConfig, group_address: u8, light_name_pattern: &str, progress: Option<MatchGroupProgress>) -> Result<DaliBusResult> {
@@ -188,10 +259,11 @@ impl<'manager> DaliManager<'manager> {
                             &format!("{} ({})", group.description, group.group_address)
                         ), light_name_pattern)
                     }
+
+                    trace!("Light {}: {} matches {} - added to group {}", light.short_address, light.description, light_name_pattern, group_address);
+                    self.add_to_group_and_verify(bus_config.bus, group_address, light.short_address)?;
+                    group.members.push(light.short_address);
                 }
-                trace!("Light {}: {} matches {} - added to group {}", light.short_address, light.description, light_name_pattern, group_address);
-                self.add_to_group(bus_config.bus, group_address, light.short_address)?;
-                group.members.push(light.short_address);
             } else {
                 // If this light is member of the group, remove it since its name does not match the pattern
                 if let Some(index) = group.members.iter().position(|short_address|  *short_address == light.short_address) {
@@ -202,7 +274,7 @@ impl<'manager> DaliManager<'manager> {
                         ), light_name_pattern)
                     }
                     trace!("Light {}: {} does not match {} - removed from group {}", light.short_address, light.description, light_name_pattern, group_address);
-                    self.remove_from_group(bus_config.bus, group_address, light.short_address)?;
+                    self.remove_from_group_and_verify(bus_config.bus, group_address, light.short_address)?;
                     group.members.remove(index);
                 }
             }
@@ -217,20 +289,6 @@ impl<'manager> DaliManager<'manager> {
             Ok(bus_result) => Err(DaliManagerError::UnexpectedStatus(bus_result)),
             Err(e) => Err(e),
         }
-    }
-
-    pub fn query_group_membership(&mut self, bus: usize, short_address: u8) -> Result<u16> {
-        let groups_0to7 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_0_7, short_address, false)? {
-            DaliBusResult::Value8(mask) => mask,
-            bus_status => return Err(DaliManagerError::UnexpectedStatus(bus_status)),
-        };
-
-        let groups_8to15 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_8_15, short_address, false)? {
-            DaliBusResult::Value8(mask) => mask,
-            bus_status => return Err(DaliManagerError::UnexpectedStatus(bus_status)),
-        };
-
-        Ok(((groups_8to15 as u16) << 8) | (groups_0to7 as u16))
     }
 }
 

@@ -329,7 +329,7 @@ impl BusConfig {
                             } else {
                                 let group = & mut self.groups[group_index];
                                 group.members.push(short_address);
-                                dali_manager.add_to_group(self.bus, group_address, short_address)?;
+                                dali_manager.add_to_group_and_verify(self.bus, group_address, short_address)?;
                             }
                         },
                         'd' => {
@@ -339,7 +339,7 @@ impl BusConfig {
 
                             if let Some(index) = index {
                                 group.members.remove(index);
-                                dali_manager.remove_from_group(self.bus, group_address, short_address)?;
+                                dali_manager.remove_from_group_and_verify(self.bus, group_address, short_address)?;
                             }
                             else {
                                 println!("Not in group");

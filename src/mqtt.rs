@@ -208,7 +208,7 @@ impl <'a> MqttDali<'a> {
             }
 
             MqttDali::check_bus_status(bus_number, &bus.status)?;
-            self.dali_manager.add_to_group(bus_number, group_address, short_address)?;
+            self.dali_manager.add_to_group_and_verify(bus_number, group_address, short_address)?;
 
             let group = bus.groups.iter_mut().find(|g| g.group_address == group_address).unwrap();
             if !group.members.contains(&short_address) {
@@ -226,7 +226,7 @@ impl <'a> MqttDali<'a> {
             if let Some(group) = bus.groups.iter_mut().find(|g| g.group_address == group_address) {
                 if let Some(index) = group.members.iter().position(|m| *m== short_address) {
                     MqttDali::check_bus_status(bus_number, &bus.status)?;
-                    self.dali_manager.remove_from_group(bus_number, group_address, short_address)?;
+                    self.dali_manager.remove_from_group_and_verify(bus_number, group_address, short_address)?;
                     group.members.remove(index);
                 }
                 Ok(DaliBusResult::None)
