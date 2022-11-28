@@ -37,7 +37,7 @@ pub enum CommandError {
     #[error("No more groups can be added to bus {0}")]
     NoMoreGroups(usize),
 
-    #[error("Bus {} has no group {0}")]
+    #[error("Bus {0} has no group {1}")]
     NoSuchGroup(usize, u8),
 
     #[error("DALI error: {0:?}")]

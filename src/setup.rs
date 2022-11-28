@@ -24,7 +24,7 @@ impl From<std::io::Error> for SetupError {
 
 impl std::fmt::Display for SetupError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &*self {
+        match self {
             SetupError::JsonError(e) => write!(f, "Json error: {}", e),
             SetupError::IoError(e) => write!(f, "IO error: {}", e),
             SetupError::UserQuit => write!(f, "User quit"),
