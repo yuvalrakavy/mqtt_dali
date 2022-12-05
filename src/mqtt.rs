@@ -112,6 +112,7 @@ impl <'a> MqttDali<'a> {
         }
 
     }
+    
     fn check_bus(&mut self, bus_number: usize) -> Result<DaliBusResult> {
         self.update_bus_status()?;
 

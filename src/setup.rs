@@ -112,7 +112,7 @@ impl BusConfig {
             }
         }
 
-        if self.channels.len() % BusConfig::CHANNELS_PER_LINE != 0 {
+        if group.members.len() % BusConfig::CHANNELS_PER_LINE != 0 {
             println!();
         }
     }
@@ -182,7 +182,7 @@ impl BusConfig {
                                         print!("\r{:2} [{:23}]", n, "*".repeat(s as usize + 1));
                                         io::stdout().flush().unwrap();
                                     })) 
-                                }).expect("Error while initializing DALI bus iteration");
+                                }).expect( "Error while initializing DALI bus iteration");
                         self.channels = Vec::new();
                         self.groups = Vec::new();
 
