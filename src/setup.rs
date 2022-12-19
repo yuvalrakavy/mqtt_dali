@@ -329,7 +329,10 @@ impl BusConfig {
                             } else {
                                 let group = & mut self.groups[group_index];
                                 group.members.push(short_address);
-                                dali_manager.add_to_group_and_verify(self.bus, group_address, short_address)?;
+
+                                if let Err(err) = dali_manager.add_to_group_and_verify(self.bus, group_address, short_address) {
+                                    println!("Error when adding to group {}", err);
+                                }
                             }
                         },
                         'd' => {
