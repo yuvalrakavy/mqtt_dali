@@ -32,9 +32,14 @@ pub struct BusConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Config {
+pub struct DaliConfig {
     pub name: String,
     pub buses: Vec<BusConfig>,
+}
+
+#[derive(Debug)]
+pub struct Config {
+    pub config_filename: String,
 }
 
 #[test]
@@ -59,7 +64,7 @@ fn test_parse_config() {
             }
         "#);
 
-    let config: Config = serde_json::from_str(&config_json).unwrap();
+    let config: DaliConfig = serde_json::from_str(&config_json).unwrap();
 
     println!("Config {:#?}", config);
 }

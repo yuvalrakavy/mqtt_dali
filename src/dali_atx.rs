@@ -8,7 +8,7 @@ use rppal::{uart, uart::Uart};
 
 use crate::dali_manager;
 use crate::dali_manager::{DaliController, DaliManagerError, DaliBusResult};
-use crate::config_payload::{Config, BusConfig, BusStatus};
+use crate::config_payload::{DaliConfig, BusConfig, BusStatus};
 
 #[derive(Debug, Error)]
 pub enum DaliAtxError {
@@ -88,7 +88,9 @@ impl DaliController for DaliAtx {
 }
 
 impl DaliAtx {
-    pub fn try_new(config: &mut Config) -> dali_manager::Result<Box<dyn DaliController>> {
+    const DELAY: u16 = 20;
+
+    pub fn try_new(dali_config: &mut DaliConfig) -> dali_manager::Result<Box<dyn DaliController>> {
         let mut uart = Uart::with_path("/dev/serial0", 19200, rppal::uart::Parity::None, 8, 1)?;
         let mut buffer = [0u8; 8];
 
@@ -111,12 +113,12 @@ impl DaliAtx {
 
         println!("ATX DALI Pi Hat: Hardware version {}, Firmware version {}, {}", hardware_version, firmware_version, DaliAtx::to_bus_count_string(bus_count));
 
-        if config.buses.is_empty() {
+        if dali_config.buses.is_empty() {
             for bus_number in 0..bus_count {
-                config.buses.push(BusConfig::new(bus_number, BusStatus::Unknown));
+                dali_config.buses.push(BusConfig::new(bus_number, BusStatus::Unknown));
             }
-        } else if config.buses.len() != bus_count {
-            return Err(DaliManagerError::DaliInterfaceError(Box::new(DaliAtxError::MismatchBusCount(config.buses.len(), bus_count))))
+        } else if dali_config.buses.len() != bus_count {
+            return Err(DaliManagerError::DaliInterfaceError(Box::new(DaliAtxError::MismatchBusCount(dali_config.buses.len(), bus_count))))
         }
 
         Ok(Box::new(DaliAtx { uart, debug_write_buffer: Vec::new() }))
@@ -130,7 +132,11 @@ impl DaliAtx {
         }
         visible
     }
-    
+
+    fn sleep(delay_milliseconds: u16) {
+        std::thread::sleep(Duration::from_millis(delay_milliseconds as u64));
+    }
+
     fn flush_debug_write(&mut self) {
         trace!("UART sent: {}", DaliAtx::to_nice_string(self.debug_write_buffer.as_slice()));
         self.debug_write_buffer.clear();
@@ -146,7 +152,12 @@ impl DaliAtx {
             }
         }
 
-        self.uart.write(buffer)
+        for c in buffer {
+            self.uart.write(&[*c])?;
+            DaliAtx::sleep(DaliAtx::DELAY);
+        }
+        Ok(buffer.len())
+        //self.uart.write(buffer)
     }
 
     fn to_bus_count_string(n: usize) -> String {
@@ -180,7 +191,7 @@ impl DaliAtx {
 
     #[allow(dead_code)]
     fn send_byte_value(&mut self, value: u8) -> Result<usize> {
-        let buffer = [DaliAtx::HEX_DIGITS[(value >> 4) as usize] as u8, DaliAtx::HEX_DIGITS[(value & 0xf) as usize]];
+        let buffer = [DaliAtx::HEX_DIGITS[(value >> 4) as usize], DaliAtx::HEX_DIGITS[(value & 0xf) as usize]];
 
         Ok(self.do_write(&buffer)?)
     }

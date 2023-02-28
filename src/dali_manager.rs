@@ -1,4 +1,4 @@
-use log::{debug, trace};
+use log::{debug, trace, info};
 use thiserror::Error;
 use crate::dali_commands;
 use crate::config_payload::{BusStatus, BusConfig, Group};
@@ -40,6 +40,9 @@ pub enum DaliManagerError {
 
     #[error("Remove from group failed (light {0} group {1})")]
     GroupRemoveFailed(u8, u8),
+
+    #[error("No value was returned from the DALI bus")]
+    NoResult,
 }
 
 pub type Result<T> = std::result::Result<T, DaliManagerError>;
@@ -129,6 +132,25 @@ impl<'manager> DaliManager<'manager> {
         }
     }
 
+    pub fn send_command_to_address_and_get_byte(&mut self, bus: usize, command: u16, short_address: u8, repeat: bool) -> Result<u8> {
+        let mut retry_count = 4;
+
+        loop {
+            let result = self.send_command_to_address(bus, command, short_address, repeat)?;
+
+            if let DaliBusResult::Value8(b) = result {
+                break Ok(b);
+            }
+
+            retry_count -= 1;
+            if retry_count == 0 {
+                break Err(DaliManagerError::NoResult);
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+    }
+
     #[allow(dead_code)]
     pub fn send_command_to_group(&mut self, bus: usize, command: u16, group_address: u8, repeat: bool) -> Result<DaliBusResult> {
         if command > 0xff { return Err(DaliManagerError::Command(command)) }
@@ -167,26 +189,25 @@ impl<'manager> DaliManager<'manager> {
     }
 
     pub fn query_group_membership(&mut self, bus: usize, short_address: u8) -> Result<u16> {
-        let groups_0to7 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_0_7, short_address, false)? {
-            DaliBusResult::Value8(mask) => mask,
-            bus_status => return Err(DaliManagerError::UnexpectedStatus(bus_status)),
-        };
+        let groups_0to7 = self.send_command_to_address_and_get_byte(bus, dali_commands::DALI_QUERY_GROUPS_0_7, short_address, false)?;
+        let groups_8to15 = self.send_command_to_address_and_get_byte(bus, dali_commands::DALI_QUERY_GROUPS_8_15, short_address, false)?;
 
-        let groups_8to15 = match self.send_command_to_address(bus, dali_commands::DALI_QUERY_GROUPS_8_15, short_address, false)? {
-            DaliBusResult::Value8(mask) => mask,
-            bus_status => return Err(DaliManagerError::UnexpectedStatus(bus_status)),
-        };
+        let membership = ((groups_8to15 as u16) << 8) | (groups_0to7 as u16);
+        info!("QueryGroupMembership bus {}/light {} mask {:04x}", bus, short_address, membership);
 
-        Ok(((groups_8to15 as u16) << 8) | (groups_0to7 as u16))
+        Ok(membership)
     }
 
     pub fn is_group_member(&mut self, bus: usize, short_address: u8, group_address: u8) -> Result<bool> {
         let membership_mask = self.query_group_membership(bus, short_address)?;
 
-        Ok((1 << group_address) & membership_mask != 0)
+        let is_member = (1 << group_address) & membership_mask != 0;
+        info!("IsGroupMember light {} group {} mask {:04x} => {}", short_address, group_address, membership_mask, is_member);
+        Ok(is_member)
     }
 
     pub fn remove_from_group(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
+        info!("Remove light {bus}/{short_address} from group {group_address}", short_address=short_address, group_address=group_address);
         self.send_command_to_address(bus, dali_commands::DALI_REMOVE_FROM_GROUP0+(group_address as u16), short_address, true)
     }
 
@@ -217,7 +238,7 @@ impl<'manager> DaliManager<'manager> {
     }
 
     pub fn add_to_group_and_verify(&mut self, bus: usize, group_address:u8, short_address:u8) -> Result<DaliBusResult> {
-        let mut retry_count = 3;
+        let mut retry_count = 8;
 
         loop {
             self.add_to_group(bus, group_address, short_address)?;
@@ -225,7 +246,7 @@ impl<'manager> DaliManager<'manager> {
             if self.is_group_member(bus, short_address, group_address)? {
                 break Ok(DaliBusResult::None)
             } else {
-                trace!("Add light {short_address} to group {group_address} failed, retry again");
+                println!("Add light {short_address} to group {group_address} failed, retry again");
 
                 retry_count -= 1;
 

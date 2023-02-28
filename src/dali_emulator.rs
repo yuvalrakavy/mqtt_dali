@@ -4,7 +4,8 @@ use log::{trace, error, log_enabled, Level::Trace};
 use crate::dali_commands::{self};
 use crate::dali_manager;
 use crate::dali_manager::{DaliBusResult, DaliController};
-use crate::config_payload::{BusConfig, BusStatus, Config};
+use crate::config_payload::{BusConfig, BusStatus, DaliConfig};
+use crate::setup::Setup;
 
 #[derive(Debug)]
 struct DaliLightEmulator {
@@ -290,20 +291,20 @@ impl DaliBusEmulator {
 }
 
 impl DaliControllerEmulator {
-    pub fn try_new(config: &mut Config) -> dali_manager::Result<Box<dyn DaliController>> {
+    pub fn try_new(dali_config: &mut DaliConfig) -> dali_manager::Result<Box<dyn DaliController>> {
         let mut buses: Vec<DaliBusEmulator> = Vec::new();
 
-        if config.buses.is_empty() {
-            let bus_count: usize = Config::prompt_for_number("Number of DALI buses supported (1, 2 or 4)", &Some(1)).unwrap();
-            let light_count = Config::prompt_for_number("Number of lights to emulate", &Some(3)).unwrap();
+        if dali_config.buses.is_empty() {
+            let bus_count: usize = Setup::prompt_for_number("Number of DALI buses supported (1, 2 or 4)", &Some(1)).unwrap();
+            let light_count = Setup::prompt_for_number("Number of lights to emulate", &Some(3)).unwrap();
 
             for bus_number in 0..bus_count {
-                config.buses.push(BusConfig::new(bus_number, BusStatus::Active));
+                dali_config.buses.push(BusConfig::new(bus_number, BusStatus::Active));
                 buses.push(DaliBusEmulator::new(bus_number, light_count));
             }
         }
         else {
-            for bus_config in config.buses.iter() {
+            for bus_config in dali_config.buses.iter() {
                 buses.push(DaliBusEmulator::new_with_config(bus_config))
             }
         }

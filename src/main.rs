@@ -10,9 +10,14 @@ mod setup;
 mod dali_emulator;
 mod dali_atx;
 
-use crate::config_payload::Config;
+use crate::config_payload::DaliConfig;
 use crate::dali_emulator::DaliControllerEmulator;
 use crate::dali_atx::DaliAtx;
+use crate::setup::Setup;
+
+pub struct Config {
+    config_filename: String,
+}
 
 #[tokio::main]
 async fn main()  {
@@ -26,32 +31,38 @@ async fn main()  {
 
     env_logger::init();
     
-    let mut config = if !std::path::Path::new(&args.config).exists() {
-        Config::interactive_new().unwrap()
+    let config = Config {
+        config_filename: args.config.clone(),
+    };
+
+    let mut dali_config = if !std::path::Path::new(&args.config).exists() {
+        DaliConfig::interactive_new().unwrap()
     }
     else {
-        Config::load(&args.config).unwrap()
+        config.load().unwrap()
     };
 
     let mut controller = if args.emulation {
-        DaliControllerEmulator::try_new(&mut config)
+        DaliControllerEmulator::try_new(&mut dali_config)
     } else { 
-        DaliAtx::try_new(&mut config)
+        DaliAtx::try_new(&mut dali_config)
     }.expect("Error when initializing DALI controller");
 
     let mut dali_manager = dali_manager::DaliManager::new(controller.as_mut());
 
     if args.setup {
-        let setup_result = config.interactive_setup(& mut dali_manager).expect("Setup failed");
+        let setup_result = Setup::interactive_setup(&config, dali_config, &mut dali_manager).expect("Setup failed");
 
-        config.save(&args.config).unwrap();
-
-        if let setup::SetupAction::Quit = setup_result {
-            std::process::exit(0);
+        match setup_result {
+            setup::SetupAction::Quit => std::process::exit(0),
+            setup::SetupAction::Start(c) =>{
+                dali_config = c;
+                config.save(&dali_config).unwrap();
+            }
         }
     }
 
-    let mut mqtt = mqtt::MqttDali::new(&mut dali_manager, &mut config, &args.mqtt);
+    let mut mqtt = mqtt::MqttDali::new(&mut dali_manager, &mut dali_config, &args.mqtt);
 
-    mqtt.run(&args.config).await.unwrap();
+    mqtt.run(&config).await.unwrap();
 }
