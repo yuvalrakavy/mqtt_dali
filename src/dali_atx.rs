@@ -1,7 +1,7 @@
 use std::ascii::escape_default;
 use std::str;
 use std::time::Duration;
-use log::{trace, log_enabled, Level::Trace};
+use log::{trace, debug, log_enabled, Level::Trace};
 use thiserror::Error;
 use rppal::{uart, uart::Uart};
 
@@ -54,7 +54,9 @@ pub struct DaliAtx {
 }
 
 impl DaliController for DaliAtx {
+
     fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
+        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS));
         self.send_command(bus, 'h')?;
         self.send_byte_value(b1)?;
         self.send_byte_value(b2)?;
@@ -63,6 +65,7 @@ impl DaliController for DaliAtx {
     }
 
     fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
+        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS));
         self.send_command(bus, 't')?;
         self.send_byte_value(b1)?;
         self.send_byte_value(b2)?;
@@ -71,6 +74,7 @@ impl DaliController for DaliAtx {
     }
 
     fn get_bus_status(&mut self, bus: usize) -> dali_manager::Result<BusStatus> {
+        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS));
         self.send_command(bus, 'd')?;
         self.send_nl()?;
 
@@ -88,7 +92,7 @@ impl DaliController for DaliAtx {
 }
 
 impl DaliAtx {
-    const DELAY: u16 = 20;
+    const IDLE_TIME_MILLISECONDS: u64 = 3;
 
     pub fn try_new(dali_config: &mut DaliConfig) -> dali_manager::Result<Box<dyn DaliController>> {
         let mut uart = Uart::with_path("/dev/serial0", 19200, rppal::uart::Parity::None, 8, 1)?;
@@ -124,6 +128,21 @@ impl DaliAtx {
         Ok(Box::new(DaliAtx { uart, debug_write_buffer: Vec::new() }))
     }
 
+    fn wait_for_idle(&mut self, wait_period: Duration) {
+        debug!("Start Waiting for idle");
+        loop {
+            self.uart.set_read_mode(0, wait_period).unwrap();
+            let mut buffer = [0u8; 1];
+            if self.uart.read(&mut buffer).unwrap() == 0 {      // If timeout, we're idle
+                debug!("bus is idle");
+                break;
+            }
+            else {
+                debug!("Not idle, Got byte {}", buffer[0]);
+            }
+        }
+    }
+
     fn to_nice_string(bs: &[u8]) -> String {
         let mut visible = String::new();
         for &b in bs {
@@ -131,10 +150,6 @@ impl DaliAtx {
             visible.push_str(str::from_utf8(&part).unwrap());
         }
         visible
-    }
-
-    fn sleep(delay_milliseconds: u16) {
-        std::thread::sleep(Duration::from_millis(delay_milliseconds as u64));
     }
 
     fn flush_debug_write(&mut self) {
@@ -154,10 +169,8 @@ impl DaliAtx {
 
         for c in buffer {
             self.uart.write(&[*c])?;
-            DaliAtx::sleep(DaliAtx::DELAY);
         }
         Ok(buffer.len())
-        //self.uart.write(buffer)
     }
 
     fn to_bus_count_string(n: usize) -> String {
