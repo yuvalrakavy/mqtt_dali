@@ -86,11 +86,11 @@ impl BusConfig {
     }
 
     fn get_unused_short_address(&self) -> Option<u8> {
-        (0..64u8).find(|short_address| self.get_channel_index(*short_address).is_none())
+        (1..64u8).find(|short_address| self.get_channel_index(*short_address).is_none())
     }
 
     fn get_unused_group_address(&self) -> Option<u8> {
-        (0..16u8).find(|group_address| self.get_group_index(*group_address).is_none())
+        (1..16u8).find(|group_address| self.get_group_index(*group_address).is_none())
     }
 
     fn display_channels(&self) {
@@ -119,9 +119,10 @@ impl BusConfig {
                 print!("      ");
             }
 
-            match self.find_member(group.members[i]) {
-                Some(channel) => print!("{:18}", channel.to_string()),
-                _ => print!("Missing {:10}", self.channels[i]),
+            if let Some(channel) = self.find_member(group.members[i]) {
+                print!("{:18}", channel.to_string())
+            } else {
+                print!("Missing {:10}", self.channels[i])
             }
 
             if (i+1) % BusConfig::CHANNELS_PER_LINE == 0 {
@@ -247,11 +248,29 @@ impl Setup {
 
         loop {
             let default_assign = if dali_config.buses[bus_number].channels.is_empty() { Some("a") } else { Some("b") };
-            let command = Setup::prompt_for_string("Assign short addresses: a=All, m=missing, #=change light's address, d=change light's description, b=back", default_assign)?;
+            let command = Setup::prompt_for_string("Assign short addresses - a:All, m:missing, =:set address, #:change light's address, d:change light's description, b:back", default_assign)?;
 
             if let Some(command) = command.chars().next() {
                 match command {
                     'b' => return Ok(dali_config),
+                    '=' => {
+                        let short_address = loop {
+                            let default_short_address = dali_config.buses[bus_number].get_unused_short_address();
+                            let short_address = Setup::prompt_for_short_address("Short address", &default_short_address)?;
+
+                            if dali_config.buses[bus_number].get_channel_index(short_address).is_none() {
+                                break short_address;
+                            }
+
+                            println!("Short address is already used");
+                        };
+
+                        let default_description = format!("Light {}", short_address);
+                        let description = Setup::prompt_for_string("Description",Some(&default_description))?;
+
+                        dali_config.buses[bus_number].channels.push(Channel{ description, short_address });
+                        config.save(&dali_config)?;
+                    },
                     'd' => {
                         if let Ok(short_address) = Setup::prompt_for_number::<u8>("Change description of address", &None) {
                             if let Some(index) = dali_config.buses[bus_number].get_channel_index(short_address) {
@@ -264,8 +283,14 @@ impl Setup {
                         }
                     },
                     'a' => {
+                        if !dali_config.buses[bus_number].channels.is_empty() {
+                            if !Setup::prompt_for_yes_no("This will erase all existing addresses. Are you sure?", false)? {
+                                continue;
+                            }
+                        }
+
                         let mut count = 0;
-                        let prompt_for_each = Setup::prompt_for_string("Assign all: a=auto, p=prompt for short-address/description", Some("a"))?;
+                        let prompt_for_each = Setup::prompt_for_string("Assign all -  a:auto, p:prompt for short-address/description", Some("a"))?;
                         let prompt_for_each = !prompt_for_each.starts_with('a');
 
                         let mut dali_bus_iterator  = DaliBusIterator::new(dali_manager, bus_number, DaliDeviceSelection::All,
@@ -321,11 +346,21 @@ impl Setup {
                     }
                     'm' => {
                         let mut dali_bus_iterator = 
-                            DaliBusIterator::new(dali_manager, bus_number, DaliDeviceSelection::WithoutShortAddress, None).
-                            expect("Error while initializing DALI bus iteration");
+                            DaliBusIterator::new(dali_manager, bus_number, DaliDeviceSelection::WithoutShortAddress,
+                                if log_enabled!(Trace) { None } else { 
+                                    Some(Box::new(|n, s| {
+                                        print!("\r{:2} [{:23}]", n, "*".repeat(s as usize + 1));
+                                        io::stdout().flush().unwrap();
+                                    }))
+                                }
+                            ).expect("Error while initializing DALI bus iteration");
+
+                        let mut prompt_for_terminate = true;
 
                         while dali_bus_iterator.find_next_device(dali_manager)?.is_some() {
                             let default_short_address = dali_config.buses[bus_number].get_unused_short_address();
+
+                            println!();
                             let short_address = loop {
                                 let short_address = Setup::prompt_for_short_address("Short address", &default_short_address)?;
                                 if dali_config.buses[bus_number].get_channel_index(short_address).is_none() {
@@ -338,7 +373,18 @@ impl Setup {
                             dali_manager.program_short_address(bus_number, short_address).unwrap_or_else(|e| println!("Error when programming address: {}", e));
                             dali_config.buses[bus_number].channels.push(Channel{ description, short_address });
                             config.save(&dali_config)?;
+
+                            if prompt_for_terminate {
+                                let look_for_more = Setup::prompt_for_string("Look for more lights y=yes, n=no, a=all", Some("y"))?;
+
+                                match look_for_more.chars().next() {
+                                    Some('n') => dali_bus_iterator.terminate(),
+                                    Some('a') => prompt_for_terminate = false,
+                                    _ => {}
+                                }
+                            }
                         }
+                        println!();
                     }
                     '#' => {
                         if let Ok(short_address) = Setup::prompt_for_short_address("Change address", &None) {
@@ -417,7 +463,7 @@ impl Setup {
             loop {
                 dali_config.buses[bus_number].display_group(&dali_config.buses[bus_number].groups[group_index]);
 
-                let command = Setup::prompt_for_string("Group members: a=add, d=delete, b=back, p=by Pattern", Some("b"))?;
+                let command = Setup::prompt_for_string("Group members - a:add, d:delete, b:back, p:by Pattern", Some("b"))?;
 
                 if let Some(command) = command.chars().next() {
                     match command {
@@ -650,7 +696,7 @@ impl Setup {
         dali_config.buses[bus_number].display();
 
         loop {
-            let command = Setup::prompt_for_string("Lights: r=rename, s=set-level, q=query, g=group-membership, b=back", Some("b"))?;
+            let command = Setup::prompt_for_string("Lights - r:rename, s:set-level, q:query, g:group-membership, b:back", Some("b"))?;
 
             if let Some(command) = command.chars().next() {
                 match command {
@@ -719,7 +765,7 @@ impl Setup {
         else {
             loop {
                 dali_config.buses[bus_number].display();
-                let command = Setup::prompt_for_string("Bus: r=rename, a=assign addresses, l=lights, g=groups, q=query, f=fix, b=back", Some("b"))?;
+                let command = Setup::prompt_for_string("Bus - r:rename, a:assign addresses, l:lights, g:groups, q:query, f:fix, b:back", Some("b"))?;
 
                 if let Some(command) = command.chars().next() {
                     match command {
@@ -749,7 +795,7 @@ impl Setup {
             
             dali_config.display();
 
-            let command = Setup::prompt_for_string("Controller: r=rename, b=bus setup, q=quit, s=start", Some("s"))?;
+            let command = Setup::prompt_for_string("Controller - r:rename, b:bus setup, q:quit, s:start", Some("s"))?;
 
             if let Some(command) = command.chars().next() {
                 match command {
@@ -808,6 +854,20 @@ impl Setup {
             }
             else {
                 return Ok(value.trim_end().to_owned());
+            }
+        }
+    }
+
+    pub fn prompt_for_yes_no(prompt: &str, default_value: bool) -> Result<bool, Box<dyn std::error::Error>> {
+        loop {
+            let default_prompt = if default_value { "y" } else { "n" };
+
+            let value = Setup::prompt_for_string(prompt, Some(default_prompt))?;
+
+            match value.chars().next().unwrap() {
+                'y' | 'Y' => return Ok(true),
+                'n' | 'N' => return Ok(false),
+                _ => println!("Invalid value"),
             }
         }
     }
