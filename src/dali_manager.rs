@@ -66,6 +66,7 @@ pub struct DaliBusIterator {
     previous_mid_byte: Option<u8>,
     previous_high_byte: Option<u8>,
     short_address: u8,
+    terminate: bool,
 }
 
 pub enum DaliDeviceSelection {
@@ -166,24 +167,73 @@ impl<'manager> DaliManager<'manager> {
         }
     }
 
+    fn is_collision(result: &DaliBusResult) -> bool {
+        match result {
+            DaliBusResult::ReceiveCollision => true,
+            DaliBusResult::TransmitCollision => true,
+            _ => false,
+        }
+    }
+
     fn broadcast_command(&mut self, bus: usize, command: u16, parameter: u8, repeat: bool, description: &str) -> Result<DaliBusResult> {
         let b1 = if (command & 0x100) != 0 { (command & 0xff) as u8 } else { 0xff };
         let b2 = if (command & 0x100) != 0 { parameter } else { command as u8 };
 
         debug!("Send: {}", description);
 
+        loop {
+            let result = if repeat {
+                self.controller.send_2_bytes_repeat(bus, b1, b2)?
+            } else {
+                self.controller.send_2_bytes(bus, b1, b2)?
+            };
+
+            if !DaliManager::is_collision(&result) {
+                break Ok(result)
+            }
+        }
+    }
+
+    fn broadcast_command_allow_collision(&mut self, bus: usize, command: u16, parameter: u8, repeat: bool, description: &str) -> Result<DaliBusResult> {
+        let b1 = if (command & 0x100) != 0 { (command & 0xff) as u8 } else { 0xff };
+        let b2 = if (command & 0x100) != 0 { parameter } else { command as u8 };
+
+        debug!("Send (expect collision): {}", description);
+
         if repeat {
             self.controller.send_2_bytes_repeat(bus, b1, b2)
         } else {
             self.controller.send_2_bytes(bus, b1, b2)
         }
-    }
+     }
 
     pub fn program_short_address(&mut self, bus: usize, short_address: u8) -> Result<()> {
         if short_address >= 64 { panic!("Invalid short address") }
 
+        debug!("Program short address: {short_address}");
+
         self.broadcast_command(bus, dali_commands::DALI_PROGRAM_SHORT_ADDRESS, (short_address << 1) | 0x01, false, &format!("Program short address {}", short_address))?;
-        self.broadcast_command(bus, dali_commands::DALI_WITHDRAW, 0, false, "Withdraw")?;
+
+        // loop {
+        //     self.broadcast_command(bus, dali_commands::DALI_PROGRAM_SHORT_ADDRESS, (short_address << 1) | 0x01, false, &format!("Program short address {}", short_address))?;
+
+        //     let actual_short_address = self.query_short_address(bus)? >> 1;
+        //     debug!("Actual short address {actual_short_address}");
+
+        //     if actual_short_address == short_address {
+        //         break;
+        //     }
+        // }
+
+        loop {
+            let status = self.broadcast_command(bus, dali_commands::DALI_WITHDRAW, 0, false, "Withdraw")?;
+
+            if let DaliBusResult::None = status {
+                break;
+            }
+
+            debug!("Withdraw status: {:?} - retry", status);
+        }
 
         Ok(())
     }
@@ -321,10 +371,13 @@ impl DaliBusIterator {
             DaliDeviceSelection::Address(a) => a << 1 | 1
         };
 
+        dali_manager.broadcast_command(bus, dali_commands::DALI_TERMINATE, 0, true, "Terminate")?;
+        std::thread::sleep(std::time::Duration::from_millis(300));
+
         dali_manager.broadcast_command(bus, dali_commands::DALI_INITIALISE, parameter, true, "Initialize")?;
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        std::thread::sleep(std::time::Duration::from_millis(400));
         dali_manager.broadcast_command(bus, dali_commands::DALI_RANDOMISE, 0, true, "Randomize")?;
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        std::thread::sleep(std::time::Duration::from_millis(250));
 
         Ok(DaliBusIterator {
             bus,
@@ -334,6 +387,7 @@ impl DaliBusIterator {
             previous_mid_byte: None,
             previous_high_byte: None,
             short_address: 0,
+            terminate: false
         })
     }
 
@@ -353,15 +407,21 @@ impl DaliBusIterator {
         self.previous_mid_byte = Some((search_address >> 8) as u8);
         self.previous_high_byte = Some((search_address >> 16) as u8);
 
-        if let Some(low) = low { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRL, low, false, &format!("Set search address low: {}", low))?; }
-        if let Some(mid) = mid { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRM, mid, false, &format!("Set search address mid: {}", mid))?; }
-        if let Some(high) = high { dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRH, high, false, &format!("Set search address high: {}", high))?; }
+        if let Some(low) = low {
+             dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRL, low, false, &format!("Set search address low: {}", low))?;
+        }
+        if let Some(mid) = mid {
+             dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRM, mid, false, &format!("Set search address mid: {}", mid))?;
+        }
+        if let Some(high) = high {
+             dali_manager.broadcast_command(self.bus, dali_commands::DALI_SEARCHADDRH, high, false, &format!("Set search address high: {}", high))?;
+        }
 
         Ok(DaliBusResult::None)
     }
 
     fn is_random_address_le(&mut self, dali_manager: &mut DaliManager, retry: u8) -> Result<bool> {
-        match dali_manager.broadcast_command(self.bus, dali_commands::DALI_COMPARE, 0, false, "Is random address le") {
+        match dali_manager.broadcast_command_allow_collision(self.bus, dali_commands::DALI_COMPARE, 0, false, "Is random address le") {
             Ok(DaliBusResult::None) => if retry == 0 { Ok(false) } else { self.is_random_address_le(dali_manager, retry-1) },               // No answer
             Ok(_) => Ok(true),    // More than one yes reply
             Err(e) => Err(e),
@@ -374,12 +434,17 @@ impl DaliBusIterator {
         let mut delta = 0x00400000;
         let mut step = 0;
 
+        if self.terminate {
+            dali_manager.broadcast_command(self.bus, dali_commands::DALI_TERMINATE, 0, false, "terminate")?;
+            return Ok(None);
+        }
+
         while delta > 0 {
             trace!("find_next_device: Send search address {}", search_address);
 
             self.send_search_address(dali_manager, search_address)?;
 
-            let random_address_le = self.is_random_address_le(dali_manager, 0)?;   // On real hardware consider changing this to 1 retry
+            let random_address_le = self.is_random_address_le(dali_manager, 2)?;   // On real hardware consider changing this to 1 retry
 
             if random_address_le {
                 search_address -= delta;
@@ -397,20 +462,26 @@ impl DaliBusIterator {
         }
 
         self.send_search_address(dali_manager, search_address)?;
-        if !self.is_random_address_le(dali_manager, 0)? {
+        if !self.is_random_address_le(dali_manager, 2)? {
             search_address += 1;
             self.send_search_address(dali_manager, search_address)?;
-            self.is_random_address_le(dali_manager, 0)?;
+            self.is_random_address_le(dali_manager, 2)?;
         }
 
         if search_address > 0xffffff {
+            debug!("No more devices found!");
             dali_manager.broadcast_command(self.bus, dali_commands::DALI_TERMINATE, 0, false, "terminate")?;
             Ok(None)
         } else {
+            debug!("Found light at long address {}", search_address);
             let short_address = self.short_address;
             self.short_address += 1;
             Ok(Some(short_address)) 
         }
+    }
+
+    pub fn terminate(&mut self) {
+        self.terminate = true;
     }
 
 }
