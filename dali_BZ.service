@@ -1,5 +1,6 @@
 
 # Remeber to do:
+# Copy this file to /etc/systemd/system/dali.service
 #
 #  systemctl enable systemd-networkd.service systemd-networkd-wait-online.service
 #

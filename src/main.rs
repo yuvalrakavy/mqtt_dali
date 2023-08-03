@@ -46,7 +46,7 @@ async fn main()  {
         DaliControllerEmulator::try_new(&mut dali_config)
     } else { 
         DaliAtx::try_new(&mut dali_config)
-    }.expect("Error when initializing DALI controller");
+    }.expect("Error when initializing DALI controller - is serial port enabled? (enable using raspi-config)");
 
     let mut dali_manager = dali_manager::DaliManager::new(controller.as_mut());
 
