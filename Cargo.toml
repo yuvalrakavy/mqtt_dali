@@ -13,7 +13,7 @@ tokio = { version="1", features = ["full"]}
 serde_json = "1.0"
 serde = { version = "1.0.134", features = ["derive"] }
 #rumqttc = { path="../../rumqtt/rumqttc" }
-rumqttc = { version = "0.20.0", default-features = false }
+rumqttc = { version = "0.22.0", default-features = false }
 rustop = "1.1.1"
 rand = "0.8.4"
 rppal = "0.14.1"
