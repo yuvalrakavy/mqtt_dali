@@ -1,7 +1,7 @@
 use log::{log_enabled, Level::Trace};
 use std::{path::Path, fs::File, io, io::Write, fmt};
 use crate::{config_payload::{DaliConfig, BusConfig, BusStatus, Channel, Group}, dali_manager::{DaliManager, DaliBusIterator, DaliDeviceSelection}};
-use crate::dali_manager::{MatchGroupAction};
+use crate::dali_manager::MatchGroupAction;
 use crate::Config;
 
 #[derive(Debug)]
@@ -256,7 +256,7 @@ impl Setup {
                     '=' => {
                         let short_address = loop {
                             let default_short_address = dali_config.buses[bus_number].get_unused_short_address();
-                            let short_address = Setup::prompt_for_short_address("Short address", &default_short_address)?;
+                            let short_address = Setup::prompt_for_short_address("Short address", default_short_address)?;
 
                             if dali_config.buses[bus_number].get_channel_index(short_address).is_none() {
                                 break short_address;
@@ -272,7 +272,7 @@ impl Setup {
                         config.save(&dali_config)?;
                     },
                     'd' => {
-                        if let Ok(short_address) = Setup::prompt_for_number::<u8>("Change description of address", &None) {
+                        if let Ok(short_address) = Setup::prompt_for_number::<u8>("Change description of address", None) {
                             if let Some(index) = dali_config.buses[bus_number].get_channel_index(short_address) {
                                 let new_description = Setup::prompt_for_string("Description", None)?;
                                 dali_config.buses[bus_number].channels[index].description = new_description;
@@ -283,10 +283,8 @@ impl Setup {
                         }
                     },
                     'a' => {
-                        if !dali_config.buses[bus_number].channels.is_empty() {
-                            if !Setup::prompt_for_yes_no("This will erase all existing addresses. Are you sure?", false)? {
-                                continue;
-                            }
+                        if !dali_config.buses[bus_number].channels.is_empty() && !Setup::prompt_for_yes_no("This will erase all existing addresses. Are you sure?", false)? {
+                            continue;
                         }
 
                         let mut count = 0;
@@ -314,7 +312,7 @@ impl Setup {
                                 Some(default_short_address) if !prompt_for_each => default_short_address,
                                 _ => { 
                                     loop {
-                                        let short_address = Setup::prompt_for_short_address("Short address", &default_short_address)?;
+                                        let short_address = Setup::prompt_for_short_address("Short address", default_short_address)?;
                                         if dali_config.buses[bus_number].get_channel_index(short_address).is_none() {
                                             break short_address;
                                         }
@@ -362,7 +360,7 @@ impl Setup {
 
                             println!();
                             let short_address = loop {
-                                let short_address = Setup::prompt_for_short_address("Short address", &default_short_address)?;
+                                let short_address = Setup::prompt_for_short_address("Short address", default_short_address)?;
                                 if dali_config.buses[bus_number].get_channel_index(short_address).is_none() {
                                     break short_address;
                                 }
@@ -387,9 +385,9 @@ impl Setup {
                         println!();
                     }
                     '#' => {
-                        if let Ok(short_address) = Setup::prompt_for_short_address("Change address", &None) {
+                        if let Ok(short_address) = Setup::prompt_for_short_address("Change address", None) {
                             if let Some(index) = dali_config.buses[bus_number].get_channel_index(short_address) {
-                                if let Ok(new_short_address) = Setup::prompt_for_short_address("To address", &None) {
+                                if let Ok(new_short_address) = Setup::prompt_for_short_address("To address", None) {
                                     if new_short_address >= 64 {
                                         println!("Invalid new address");
                                     }
@@ -468,7 +466,7 @@ impl Setup {
                 if let Some(command) = command.chars().next() {
                     match command {
                         'a' => {
-                            let short_address = Setup::prompt_for_short_address("Add to group", &None)?;
+                            let short_address = Setup::prompt_for_short_address("Add to group", None)?;
                             let group = & dali_config.buses[bus_number].groups[group_index];
 
                             if dali_config.buses[bus_number].get_channel_index(short_address).is_none() {
@@ -489,7 +487,7 @@ impl Setup {
                         },
                         'd' => {
                             let group = & mut dali_config.buses[bus_number].groups[group_index];
-                            let short_address = Setup::prompt_for_short_address("Delete from group", &None)?;
+                            let short_address = Setup::prompt_for_short_address("Delete from group", None)?;
                             let index = group.members.iter().position(|a| *a == short_address);
 
                             if let Some(index) = index {
@@ -526,7 +524,7 @@ impl Setup {
 
     fn prompt_for_existing_group_address(bus_config: &BusConfig, prompt: &str, default_value: Option<u8>) -> Result<Option<u8>, Box<dyn std::error::Error>> {
         Ok(loop {
-            match Setup::prompt_for_group_address(prompt, &default_value) {
+            match Setup::prompt_for_group_address(prompt, default_value) {
                 Ok(group_address) => {
                     if bus_config.get_group_index(group_address).is_none() {
                         println!("This group is not defined");
@@ -540,7 +538,7 @@ impl Setup {
 
     fn prompt_for_new_group_address(bus_config: &BusConfig, prompt: &str) -> Result<Option<u8>, Box<dyn std::error::Error>> {
         Ok(loop {
-            match Setup::prompt_for_group_address(prompt, &bus_config.get_unused_group_address()) {
+            match Setup::prompt_for_group_address(prompt, bus_config.get_unused_group_address()) {
                 Ok(group_address) => {
                     if bus_config.get_group_index(group_address).is_some() {
                         println!("This group is already defined");
@@ -609,7 +607,7 @@ impl Setup {
                     },
                     's' => {
                         if let Some(group_address) = Setup::prompt_for_existing_group_address(&dali_config.buses[bus_number], "Group address", last_group_address)? {
-                            let level = Setup::prompt_for_number("Level", &Some(default_level))?;
+                            let level = Setup::prompt_for_number("Level", Some(default_level))?;
 
                             dali_manager.set_group_brightness(bus_number, group_address, level)?;
                             default_level = 255-level;
@@ -636,7 +634,7 @@ impl Setup {
 
     fn prompt_for_existing_short_address(bus_config: &BusConfig, prompt: &str, default_value: Option<u8>) -> Result<Option<u8>, Box<dyn std::error::Error>> {
         Ok(loop {
-            match Setup::prompt_for_short_address(prompt, &default_value) {
+            match Setup::prompt_for_short_address(prompt, default_value) {
                 Ok(short_address) => {
                     if bus_config.get_channel_index(short_address).is_none() {
                         println!("No light with this address");
@@ -715,7 +713,7 @@ impl Setup {
                     },
                     's' => {
                         if let Some(short_address) = Setup::prompt_for_existing_short_address( &dali_config.buses[bus_number], "Address", last_short_address)? {
-                            let level = Setup::prompt_for_number("Level", &Some(default_level))?;
+                            let level = Setup::prompt_for_number("Level", Some(default_level))?;
 
                             dali_manager.set_light_brightness(bus_number, short_address, level)?;
                             default_level = 255-level;
@@ -806,7 +804,7 @@ impl Setup {
                     },
                     'b' => {
                         let bus_number = if dali_config.buses.len() == 1 { 0 } else {
-                            Setup::prompt_for_number("Setup bus#", &Some(1))? - 1
+                            Setup::prompt_for_number("Setup bus#", Some(1))? - 1
                         };
 
                         if bus_number >= dali_config.buses.len() {
@@ -822,7 +820,7 @@ impl Setup {
         }
     }
 
-    pub fn display_prompt<T : std::fmt::Display>(prompt: &str, default_value: &Option<T>) {
+    pub fn display_prompt<T : std::fmt::Display>(prompt: &str, default_value: Option<T>) {
         if let Some(default_value) = default_value {
             print!("{} [{}]: ", prompt, default_value);
         }
@@ -842,7 +840,7 @@ impl Setup {
 
     pub fn prompt_for_string(prompt: &str, default_value: Option<&str>) -> Result<String, Box<dyn std::error::Error>> {
         loop {
-            Setup::display_prompt(prompt, &default_value);
+            Setup::display_prompt(prompt, default_value);
             let value =Setup::get_input()?;
 
             if value.is_empty() {
@@ -872,15 +870,15 @@ impl Setup {
         }
     }
 
-    pub fn prompt_for_number<T: std::str::FromStr + std::fmt::Display + Copy>(prompt: &str, default_value: &Option<T>) -> Result<T, Box<dyn std::error::Error>> {
+    pub fn prompt_for_number<T: std::str::FromStr + std::fmt::Display + Copy>(prompt: &str, default_value: Option<T>) -> Result<T, Box<dyn std::error::Error>> {
         loop {
             Setup::display_prompt(prompt, default_value);
 
             let value_as_string = Setup::get_input()?;
 
             if value_as_string.is_empty() {
-                if !default_value.is_none() {
-                    return Ok(default_value.unwrap().to_owned());
+                if let Some(default_value) = default_value {
+                    return Ok(default_value.to_owned());
                 } else {
                     return Err(Box::new(SetupError::UserQuit));
                 }
@@ -895,7 +893,7 @@ impl Setup {
         }
     }
 
-    pub fn prompt_for_short_address(prompt: &str, default_value: &Option<u8>) -> Result<u8, Box<dyn std::error::Error>> {
+    pub fn prompt_for_short_address(prompt: &str, default_value: Option<u8>) -> Result<u8, Box<dyn std::error::Error>> {
         loop {
             let short_address = Setup::prompt_for_number(prompt, default_value)?;
 
@@ -907,7 +905,7 @@ impl Setup {
         }
     }
 
-    pub fn prompt_for_group_address(prompt: &str, default_value: &Option<u8>) -> Result<u8, Box<dyn std::error::Error>> {
+    pub fn prompt_for_group_address(prompt: &str, default_value: Option<u8>) -> Result<u8, Box<dyn std::error::Error>> {
         loop {
             let group = Setup::prompt_for_number(prompt, default_value)?;
 

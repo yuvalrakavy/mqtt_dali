@@ -168,11 +168,7 @@ impl<'manager> DaliManager<'manager> {
     }
 
     fn is_collision(result: &DaliBusResult) -> bool {
-        match result {
-            DaliBusResult::ReceiveCollision => true,
-            DaliBusResult::TransmitCollision => true,
-            _ => false,
-        }
+        matches!(result, &DaliBusResult::ReceiveCollision | &DaliBusResult::TransmitCollision)
     }
 
     fn broadcast_command(&mut self, bus: usize, command: u16, parameter: u8, repeat: bool, description: &str) -> Result<DaliBusResult> {

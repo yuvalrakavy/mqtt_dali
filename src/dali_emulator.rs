@@ -295,8 +295,8 @@ impl DaliControllerEmulator {
         let mut buses: Vec<DaliBusEmulator> = Vec::new();
 
         if dali_config.buses.is_empty() {
-            let bus_count: usize = Setup::prompt_for_number("Number of DALI buses supported (1, 2 or 4)", &Some(1)).unwrap();
-            let light_count = Setup::prompt_for_number("Number of lights to emulate", &Some(3)).unwrap();
+            let bus_count: usize = Setup::prompt_for_number("Number of DALI buses supported (1, 2 or 4)", Some(1)).unwrap();
+            let light_count = Setup::prompt_for_number("Number of lights to emulate", Some(3)).unwrap();
 
             for bus_number in 0..bus_count {
                 dali_config.buses.push(BusConfig::new(bus_number, BusStatus::Active));
