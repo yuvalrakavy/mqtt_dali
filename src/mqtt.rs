@@ -57,7 +57,8 @@ type Result<T> = std::result::Result<T, CommandError>;
 
 impl <'a> MqttDali<'a> {
     pub fn new(dali_manager: &'a mut DaliManager<'a>, dali_config: &'a mut DaliConfig, mqtt_broker: &str) -> MqttDali<'a> {
-        let mut mqtt_options = MqttOptions::new(&dali_config.name, mqtt_broker, 1883);
+        let client_id = format!("DALI-{}", dali_config.name);
+        let mut mqtt_options = MqttOptions::new(&client_id, mqtt_broker, 1883);
         let last_will = LastWill::new(MqttDali::get_is_active_topic(&dali_config.name), "false".as_bytes(), QoS::AtLeastOnce, true);
         mqtt_options.set_keep_alive(Duration::from_secs(5)).set_last_will(last_will);
 
