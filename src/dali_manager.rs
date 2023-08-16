@@ -1,7 +1,7 @@
 use log::{debug, trace, info};
 use thiserror::Error;
 use crate::dali_commands;
-use crate::config_payload::{BusStatus, BusConfig, Group};
+use crate::config_payload::{BusStatus, BusConfig, Group, Channel};
 use crate::command_payload::LightStatus;
 use std::{thread::sleep, time::Duration};
 
@@ -234,6 +234,10 @@ impl<'manager> DaliManager<'manager> {
         Ok(())
     }
 
+    pub fn set_dtr(&mut self, bus: usize, value: u8) -> Result<DaliBusResult> {
+        self.broadcast_command(bus, dali_commands::DALI_DATA_TRANSFER_REGISTER0, value, false, &format!("Set DTR to {}", value))
+    }
+
     pub fn query_group_membership(&mut self, bus: usize, short_address: u8) -> Result<u16> {
         let groups_0to7 = self.send_command_to_address_and_get_byte(bus, dali_commands::DALI_QUERY_GROUPS_0_7, short_address, false)?;
         let groups_8to15 = self.send_command_to_address_and_get_byte(bus, dali_commands::DALI_QUERY_GROUPS_8_15, short_address, false)?;
@@ -303,6 +307,45 @@ impl<'manager> DaliManager<'manager> {
                 sleep(Duration::from_millis(200));
             }
         }
+    }
+
+        // Change one short address to another.
+    // If new address is 0xff, then short address is removed and the device should be found again when doing bus commissioning
+    //
+    pub fn change_short_address(&mut self, bus_config: &mut BusConfig, existing_address: u8, new_address: u8) -> Result<DaliBusResult> {
+        if existing_address >= 64 { panic!("Invalid existing short address") }
+        if new_address >= 64 && new_address != 0xff { panic!("Invalid new short address") }
+        let bus = bus_config.bus;
+
+        self.set_dtr(bus, new_address)?;
+        self.send_command_to_address(bus, dali_commands::DALI_SET_SHORT_ADDRESS, existing_address, true)?;
+
+        let description = if let Some(existing_channel) = bus_config.remove_channel(existing_address) {
+            existing_channel.description
+        }
+        else {
+            format!("Light {}", new_address)
+        };
+
+        if new_address != 0xff {
+            bus_config.channels.push(Channel { description, short_address: new_address });
+        }
+
+        Ok(DaliBusResult::None)
+    }
+
+    pub fn remove_short_address(&mut self, bus_config: &mut BusConfig, existing_address: u8) -> Result<DaliBusResult> {
+        let bus = bus_config.bus;
+        let groups = self.query_group_membership(bus, existing_address)?;
+
+        for group_address in 0..16 {
+            if (groups & (1 << group_address)) != 0 {
+                self.remove_from_group(bus, group_address, existing_address)?;
+                bus_config.remove_from_group(group_address, existing_address);
+            }
+        }
+
+        self.change_short_address(bus_config, existing_address, 0xff)
     }
 
     pub fn match_group(&mut self, bus_config: &mut BusConfig, group_address: u8, light_name_pattern: &str, progress: Option<MatchGroupProgress>) -> Result<DaliBusResult> {

@@ -58,7 +58,7 @@ type Result<T> = std::result::Result<T, CommandError>;
 impl <'a> MqttDali<'a> {
     pub fn new(dali_manager: &'a mut DaliManager<'a>, dali_config: &'a mut DaliConfig, mqtt_broker: &str) -> MqttDali<'a> {
         let client_id = format!("DALI-{}", dali_config.name);
-        let mut mqtt_options = MqttOptions::new(&client_id, mqtt_broker, 1883);
+        let mut mqtt_options = MqttOptions::new(client_id, mqtt_broker, 1883);
         let last_will = LastWill::new(MqttDali::get_is_active_topic(&dali_config.name), "false".as_bytes(), QoS::AtLeastOnce, true);
         mqtt_options.set_keep_alive(Duration::from_secs(5)).set_last_will(last_will);
 
@@ -265,6 +265,18 @@ impl <'a> MqttDali<'a> {
         Ok(DaliBusResult::None)
     }
 
+    async fn remove_short_address(&mut self, bus_number: usize, short_address: u8) -> Result<DaliBusResult> {
+        if let Some(bus) = self.dali_config.buses.get_mut(bus_number) {
+            MqttDali::check_bus_status(bus_number, &bus.status)?;
+
+            self.dali_manager.remove_short_address(bus, short_address)?;
+
+            Ok(DaliBusResult::None)
+        }  else {
+            Err(CommandError::BusNumber(bus_number))
+        }
+    }
+
     async fn find_lights(&mut self, config_topic: &str, bus_number: usize, selection: DaliDeviceSelection) -> Result<DaliBusResult> {
         self.check_bus(bus_number)?;
 
@@ -334,6 +346,7 @@ impl <'a> MqttDali<'a> {
                                 DaliCommand::FindAllLights { bus } => self.find_lights(config_topic, bus, DaliDeviceSelection::All).await,
                                 DaliCommand::FindNewLights { bus } => self.find_lights(config_topic, bus, DaliDeviceSelection::WithoutShortAddress).await,
                                 DaliCommand::QueryLightStatus { bus, address } => { republish_config = false; self.query_light_status(bus, address).await },
+                                DaliCommand::RemoveShortAddress { bus, address } => { republish_config = false; self.remove_short_address(bus, address).await },
                             };
 
                             if let Err(e) = command_result {

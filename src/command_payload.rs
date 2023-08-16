@@ -22,6 +22,7 @@ pub enum DaliCommand {
     FindAllLights   { bus: usize },
     FindNewLights   { bus: usize },
     QueryLightStatus{ bus: usize, address: u8 },
+    RemoveShortAddress { bus: usize, address: u8 },
 }
 
 #[derive(Debug, Copy, Clone)]
