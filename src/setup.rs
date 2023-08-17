@@ -1,4 +1,4 @@
-use crate::dali_manager::{MatchGroupAction, DaliBusResult};
+use crate::dali_manager::{DaliBusResult, MatchGroupAction};
 use crate::Config;
 use crate::{
     config_payload::{BusConfig, BusStatus, Channel, DaliConfig, Group},
@@ -40,7 +40,7 @@ impl std::error::Error for SetupError {}
 
 impl fmt::Display for Channel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} - {}", self.short_address, self.description)
+        write!(f, "{:2} - {}", self.short_address, self.description)
     }
 }
 
@@ -126,13 +126,20 @@ impl BusConfig {
     }
 
     fn display_channels(&self) {
+        let max_channel_name_length = self
+            .channels
+            .iter()
+            .map(|c| c.to_string().len()+1)
+            .max()
+            .unwrap_or(20);
+
         println!("  Channels:");
         for i in 0..self.channels.len() {
             if i % BusConfig::CHANNELS_PER_LINE == 0 {
                 print!("    ");
             }
 
-            print!("{:18}", self.channels[i].to_string());
+            print!("{:max_channel_name_length$}", self.channels[i].to_string());
 
             if (i + 1) % BusConfig::CHANNELS_PER_LINE == 0 {
                 println!();
@@ -145,6 +152,14 @@ impl BusConfig {
     }
 
     fn display_group(&self, group: &Group) {
+        let max_group_member_name_length = group
+            .members
+            .iter()
+            .map(|member_index| self.find_member(*member_index))
+            .map(|channel| channel.map_or(20, |c| c.to_string().len()+1))
+            .max()
+            .unwrap_or(20);
+
         println!("    {} ({}):", group.group_address, group.description);
         for i in 0..group.members.len() {
             if i % BusConfig::CHANNELS_PER_LINE == 0 {
@@ -152,9 +167,9 @@ impl BusConfig {
             }
 
             if let Some(channel) = self.find_member(group.members[i]) {
-                print!("{:18}", channel.to_string())
+                print!("{:max_group_member_name_length$}", channel.to_string())
             } else {
-                print!("Missing {:10}", self.channels[i])
+                print!("Missing {:max_group_member_name_length$}", self.channels[i])
             }
 
             if (i + 1) % BusConfig::CHANNELS_PER_LINE == 0 {
