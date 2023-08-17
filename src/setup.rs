@@ -354,6 +354,7 @@ impl Setup {
                                     println!("Error when removing address: {}", e);
                                     DaliBusResult::None
                                 });
+                            config.save(&dali_config)?;
                         }
                     }
                     'd' => {
