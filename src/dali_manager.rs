@@ -174,6 +174,7 @@ impl<'manager> DaliManager<'manager> {
     fn broadcast_command(&mut self, bus: usize, command: u16, parameter: u8, repeat: bool, description: &str) -> Result<DaliBusResult> {
         let b1 = if (command & 0x100) != 0 { (command & 0xff) as u8 } else { 0xff };
         let b2 = if (command & 0x100) != 0 { parameter } else { command as u8 };
+        let mut collision_count = 0;
 
         debug!("Send: {}", description);
 
@@ -186,6 +187,12 @@ impl<'manager> DaliManager<'manager> {
 
             if !DaliManager::is_collision(&result) {
                 break Ok(result)
+            }
+            else {
+                collision_count += 1;
+                if collision_count > 300 {
+                    break Err(DaliManagerError::UnexpectedStatus(DaliBusResult::TransmitCollision))
+                }
             }
         }
     }
