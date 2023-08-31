@@ -206,7 +206,7 @@ impl BusConfig {
         }
     }
 
-    fn do_query_light(&self, dali_manager: &mut DaliManager, short_address: u8) {
+    fn do_query_light(&self, dali_manager: &mut DaliManager, short_address: u8) -> bool {
         let status = dali_manager.query_light_status(self.bus, short_address);
 
         print!("{:2}: ", short_address);
@@ -242,18 +242,39 @@ impl BusConfig {
             } else {
                 print!("Error getting groups");
             }
+            println!();
+            true
         } else {
-            print!(" not found");
+            println!(" not found");
+            false
         }
 
-        println!();
     }
 
     fn query_bus(&self, dali_manager: &mut DaliManager) {
+        let mut count = 0;
+
         for light in self.channels.iter() {
-            self.do_query_light(dali_manager, light.short_address);
+            if self.do_query_light(dali_manager, light.short_address) {
+                count += 1;
+            }
         }
+
+        println!("Found {count} lights on bus {bus}", count=count, bus=self.bus+1);
     }
+
+    fn scan_bus(&self, dali_manager: &mut DaliManager) {
+        let mut count = 0;
+
+        for short_address in 0..64 {
+            if self.do_query_light(dali_manager, short_address) {
+                count += 1;
+            }
+        }
+
+        println!("Found {count} lights on bus {bus}", count=count, bus=self.bus+1);
+    }
+
 }
 
 impl DaliConfig {
@@ -1112,7 +1133,7 @@ impl Setup {
         } else {
             loop {
                 dali_config.buses[bus_number].display();
-                let command = Setup::prompt_for_string("Bus - r:rename, a:assign addresses, l:lights, g:groups, q:query, f:fix, b:back", Some("b"))?;
+                let command = Setup::prompt_for_string("Bus - r:rename, a:assign addresses, l:lights, g:groups, q:query, Q=Scan bus, f:fix, b:back", Some("b"))?;
 
                 if let Some(command) = command.chars().next() {
                     match command {
@@ -1149,6 +1170,7 @@ impl Setup {
                             )?
                         }
                         'q' => dali_config.buses[bus_number].query_bus(dali_manager),
+                        'Q' => dali_config.buses[bus_number].scan_bus(dali_manager),
                         'f' => {
                             dali_config =
                                 Setup::fix_config(config, dali_config, dali_manager, bus_number)?
