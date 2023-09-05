@@ -5,6 +5,7 @@ use crate::{
     dali_manager::{DaliBusIterator, DaliDeviceSelection, DaliManager},
 };
 use log::{log_enabled, Level::Trace};
+use std::cmp::max;
 use std::{fmt, fs::File, io, io::Write, path::Path};
 
 #[derive(Debug)]
@@ -206,10 +207,16 @@ impl BusConfig {
         }
     }
 
-    fn do_query_light(&self, dali_manager: &mut DaliManager, short_address: u8) -> bool {
+    fn do_query_light(&self, dali_manager: &mut DaliManager, short_address: u8, max_channel_name_length: usize) -> bool {
         let status = dali_manager.query_light_status(self.bus, short_address);
+        let max_channel_name_length = max(max_channel_name_length, 10);
 
-        print!("{:2}: ", short_address);
+        let channel_name = match self.get_channel_index(short_address) {
+            Some(channel_index) => self.channels[channel_index].description.clone(),
+            None => format!("(Light {short_address})"),
+        };
+
+        print!("{:2} {:max_channel_name_length$}: ", short_address, channel_name);
 
         let status = match status {
             Ok(status) => Some(status),
@@ -252,10 +259,16 @@ impl BusConfig {
     }
 
     fn query_bus(&self, dali_manager: &mut DaliManager) {
+        let max_channel_name_length = self
+            .channels
+            .iter()
+            .map(|c| c.to_string().len()+1)
+            .max()
+            .unwrap_or(20);
         let mut count = 0;
 
         for light in self.channels.iter() {
-            if self.do_query_light(dali_manager, light.short_address) {
+            if self.do_query_light(dali_manager, light.short_address, max_channel_name_length) {
                 count += 1;
             }
         }
@@ -264,10 +277,16 @@ impl BusConfig {
     }
 
     fn scan_bus(&self, dali_manager: &mut DaliManager) {
+        let max_channel_name_length = self
+            .channels
+            .iter()
+            .map(|c| c.to_string().len()+1)
+            .max()
+            .unwrap_or(20);
         let mut count = 0;
 
         for short_address in 0..64 {
-            if self.do_query_light(dali_manager, short_address) {
+            if self.do_query_light(dali_manager, short_address, max_channel_name_length) {
                 count += 1;
             }
         }
@@ -1071,8 +1090,13 @@ impl Setup {
                             "Address",
                             last_short_address,
                         )? {
+                            let name_length = match dali_config.buses[bus_number].get_channel_index(short_address) {
+                                Some(index) => dali_config.buses[bus_number].channels[index].description.len(),
+                                None => 10
+                            };
+
                             dali_config.buses[bus_number]
-                                .do_query_light(dali_manager, short_address);
+                                .do_query_light(dali_manager, short_address, name_length);
                         }
                     }
                     'g' => {
