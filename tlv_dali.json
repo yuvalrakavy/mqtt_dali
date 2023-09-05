@@ -1,0 +1,882 @@
+{
+  "name": "TLV",
+  "buses": [
+    {
+      "description": "Bus-1",
+      "status": "Active",
+      "bus": 0,
+      "channels": [
+        {
+          "short_address": 2,
+          "description": "GuestToilet-NE"
+        },
+        {
+          "short_address": 3,
+          "description": "GuestToilet-S"
+        },
+        {
+          "short_address": 7,
+          "description": "GuestToilet-NW"
+        },
+        {
+          "short_address": 9,
+          "description": "Bus-Salon-5"
+        },
+        {
+          "short_address": 11,
+          "description": "Bus-Study-8"
+        },
+        {
+          "short_address": 12,
+          "description": "Bus-Study-2"
+        },
+        {
+          "short_address": 13,
+          "description": "Bus-Salon-4"
+        },
+        {
+          "short_address": 14,
+          "description": "Bus-Salon-3"
+        },
+        {
+          "short_address": 15,
+          "description": "Bus-Study-10"
+        },
+        {
+          "short_address": 16,
+          "description": "Bus-Salon-2"
+        },
+        {
+          "short_address": 17,
+          "description": "Bus-Salon-7"
+        },
+        {
+          "short_address": 18,
+          "description": "Bus-Salon-1"
+        },
+        {
+          "short_address": 19,
+          "description": "Bus-Study-6"
+        },
+        {
+          "short_address": 20,
+          "description": "Bus-Study-7"
+        },
+        {
+          "short_address": 22,
+          "description": "Bus-KN-Spot-7"
+        },
+        {
+          "short_address": 23,
+          "description": "Bus-KN-Spot-8"
+        },
+        {
+          "short_address": 24,
+          "description": "Bus-KN-Spot-2"
+        },
+        {
+          "short_address": 25,
+          "description": "Bus-KN-Spot-6"
+        },
+        {
+          "short_address": 26,
+          "description": "Bus-KN-Spot-3"
+        },
+        {
+          "short_address": 27,
+          "description": "Bus-KN-Spot-4"
+        },
+        {
+          "short_address": 28,
+          "description": "Bus-KN-Strip-5"
+        },
+        {
+          "short_address": 29,
+          "description": "Bus-KN-Spot-1"
+        },
+        {
+          "short_address": 30,
+          "description": "Bus-Study-5"
+        },
+        {
+          "short_address": 31,
+          "description": "Bus-Salon-6"
+        },
+        {
+          "short_address": 32,
+          "description": "Bus-Study-3"
+        },
+        {
+          "short_address": 33,
+          "description": "Bus-Study-4"
+        },
+        {
+          "short_address": 34,
+          "description": "Bus-Study-1"
+        },
+        {
+          "short_address": 35,
+          "description": "Bus-Study-9"
+        },
+        {
+          "short_address": 36,
+          "description": "Bus-KW-Strip-4"
+        },
+        {
+          "short_address": 37,
+          "description": "Bus-KW-Spot-1"
+        },
+        {
+          "short_address": 39,
+          "description": "Bus-KW-Spot-10"
+        },
+        {
+          "short_address": 40,
+          "description": "Bus-KW-Spot-8"
+        },
+        {
+          "short_address": 41,
+          "description": "Bus-KW-Spot-9"
+        },
+        {
+          "short_address": 42,
+          "description": "Bus-KW-Strip-3"
+        },
+        {
+          "short_address": 43,
+          "description": "Bus-KW-Spot-5"
+        },
+        {
+          "short_address": 44,
+          "description": "Bus-KW-Spot-6"
+        },
+        {
+          "short_address": 45,
+          "description": "Bus-KW-Strip-7"
+        },
+        {
+          "short_address": 46,
+          "description": "Bus-KW-Spot-2"
+        }
+      ],
+      "groups": [
+        {
+          "group_address": 1,
+          "description": "BR-Recessed-Lights",
+          "members": []
+        },
+        {
+          "group_address": 2,
+          "description": "GuestToilet-Lights",
+          "members": [
+            2,
+            3,
+            7
+          ]
+        },
+        {
+          "group_address": 3,
+          "description": "Bus-Study-Lights",
+          "members": [
+            11,
+            12,
+            15,
+            19,
+            20,
+            30,
+            32,
+            33,
+            34,
+            35
+          ]
+        },
+        {
+          "group_address": 4,
+          "description": "Bus-Salon-Lights",
+          "members": [
+            9,
+            13,
+            14,
+            16,
+            17,
+            18,
+            31
+          ]
+        },
+        {
+          "group_address": 5,
+          "description": "Bus-Kitchen-Lights",
+          "members": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            36,
+            37,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bus-2",
+      "status": "Active",
+      "bus": 1,
+      "channels": [
+        {
+          "short_address": 1,
+          "description": "Salon-Recessed-C2"
+        },
+        {
+          "short_address": 3,
+          "description": "Salon-Recessed-A3"
+        },
+        {
+          "short_address": 4,
+          "description": "Salon-Recessed-B2"
+        },
+        {
+          "short_address": 5,
+          "description": "Salon-Recessed-D1"
+        },
+        {
+          "short_address": 6,
+          "description": "Salon-Recessed-A2"
+        },
+        {
+          "short_address": 7,
+          "description": "Salon-Recessed-D4"
+        },
+        {
+          "short_address": 8,
+          "description": "Salon-Recessed-B1"
+        },
+        {
+          "short_address": 9,
+          "description": "Salon-Recessed-B2"
+        },
+        {
+          "short_address": 10,
+          "description": "Salon-Recessed-D5"
+        },
+        {
+          "short_address": 11,
+          "description": "Salon-Recessed-D3"
+        },
+        {
+          "short_address": 13,
+          "description": "Salon-Recessed-A1"
+        },
+        {
+          "short_address": 14,
+          "description": "BR-Strip"
+        },
+        {
+          "short_address": 22,
+          "description": "Salon-Recessed-C1"
+        },
+        {
+          "short_address": 24,
+          "description": "Salon-Recessed-B3"
+        },
+        {
+          "short_address": 26,
+          "description": "Corridor-Bus-Spot-15"
+        },
+        {
+          "short_address": 27,
+          "description": "Corridor-Bus-Spot-14"
+        },
+        {
+          "short_address": 28,
+          "description": "Corridor-Bus-Spot-2"
+        },
+        {
+          "short_address": 29,
+          "description": "Corridor-Bus-Spot-4"
+        },
+        {
+          "short_address": 30,
+          "description": "Corridor-Bus-Strip-8"
+        },
+        {
+          "short_address": 31,
+          "description": "Corridor-Bus-Spot-6"
+        },
+        {
+          "short_address": 32,
+          "description": "Corridor-Bus-Strip-3"
+        },
+        {
+          "short_address": 34,
+          "description": "Corridor-Bus-Spot-10"
+        },
+        {
+          "short_address": 35,
+          "description": "Corridor-Bus-Spot-5"
+        },
+        {
+          "short_address": 36,
+          "description": "Corridor-Bus-Spot-11"
+        },
+        {
+          "short_address": 37,
+          "description": "Corridor-Bus-Spot-16"
+        },
+        {
+          "short_address": 38,
+          "description": "Corridor-Bus-Spot-1"
+        },
+        {
+          "short_address": 39,
+          "description": "Corridor-Bus-Strip-13"
+        },
+        {
+          "short_address": 40,
+          "description": "Corridor-Bus-Spot-12"
+        },
+        {
+          "short_address": 41,
+          "description": "Corridor-Bus-Spot-7"
+        },
+        {
+          "short_address": 42,
+          "description": "Corridor-Bus-Spot-9"
+        },
+        {
+          "short_address": 25,
+          "description": "BR-Bus-E-Spot-5"
+        },
+        {
+          "short_address": 33,
+          "description": "BR-Bus-E-Spot-1"
+        },
+        {
+          "short_address": 43,
+          "description": "BR-Bus-N-Strip-3"
+        },
+        {
+          "short_address": 44,
+          "description": "BR-Bus-E-Spot-3"
+        },
+        {
+          "short_address": 45,
+          "description": "BR-Bus-E-Spot-4"
+        },
+        {
+          "short_address": 46,
+          "description": "BR-Bus-S-Spot-4"
+        },
+        {
+          "short_address": 47,
+          "description": "BR-Bus-S-Spot-1"
+        },
+        {
+          "short_address": 48,
+          "description": "BR-Bus-S-Spot-3"
+        },
+        {
+          "short_address": 49,
+          "description": "BR-Bus-S-Spot-2"
+        },
+        {
+          "short_address": 50,
+          "description": "BR-Bus-S-Stript-6"
+        },
+        {
+          "short_address": 51,
+          "description": "BR-Bus-S-Spot-5"
+        },
+        {
+          "short_address": 52,
+          "description": "BR-Bus-E-Strip-6"
+        },
+        {
+          "short_address": 53,
+          "description": "BR-Bus-N-Spot-1"
+        },
+        {
+          "short_address": 54,
+          "description": "BR-Bus-N-Spot-5"
+        },
+        {
+          "short_address": 55,
+          "description": "BR-Bus-N-Spot-4"
+        },
+        {
+          "short_address": 56,
+          "description": "BR-Bus-N-Spot-2"
+        },
+        {
+          "short_address": 57,
+          "description": "BR-Bus-E-Spot-8"
+        },
+        {
+          "short_address": 58,
+          "description": "BR-Bus-E-Strip-2"
+        },
+        {
+          "short_address": 59,
+          "description": "BR-Bus-E-Spot-7"
+        }
+      ],
+      "groups": [
+        {
+          "group_address": 1,
+          "description": "BR-Bus-N-Lights",
+          "members": [
+            43,
+            53,
+            54,
+            55,
+            56
+          ]
+        },
+        {
+          "group_address": 2,
+          "description": "GR-Recessed",
+          "members": [
+            2,
+            12,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            23
+          ]
+        },
+        {
+          "group_address": 3,
+          "description": "BR-Bus-S-Lights",
+          "members": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ]
+        },
+        {
+          "group_address": 4,
+          "description": "BR-Bus-E-Lights",
+          "members": [
+            25,
+            33,
+            44,
+            45,
+            52,
+            57,
+            58,
+            59
+          ]
+        },
+        {
+          "group_address": 5,
+          "description": "Salon-Recessed-Lights",
+          "members": [
+            1,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            22,
+            24
+          ]
+        },
+        {
+          "group_address": 6,
+          "description": "Corridor-Lights",
+          "members": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bus-3",
+      "status": "Active",
+      "bus": 2,
+      "channels": [
+        {
+          "short_address": 1,
+          "description": "CR-Recessed-1"
+        },
+        {
+          "short_address": 2,
+          "description": "CR-Recessed--3"
+        },
+        {
+          "short_address": 3,
+          "description": "GR-Bath-Strip"
+        },
+        {
+          "short_address": 4,
+          "description": "BR-Bath-Recessed-A2"
+        },
+        {
+          "short_address": 5,
+          "description": "BR-Bath-Recessed-D2"
+        },
+        {
+          "short_address": 6,
+          "description": "BR-Bath-Main-Strip"
+        },
+        {
+          "short_address": 7,
+          "description": "BR-Bath-Shower-Strip-Ceiling"
+        },
+        {
+          "short_address": 8,
+          "description": "BR-Bath-Shower-Strip-Middle"
+        },
+        {
+          "short_address": 9,
+          "description": "GR-Bath-Sink-Strip"
+        },
+        {
+          "short_address": 10,
+          "description": "GR-Bath-Recessed-Sink-2"
+        },
+        {
+          "short_address": 11,
+          "description": "BR-Bath-Recessed-D3"
+        },
+        {
+          "short_address": 12,
+          "description": "BR-Bath-Toilet-LightWall"
+        },
+        {
+          "short_address": 13,
+          "description": "BR-Bath-Recessed-D4"
+        },
+        {
+          "short_address": 14,
+          "description": "BR-Bath-Shower-Recessed-2"
+        },
+        {
+          "short_address": 15,
+          "description": "BR-Bath-Shower-Recessed-1"
+        },
+        {
+          "short_address": 16,
+          "description": "CR-Ring4"
+        },
+        {
+          "short_address": 17,
+          "description": "BR-Bath-Shower-LightWall"
+        },
+        {
+          "short_address": 18,
+          "description": "GR-Bath-Recessed-Sink-1"
+        },
+        {
+          "short_address": 19,
+          "description": "BR-Bath-Recessed-D1"
+        },
+        {
+          "short_address": 20,
+          "description": "CR-Recessed-2"
+        },
+        {
+          "short_address": 21,
+          "description": "BR-Bath-Toilet-Recessed"
+        },
+        {
+          "short_address": 22,
+          "description": "CR-Recessed-4"
+        },
+        {
+          "short_address": 23,
+          "description": "GR-Bath-Recessed-Shower"
+        },
+        {
+          "short_address": 24,
+          "description": "BR-Bath-Recessed-A1"
+        },
+        {
+          "short_address": 25,
+          "description": "CR-Ring-3"
+        },
+        {
+          "short_address": 26,
+          "description": "CR-Ring-1"
+        },
+        {
+          "short_address": 27,
+          "description": "CR-Ring-2"
+        },
+        {
+          "short_address": 28,
+          "description": "GR-Strip"
+        }
+      ],
+      "groups": [
+        {
+          "group_address": 1,
+          "description": "ClosetRoom-Lights",
+          "members": [
+            1,
+            2,
+            16,
+            20,
+            22,
+            25,
+            26,
+            27
+          ]
+        },
+        {
+          "group_address": 2,
+          "description": "BR-Bath-Recessed",
+          "members": [
+            4,
+            5,
+            11,
+            13,
+            14,
+            15,
+            19,
+            24
+          ]
+        },
+        {
+          "group_address": 3,
+          "description": "BR-Bath-Shower",
+          "members": [
+            7,
+            8,
+            14,
+            15,
+            17
+          ]
+        },
+        {
+          "group_address": 4,
+          "description": "BR-Bath-LightWalls",
+          "members": [
+            12,
+            17
+          ]
+        },
+        {
+          "group_address": 5,
+          "description": "GR-Bath-Recessed",
+          "members": [
+            10,
+            18,
+            23
+          ]
+        },
+        {
+          "group_address": 6,
+          "description": "GR-Bath-Strip",
+          "members": [
+            3,
+            9
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bus-4",
+      "status": "Active",
+      "bus": 3,
+      "channels": [
+        {
+          "short_address": 3,
+          "description": "Kitchen-Recessed-2"
+        },
+        {
+          "short_address": 4,
+          "description": "Kitchen-BarTable-2"
+        },
+        {
+          "short_address": 6,
+          "description": "Kitchen-Recessed-4"
+        },
+        {
+          "short_address": 7,
+          "description": "Kitchen-Recessed-8"
+        },
+        {
+          "short_address": 8,
+          "description": "Kitchen-Recessed-3"
+        },
+        {
+          "short_address": 9,
+          "description": "Kitchen-Strip"
+        },
+        {
+          "short_address": 11,
+          "description": "Kitchen-Recessed-5"
+        },
+        {
+          "short_address": 5,
+          "description": "Salon-Strip"
+        },
+        {
+          "short_address": 10,
+          "description": "Kitchen-Recessed-1"
+        },
+        {
+          "short_address": 1,
+          "description": "Kitchen-BarTable-1"
+        },
+        {
+          "short_address": 13,
+          "description": "BR-Recessed-Center-2"
+        },
+        {
+          "short_address": 14,
+          "description": "BR-Recessed--Bed-2"
+        },
+        {
+          "short_address": 18,
+          "description": "GR-Recessed-1"
+        },
+        {
+          "short_address": 19,
+          "description": "GR-Recessed-2"
+        },
+        {
+          "short_address": 20,
+          "description": "GR-Recessed-5"
+        },
+        {
+          "short_address": 23,
+          "description": "GR-Recessed-4"
+        },
+        {
+          "short_address": 24,
+          "description": "Corridor-BR"
+        },
+        {
+          "short_address": 12,
+          "description": "Kitchen-Recessed-7"
+        },
+        {
+          "short_address": 21,
+          "description": "GR-Recessed-8"
+        },
+        {
+          "short_address": 22,
+          "description": "GR-Recessed-3"
+        },
+        {
+          "short_address": 17,
+          "description": "BR-Recessed-Bed-1"
+        },
+        {
+          "short_address": 25,
+          "description": "GR-Recessed-6"
+        },
+        {
+          "short_address": 26,
+          "description": "GR-Recessed-9"
+        },
+        {
+          "short_address": 15,
+          "description": "BR-Recessed-Entrance"
+        },
+        {
+          "short_address": 16,
+          "description": "BR-Recessed-Center-1"
+        },
+        {
+          "short_address": 27,
+          "description": "GR-Recessed-7"
+        },
+        {
+          "short_address": 2,
+          "description": "Kitchen-Recessed-6"
+        }
+      ],
+      "groups": [
+        {
+          "group_address": 1,
+          "description": "Kitchen-Bar-Lights",
+          "members": [
+            4,
+            1
+          ]
+        },
+        {
+          "group_address": 2,
+          "description": "Kitchen-Recessed-Lights",
+          "members": [
+            3,
+            6,
+            7,
+            8,
+            11,
+            10,
+            12,
+            2
+          ]
+        },
+        {
+          "group_address": 3,
+          "description": "BR-Recessed-Lights",
+          "members": [
+            13,
+            14,
+            17,
+            15,
+            16
+          ]
+        },
+        {
+          "group_address": 4,
+          "description": "GR-Recessed-Lights",
+          "members": [
+            18,
+            19,
+            20,
+            23,
+            21,
+            22,
+            25,
+            26,
+            27
+          ]
+        }
+      ]
+    }
+  ]
+}
