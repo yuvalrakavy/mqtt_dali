@@ -1,0 +1,61 @@
+{
+  "name": "Gym",
+  "buses": [
+    {
+      "description": "Bus-1",
+      "status": "Active",
+      "bus": 0,
+      "channels": [
+        {
+          "short_address": 1,
+          "description": "Pool-Seating-1"
+        },
+        {
+          "short_address": 2,
+          "description": "Pool-Seating-2"
+        },
+        {
+          "short_address": 3,
+          "description": "Pool-Seating-3"
+        },
+        {
+          "short_address": 4,
+          "description": "Pool-Seating-4"
+        }
+      ],
+      "groups": [
+        {
+          "group_address": 1,
+          "description": "Pool-Seating",
+          "members": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bus-2",
+      "status": "NoPower",
+      "bus": 1,
+      "channels": [],
+      "groups": []
+    },
+    {
+      "description": "Bus-3",
+      "status": "NoPower",
+      "bus": 2,
+      "channels": [],
+      "groups": []
+    },
+    {
+      "description": "Bus-4",
+      "status": "NoPower",
+      "bus": 3,
+      "channels": [],
+      "groups": []
+    }
+  ]
+}

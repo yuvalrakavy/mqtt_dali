@@ -1,0 +1,634 @@
+{
+  "name": "Kitchen",
+  "buses": [
+    {
+      "description": "Bus-1",
+      "status": "Active",
+      "bus": 0,
+      "channels": [
+        {
+          "short_address": 1,
+          "description": "K-S-Spot-7"
+        },
+        {
+          "short_address": 2,
+          "description": "K-S-Spot-5"
+        },
+        {
+          "short_address": 3,
+          "description": "K-E-Spot-1"
+        },
+        {
+          "short_address": 4,
+          "description": "K-E-Spot-5"
+        },
+        {
+          "short_address": 5,
+          "description": "K-S-Spot-2"
+        },
+        {
+          "short_address": 6,
+          "description": "K-E-Spot-6"
+        },
+        {
+          "short_address": 7,
+          "description": "K-E-Strip-1"
+        },
+        {
+          "short_address": 8,
+          "description": "S-Strip-2"
+        },
+        {
+          "short_address": 9,
+          "description": "S-Spot-2"
+        },
+        {
+          "short_address": 10,
+          "description": "K-N-Strip-1"
+        },
+        {
+          "short_address": 11,
+          "description": "K-E-Spot-2"
+        },
+        {
+          "short_address": 12,
+          "description": "K-N-Spot-2"
+        },
+        {
+          "short_address": 13,
+          "description": "S-Spot-4"
+        },
+        {
+          "short_address": 14,
+          "description": "S-Spot-8"
+        },
+        {
+          "short_address": 16,
+          "description": "K-E-Spot-4"
+        },
+        {
+          "short_address": 17,
+          "description": "K-E-Spot-3"
+        },
+        {
+          "short_address": 18,
+          "description": "S-Spot-1"
+        },
+        {
+          "short_address": 19,
+          "description": "S-Spot-9"
+        },
+        {
+          "short_address": 20,
+          "description": "K-S-Spot-4"
+        },
+        {
+          "short_address": 21,
+          "description": "S-Spot-7"
+        },
+        {
+          "short_address": 22,
+          "description": "S-Spot-3"
+        },
+        {
+          "short_address": 23,
+          "description": "S-Spot-5"
+        },
+        {
+          "short_address": 24,
+          "description": "S-Spot-11"
+        },
+        {
+          "short_address": 25,
+          "description": "K-S-Spot-8"
+        },
+        {
+          "short_address": 26,
+          "description": "S-Spot-10"
+        },
+        {
+          "short_address": 27,
+          "description": "K-S-Strip-1"
+        },
+        {
+          "short_address": 28,
+          "description": "K-S-Spot-3"
+        },
+        {
+          "short_address": 29,
+          "description": "K-N-Spot-5"
+        },
+        {
+          "short_address": 30,
+          "description": "K-E-Spot-3"
+        },
+        {
+          "short_address": 31,
+          "description": "K-N-Spot-1"
+        },
+        {
+          "short_address": 32,
+          "description": "K-N-Spot-4"
+        },
+        {
+          "short_address": 33,
+          "description": "S-Spot-6"
+        },
+        {
+          "short_address": 34,
+          "description": "S-Strip-1"
+        },
+        {
+          "short_address": 35,
+          "description": "K-S-Spot-1"
+        }
+      ],
+      "groups": [
+        {
+          "group_address": 0,
+          "description": "Salon",
+          "members": [
+            8,
+            9,
+            13,
+            14,
+            18,
+            19,
+            21,
+            22,
+            23,
+            24,
+            26,
+            33,
+            34
+          ]
+        },
+        {
+          "group_address": 1,
+          "description": "Kitchen",
+          "members": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            10,
+            11,
+            12,
+            16,
+            17,
+            20,
+            25,
+            28,
+            29,
+            30,
+            31,
+            32,
+            35,
+            27
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bus-2",
+      "status": "Active",
+      "bus": 1,
+      "channels": [
+        {
+          "short_address": 1,
+          "description": "Ent-S-2"
+        },
+        {
+          "short_address": 2,
+          "description": "N-Wall-2"
+        },
+        {
+          "short_address": 3,
+          "description": "Salon-S-3"
+        },
+        {
+          "short_address": 4,
+          "description": "W-1"
+        },
+        {
+          "short_address": 5,
+          "description": "Dining-3"
+        },
+        {
+          "short_address": 6,
+          "description": "Salon-S-2"
+        },
+        {
+          "short_address": 7,
+          "description": "W-2"
+        },
+        {
+          "short_address": 8,
+          "description": "Salon-W-2"
+        },
+        {
+          "short_address": 9,
+          "description": "W-4"
+        },
+        {
+          "short_address": 10,
+          "description": "N-Wall-1"
+        },
+        {
+          "short_address": 11,
+          "description": "S-WallSpots-1"
+        },
+        {
+          "short_address": 12,
+          "description": "Salon-S-1"
+        },
+        {
+          "short_address": 13,
+          "description": "Salon-W-1"
+        },
+        {
+          "short_address": 14,
+          "description": "W-3"
+        },
+        {
+          "short_address": 15,
+          "description": "Salon-W-3"
+        },
+        {
+          "short_address": 16,
+          "description": "Ent-N-2"
+        },
+        {
+          "short_address": 17,
+          "description": "Corner-2"
+        },
+        {
+          "short_address": 18,
+          "description": "Salon-N-2"
+        },
+        {
+          "short_address": 19,
+          "description": "Ent-S-1"
+        },
+        {
+          "short_address": 20,
+          "description": "Curtains"
+        },
+        {
+          "short_address": 21,
+          "description": "Salon-N-1"
+        },
+        {
+          "short_address": 22,
+          "description": "Dining-1"
+        },
+        {
+          "short_address": 23,
+          "description": "Ent-N-3"
+        },
+        {
+          "short_address": 24,
+          "description": "Salon-N-3"
+        },
+        {
+          "short_address": 25,
+          "description": "Dining-2"
+        },
+        {
+          "short_address": 26,
+          "description": "S-WallSpots-2"
+        },
+        {
+          "short_address": 27,
+          "description": "Corner-1"
+        },
+        {
+          "short_address": 28,
+          "description": "Ent-N-1"
+        },
+        {
+          "short_address": 29,
+          "description": "N-Wall-3"
+        },
+        {
+          "short_address": 30,
+          "description": "Ent-S-1"
+        },
+        {
+          "short_address": 31,
+          "description": "S-WallSpots-3"
+        },
+        {
+          "short_address": 32,
+          "description": "S-WallSpots-4"
+        },
+        {
+          "short_address": 33,
+          "description": "S-WallSpots-5"
+        },
+        {
+          "short_address": 34,
+          "description": "Patio-Balls-NW"
+        },
+        {
+          "short_address": 37,
+          "description": "Patio-Balls-SW"
+        },
+        {
+          "short_address": 40,
+          "description": "Patio-Balls-SE"
+        },
+        {
+          "short_address": 42,
+          "description": "Patio-Balls-NE"
+        },
+        {
+          "short_address": 35,
+          "description": "Salon-Main"
+        }
+      ],
+      "groups": [
+        {
+          "group_address": 1,
+          "description": "Ent",
+          "members": [
+            1,
+            16,
+            19,
+            23,
+            28,
+            30
+          ]
+        },
+        {
+          "group_address": 2,
+          "description": "NorthWall",
+          "members": [
+            10,
+            29,
+            2
+          ]
+        },
+        {
+          "group_address": 3,
+          "description": "West-Corridor",
+          "members": [
+            9,
+            14,
+            7,
+            4
+          ]
+        },
+        {
+          "group_address": 4,
+          "description": "Dining-East-Wall",
+          "members": [
+            5,
+            22,
+            25
+          ]
+        },
+        {
+          "group_address": 5,
+          "description": "Corner",
+          "members": [
+            17,
+            27
+          ]
+        },
+        {
+          "group_address": 6,
+          "description": "Salon",
+          "members": [
+            6,
+            8,
+            12,
+            13,
+            18,
+            21,
+            24,
+            3,
+            15
+          ]
+        },
+        {
+          "group_address": 7,
+          "description": "WallSouthSpots",
+          "members": [
+            11,
+            26,
+            31,
+            32,
+            33
+          ]
+        },
+        {
+          "group_address": 8,
+          "description": "Patio-Balls",
+          "members": [
+            34,
+            37,
+            40,
+            42
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bus-3",
+      "status": "Active",
+      "bus": 2,
+      "channels": [
+        {
+          "short_address": 1,
+          "description": "O1-Spot-W1"
+        },
+        {
+          "short_address": 2,
+          "description": "O1-Spot-W2"
+        },
+        {
+          "short_address": 3,
+          "description": "O2-Spot-E1"
+        },
+        {
+          "short_address": 4,
+          "description": "O2-Spot-W2"
+        },
+        {
+          "short_address": 5,
+          "description": "O2-Spot-W1"
+        },
+        {
+          "short_address": 6,
+          "description": "O1-Spot-NW2"
+        },
+        {
+          "short_address": 7,
+          "description": "O1-Spot-E3"
+        },
+        {
+          "short_address": 8,
+          "description": "O1-Spot-N1"
+        },
+        {
+          "short_address": 9,
+          "description": "O1-Spot-N2"
+        },
+        {
+          "short_address": 10,
+          "description": "O1-Spot-E2"
+        },
+        {
+          "short_address": 11,
+          "description": "O1-Spot-NW1"
+        },
+        {
+          "short_address": 12,
+          "description": "O2-Spot-W1"
+        },
+        {
+          "short_address": 13,
+          "description": "O1-Spot-E1"
+        },
+        {
+          "short_address": 14,
+          "description": "O1-Spot-NW3"
+        },
+        {
+          "short_address": 15,
+          "description": "Light 15"
+        },
+        {
+          "short_address": 16,
+          "description": "Light 16"
+        },
+        {
+          "short_address": 17,
+          "description": "Light 17"
+        },
+        {
+          "short_address": 18,
+          "description": "O2-Spot-E2"
+        },
+        {
+          "short_address": 19,
+          "description": "S-Cor-5"
+        },
+        {
+          "short_address": 20,
+          "description": "S-Cor-1"
+        },
+        {
+          "short_address": 21,
+          "description": "O2-Strip"
+        },
+        {
+          "short_address": 22,
+          "description": "S-Cor-10"
+        },
+        {
+          "short_address": 23,
+          "description": "S-Cor-4"
+        },
+        {
+          "short_address": 24,
+          "description": "S-Cor-8"
+        },
+        {
+          "short_address": 25,
+          "description": "S-Cor-6"
+        },
+        {
+          "short_address": 26,
+          "description": "Light 26"
+        },
+        {
+          "short_address": 27,
+          "description": "S-Cor-11"
+        },
+        {
+          "short_address": 28,
+          "description": "O1-Strip"
+        },
+        {
+          "short_address": 29,
+          "description": "S-Cor-3"
+        },
+        {
+          "short_address": 30,
+          "description": "S-Cor-9"
+        },
+        {
+          "short_address": 31,
+          "description": "S-Cor-7"
+        },
+        {
+          "short_address": 32,
+          "description": "S-Cor-2"
+        }
+      ],
+      "groups": [
+        {
+          "group_address": 1,
+          "description": "O1-Spots",
+          "members": [
+            1,
+            2,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14
+          ]
+        },
+        {
+          "group_address": 2,
+          "description": "O2-Spots",
+          "members": [
+            3,
+            4,
+            5,
+            12,
+            18
+          ]
+        },
+        {
+          "group_address": 3,
+          "description": "S-Corridor",
+          "members": [
+            19,
+            20,
+            22,
+            23,
+            24,
+            25,
+            27,
+            29,
+            30,
+            31,
+            32
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Bus-4",
+      "status": "NoPower",
+      "bus": 3,
+      "channels": [
+        {
+          "short_address": 32,
+          "description": "S-Cor-2"
+        }
+      ],
+      "groups": []
+    }
+  ]
+}
