@@ -444,22 +444,6 @@
           ]
         },
         {
-          "group_address": 2,
-          "description": "GR-Recessed",
-          "members": [
-            2,
-            12,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
-            21,
-            23
-          ]
-        },
-        {
           "group_address": 3,
           "description": "BR-Bus-S-Lights",
           "members": [

@@ -816,31 +816,36 @@ impl Setup {
     fn fix_group_membership(bus_config: &BusConfig, dali_manager: &mut DaliManager) {
         for light in bus_config.channels.iter() {
             match dali_manager.query_group_membership(bus_config.bus, light.short_address) {
-                Ok(group_mask) => {
+                Ok(light_group_mask) => {
                     // First, look if light is member in groups which are not defined in the configuration, if so, remove them
-                    let mut mask = 1u16;
-                    for group_number in 0..16 {
-                        if (group_mask & mask) != 0
-                            && !bus_config
-                                .groups
-                                .iter()
-                                .any(|g| g.group_address == group_number)
-                        {
+
+                    for group_address in 0..16 {
+                        if (light_group_mask & (1 << group_address)) == 0 {
+                            continue;
+                        }
+
+                        let should_remove = if let Some(group_index) = bus_config.get_group_index(group_address) {
+                            let group = &bus_config.groups[group_index];
+                            !group.members.iter().any(|m| light.short_address == *m)
+                        } else {
+                            true
+                        };
+
+
+                        if should_remove {
                             println!(
                                 "Light {} is member of group {} which is not in configuration:",
-                                light.short_address, group_number
+                                light.short_address, group_address
                             );
                             match dali_manager.remove_from_group_and_verify(
                                 bus_config.bus,
-                                group_number,
+                                group_address,
                                 light.short_address,
                             ) {
                                 Ok(_) => println!("  removed!"),
                                 Err(e) => println!(" error: {}", e),
                             }
                         }
-
-                        mask <<= 1;
                     }
 
                     // Now ensure that light is indeed member in groups it is supposed to be member of
@@ -848,7 +853,7 @@ impl Setup {
                         let mask = 1 << group.group_address;
 
                         if group.members.iter().any(|m| light.short_address == *m)
-                            && (group_mask & mask) == 0
+                            && (light_group_mask & mask) == 0
                         {
                             println!(
                                 "Light {} should be member of group {}, however it is not:",
