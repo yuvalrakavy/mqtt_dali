@@ -20,8 +20,8 @@ Wants=systemd-networkd-wait-online.service
 [Service]
 ExecStart=/home/yuval/mqtt_dali control-tlv
 WorkingDirectory=/home/yuval
-StandardOutput=file:/home/yuval/logs/dali.log
-StandardError=file:/home/yuval/logs/dali.log
+StandardOutput=file:/home/yuval/logs/dali.out.log
+StandardError=file:/home/yuval/logs/dali.err.log
 Restart=always
 User=root
 

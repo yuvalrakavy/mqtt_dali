@@ -28,12 +28,21 @@ async fn main()  {
         opt setup:bool=false, desc: "Setup mode";
         opt config: String = String::from("dali.json"), desc: "Configuration filename (dali.json)";
     }.parse_or_exit();
-
-    env_logger::init();
     
+    let d = tracing_init::TracingInit::builder("mqtt_dali")
+        .log_to_file(true)
+        .log_to_server(true)
+        .log_file_prefix("dali")
+        .log_file_path("logs")
+        .init().unwrap().to_string();
+
+    println!("Logging: {}", d);
+
     let config = Config {
         config_filename: args.config.clone(),
     };
+
+    println!("Loading configuration from {config_filename}", config_filename = args.config.clone());
 
     let mut dali_config = if !std::path::Path::new(&args.config).exists() {
         DaliConfig::interactive_new().unwrap()
@@ -41,6 +50,8 @@ async fn main()  {
     else {
         config.load().unwrap()
     };
+
+    println!("Configuration: loaded");
 
     let mut controller = if args.emulation {
         DaliControllerEmulator::try_new(&mut dali_config)
@@ -65,4 +76,12 @@ async fn main()  {
     let mut mqtt = mqtt::MqttDali::new(&mut dali_manager, &mut dali_config, &args.mqtt);
 
     mqtt.run(&config).await.unwrap();
+}
+
+pub fn get_version() -> String {
+    format!("mqtt_dali: {} (built at {})", built_info::PKG_VERSION, built_info::BUILT_TIME_UTC)
+}
+// Include the generated-file as a separate module
+pub mod built_info {
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }

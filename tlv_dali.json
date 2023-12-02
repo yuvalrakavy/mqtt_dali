@@ -157,6 +157,14 @@
         {
           "short_address": 46,
           "description": "Bus-KW-Spot-2"
+        },
+        {
+          "short_address": 1,
+          "description": "Dining-Decorative"
+        },
+        {
+          "short_address": 4,
+          "description": "GuestToilet-Deco"
         }
       ],
       "groups": [
@@ -171,7 +179,8 @@
           "members": [
             2,
             3,
-            7
+            7,
+            4
           ]
         },
         {
@@ -429,6 +438,22 @@
         {
           "short_address": 59,
           "description": "BR-Bus-E-Spot-7"
+        },
+        {
+          "short_address": 2,
+          "description": "BR-Reading-Right"
+        },
+        {
+          "short_address": 12,
+          "description": "GR-Reading-Right"
+        },
+        {
+          "short_address": 15,
+          "description": "GR-Reading-Left"
+        },
+        {
+          "short_address": 16,
+          "description": "BR-Reading-Left"
         }
       ],
       "groups": [
@@ -534,10 +559,6 @@
           "description": "BR-Bath-Recessed-A2"
         },
         {
-          "short_address": 5,
-          "description": "BR-Bath-Recessed-D2"
-        },
-        {
           "short_address": 6,
           "description": "BR-Bath-Main-Strip"
         },
@@ -558,16 +579,8 @@
           "description": "GR-Bath-Recessed-Sink-2"
         },
         {
-          "short_address": 11,
-          "description": "BR-Bath-Recessed-D3"
-        },
-        {
           "short_address": 12,
           "description": "BR-Bath-Toilet-LightWall"
-        },
-        {
-          "short_address": 13,
-          "description": "BR-Bath-Recessed-D4"
         },
         {
           "short_address": 14,
@@ -588,10 +601,6 @@
         {
           "short_address": 18,
           "description": "GR-Bath-Recessed-Sink-1"
-        },
-        {
-          "short_address": 19,
-          "description": "BR-Bath-Recessed-D1"
         },
         {
           "short_address": 20,
@@ -628,6 +637,22 @@
         {
           "short_address": 28,
           "description": "GR-Strip"
+        },
+        {
+          "short_address": 5,
+          "description": "BR-Bath-Recessed-D2"
+        },
+        {
+          "short_address": 11,
+          "description": "BR-Bath-Recessed-D3"
+        },
+        {
+          "short_address": 13,
+          "description": "BR-Bath-Recessed-D4"
+        },
+        {
+          "short_address": 19,
+          "description": "BR-Bath-Recessed-D1"
         }
       ],
       "groups": [

@@ -5,7 +5,7 @@ use rumqttc::{MqttOptions, AsyncClient, EventLoop, QoS, Event, Packet, Publish, 
 use crate::dali_manager::{DaliManager, DaliBusResult, DaliBusIterator, DaliDeviceSelection, DaliManagerError, MatchGroupAction};
 use crate::command_payload::{DaliCommand, QueryLightReply};
 use crate::config_payload::{DaliConfig,  Group, BusStatus};
-use crate::Config;
+use crate::{Config, get_version};
 
 pub struct MqttDali<'a> {
     dali_config: &'a mut DaliConfig,
@@ -86,6 +86,10 @@ impl <'a> MqttDali<'a> {
 
     fn get_is_active_topic(name: &str) -> String {
         format!("DALI/Active/{}", name)
+    }
+
+    fn get_version_topic(name: &str) -> String {
+        format!("DALI/Version/{}", name)
     }
 
     fn get_light_reply_topic(&self, command: &str, bus: usize, short_address: u8) -> String {
@@ -310,6 +314,10 @@ impl <'a> MqttDali<'a> {
         let status_topic = &self.get_status_topic();
 
         self.mqtt_client.publish(&MqttDali::get_is_active_topic(&self.dali_config.name), QoS::AtLeastOnce, true, "true".as_bytes()).await?;
+
+        let version = get_version();
+        self.mqtt_client.publish(&MqttDali::get_version_topic(&self.dali_config.name), QoS::AtLeastOnce, true, version.as_bytes()).await?;
+
         MqttDali::publish_config(&self.mqtt_client, config_topic, self.dali_config).await?;
 
         let command_topic = &self.get_command_topic();

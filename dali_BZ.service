@@ -19,10 +19,11 @@ After=systemd-networkd-wait-online.service
 Wants=systemd-networkd-wait-online.service
 
 [Service]
-ExecStart=/home/pi/mqtt_dali control-bz
-WorkingDirectory=/home/pi
-StandardOutput=file:/home/pi/logs/dali.log
-StandardError=file:/home/pi/logs/dali.log
+# Log to file (named logs/dali<Date>log and to log server (logging-servier:12201)
+Environment="LOG_DESTINATION=fs"
+ExecStart=/home/yuval/mqtt_dali control-bz
+WorkingDirectory=/home/yuval
+StandardError=file:/home/yuval/logs/dali.err.log
 Restart=always
 User=root
 

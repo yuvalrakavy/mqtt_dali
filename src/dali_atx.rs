@@ -1,4 +1,4 @@
-use log::{debug, log_enabled, trace, Level::Trace};
+use log::{debug,info, log_enabled, trace, Level::Trace};
 use rppal::{uart, uart::Uart};
 use std::ascii::escape_default;
 use std::str;
@@ -6,7 +6,7 @@ use std::time::Duration;
 use thiserror::Error;
 
 use crate::config_payload::{BusConfig, BusStatus, DaliConfig};
-use crate::dali_manager;
+use crate::{dali_manager, get_version};
 use crate::dali_manager::{DaliBusResult, DaliController, DaliManagerError};
 
 #[derive(Debug, Error)]
@@ -130,12 +130,22 @@ impl DaliAtx {
         let firmware_version = DaliAtx::get_byte_value(&buffer[3..=4])?;
         let bus_count = DaliAtx::get_byte_value(&buffer[5..=6])? as usize;
 
+        println!("{}", get_version());
         println!(
             "ATX DALI Pi Hat: Hardware version {}, Firmware version {}, {}",
             hardware_version,
             firmware_version,
             DaliAtx::to_bus_count_string(bus_count)
         );
+
+        info!("Started: {}", get_version());
+        info!(
+            "ATX DALI Pi Hat: Hardware version {}, Firmware version {}, {}",
+            hardware_version,
+            firmware_version,
+            DaliAtx::to_bus_count_string(bus_count)
+        );
+
 
         if dali_config.buses.is_empty() {
             for bus_number in 0..bus_count {
