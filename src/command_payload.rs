@@ -1,6 +1,5 @@
 
 use serde::{Deserialize, Serialize};
-use crate::dali_manager::DaliManagerError;
 
 /// Payload  for controller command topic
 
@@ -95,7 +94,7 @@ impl QueryLightReply {
         }
     }
 
-    pub fn new_failure(controller: &str, bus: usize, address: u8, error: DaliManagerError) -> QueryLightReply {
+    pub fn new_failure(controller: &str, bus: usize, address: u8, error: &str) -> QueryLightReply {
         QueryLightReply {
             controller: controller.to_owned(),
             bus,

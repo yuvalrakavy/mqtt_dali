@@ -34,7 +34,7 @@ async fn main()  {
         .log_to_server(true)
         .log_file_prefix("dali")
         .log_file_path("logs")
-        .init().unwrap().to_string();
+        .init().map(|t| t.to_string()).unwrap();
 
     println!("Logging: {}", d);
 
@@ -73,9 +73,7 @@ async fn main()  {
         }
     }
 
-    let mut mqtt = mqtt::MqttDali::new(&mut dali_manager, &mut dali_config, &args.mqtt);
-
-    mqtt.run(&config).await.unwrap();
+    mqtt::MqttDali::run(&config, &mut dali_manager, &mut dali_config, &args.mqtt).await.unwrap();
 }
 
 pub fn get_version() -> String {

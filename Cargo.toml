@@ -9,6 +9,7 @@ build = "build.rs"
 
 [dependencies]
 thiserror = "1.0.30"
+error-stack = "0.4.1"
 
 # serde_json is just for the example, not required in general
 tokio = { version="1", features = ["full"]}
