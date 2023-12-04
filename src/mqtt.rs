@@ -93,7 +93,7 @@ impl<'a> MqttDali<'a> {
         let into_context =
             || CommandError::Context(format!("MQTT: Publish configuration to {config_topic}"));
 
-        Ok(client
+        client
             .publish(
                 config_topic,
                 QoS::AtLeastOnce,
@@ -101,7 +101,7 @@ impl<'a> MqttDali<'a> {
                 serde_json::to_vec(dali_config).change_context_lazy(into_context)?,
             )
             .await
-            .change_context_lazy(into_context)?)
+            .change_context_lazy(into_context)
     }
 
     fn update_bus_status(&mut self) -> Result<DaliBusResult> {

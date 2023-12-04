@@ -261,19 +261,19 @@ impl DaliAtx {
 
     fn send_command(&mut self, bus: usize, command: char) -> Result<usize> {
         let into_context =
-            || DaliAtxError::Context(format!("send_command({}, {})", bus, command).into());
+            || DaliAtxError::Context(format!("send_command({}, {})", bus, command));
 
         if bus == 0 {
             let command_buffer = [command as u8];
             Ok(self
                 .do_write(&command_buffer)
-                .map_err(|e| DaliAtxError::from(e))
+                .map_err(DaliAtxError::from)
                 .change_context_lazy(into_context)?)
         } else {
             let command_buffer = [('0' as usize + bus) as u8, command as u8];
             Ok(self
                 .do_write(&command_buffer)
-                .map_err(|e| DaliAtxError::from(e))
+                .map_err(DaliAtxError::from)
                 .change_context_lazy(into_context)?)
         }
     }
@@ -289,13 +289,13 @@ impl DaliAtx {
             DaliAtx::HEX_DIGITS[(value & 0xf) as usize],
         ];
 
-        Ok(self.do_write(&buffer).change_context_lazy(into_context)?)
+        self.do_write(&buffer).change_context_lazy(into_context)
     }
 
     fn send_nl(&mut self) -> Result<usize> {
-        let into_context = || DaliAtxError::Context(format!("Sending newline to DALI interface"));
+        let into_context = || DaliAtxError::Context("Sending newline to DALI interface".to_string());
         let buffer = [b'\n'];
-        Ok(self.do_write(&buffer).change_context_lazy(into_context)?)
+        self.do_write(&buffer).change_context_lazy(into_context)
     }
 
     fn receive_value8(&self, buffer: &[u8]) -> Result<u8> {

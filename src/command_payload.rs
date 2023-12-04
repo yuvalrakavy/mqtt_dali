@@ -101,7 +101,7 @@ impl QueryLightReply {
             address,
             failure: true,
             status: 0,
-            description: format!("{}", error)
+            description: error.to_string()
        }
     }
 }

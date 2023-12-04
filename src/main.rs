@@ -34,9 +34,9 @@ async fn main()  {
         .log_to_server(true)
         .log_file_prefix("dali")
         .log_file_path("logs")
-        .init().map(|t| t.to_string()).unwrap();
+        .init().map(|t| format!("{:?}", t));
 
-    println!("Logging: {}", d);
+    println!("Logging: {}", d.unwrap());
 
     let config = Config {
         config_filename: args.config.clone(),
