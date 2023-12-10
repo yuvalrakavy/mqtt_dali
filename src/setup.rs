@@ -130,7 +130,7 @@ impl BusConfig {
         let max_channel_name_length = self
             .channels
             .iter()
-            .map(|c| c.to_string().len()+1)
+            .map(|c| c.to_string().len() + 1)
             .max()
             .unwrap_or(20);
 
@@ -157,7 +157,7 @@ impl BusConfig {
             .members
             .iter()
             .map(|member_index| self.find_member(*member_index))
-            .map(|channel| channel.map_or(20, |c| c.to_string().len()+1))
+            .map(|channel| channel.map_or(20, |c| c.to_string().len() + 1))
             .max()
             .unwrap_or(20);
 
@@ -207,7 +207,12 @@ impl BusConfig {
         }
     }
 
-    fn do_query_light(&self, dali_manager: &mut DaliManager, short_address: u8, max_channel_name_length: usize) -> bool {
+    fn do_query_light(
+        &self,
+        dali_manager: &mut DaliManager,
+        short_address: u8,
+        max_channel_name_length: usize,
+    ) -> bool {
         let status = dali_manager.query_light_status(self.bus, short_address);
         let max_channel_name_length = max(max_channel_name_length, 10);
 
@@ -216,7 +221,10 @@ impl BusConfig {
             None => format!("(Light {short_address})"),
         };
 
-        print!("{:2} {:max_channel_name_length$}: ", short_address, channel_name);
+        print!(
+            "{:2} {:max_channel_name_length$}: ",
+            short_address, channel_name
+        );
 
         let status = match status {
             Ok(status) => Some(status),
@@ -255,14 +263,13 @@ impl BusConfig {
             println!(" not found");
             false
         }
-
     }
 
     fn query_bus(&self, dali_manager: &mut DaliManager) {
         let max_channel_name_length = self
             .channels
             .iter()
-            .map(|c| c.to_string().len()+1)
+            .map(|c| c.to_string().len() + 1)
             .max()
             .unwrap_or(20);
         let mut count = 0;
@@ -273,14 +280,18 @@ impl BusConfig {
             }
         }
 
-        println!("Found {count} lights on bus {bus}", count=count, bus=self.bus+1);
+        println!(
+            "Found {count} lights on bus {bus}",
+            count = count,
+            bus = self.bus + 1
+        );
     }
 
     fn scan_bus(&self, dali_manager: &mut DaliManager) {
         let max_channel_name_length = self
             .channels
             .iter()
-            .map(|c| c.to_string().len()+1)
+            .map(|c| c.to_string().len() + 1)
             .max()
             .unwrap_or(20);
         let mut count = 0;
@@ -291,9 +302,12 @@ impl BusConfig {
             }
         }
 
-        println!("Found {count} lights on bus {bus}", count=count, bus=self.bus+1);
+        println!(
+            "Found {count} lights on bus {bus}",
+            count = count,
+            bus = self.bus + 1
+        );
     }
-
 }
 
 impl DaliConfig {
@@ -824,13 +838,13 @@ impl Setup {
                             continue;
                         }
 
-                        let should_remove = if let Some(group_index) = bus_config.get_group_index(group_address) {
-                            let group = &bus_config.groups[group_index];
-                            !group.members.iter().any(|m| light.short_address == *m)
-                        } else {
-                            true
-                        };
-
+                        let should_remove =
+                            if let Some(group_index) = bus_config.get_group_index(group_address) {
+                                let group = &bus_config.groups[group_index];
+                                !group.members.iter().any(|m| light.short_address == *m)
+                            } else {
+                                true
+                            };
 
                         if should_remove {
                             println!(
@@ -892,7 +906,7 @@ impl Setup {
             dali_config.buses[bus_number].display();
 
             let command = Setup::prompt_for_string(
-                "Groups: n=new, d=delete, e=edit, s=set-level, f=fix, b=back",
+                "Groups: n=new, d=delete, e=edit, s=set-level, f=fix, t=fade-Time, b=back",
                 Some("b"),
             )?;
 
@@ -954,6 +968,22 @@ impl Setup {
                                 bus_number,
                                 group_address,
                             )?;
+                        }
+                    }
+                    't' => {
+                        if let Some(group_address) = Setup::prompt_for_existing_group_address(
+                            &dali_config.buses[bus_number],
+                            "Group address",
+                            last_group_address,
+                        )? {
+                            if let Some(fade_time) = Setup::prompt_for_fade_time()? {
+                                dali_manager.set_group_fade_time(
+                                    bus_number,
+                                    group_address,
+                                    fade_time,
+                                )?;
+                                last_group_address = Some(group_address);
+                            }
                         }
                     }
                     'f' => {
@@ -1050,7 +1080,7 @@ impl Setup {
 
         loop {
             let command = Setup::prompt_for_string(
-                "Lights - r:rename, s:set-level, q:query, g:group-membership, b:back",
+                "Lights - r:rename, s:set-level, q:query, g:group-membership, t:fade-Time, b:back",
                 Some("b"),
             )?;
 
@@ -1095,13 +1125,20 @@ impl Setup {
                             "Address",
                             last_short_address,
                         )? {
-                            let name_length = match dali_config.buses[bus_number].get_channel_index(short_address) {
-                                Some(index) => dali_config.buses[bus_number].channels[index].description.len(),
-                                None => 10
+                            let name_length = match dali_config.buses[bus_number]
+                                .get_channel_index(short_address)
+                            {
+                                Some(index) => dali_config.buses[bus_number].channels[index]
+                                    .description
+                                    .len(),
+                                None => 10,
                             };
 
-                            dali_config.buses[bus_number]
-                                .do_query_light(dali_manager, short_address, name_length);
+                            dali_config.buses[bus_number].do_query_light(
+                                dali_manager,
+                                short_address,
+                                name_length,
+                            );
                         }
                     }
                     'g' => {
@@ -1115,6 +1152,21 @@ impl Setup {
                             println!(
                                 "Light {bus_number}/{short_address} Group membership mask: {mask}"
                             );
+                        }
+                    }
+                    't' => {
+                        if let Some(short_address) = Setup::prompt_for_existing_short_address(
+                            &dali_config.buses[bus_number],
+                            "Address",
+                            last_short_address,
+                        )? {
+                            if let Some(fade_time) = Setup::prompt_for_fade_time()? {
+                                dali_manager.set_light_fade_time(
+                                    bus_number,
+                                    short_address,
+                                    fade_time,
+                                )?;
+                            }
                         }
                     }
                     '?' => dali_config.buses[bus_number].display(),
@@ -1366,6 +1418,19 @@ impl Setup {
                 println!("Invalid group number (valid is 0-15)");
             } else {
                 break Ok(group);
+            }
+        }
+    }
+
+    pub fn prompt_for_fade_time() -> Result<Option<u8>, Box<dyn std::error::Error>> {
+        loop {
+            println!("0: No fade, 1: 0.7s, 2: 1s, 3: 1.4s, 4: 2s, 5: 2.8s, 6: 4s, 7: 5.6s, 8: 8s, 9: 11s, 10: 16s, 11: 22s, 12: 32s, 13: 45s, 14: 64s, 15: 90s");
+            let fade_time = Setup::prompt_for_number("Fade time (1-15)", Some(1))?;
+
+            if fade_time > 15 {
+                println!("Invalid fade time (valid is 0-15)");
+            } else {
+                break Ok(Some(fade_time));
             }
         }
     }

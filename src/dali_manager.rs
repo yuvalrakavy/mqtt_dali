@@ -27,6 +27,9 @@ pub enum DaliManagerError {
     #[error("Invalid command: {0}")]
     Command(u16),
 
+    #[error("Invalid fade time: {0}")]
+    FadeTime(u8),
+
     #[error("Unexpected light status {0:?}")]
     UnexpectedStatus(DaliBusResult),
 
@@ -37,9 +40,8 @@ pub enum DaliManagerError {
         regex::Error,
     ),
 
-//    #[error("DALI interface error: {0:?}")]
-//    DaliInterfaceError(String),
-
+    //    #[error("DALI interface error: {0:?}")]
+    //    DaliInterfaceError(String),
     #[error("Add to group failed (light {0} group {1})")]
     GroupAddFailed(u8, u8),
 
@@ -419,6 +421,74 @@ impl<'manager> DaliManager<'manager> {
             &format!("Set DTR to {}", value),
         )
         .change_context_lazy(into_context)
+    }
+
+    pub fn set_light_fade_time(
+        &mut self,
+        bus: usize,
+        short_address: u8,
+        fade_time: u8,
+    ) -> Result<DaliBusResult> {
+        let into_context = || {
+            DaliManagerError::Context(format!(
+                "Set fade time {fade_time} for short address {short_address}"
+            ))
+        };
+        if short_address >= 64 {
+            return Err(DaliManagerError::ShortAddress(short_address))
+                .change_context_lazy(into_context);
+        }
+
+        if fade_time > 15 {
+            return Err(DaliManagerError::FadeTime(fade_time)).change_context_lazy(into_context);
+        }
+
+        self.set_dtr(bus, fade_time)
+            .change_context_lazy(into_context)?;
+
+        self.send_command_to_address(bus, dali_commands::DALI_SET_FADE_TIME, short_address, true)
+            .change_context_lazy(into_context)?;
+
+        if fade_time == 0 {
+            // Since DTR is 0 which means that the extended fade time multiplier is 0, its should disable fading
+            self.send_command_to_address(bus, dali_commands::DALI_SET_EXTENDED_FADE_TIME, short_address, true).change_context_lazy(into_context)?;
+        }
+
+        Ok(DaliBusResult::None)
+    }
+
+    pub fn set_group_fade_time(
+        &mut self,
+        bus: usize,
+        group_address: u8,
+        fade_time: u8,
+    ) -> Result<DaliBusResult> {
+        let into_context = || {
+            DaliManagerError::Context(format!(
+                "Set fade time {fade_time} for group address {group_address}"
+            ))
+        };
+        if group_address >= 16 {
+            return Err(DaliManagerError::GroupAddress(group_address))
+                .change_context_lazy(into_context);
+        }
+
+        if fade_time > 15 {
+            return Err(DaliManagerError::FadeTime(fade_time)).change_context_lazy(into_context);
+        }
+
+        self.set_dtr(bus, fade_time)
+            .change_context_lazy(into_context)?;
+
+        self.send_command_to_group(bus, dali_commands::DALI_SET_FADE_TIME, group_address, true)
+            .change_context_lazy(into_context)?;
+
+        if fade_time == 0 {
+            // Since DTR is 0 which means that the extended fade time multiplier is 0, its should disable fading
+            self.send_command_to_group(bus, dali_commands::DALI_SET_EXTENDED_FADE_TIME, group_address, true).change_context_lazy(into_context)?;
+        }
+   
+        Ok(DaliBusResult::None)
     }
 
     pub fn query_group_membership(&mut self, bus: usize, short_address: u8) -> Result<u16> {
@@ -823,15 +893,19 @@ impl DaliBusIterator {
             .change_context_lazy(into_context)?;
         std::thread::sleep(std::time::Duration::from_millis(300));
 
-        dali_manager.broadcast_command(
-            bus,
-            dali_commands::DALI_INITIALISE,
-            parameter,
-            true,
-            "Initialize",
-        ).change_context_lazy(into_context)?;
+        dali_manager
+            .broadcast_command(
+                bus,
+                dali_commands::DALI_INITIALISE,
+                parameter,
+                true,
+                "Initialize",
+            )
+            .change_context_lazy(into_context)?;
         std::thread::sleep(std::time::Duration::from_millis(400));
-        dali_manager.broadcast_command(bus, dali_commands::DALI_RANDOMISE, 0, true, "Randomize").change_context_lazy(into_context)?;
+        dali_manager
+            .broadcast_command(bus, dali_commands::DALI_RANDOMISE, 0, true, "Randomize")
+            .change_context_lazy(into_context)?;
         std::thread::sleep(std::time::Duration::from_millis(250));
 
         Ok(DaliBusIterator {
@@ -880,31 +954,37 @@ impl DaliBusIterator {
         self.previous_high_byte = Some((search_address >> 16) as u8);
 
         if let Some(low) = low {
-            dali_manager.broadcast_command(
-                self.bus,
-                dali_commands::DALI_SEARCHADDRL,
-                low,
-                false,
-                &format!("Set search address low: {}", low),
-            ).change_context_lazy(into_context)?;
+            dali_manager
+                .broadcast_command(
+                    self.bus,
+                    dali_commands::DALI_SEARCHADDRL,
+                    low,
+                    false,
+                    &format!("Set search address low: {}", low),
+                )
+                .change_context_lazy(into_context)?;
         }
         if let Some(mid) = mid {
-            dali_manager.broadcast_command(
-                self.bus,
-                dali_commands::DALI_SEARCHADDRM,
-                mid,
-                false,
-                &format!("Set search address mid: {}", mid),
-            ).change_context_lazy(into_context)?;
+            dali_manager
+                .broadcast_command(
+                    self.bus,
+                    dali_commands::DALI_SEARCHADDRM,
+                    mid,
+                    false,
+                    &format!("Set search address mid: {}", mid),
+                )
+                .change_context_lazy(into_context)?;
         }
         if let Some(high) = high {
-            dali_manager.broadcast_command(
-                self.bus,
-                dali_commands::DALI_SEARCHADDRH,
-                high,
-                false,
-                &format!("Set search address high: {}", high),
-            ).change_context_lazy(into_context)?;
+            dali_manager
+                .broadcast_command(
+                    self.bus,
+                    dali_commands::DALI_SEARCHADDRH,
+                    high,
+                    false,
+                    &format!("Set search address high: {}", high),
+                )
+                .change_context_lazy(into_context)?;
         }
 
         Ok(DaliBusResult::None)
@@ -939,31 +1019,31 @@ impl DaliBusIterator {
 
     pub fn find_next_device(&mut self, dali_manager: &mut DaliManager) -> Result<Option<u8>> {
         let bus = self.bus;
-        let into_context = || {
-            DaliManagerError::Context(format!(
-                "Finding next device on bus {bus}",
-            ))
-        };
+        let into_context =
+            || DaliManagerError::Context(format!("Finding next device on bus {bus}",));
         // Find next device by trying to match its random address
         let mut search_address = 0x00800000; // Start in half the range (24 bits)
         let mut delta = 0x00400000;
         let mut step = 0;
 
         if self.terminate {
-            dali_manager.broadcast_command(
-                self.bus,
-                dali_commands::DALI_TERMINATE,
-                0,
-                false,
-                "terminate",
-            ).change_context_lazy(into_context)?;
+            dali_manager
+                .broadcast_command(
+                    self.bus,
+                    dali_commands::DALI_TERMINATE,
+                    0,
+                    false,
+                    "terminate",
+                )
+                .change_context_lazy(into_context)?;
             return Ok(None);
         }
 
         while delta > 0 {
             trace!("find_next_device: Send search address {}", search_address);
 
-            self.send_search_address(dali_manager, search_address).change_context_lazy(into_context)?;
+            self.send_search_address(dali_manager, search_address)
+                .change_context_lazy(into_context)?;
 
             let random_address_le = self.is_random_address_le(dali_manager, 2)?; // On real hardware consider changing this to 1 retry
 
@@ -983,21 +1063,28 @@ impl DaliBusIterator {
         }
 
         self.send_search_address(dali_manager, search_address)?;
-        if !self.is_random_address_le(dali_manager, 2).change_context_lazy(into_context)? {
+        if !self
+            .is_random_address_le(dali_manager, 2)
+            .change_context_lazy(into_context)?
+        {
             search_address += 1;
-            self.send_search_address(dali_manager, search_address).change_context_lazy(into_context)?;
-            self.is_random_address_le(dali_manager, 2).change_context_lazy(into_context)?;
+            self.send_search_address(dali_manager, search_address)
+                .change_context_lazy(into_context)?;
+            self.is_random_address_le(dali_manager, 2)
+                .change_context_lazy(into_context)?;
         }
 
         if search_address > 0xffffff {
             debug!("No more devices found!");
-            dali_manager.broadcast_command(
-                self.bus,
-                dali_commands::DALI_TERMINATE,
-                0,
-                false,
-                "terminate",
-            ).change_context_lazy(into_context)?;
+            dali_manager
+                .broadcast_command(
+                    self.bus,
+                    dali_commands::DALI_TERMINATE,
+                    0,
+                    false,
+                    "terminate",
+                )
+                .change_context_lazy(into_context)?;
             Ok(None)
         } else {
             debug!("Found light at long address {}", search_address);

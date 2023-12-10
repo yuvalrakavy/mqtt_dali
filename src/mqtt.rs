@@ -651,6 +651,26 @@ impl<'a> MqttDali<'a> {
                                     republish_config = false;
                                     self.remove_short_address(bus, address).await
                                 }
+                                DaliCommand::SetLightFadeTime {
+                                    bus,
+                                    address,
+                                    fade_time,
+                                } => {
+                                    republish_config = false;
+                                    self.dali_manager
+                                        .set_light_fade_time(bus, address, fade_time)
+                                        .change_context_lazy(|| CommandError::Context(format!("MQTT: SetLightFadeTime command on bus {bus} address {address} fade_time {fade_time}")))
+                                }
+                                DaliCommand::SetGroupFadeTime {
+                                    bus,
+                                    group,
+                                    fade_time,
+                                } => {
+                                    republish_config = false;
+                                    self.dali_manager
+                                        .set_group_fade_time(bus, group, fade_time)
+                                        .change_context_lazy(|| CommandError::Context(format!("MQTT: SetGroupFadeTime command on bus {bus} group {group} fade_time {fade_time}")))
+                                }
                             };
 
                             if let Err(e) = command_result {

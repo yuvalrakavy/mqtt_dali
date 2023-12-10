@@ -22,6 +22,8 @@ pub enum DaliCommand {
     FindNewLights   { bus: usize },
     QueryLightStatus{ bus: usize, address: u8 },
     RemoveShortAddress { bus: usize, address: u8 },
+    SetLightFadeTime { bus: usize, address: u8, fade_time: u8 },
+    SetGroupFadeTime { bus: usize, group: u8, fade_time: u8 },
 }
 
 #[derive(Debug, Copy, Clone)]
