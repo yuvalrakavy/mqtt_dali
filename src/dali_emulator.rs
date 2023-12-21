@@ -1,6 +1,6 @@
 use rand::Rng;
 use std::cell::RefCell;
-use log::{trace, error, log_enabled, Level::Trace};
+use log::{info, trace, error, log_enabled, Level::Trace};
 use crate::dali_commands::{self};
 use crate::dali_manager;
 use crate::dali_manager::{DaliBusResult, DaliController};
@@ -132,32 +132,32 @@ impl DaliLightEmulator {
     /// 
     fn set_short_address(&mut self) {
         if self.dtr[0] < 63 {
-            trace!("DALI light {} set to short address {}", self.light_number, self.dtr[0]);
+            info!("DALI light {} set to short address {}", self.light_number, self.dtr[0]);
             self.short_address = self.dtr[0];
         } else {
-            trace!("DALI light {} Attempt to set short address {} which is invalid", self.light_number, self.dtr[0])
+            info!("DALI light {} Attempt to set short address {} which is invalid", self.light_number, self.dtr[0])
         }
     }
 
     fn set_brightness(&mut self, level: u8) {
-        trace!("DALI light {}:{} brightness set to {}", self.light_number, self.short_address, level);
+        info!("DALI light {}:{} brightness set to {}", self.light_number, self.short_address, level);
         self.brightness = level;
     }
 
     fn add_to_group(&mut self, group_number: u16) {
-        trace!("DALI light {}:{} added to group {}", self.light_number, self.short_address, group_number);
+        info!("DALI light {}:{} added to group {}", self.light_number, self.short_address, group_number);
         self.group_mask |= 1 << group_number;
     }
 
     fn remove_from_group(&mut self, group_number: u16) {
-        trace!("DALI light {}:{} removed from group {}", self.light_number, self.short_address, group_number);
+        info!("DALI light {}:{} removed from group {}", self.light_number, self.short_address, group_number);
         self.group_mask &= !(1 << group_number);
     }
 
     fn start_initialize_mode(&mut self, parameter: u8) {
         
         if (parameter == 0xff && self.short_address == 0xff) || parameter == 0 || ((parameter & 0x01) != 0 && (parameter >> 1) == self.short_address) {
-            trace!("DALI light {} start initialization mode", self.light_number);
+            info!("DALI light {} start initialization mode", self.light_number);
             self.initialize_mode = true;
             self.enable_compare = true;
             self.selected = false;
@@ -165,13 +165,13 @@ impl DaliLightEmulator {
     }
 
     fn terminate_initialize_mode(&mut self) {
-        trace!("DALI light {} terminate initialization mode", self.light_number);
+        info!("DALI light {} terminate initialization mode", self.light_number);
         self.initialize_mode =false;
         self.enable_compare = false;
     }
 
     fn set_dtr(&mut self, dtr_number: u8, value: u8) {
-        trace!("DALI light {} set DTR{} to {}", self.light_number, dtr_number, value);
+        info!("DALI light {} set DTR{} to {}", self.light_number, dtr_number, value);
 
         if dtr_number < 3 {
             self.dtr[dtr_number as usize] = value;
@@ -184,50 +184,50 @@ impl DaliLightEmulator {
         let mut rng = rand::thread_rng();
 
         self.random_address = rng.gen_range(0..=0x0fff);
-        trace!("DALI light {} randomized address set to {}", self.light_number, self.random_address);
+        info!("DALI light {} randomized address set to {}", self.light_number, self.random_address);
     }
 
     fn compare(&mut self) -> Option<u8> {
         if self.enable_compare {
-            trace!("DALI light {} check if random {} <= search {} ", self.light_number, self.random_address, self.search_address);
+            info!("DALI light {} check if random {} <= search {} ", self.light_number, self.random_address, self.search_address);
             self.selected = self.random_address == self.search_address;
             if self.random_address <= self.search_address { Some(0xff) } else { None }
         } else {
-            trace!("DALI light {} not participating in compare", self.light_number);
+            info!("DALI light {} not participating in compare", self.light_number);
             None
         }
     }
 
     fn withdraw(&mut self) {
         if self.selected {
-            trace!("DALI light {} withdrawing from compare process", self.light_number);
+            info!("DALI light {} withdrawing from compare process", self.light_number);
             self.enable_compare = false;
         } else{
-            trace!("DALI light {} not withdrawing from compare process", self.light_number);
+            info!("DALI light {} not withdrawing from compare process", self.light_number);
         }
     }
 
     fn set_search_address_low(&mut self, value: u8) {
-        trace!("DALI light {} set search address low byte to {}", self.light_number, value);
+        info!("DALI light {} set search address low byte to {}", self.light_number, value);
         self.search_address &= 0xffff00;
         self.search_address |= value as u32;
     }
 
     fn set_search_address_middle(&mut self, value: u8) {
-        trace!("DALI light {} set search address middle byte to {}", self.light_number, value);
+        info!("DALI light {} set search address middle byte to {}", self.light_number, value);
         self.search_address &= 0xff00ff;
         self.search_address |= (value as u32) << 8;
     }
 
     fn set_search_address_high(&mut self, value: u8) {
-        trace!("DALI light {} set search address high byte to {}", self.light_number, value);
+        info!("DALI light {} set search address high byte to {}", self.light_number, value);
         self.search_address &= 0x00ffff;
         self.search_address |= (value as u32) << 16;
     }
 
     fn program_short_address(&mut self, short_address: u8) {
         if self.selected {
-            trace!("DALI light {} is selected, set short address to {}", self.light_number, short_address);
+            info!("DALI light {} is selected, set short address to {}", self.light_number, short_address);
             self.short_address = short_address;
         }
     }

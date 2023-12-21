@@ -1,3 +1,4 @@
+use log::info;
 use rustop::opts;
 
 mod command_payload;
@@ -34,7 +35,8 @@ async fn main()  {
         .log_to_server(true)
         .log_file_prefix("dali")
         .log_file_path("logs")
-        .init().map(|t| format!("{:?}", t));
+        .level(tracing::Level::INFO)
+        .init().map(|t| format!("{}", t));
 
     println!("Logging: {}", d.unwrap());
 
@@ -42,7 +44,7 @@ async fn main()  {
         config_filename: args.config.clone(),
     };
 
-    println!("Loading configuration from {config_filename}", config_filename = args.config.clone());
+    info!("Loading configuration from {config_filename}", config_filename = args.config.clone());
 
     let mut dali_config = if !std::path::Path::new(&args.config).exists() {
         DaliConfig::interactive_new().unwrap()
@@ -51,7 +53,7 @@ async fn main()  {
         config.load().unwrap()
     };
 
-    println!("Configuration: loaded");
+    info!("Configuration: loaded");
 
     let mut controller = if args.emulation {
         DaliControllerEmulator::try_new(&mut dali_config)

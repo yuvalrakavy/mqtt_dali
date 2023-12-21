@@ -2,7 +2,7 @@ use crate::command_payload::LightStatus;
 use crate::config_payload::{BusConfig, BusStatus, Channel, Group};
 use crate::dali_commands;
 use error_stack::{Report, ResultExt};
-use log::{debug, info, trace};
+use log::{debug, info};
 use std::{thread::sleep, time::Duration};
 use thiserror::Error;
 
@@ -127,6 +127,7 @@ impl<'manager> DaliManager<'manager> {
         short_address: u8,
         value: u8,
     ) -> Result<DaliBusResult> {
+        info!("Set light {short_address} on bus {bus} to {value}");
         self.controller.send_2_bytes(
             bus,
             DaliManager::to_light_short_address(short_address),
@@ -140,6 +141,7 @@ impl<'manager> DaliManager<'manager> {
         short_address: u8,
         level: u8,
     ) -> Result<DaliBusResult> {
+        info!("Set light {short_address} on bus {bus} to {level}");
         self.controller.send_2_bytes(
             bus,
             DaliManager::to_light_short_address(short_address),
@@ -153,6 +155,7 @@ impl<'manager> DaliManager<'manager> {
         group: u8,
         value: u8,
     ) -> Result<DaliBusResult> {
+        info!("Set group {group} on bus {bus} to {value}");
         self.controller
             .send_2_bytes(bus, DaliManager::to_light_group_address(group), value)
     }
@@ -163,6 +166,7 @@ impl<'manager> DaliManager<'manager> {
         group_address: u8,
         level: u8,
     ) -> Result<DaliBusResult> {
+        info!("Set group {group_address} on bus {bus} to {level}");
         self.controller.send_2_bytes(
             bus,
             DaliManager::to_light_group_address(group_address),
@@ -451,7 +455,13 @@ impl<'manager> DaliManager<'manager> {
 
         if fade_time == 0 {
             // Since DTR is 0 which means that the extended fade time multiplier is 0, its should disable fading
-            self.send_command_to_address(bus, dali_commands::DALI_SET_EXTENDED_FADE_TIME, short_address, true).change_context_lazy(into_context)?;
+            self.send_command_to_address(
+                bus,
+                dali_commands::DALI_SET_EXTENDED_FADE_TIME,
+                short_address,
+                true,
+            )
+            .change_context_lazy(into_context)?;
         }
 
         Ok(DaliBusResult::None)
@@ -485,9 +495,15 @@ impl<'manager> DaliManager<'manager> {
 
         if fade_time == 0 {
             // Since DTR is 0 which means that the extended fade time multiplier is 0, its should disable fading
-            self.send_command_to_group(bus, dali_commands::DALI_SET_EXTENDED_FADE_TIME, group_address, true).change_context_lazy(into_context)?;
+            self.send_command_to_group(
+                bus,
+                dali_commands::DALI_SET_EXTENDED_FADE_TIME,
+                group_address,
+                true,
+            )
+            .change_context_lazy(into_context)?;
         }
-   
+
         Ok(DaliBusResult::None)
     }
 
@@ -593,7 +609,7 @@ impl<'manager> DaliManager<'manager> {
             if !self.is_group_member(bus, short_address, group_address)? {
                 break Ok(DaliBusResult::None);
             } else {
-                trace!(
+                info!(
                     "Remove light {short_address} from group {group_address} failed, retry again"
                 );
 
@@ -799,12 +815,9 @@ impl<'manager> DaliManager<'manager> {
                         )
                     }
 
-                    trace!(
+                    info!(
                         "Light {}: {} matches {} - added to group {}",
-                        light.short_address,
-                        light.description,
-                        light_name_pattern,
-                        group_address
+                        light.short_address, light.description, light_name_pattern, group_address
                     );
                     self.add_to_group_and_verify(
                         bus_config.bus,
@@ -830,12 +843,9 @@ impl<'manager> DaliManager<'manager> {
                             light_name_pattern,
                         )
                     }
-                    trace!(
+                    info!(
                         "Light {}: {} does not match {} - removed from group {}",
-                        light.short_address,
-                        light.description,
-                        light_name_pattern,
-                        group_address
+                        light.short_address, light.description, light_name_pattern, group_address
                     );
                     self.remove_from_group_and_verify(
                         bus_config.bus,
@@ -1040,7 +1050,7 @@ impl DaliBusIterator {
         }
 
         while delta > 0 {
-            trace!("find_next_device: Send search address {}", search_address);
+            info!("find_next_device: Send search address {}", search_address);
 
             self.send_search_address(dali_manager, search_address)
                 .change_context_lazy(into_context)?;

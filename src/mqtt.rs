@@ -5,8 +5,9 @@ use crate::dali_manager::{
 };
 use crate::{get_version, Config};
 use error_stack::{Report, ResultExt};
-use log::{debug, error, info};
+use log::{error, info};
 use rumqttc::{AsyncClient, Event, EventLoop, LastWill, MqttOptions, Packet, Publish, QoS};
+use tracing::span;
 use std::time::Duration;
 use thiserror::Error;
 
@@ -571,7 +572,10 @@ impl<'a> MqttDali<'a> {
                         as serde_json::Result<DaliCommand>
                     {
                         Ok(command) => {
-                            debug!("Got command {:?}", command);
+                            let _span = span!(tracing::Level::INFO, "Command", command = ?command);
+
+                            info!("Received command {:?}", command);
+
                             let command_result: Result<DaliBusResult> = match command {
                                 DaliCommand::SetLightBrightness {
                                     bus,
