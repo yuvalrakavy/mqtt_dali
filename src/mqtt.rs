@@ -7,9 +7,9 @@ use crate::{get_version, Config};
 use error_stack::{Report, ResultExt};
 use log::{error, info};
 use rumqttc::{AsyncClient, Event, EventLoop, LastWill, MqttOptions, Packet, Publish, QoS};
-use tracing::span;
 use std::time::Duration;
 use thiserror::Error;
+use tracing::span;
 
 pub struct MqttDali<'a> {
     dali_config: &'a mut DaliConfig,
@@ -44,14 +44,9 @@ pub enum CommandError {
     #[error("Bus {0} has no group {1}")]
     NoSuchGroup(usize, u8),
 
-    // #[error("MQTT client error {0}")]
-    // MqttClientError(#[from] ClientError),
+    #[error("Mqtt Error {0}")]
+    MqttError(String),
 
-    // #[error("MQTT connection error {0}")]
-    // MqttConnectionError(#[from] ConnectionError),
-
-    // #[error("Json Error {0}")]
-    // JsonError(#[from] serde_json::Error),
     #[error("In context of '{0}'")]
     Context(String),
 }
@@ -533,7 +528,7 @@ impl<'a> MqttDali<'a> {
         mqtt_client
             .publish(&active_topic, QoS::AtLeastOnce, true, "true".as_bytes())
             .await
-            .change_context_lazy(into_context)?;
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
         info!("MQTT {active_topic} was set to true");
 
@@ -546,20 +541,23 @@ impl<'a> MqttDali<'a> {
                 version.as_bytes(),
             )
             .await
-            .change_context_lazy(into_context)?;
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
         MqttDali::publish_config(&mqtt_client, config_topic, self.dali_config)
             .await
-            .change_context_lazy(into_context)?;
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
         let command_topic = &self.get_command_topic();
         mqtt_client
             .subscribe(command_topic, QoS::AtLeastOnce)
             .await
-            .change_context_lazy(into_context)?;
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
         loop {
-            let event = mqtt_events.poll().await.change_context_lazy(into_context)?;
+            let event = mqtt_events
+                .poll()
+                .await
+                .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
             if let Event::Incoming(Packet::Publish(Publish {
                 ref topic, payload, ..
@@ -757,7 +755,8 @@ impl<'a> MqttDali<'a> {
             );
             mqtt_options
                 .set_keep_alive(Duration::from_secs(5))
-                .set_last_will(last_will);
+                .set_last_will(last_will)
+                .set_max_packet_size(50*1024, 50*1024);
 
             let (mqtt_client, mqtt_events) = AsyncClient::new(mqtt_options, 10);
 
