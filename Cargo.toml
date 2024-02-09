@@ -19,7 +19,7 @@ serde = { version = "1.0.134", features = ["derive"] }
 rumqttc = { version = "0.23.0", default-features = false }
 rustop = "1.1.1"
 rand = "0.8.4"
-rppal = "0.16.0"
+rppal = "0.17.1"
 tracing = { version = "0.1.27"  }
 log = "0.4.14"
 tracing-init = { git="http://github.com/yuvalrakavy/tracing-init.git" }
