@@ -523,14 +523,10 @@ impl<'a> MqttDali<'a> {
         info!("MQTT session started: Connecting to MQTT broker");
         let active_topic = MqttDali::get_is_active_topic(&self.dali_config.name);
 
-        info!("Trying to set {active_topic} to true");
-
         mqtt_client
             .publish(&active_topic, QoS::AtLeastOnce, true, "true".as_bytes())
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
-
-        info!("MQTT {active_topic} was set to true");
 
         let version = get_version();
         mqtt_client
@@ -696,12 +692,13 @@ impl<'a> MqttDali<'a> {
                                 mqtt_client
                                     .publish(
                                         status_topic,
-                                        QoS::AtMostOnce,
+                                        QoS::AtLeastOnce,
                                         false,
                                         "\"OK\"".as_bytes(),
                                     )
                                     .await
                                     .change_context_lazy(into_context)?;
+
                                 if republish_config {
                                     MqttDali::publish_config(
                                         &mqtt_client,
@@ -710,6 +707,7 @@ impl<'a> MqttDali<'a> {
                                     )
                                     .await
                                     .change_context_lazy(into_context)?;
+
                                     config.save(self.dali_config).expect("Saving config file");
                                 }
                             }
@@ -754,11 +752,12 @@ impl<'a> MqttDali<'a> {
                 true,
             );
             mqtt_options
-                .set_keep_alive(Duration::from_secs(5))
+                .set_keep_alive(Duration::from_secs(6))
                 .set_last_will(last_will)
-                .set_max_packet_size(50*1024, 50*1024);
+                .set_max_packet_size(50*1024, 50*1024)
+                .set_request_channel_capacity(200);
 
-            let (mqtt_client, mqtt_events) = AsyncClient::new(mqtt_options, 10);
+            let (mqtt_client, mqtt_events) = AsyncClient::new(mqtt_options, 200);
 
             match mqtt.run_session(config, mqtt_client, mqtt_events).await {
                 Ok(_) => break Ok(()),
