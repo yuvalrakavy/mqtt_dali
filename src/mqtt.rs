@@ -519,6 +519,7 @@ impl<'a> MqttDali<'a> {
         let into_context = || CommandError::Context("MQTT session: Event loop".to_owned());
         let config_topic = &self.get_config_topic();
         let status_topic = &self.get_status_topic();
+        let mut status_ok = false;
 
         info!("MQTT session started: Connecting to MQTT broker");
         let active_topic = MqttDali::get_is_active_topic(&self.dali_config.name);
@@ -688,16 +689,21 @@ impl<'a> MqttDali<'a> {
                                     )
                                     .await
                                     .change_context_lazy(into_context)?;
+
+                                status_ok = false;
                             } else {
-                                mqtt_client
-                                    .publish(
-                                        status_topic,
-                                        QoS::AtLeastOnce,
-                                        false,
-                                        "\"OK\"".as_bytes(),
-                                    )
-                                    .await
-                                    .change_context_lazy(into_context)?;
+                                if !status_ok {
+                                    mqtt_client
+                                        .publish(
+                                            status_topic,
+                                            QoS::AtLeastOnce,
+                                            false,
+                                            "\"OK\"".as_bytes(),
+                                        )
+                                        .await
+                                        .change_context_lazy(into_context)?;
+                                    status_ok = true;
+                                }
 
                                 if republish_config {
                                     MqttDali::publish_config(
