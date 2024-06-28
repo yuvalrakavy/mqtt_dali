@@ -37,10 +37,6 @@ pub struct DaliConfig {
     pub buses: Vec<BusConfig>,
 }
 
-#[derive(Debug)]
-pub struct Config {
-    pub config_filename: String,
-}
 
 #[test]
 fn test_parse_config() {

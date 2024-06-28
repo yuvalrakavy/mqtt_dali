@@ -27,18 +27,35 @@ async fn main()  {
         param mqtt:String, desc: "MQTT broker to connect";
         opt emulation:bool = false, desc: "Use hardware emulation (for debugging)";
         opt setup:bool=false, desc: "Setup mode";
+        opt log : bool = false, desc: "Enable logging";
+        opt console: bool = false, desc: "Enable console logging";
+        opt filter: String = String::from("mqtt_dali"), desc: "Filter for logging";
         opt config: String = String::from("dali.json"), desc: "Configuration filename (dali.json)";
     }.parse_or_exit();
     
-    let d = tracing_init::TracingInit::builder("mqtt_dali")
-        .log_to_file(true)
-        .log_to_server(true)
-        .log_file_prefix("dali")
-        .log_file_path("logs")
-        .level(tracing::Level::INFO)
-        .init().map(|t| format!("{}", t));
+    if args.log {
+        let mut logging_builder = {
+            let mut builder = tracing_init::TracingInit::builder("mqtt_dali");
 
-    println!("Logging: {}", d.unwrap());
+            builder
+                .log_to_file(true)
+                .log_to_server(true)
+                .log_file_prefix("dali")
+                .log_file_path("logs")
+                .log_to_console(args.console)
+                .level(tracing::Level::INFO);
+
+            if !args.filter.is_empty() {
+                builder.filter(&args.filter);
+            }
+            
+            builder
+        };
+
+        let log_description = logging_builder.init().map(|t| format!("{}", t));
+
+        println!("Logging: {}", log_description.unwrap());
+    }
 
     let config = Config {
         config_filename: args.config.clone(),

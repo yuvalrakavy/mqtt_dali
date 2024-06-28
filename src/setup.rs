@@ -769,10 +769,10 @@ impl Setup {
                                 Some(Box::new(|action, _| {
                                     std::thread::sleep(std::time::Duration::from_millis(100));
                                     match action {
-                                        MatchGroupAction::AddMember(light, _) => {
+                                        MatchGroupAction::AddMember(light) => {
                                             println!("  Adding {}", light)
                                         }
-                                        MatchGroupAction::RemoveMember(light, _) => {
+                                        MatchGroupAction::RemoveMember(light) => {
                                             println!("  Remove {}", light)
                                         }
                                     }

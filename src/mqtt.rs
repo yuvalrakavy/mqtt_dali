@@ -147,7 +147,7 @@ impl<'a> MqttDali<'a> {
 
     fn rename_bus(&mut self, bus_number: usize, name: &str) -> Result<DaliBusResult> {
         if let Some(bus) = self.dali_config.buses.get_mut(bus_number) {
-            bus.description = name.to_owned();
+            name.clone_into(&mut bus.description);
             Ok(DaliBusResult::None)
         } else {
             Err(CommandError::BusNumber(bus_number)).change_context(CommandError::Context(format!(
@@ -174,7 +174,7 @@ impl<'a> MqttDali<'a> {
                 .iter_mut()
                 .find(|c| c.short_address == short_address)
             {
-                channel.description = name.to_owned();
+                name.clone_into(&mut channel.description);
                 Ok(DaliBusResult::None)
             } else {
                 Err(CommandError::ShortAddress(short_address)).change_context_lazy(into_context)
@@ -202,7 +202,7 @@ impl<'a> MqttDali<'a> {
                 .iter_mut()
                 .find(|g| g.group_address == group_address)
             {
-                group.description = name.to_owned();
+                name.clone_into(&mut group.description);
                 Ok(DaliBusResult::None)
             } else {
                 Err(CommandError::GroupAddress(group_address)).change_context_lazy(into_context)

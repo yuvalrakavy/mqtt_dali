@@ -7,6 +7,7 @@ use std::{thread::sleep, time::Duration};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub enum DaliBusResult {
     None,
     ReceiveCollision,
@@ -86,8 +87,8 @@ pub enum DaliDeviceSelection {
 }
 
 pub enum MatchGroupAction<'a> {
-    AddMember(&'a str, &'a str),
-    RemoveMember(&'a str, &'a str),
+    AddMember(&'a str),
+    RemoveMember(&'a str),
 }
 
 impl<'manager> DaliManager<'manager> {
@@ -809,7 +810,6 @@ impl<'manager> DaliManager<'manager> {
                         progress(
                             MatchGroupAction::AddMember(
                                 &format!("{} ({})", light.description, light.short_address),
-                                &format!("{} ({})", group.description, group.group_address),
                             ),
                             light_name_pattern,
                         )
@@ -838,7 +838,6 @@ impl<'manager> DaliManager<'manager> {
                         progress(
                             MatchGroupAction::RemoveMember(
                                 &format!("{} ({})", light.description, light.short_address),
-                                &format!("{} ({})", group.description, group.group_address),
                             ),
                             light_name_pattern,
                         )
