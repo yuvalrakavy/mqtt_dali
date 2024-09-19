@@ -1,0 +1,6 @@
+# Place this file in /etc/systemd/network
+[Match]
+Name=eth0
+
+[Network]
+DHCP=v4

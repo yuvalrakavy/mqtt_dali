@@ -1,0 +1,27 @@
+#!/usr/local/bin/fish
+#
+# Usage: ./install_on_pi.sh <Pi ip address> <name>
+#
+# Set the hometoucher manager server
+#
+#  For BZ screens, the manager server is the 10.0.99.100:60000
+#  For TLV screens, the manager serveris 10.0.99.100:60001
+#
+if test (count $argv) -ne 2
+    echo "Usage: ./install_on_pi.sh <Pi ip address> <MQTT-Broker>"
+    exit 1
+end
+
+#set manager 10.0.99.100:60001  # TLV
+set dest $argv[1]
+set mqtt $argv[2]
+set user yuval
+set pi_home $user@$dest:~
+
+sed -e "s/_MQTT_/$mqtt/g" -e "s/_NAME_/\"$name\"/g" -e s/_USER_/$user/g dali_Template.service > dali.service
+
+scp target/armv7-unknown-linux-musleabihf/release/mqtt_dali $pi_home
+scp dali.service $pi_home
+scp local.network $pi_home
+scp install_on_pi.sh $pi_home
+ssh $user@$dest "source ./install_on_pi.sh"

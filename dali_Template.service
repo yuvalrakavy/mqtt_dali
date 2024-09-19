@@ -1,0 +1,44 @@
+
+# Remeber to do:
+#
+# Update MY-NAME with the touch screen name you would like to use
+#
+# 1) Place this file in /lib/systemd/system
+#
+# 2) Run the commands:
+#
+#  sudo systemctl enable systemd-networkd.service systemd-networkd-wait-online.service hometoucher_TLV.service
+#
+# 3) scp the file 'local.network' to home directory and then
+#
+#   sudo mv local.network /etc/systemd/network
+#
+# 4) create logs directory
+#
+#  mkdir ~/logs
+#
+# 5) enable the service with the command:
+#
+# 6) Use raspi-config to set the host name to HT-TLV|BZ-NAME
+#
+# 7) Disable console login by:
+#
+#  sudo rm /etc/systemd/system/getty.target.wants/getty*
+#
+#
+
+[Unit]
+Description=MQTT_DALI
+After=systemd-networkd-wait-online.service
+Wants=systemd-networkd-wait-online.service
+
+[Service]
+ExecStart=/home/_USER_/mqtt_dali _MQTT_
+WorkingDirectory=/home/_USER_
+StandardOutput=file:/home/_USER_/logs/dali.log
+StandardError=file:/home/_USER_/logs/dali.log
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
