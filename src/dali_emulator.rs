@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::random_range;
 use std::cell::RefCell;
 use log::{info, trace, error, log_enabled, Level::Trace};
 use crate::dali_commands::{self};
@@ -131,11 +131,12 @@ impl DaliLightEmulator {
     /// Command implementation
     /// 
     fn set_short_address(&mut self) {
-        if self.dtr[0] < 63 {
-            info!("DALI light {} set to short address {}", self.light_number, self.dtr[0]);
-            self.short_address = self.dtr[0];
+        let address = self.dtr[0] >> 1;
+        if address < 64 {
+            info!("DALI light {} set to short address {}", self.light_number, address);
+            self.short_address = address;
         } else {
-            info!("DALI light {} Attempt to set short address {} which is invalid", self.light_number, self.dtr[0])
+            info!("DALI light {} Attempt to set short address {} which is invalid", self.light_number, address)
         }
     }
 
@@ -181,9 +182,7 @@ impl DaliLightEmulator {
     }
 
     fn randomize(&mut self) {
-        let mut rng = rand::thread_rng();
-
-        self.random_address = rng.gen_range(0..=0x0fff);
+        self.random_address = random_range(0..=0x0fff_u32);
         info!("DALI light {} randomized address set to {}", self.light_number, self.random_address);
     }
 
@@ -225,8 +224,9 @@ impl DaliLightEmulator {
         self.search_address |= (value as u32) << 16;
     }
 
-    fn program_short_address(&mut self, short_address: u8) {
+    fn program_short_address(&mut self, parameter: u8) {
         if self.selected {
+            let short_address = parameter >> 1;
             info!("DALI light {} is selected, set short address to {}", self.light_number, short_address);
             self.short_address = short_address;
         }
@@ -252,7 +252,7 @@ impl DaliBusEmulator {
             let mut group_mask = 0u16;
 
             for group in bus_config.groups.iter() {
-                if group.members.iter().any(|short_address| *short_address == channel.short_address) {
+                if group.members.contains(&channel.short_address) {
                     group_mask |= 1 << group.group_address;
                 }
             }

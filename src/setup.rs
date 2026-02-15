@@ -147,7 +147,7 @@ impl BusConfig {
             }
         }
 
-        if self.channels.len() % BusConfig::CHANNELS_PER_LINE != 0 {
+        if !self.channels.len().is_multiple_of(BusConfig::CHANNELS_PER_LINE) {
             println!();
         }
     }
@@ -178,7 +178,7 @@ impl BusConfig {
             }
         }
 
-        if group.members.len() % BusConfig::CHANNELS_PER_LINE != 0 {
+        if !group.members.len().is_multiple_of(BusConfig::CHANNELS_PER_LINE) {
             println!();
         }
     }
@@ -226,10 +226,7 @@ impl BusConfig {
             short_address, channel_name
         );
 
-        let status = match status {
-            Ok(status) => Some(status),
-            Err(_) => None,
-        };
+        let status = status.ok();
 
         if let Some(status) = status {
             print!("{} ", status);
@@ -841,7 +838,7 @@ impl Setup {
                         let should_remove =
                             if let Some(group_index) = bus_config.get_group_index(group_address) {
                                 let group = &bus_config.groups[group_index];
-                                !group.members.iter().any(|m| light.short_address == *m)
+                                !group.members.contains(&light.short_address)
                             } else {
                                 true
                             };
@@ -866,7 +863,7 @@ impl Setup {
                     for group in bus_config.groups.iter() {
                         let mask = 1 << group.group_address;
 
-                        if group.members.iter().any(|m| light.short_address == *m)
+                        if group.members.contains(&light.short_address)
                             && (light_group_mask & mask) == 0
                         {
                             println!(

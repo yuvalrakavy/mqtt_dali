@@ -43,15 +43,16 @@ fn test_parse_config() {
     println!("Testing config");
     
     let config_json = String::from(
-        r#"{ 
+        r#"{
                 "name": "Kitchen",
                 "buses": [
                     {
                         "description": "lights",
+                        "status": "Active",
                         "bus": 0,
                         "channels": [
                             {
-                                "channel": 1,
+                                "short_address": 1,
                                 "description": "main light"
                             }
                         ]

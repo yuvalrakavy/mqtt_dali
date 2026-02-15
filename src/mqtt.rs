@@ -647,7 +647,6 @@ impl<'a> MqttDali<'a> {
                                     self.query_light_status(&mqtt_client, bus, address).await
                                 }
                                 DaliCommand::RemoveShortAddress { bus, address } => {
-                                    republish_config = false;
                                     self.remove_short_address(bus, address).await
                                 }
                                 DaliCommand::SetLightFadeTime {

@@ -9,21 +9,21 @@ build = "build.rs"
 
 [dependencies]
 thiserror = "2.0.3"
-error-stack = "0.5.0"
+error-stack = "0.6.0"
 
 # serde_json is just for the example, not required in general
 tokio = { version="1.41.1", features = ["full"]}
 serde_json = "1.0.133"
 serde = { version = "1.0.215", features = ["derive"] }
 #rumqttc = { path="../../rumqtt/rumqttc" }
-rumqttc = { version = "0.24.0", default-features = false }
+rumqttc = { version = "0.25.1", default-features = false }
 rustop = "1.1.4"
-rand = "0.8.5"
-rppal = "0.20.0"
+rand = "0.10.0"
+rppal = "0.22.1"
 tracing = { version = "0.1.41"  }
 log = "0.4.22"
 tracing-init = { git="http://github.com/yuvalrakavy/tracing-init.git" }
-built = "0.7.5" 
+built = "0.8.0" 
 
 # to run with logging use
 #  RUST_LOG=trace,rumqttc=off mqtt_dali ...
@@ -31,4 +31,4 @@ built = "0.7.5"
 regex = "1.11.1"
 
 [build-dependencies]
-built = { version= "0.7.1", features = ["chrono"] }
+built = { version= "0.8.0", features = ["chrono"] }

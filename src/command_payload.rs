@@ -118,16 +118,13 @@ mod tests {
             {
                 "command": "SetLightBrightness",
                 "bus": 1,
-                "channel": 5,
+                "address": 5,
                 "value": 48
             }
         "#;
 
-        let c: DaliCommand = serde_json::from_str(&json).unwrap();
-        match c {
-            DaliCommand::SetLightBrightness { bus: 1, address: 5, value: 48 } => assert!(true),
-            _ => assert!(false),
-        }
+        let c: DaliCommand = serde_json::from_str(json).unwrap();
+        assert!(matches!(c, DaliCommand::SetLightBrightness { bus: 1, address: 5, value: 48 }));
     }
 
     #[test]
@@ -141,11 +138,8 @@ mod tests {
             }
         "#;
 
-        let c: DaliCommand = serde_json::from_str(&json).unwrap();
-        match c {
-            DaliCommand::SetGroupBrightness { bus: 1, group: 5, value: 48 } => assert!(true),
-            _ => assert!(false),
-        }
+        let c: DaliCommand = serde_json::from_str(json).unwrap();
+        assert!(matches!(c, DaliCommand::SetGroupBrightness { bus: 1, group: 5, value: 48 }));
     }
 }
 

@@ -92,7 +92,7 @@ pub enum MatchGroupAction<'a> {
 }
 
 impl<'manager> DaliManager<'manager> {
-    pub fn new(controller: &'manager mut dyn DaliController) -> DaliManager {
+    pub fn new(controller: &'manager mut dyn DaliController) -> DaliManager<'manager> {
         DaliManager { controller }
     }
 
@@ -256,7 +256,7 @@ impl<'manager> DaliManager<'manager> {
         if command > 0xff {
             return Err(DaliManagerError::Command(command)).change_context_lazy(into_context);
         }
-        if group_address >= 64 {
+        if group_address >= 16 {
             return Err(DaliManagerError::GroupAddress(group_address))
                 .change_context_lazy(into_context);
         }
@@ -750,7 +750,6 @@ impl<'manager> DaliManager<'manager> {
             ))
         };
 
-        let bus = bus_config.bus;
         let groups = self
             .query_group_membership(bus, existing_address)
             .change_context_lazy(into_context)?;
