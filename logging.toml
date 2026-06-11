@@ -12,11 +12,15 @@
 # configures (file + optional console). Use plain letters (e.g. "fgo") to
 # replace them instead.
 destination = "+g+o"
+# Telemetry must never prevent the bridge from starting: a destination that
+# fails to initialize (e.g. unresolvable GELF host) is skipped with a stderr
+# note + a SKIPPED entry in the startup summary, instead of failing init.
+on_destination_error = "skip"
 
 [logging.gelf]
-# logmon-broker GELF ingest (UDP). NOTE: an unresolvable host fails tracing
-# init at startup and the bridge will not start — keep this pointing at a
-# name/IP resolvable from THIS site, or drop the "+g" modifier above.
+# logmon-broker GELF ingest (UDP). Adjust per site; with
+# on_destination_error = "skip" a wrong/unresolvable host costs only the
+# GELF destination, not the bridge.
 address = "yuvals-mac-studio.villarakavy.local:12201"
 
 [logging.otel]
