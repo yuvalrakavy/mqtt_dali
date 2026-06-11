@@ -1,6 +1,6 @@
 use rand::random_range;
 use std::cell::RefCell;
-use log::{info, trace, error, log_enabled, Level::Trace};
+use log::{info, trace, log_enabled, Level::Trace};
 use crate::dali_commands::{self};
 use crate::dali_manager;
 use crate::dali_manager::{DaliBusResult, DaliController};
@@ -78,7 +78,7 @@ impl DaliLightEmulator {
             dali_commands::DALI_SEARCHADDRL => self.set_search_address_low(parameter),
             dali_commands::DALI_PROGRAM_SHORT_ADDRESS => self.program_short_address(parameter),
 
-            _ => error!("DALI Light {} - Unsupported command {} ({:#03x})", self.light_number, command, command),
+            _ => tracing::warn!(kind = "protocol_mismatch", light = self.light_number, command, "emulator: unsupported DALI command"),
         }
         None
     }
@@ -177,7 +177,7 @@ impl DaliLightEmulator {
         if dtr_number < 3 {
             self.dtr[dtr_number as usize] = value;
         } else {
-            error!("  Invalid DTR number (0, 1, 2)");
+            tracing::warn!(kind = "protocol_mismatch", light = self.light_number, dtr_number, "emulator: invalid DTR number");
         }
     }
 

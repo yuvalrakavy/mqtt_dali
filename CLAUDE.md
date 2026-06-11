@@ -90,8 +90,34 @@ Cross-compiled binary is deployed to Raspberry Pi via `install_to_pi` (Fish scri
 ## Key Dependencies
 
 - **tokio** — async runtime
-- **rumqttc** — MQTT client (default features disabled)
+- **rumqttc** — MQTT client v5 (`rumqttc::v5`) (default features disabled)
 - **rppal** — Raspberry Pi GPIO/UART access
 - **error-stack** / **thiserror** — error handling
-- **tracing** + **tracing-init** (git dep) — structured logging
+- **tracing** + **tracing-init** (git dep, `otel` + default features) — structured logging
 - **serde** / **serde_json** — serialization
+
+## Logging
+
+Log levels and `kind` fields follow the fleet policy at
+`~/Documents/Projects/Store/docs/guides/logging-policy.md`:
+
+- **ERROR** — a code change is warranted; fails any test baseline.
+- **WARN** — unexpected-but-handled; zero per hour on an idle healthy system;
+  every WARN carries `kind = "<family>"`.
+- **INFO** — lifecycle/state-transitions/designed degradations needing no action.
+- **DEBUG/TRACE** — developer detail; free.
+
+Every ERROR and WARN must carry a structured `kind` field. Common families for
+this bridge: `external_failure` (broker/DALI-bus failure), `connection_lost`
+(designed reconnect path — INFO), `decode_error` (undecodable MQTT payload),
+`protocol_mismatch` (unexpected packet or emulator unsupported command).
+
+The bridge participates in **distributed traces** via MQTT v5 `traceparent` user
+properties (`tracing_init::traceparent`): inbound command packets read the
+`traceparent` property and re-parent the handling span before entering it;
+outbound publishes stamp the property when a trace is active. The
+`tracing_init::traceparent::current()` / `set_remote_parent()` helpers are
+gated behind the `otel` feature (already enabled).
+
+GELF/OTel destinations are controlled by `LOG_DESTINATION` env var and
+`server.toml` config at deploy time (see `tracing-init` documentation).

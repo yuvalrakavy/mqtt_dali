@@ -5,16 +5,15 @@ use crate::dali_manager::{
 };
 use crate::{get_version, Config};
 use error_stack::{Report, ResultExt};
-use log::{error, info};
-use rumqttc::{AsyncClient, Event, EventLoop, LastWill, MqttOptions, Packet, Publish, QoS};
+use rumqttc::v5::{AsyncClient, Event, EventLoop, MqttOptions};
+use rumqttc::v5::mqttbytes::QoS;
+use rumqttc::v5::mqttbytes::v5::{LastWill, Packet, Publish, PublishProperties};
 use std::time::Duration;
 use thiserror::Error;
-use tracing::span;
+use tracing::{info, warn, Instrument};
 
 pub struct MqttDali<'a> {
     dali_config: &'a mut DaliConfig,
-    // mqtt_client: AsyncClient,
-    // mqtt_events: EventLoop,
     dali_manager: &'a mut DaliManager<'a>,
 }
 
@@ -53,6 +52,36 @@ pub enum CommandError {
 
 type Result<T> = std::result::Result<T, Report<CommandError>>;
 
+/// Build a `PublishProperties` stamped with the current traceparent, if any
+/// trace is active. Returns `None` when no trace is active so callers can
+/// use plain `publish` in that case.
+fn traceparent_properties() -> Option<PublishProperties> {
+    let tp = tracing_init::traceparent::current()?;
+    let mut props = PublishProperties::default();
+    props.user_properties.push(("traceparent".into(), tp));
+    Some(props)
+}
+
+/// Publish `payload` on `topic` with `qos`/`retain`, stamping a
+/// `traceparent` user property when a trace is active.
+async fn publish_with_trace(
+    client: &AsyncClient,
+    topic: impl Into<String>,
+    qos: QoS,
+    retain: bool,
+    payload: Vec<u8>,
+) -> std::result::Result<(), rumqttc::v5::ClientError>
+{
+    let topic = topic.into();
+    if let Some(props) = traceparent_properties() {
+        client
+            .publish_with_properties(topic, qos, retain, payload, props)
+            .await
+    } else {
+        client.publish(topic, qos, retain, payload).await
+    }
+}
+
 impl<'a> MqttDali<'a> {
     fn get_command_topic(&self) -> String {
         format!("DALI/Controllers/{}/Command", self.dali_config.name)
@@ -89,15 +118,16 @@ impl<'a> MqttDali<'a> {
         let into_context =
             || CommandError::Context(format!("MQTT: Publish configuration to {config_topic}"));
 
-        client
-            .publish(
-                config_topic,
-                QoS::AtLeastOnce,
-                true,
-                serde_json::to_vec(dali_config).change_context_lazy(into_context)?,
-            )
-            .await
-            .change_context_lazy(into_context)
+        publish_with_trace(
+            client,
+            config_topic,
+            QoS::AtLeastOnce,
+            true,
+            serde_json::to_vec(dali_config).change_context_lazy(into_context)?,
+        )
+        .await
+        .map_err(|e| CommandError::MqttError(e.to_string()))
+        .change_context_lazy(into_context)
     }
 
     fn update_bus_status(&mut self) -> Result<DaliBusResult> {
@@ -412,15 +442,16 @@ impl<'a> MqttDali<'a> {
         };
         let topic = self.get_light_reply_topic("QueryLightStatus", bus, short_address);
 
-        mqtt_client
-            .publish(
-                topic,
-                QoS::AtMostOnce,
-                false,
-                serde_json::to_vec(&query_light_reply).change_context_lazy(into_context)?,
-            )
-            .await
-            .change_context_lazy(into_context)?;
+        publish_with_trace(
+            mqtt_client,
+            topic,
+            QoS::AtMostOnce,
+            false,
+            serde_json::to_vec(&query_light_reply).change_context_lazy(into_context)?,
+        )
+        .await
+        .map_err(|e| CommandError::MqttError(e.to_string()))
+        .change_context_lazy(into_context)?;
 
         Ok(DaliBusResult::None)
     }
@@ -521,24 +552,23 @@ impl<'a> MqttDali<'a> {
         let status_topic = &self.get_status_topic();
         let mut status_ok = false;
 
-        info!("MQTT session started: Connecting to MQTT broker");
+        info!("MQTT session started: connecting to broker");
         let active_topic = MqttDali::get_is_active_topic(&self.dali_config.name);
 
-        mqtt_client
-            .publish(&active_topic, QoS::AtLeastOnce, true, "true".as_bytes())
+        publish_with_trace(&mqtt_client, &active_topic, QoS::AtLeastOnce, true, b"true".to_vec())
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
         let version = get_version();
-        mqtt_client
-            .publish(
-                &MqttDali::get_version_topic(&self.dali_config.name),
-                QoS::AtLeastOnce,
-                true,
-                version.as_bytes(),
-            )
-            .await
-            .map_err(|e| CommandError::MqttError(e.to_string()))?;
+        publish_with_trace(
+            &mqtt_client,
+            &MqttDali::get_version_topic(&self.dali_config.name),
+            QoS::AtLeastOnce,
+            true,
+            version.into_bytes(),
+        )
+        .await
+        .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
         MqttDali::publish_config(&mqtt_client, config_topic, self.dali_config)
             .await
@@ -556,20 +586,35 @@ impl<'a> MqttDali<'a> {
                 .await
                 .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
-            if let Event::Incoming(Packet::Publish(Publish {
-                ref topic, payload, ..
-            })) = event
-            {
-                if topic == command_topic {
+            if let Event::Incoming(Packet::Publish(publish)) = event {
+                let topic = String::from_utf8_lossy(&publish.topic).into_owned();
+                let Publish { ref payload, ref properties, .. } = publish;
+
+                if topic == *command_topic {
+                    // Extract and propagate traceparent from inbound MQTT v5 user properties.
+                    let traceparent = properties.as_ref().and_then(|p| {
+                        p.user_properties
+                            .iter()
+                            .find(|(k, _)| k == "traceparent")
+                            .map(|(_, v)| v.clone())
+                    });
+
+                    let span = tracing::info_span!("mqtt_command", topic = %topic);
+                    if let Some(ref tp) = traceparent {
+                        tracing_init::traceparent::set_remote_parent(&span, tp);
+                    }
+
+                    // Span entry via .instrument(): never hold span.enter()
+                    // across .await — on the multi-thread runtime it corrupts
+                    // the current-span thread-local (fleet logging policy).
+                    let handled: Result<()> = async {
                     let mut republish_config = true; // Should the configuration republished after command execution
 
                     match serde_json::from_slice(payload.as_ref())
                         as serde_json::Result<DaliCommand>
                     {
                         Ok(command) => {
-                            let _span = span!(tracing::Level::INFO, "Command", command = ?command);
-
-                            info!("Received command {:?}", command);
+                            info!(command = ?command, "received command");
 
                             let command_result: Result<DaliBusResult> = match command {
                                 DaliCommand::SetLightBrightness {
@@ -678,29 +723,35 @@ impl<'a> MqttDali<'a> {
                                 ))
                                 .change_context_lazy(into_context)?;
 
-                                error!("{}", error_message);
-                                mqtt_client
-                                    .publish(
-                                        status_topic,
-                                        QoS::AtMostOnce,
-                                        false,
-                                        error_message.as_bytes(),
-                                    )
-                                    .await
-                                    .change_context_lazy(into_context)?;
+                                // Command execution failed: this is a DALI-bus / validation
+                                // failure — not a code bug, but operator attention is warranted.
+                                warn!(kind = "external_failure", error = %e,
+                                      "DALI command failed");
+
+                                publish_with_trace(
+                                    &mqtt_client,
+                                    status_topic,
+                                    QoS::AtMostOnce,
+                                    false,
+                                    error_message.into_bytes(),
+                                )
+                                .await
+                                .map_err(|e| CommandError::MqttError(e.to_string()))
+                                .change_context_lazy(into_context)?;
 
                                 status_ok = false;
                             } else {
                                 if !status_ok {
-                                    mqtt_client
-                                        .publish(
-                                            status_topic,
-                                            QoS::AtLeastOnce,
-                                            false,
-                                            "\"OK\"".as_bytes(),
-                                        )
-                                        .await
-                                        .change_context_lazy(into_context)?;
+                                    publish_with_trace(
+                                        &mqtt_client,
+                                        status_topic,
+                                        QoS::AtLeastOnce,
+                                        false,
+                                        b"\"OK\"".to_vec(),
+                                    )
+                                    .await
+                                    .map_err(|e| CommandError::MqttError(e.to_string()))
+                                    .change_context_lazy(into_context)?;
                                     status_ok = true;
                                 }
 
@@ -717,10 +768,19 @@ impl<'a> MqttDali<'a> {
                                 }
                             }
                         }
-                        Err(e) => error!("Invalid payload received on {}: {}", command_topic, e),
+                        Err(e) => {
+                            warn!(kind = "decode_error", topic = %topic, error = %e,
+                                  "invalid command payload received");
+                        }
                     }
+                    Ok(())
+                    }
+                    .instrument(span)
+                    .await;
+                    handled?;
                 } else {
-                    error!("Got publish on unexpected topic {}", topic);
+                    warn!(kind = "protocol_mismatch", topic = %topic,
+                          "publish received on unexpected topic");
                 }
             }
         }
@@ -746,20 +806,21 @@ impl<'a> MqttDali<'a> {
         let mut mqtt = MqttDali::new(dali_manager, dali_config);
 
         loop {
-            info!("Connecting to MQTT broker");
+            info!("connecting to MQTT broker");
 
             let client_id = format!("DALI-{}", name);
             let mut mqtt_options = MqttOptions::new(client_id, mqtt_broker, 1883);
             let last_will = LastWill::new(
                 MqttDali::get_is_active_topic(&name),
-                "false".as_bytes(),
+                "false".as_bytes().to_vec(),
                 QoS::AtLeastOnce,
                 true,
+                None,
             );
             mqtt_options
                 .set_keep_alive(Duration::from_secs(6))
                 .set_last_will(last_will)
-                .set_max_packet_size(50*1024, 50*1024)
+                .set_max_packet_size(Some(50 * 1024))
                 .set_request_channel_capacity(200);
 
             let (mqtt_client, mqtt_events) = AsyncClient::new(mqtt_options, 200);
@@ -767,9 +828,10 @@ impl<'a> MqttDali<'a> {
             match mqtt.run_session(config, mqtt_client, mqtt_events).await {
                 Ok(_) => break Ok(()),
                 Err(e) => {
-                    info!("MQTT session terminated due to error: {e}, wait 10 seconds and try to reconnect");
+                    // Session ended due to broker/network failure — designed recovery path.
+                    info!(kind = "connection_lost", error = %e,
+                          "MQTT session terminated, reconnecting in 10 s");
                     tokio::time::sleep(Duration::from_secs(10)).await;
-                    info!("Reconnecting to MQTT broker");
                 }
             }
         }

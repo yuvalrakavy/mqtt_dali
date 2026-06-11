@@ -39,16 +39,16 @@ async fn main()  {
 
             builder
                 .log_to_file(true)
-                .log_to_server(true)
-                .log_file_prefix("dali")
-                .log_file_path("logs")
+                .log_to_gelf_server(true)
+                .file_prefix("dali")
+                .file_path("logs")
                 .log_to_console(args.console)
-                .level(tracing::Level::INFO);
+                .level("*", tracing::Level::INFO);
 
             if !args.filter.is_empty() {
-                builder.filter(&args.filter);
+                builder.filter("*", &args.filter);
             }
-            
+
             builder
         };
 
