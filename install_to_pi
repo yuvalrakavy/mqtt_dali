@@ -21,6 +21,7 @@ set pi_home $user@$dest:~
 sed -e "s/_MQTT_/$mqtt/g" -e "s/_NAME_/\"$name\"/g" -e s/_USER_/$user/g dali_Template.service > dali.service
 
 scp target/armv7-unknown-linux-musleabihf/release/mqtt_dali $pi_home
+scp logging.toml $pi_home
 scp dali.service $pi_home
 scp local.network $pi_home
 scp install_on_pi.sh $pi_home

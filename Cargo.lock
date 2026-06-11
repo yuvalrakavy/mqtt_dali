@@ -1720,7 +1720,7 @@ dependencies = [
 [[package]]
 name = "tracing-init"
 version = "0.2.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git#1563609cf8cb19d9b429f9af58361a021f3e7a59"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git#52fc60db9ded42eb47b865810bb3d4ce19945b74"
 dependencies = [
  "bitflags",
  "futures-util",
