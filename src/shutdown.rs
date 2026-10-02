@@ -85,7 +85,7 @@ fn session_ended(
 }
 
 /// SIGTERM (systemd's stop) and SIGINT (Ctrl-C), registered at once by [`StopSignals::install`],
-/// first thing in `main` — not on the first wait — so a stop during start-up takes the bridge's own
+/// first thing in `run` — not on the first wait — so a stop during start-up takes the bridge's own
 /// path instead of the signal's default action, which ends the process with nothing logged and
 /// the log unflushed (fleet class F3).
 pub struct StopSignals {
