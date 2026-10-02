@@ -2,24 +2,28 @@
 #     scripts/negative-control.py --root ../Home/mqtt_dali-3b ../Home/mqtt_dali-3b/docs/no-hang-3b-controls.toml
 # (The saturation test's own control is the failing-first run: on the single-task session it
 # reported 1 of 300 config publishes after the broker recovered.)
+#
+# Each row breaks one guard and names the test that must then fail, with the text it must fail
+# with. Every test here bounds itself, so a row comes back RED, never HUNG.
 
 [[control]]
 name        = "the_backlog_never_raises_its_warn"
 file        = "src/mqtt.rs"
-anchor      = '''            if high.is_none() {
-                *high = Some(Instant::now());'''
-replacement = '''            if false {
-                *high = Some(Instant::now());'''
+anchor      = '''                if high.is_none() {
+                    *high = Some(Instant::now());'''
+replacement = '''                if false {
+                    *high = Some(Instant::now());'''
 target      = "command"
-argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--", "a_backlog_past_high_water"]
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_backlog_past_high_water"]
 expect_text = "not flagged at the high-water mark"
 guard       = "backlog_high_water"
 
 [[control]]
 name        = "a_wait_loses_its_tag"
 file        = "src/mqtt.rs"
-anchor      = '''            let publish = match incoming.recv().await { // WAIT: mqtt-pump-queue'''
-replacement = '''            let publish = match incoming.recv().await {'''
+anchor      = '''            // WAIT: mqtt-pump-queue
+            let event = tokio::select! {'''
+replacement = '''            let event = tokio::select! {'''
 target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "wait_registry"]
 expect_text = "is an untagged wait"
@@ -106,3 +110,255 @@ target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "wait_registry"]
 expect_text = "`// WAIT: dali-uart-idle` covers no wait"
 guard       = "uart_waits_registered"
+
+# --- Addresses from MQTT (finding C-35, and the group-past-15 defect beside it): checked, never a panic.
+
+[[control]]
+name        = "a_short_address_out_of_range_panics"
+file        = "src/dali_manager.rs"
+anchor      = '''            Err(Report::new(DaliManagerError::ShortAddress(channel)))'''
+replacement = '''            panic!("Invalid DALI short address {}", channel)'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "an_address_or_group_out_of_range_is_refused_before_the_bus"]
+expect_text = "SetLightBrightness to address 64 panicked instead of returning an error"
+guard       = "address_range"
+
+[[control]]
+name        = "a_group_past_15_reaches_the_bus"
+file        = "src/dali_manager.rs"
+anchor      = '''        // ADD_TO_GROUP0 + 16 is REMOVE_FROM_GROUP0: a group past 15 is refused.
+        DaliManager::check_group_address(group_address).change_context_lazy(into_context)?;
+'''
+replacement = ''''''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "an_address_or_group_out_of_range_is_refused_before_the_bus"]
+expect_text = "AddToGroup group 16 was accepted (sent [(0, 3, 112)] to the DALI bus)"
+guard       = "group_range"
+
+[[control]]
+name        = "the_emulator_panics_on_an_unknown_bus"
+file        = "src/dali_emulator.rs"
+anchor      = '''            return Err(error_stack::Report::new(dali_manager::DaliManagerError::Bus(bus)));'''
+replacement = '''            panic!("Send to invalid bus {}", bus);'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "the_emulator_refuses_a_bus_it_does_not_have"]
+expect_text = "panicked instead of returning an error"
+guard       = "emulator_bus_range"
+
+[[control]]
+name        = "a_failed_save_panics"
+file        = "src/mqtt.rs"
+anchor      = '''                                    if let Err(e) = config.save(self.dali_config) {'''
+replacement = '''                                    config.save(self.dali_config).expect("Saving config file");
+                                    if let Err(e) = Ok::<(), String>(()) {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_config_that_cannot_be_saved_is_reported_not_a_panic"]
+expect_text = "the session thread panicked"
+guard       = "config_save_reported"
+
+[[control]]
+name        = "a_full_bus_panics"
+file        = "src/mqtt.rs"
+anchor      = '''                .ok_or(CommandError::NoFreeShortAddress(bus_number))
+                .change_context_lazy(into_context)?;'''
+replacement = '''                .expect("Unable to find unused short address");'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_new_light_on_a_full_bus_is_reported_not_a_panic"]
+expect_text = "the session thread panicked"
+guard       = "full_bus_reported"
+
+[[control]]
+name        = "a_refused_light_leaves_its_group_behind"
+file        = "src/mqtt.rs"
+anchor      = '''        // Checked before the config is touched: a refused command leaves no group behind.
+        MqttDali::check_group_address(group_address).change_context_lazy(into_context)?;
+        MqttDali::check_short_address(short_address).change_context_lazy(into_context)?;
+'''
+replacement = ''''''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_group_out_of_range_leaves_the_config_alone"]
+expect_text = "a refused group was kept in the config"
+guard       = "add_to_group_checked_first"
+
+[[control]]
+name        = "a_refused_match_leaves_its_group_behind"
+file        = "src/mqtt.rs"
+anchor      = '''        MqttDali::check_group_address(group_address).change_context_lazy(into_context)?;
+
+        if let Some(bus) = self.dali_config.buses.get_mut(bus_number) {'''
+replacement = '''
+        if let Some(bus) = self.dali_config.buses.get_mut(bus_number) {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_group_out_of_range_leaves_the_config_alone"]
+expect_text = "a refused group was kept in the config"
+guard       = "match_group_checked_first"
+
+# --- Stopping (finding C-7) and a session that blocks synchronously (finding C-34).
+
+[[control]]
+name        = "the_session_blocks_synchronously"
+# Not a guard removed but the hazard planted: a session stuck in a synchronous call. The
+# saturation test must come back RED by its own deadlines. (Its single-task predecessor, with the
+# session polled inside the test's select!, HUNG under this same mutation: the failing-first run.)
+file        = "src/mqtt.rs"
+anchor      = '''                                DaliCommand::UpdateBusStatus => self.update_bus_status(),'''
+replacement = '''                                DaliCommand::UpdateBusStatus => { std::thread::sleep(Duration::from_secs(3600)); self.update_bus_status() }'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_command_burst_against_a_stalled_broker_completes_once_it_recovers"]
+expect_text = "config publishes arrived after the broker recovered"
+guard       = "saturation_test_bounded"
+
+[[control]]
+name        = "the_session_ignores_its_stop"
+file        = "src/mqtt.rs"
+anchor      = '''                () = stopped(stop) => {'''
+replacement = '''                () = std::future::pending::<()>() => {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_stop_says_goodbye_and_ends_the_session"]
+expect_text = "the stop did not end the session cleanly"
+guard       = "session_sees_stop"
+
+[[control]]
+name        = "the_goodbye_skips_active_false"
+file        = "src/mqtt.rs"
+anchor      = '''        let queued = client
+            .try_publish(&active_topic, QoS::AtLeastOnce, true, b"false".to_vec())
+            .map_err(|e| e.to_string())
+            .and_then(|()| client.try_disconnect().map_err(|e| e.to_string()));'''
+replacement = '''        let _ = &active_topic;
+        let queued = client.try_disconnect().map_err(|e| e.to_string());'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_stop_says_goodbye_and_ends_the_session"]
+expect_text = "the session ended without a retained Active=false"
+guard       = "goodbye_inactive"
+
+[[control]]
+name        = "the_goodbye_waits_unbounded"
+file        = "src/mqtt.rs"
+anchor      = '''        let written = tokio::time::timeout(GOODBYE_BOUND, async {'''
+replacement = '''        let written = tokio::time::timeout(Duration::from_secs(3600), async {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_stop_against_a_stalled_broker_is_still_bounded"]
+expect_text = "a stop against a stalled broker did not end the session"
+guard       = "goodbye_bounded"
+
+[[control]]
+name        = "the_reconnect_delay_ignores_a_stop"
+file        = "src/mqtt.rs"
+anchor      = '''                        () = stopped(&mut stop) => return Ok(()),'''
+replacement = '''                        () = std::future::pending::<()>() => return Ok(()),'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_stop_during_a_broker_outage_ends_the_session_at_once"]
+expect_text = "a stop during an outage did not end the session promptly"
+guard       = "reconnect_delay_sees_stop"
+
+[[control]]
+name        = "main_waits_for_the_session_unbounded"
+file        = "src/shutdown.rs"
+anchor      = '''    match tokio::time::timeout(bound, done).await {'''
+replacement = '''    match tokio::time::timeout(Duration::from_secs(3600), done).await {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_session_that_never_answers_its_stop_is_left_behind_in_bounded_time"]
+expect_text = "supervise did not return within 10s"
+guard       = "shutdown_bounded"
+
+[[control]]
+name        = "the_sigterm_handler_is_not_installed"
+file        = "src/main.rs"
+anchor      = '''    let signal = shutdown::stop_signal();'''
+replacement = '''    let signal = std::future::pending::<()>();'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_publishes_inactive_and_exits_cleanly"]
+expect_text = "killed by signal 15"
+guard       = "sigterm_handled"
+
+# --- Logging (findings C-M6, C-8).
+
+[[control]]
+name        = "logging_needs_a_flag_again"
+file        = "src/main.rs"
+anchor      = '''    let _logging = init_logging(args.log, args.console, &args.filter);'''
+replacement = '''    let _logging = if args.log { init_logging(args.log, args.console, &args.filter) } else { None };'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "logging_is_on_without_any_flag"]
+expect_text = "tracing-init was not initialised"
+guard       = "logging_always_on"
+
+[[control]]
+name        = "the_default_filter_hides_the_bridge"
+file        = "src/main.rs"
+anchor      = '''String::from("warn,mqtt_dali=info")'''
+replacement = '''String::from("warn")'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "logging_is_on_without_any_flag"]
+expect_text = "no log line on stdout"
+guard       = "default_filter"
+
+[[control]]
+name        = "a_failing_destination_fails_all_logging"
+file        = "src/main.rs"
+anchor      = '''        .file_path("logs")
+        .on_destination_error(tracing_init::types::OnDestinationError::Skip);'''
+replacement = '''        .file_path("logs");'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "a_log_destination_that_cannot_start_is_skipped"]
+expect_text = "the console did not log beside a file destination that could not start"
+guard       = "destination_error_skip"
+
+# --- The backlog (findings C-6, C-10) and the outage episode (finding C-5).
+
+[[control]]
+name        = "the_session_end_keeps_its_episode"
+file        = "src/mqtt.rs"
+anchor      = '''        self.backlog.session_ended();'''
+replacement = '''        let _ = &self.backlog;'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_session_ending_with_commands_unread_closes_its_backlog_episode"]
+expect_text = "the session ended with its backlog WARN standing"
+guard       = "backlog_session_end"
+
+[[control]]
+name        = "the_backlog_logs_under_its_lock"
+file        = "src/mqtt.rs"
+anchor      = '''                if high.is_none() {
+                    *high = Some(Instant::now());
+                    true'''
+replacement = '''                if high.is_none() {
+                    *high = Some(Instant::now());
+                    warn!(kind = "mqtt_backlog_high", depth, "MQTT commands are arriving faster than the bridge handles them");
+                    false'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "the_backlog_logs_after_releasing_its_lock"]
+expect_text = "a push waited on the backlog's lock while another thread was still logging under it"
+guard       = "backlog_logs_unlocked"
+
+[[control]]
+name        = "the_outage_never_warns"
+file        = "src/mqtt.rs"
+anchor      = '''        if !self.warned && down_for >= OUTAGE_WARN_AFTER {'''
+replacement = '''        if false {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_broker_outage_warns_once_and_reports_its_length_on_recovery"]
+expect_text = "right: Warned"
+guard       = "outage_warns"
+
+[[control]]
+name        = "the_outage_warns_every_attempt"
+file        = "src/mqtt.rs"
+anchor      = '''        if !self.warned && down_for >= OUTAGE_WARN_AFTER {'''
+replacement = '''        if down_for >= OUTAGE_WARN_AFTER {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_broker_outage_warns_once_and_reports_its_length_on_recovery"]
+expect_text = "warned twice in one outage"
+guard       = "outage_warns_once"
+
+[[control]]
+name        = "a_recovery_does_not_rearm_the_warn"
+file        = "src/mqtt.rs"
+anchor      = '''        self.warned = false;
+        match self.since.take() {'''
+replacement = '''        match self.since.take() {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_broker_outage_warns_once_and_reports_its_length_on_recovery"]
+expect_text = "the next outage did not warn"
+guard       = "outage_rearms"

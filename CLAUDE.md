@@ -22,15 +22,21 @@ cargo build --target x86_64-apple-darwin    # Intel Mac
 ```
 
 The DALI hardware driver (`dali_atx`, via `rppal`) is Linux-only, so off the Pi the bridge runs
-with `--emulation` only. Tests run on the Mac against the emulator and an in-process fake broker:
+with `--emulation` only; check the Pi build with `cargo check` (the default target). The HAT's
+serial protocol (`hat_line`) sits behind a `ByteSource` trait, so its loops are tested on the Mac
+against fake byte sources. Tests run on the Mac against the emulator and an in-process fake broker
+on 127.0.0.1 (`tests/process.rs` runs the built binary against it):
 
 ```bash
 cargo test --target aarch64-apple-darwin
 ```
 
-Every wait carries a `// WAIT: <row>` tag naming a row of `docs/wait-registry.md`, which
-`tests/wait_registry.rs` checks (Store's no-hang spec §13.3, §14). The MQTT event loop is polled
-by `Pump`, a task that waits on nothing else; the session never polls (§14.3).
+Every wait carries a `// WAIT: <row>` tag, on its own line above the statement, naming a row of
+`docs/wait-registry.md`, which `tests/wait_registry.rs` checks (Store's no-hang spec §13.3, §14).
+The MQTT event loop is polled by `Pump`, a task that waits on nothing else; the session never polls
+(§14.3). The session runs on a thread of its own (`mqtt::spawn`), since its DALI calls are
+synchronous; SIGTERM or SIGINT stops it, and `main` waits for it at most `SHUTDOWN_BOUND`
+(`shutdown.rs`). `docs/no-hang-3b-controls.toml` holds the negative controls for every guard.
 
 Linting and formatting (via trunk):
 
@@ -130,5 +136,10 @@ outbound publishes stamp the property when a trace is active. The
 `tracing_init::traceparent::current()` / `set_remote_parent()` helpers are
 gated behind the `otel` feature (already enabled).
 
-GELF/OTel destinations are controlled by `LOG_DESTINATION` env var and
-`server.toml` config at deploy time (see `tracing-init` documentation).
+tracing-init is always initialised. `logging.toml` (searched upward from the working directory,
+which the systemd units set to the binary's home) or the `LOG_DESTINATION` env var chooses the
+destinations — the committed `logging.toml` adds GELF and OpenTelemetry to logmon — and `--console`
+and `--log` add the console and a file (`logs/dali.<date>.log`). The default filter is
+`warn,mqtt_dali=info` (`--filter`). A destination that cannot start is skipped
+(`on_destination_error` is pinned to skip in code), and logging that cannot start at all never
+stops or panics the bridge.

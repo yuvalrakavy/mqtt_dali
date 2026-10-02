@@ -1,14 +1,18 @@
 //! The MQTT session under saturation (Store no-hang §14.3, mqtt_dali): the task that polls
 //! rumqttc's event loop must never wait on rumqttc's request channel, which only polling drains.
+//!
+//! Every session here runs as `main` runs it: on a thread of its own (`spawn`), against a fake
+//! broker on 127.0.0.1. A session that blocks synchronously holds only that thread, so each test's
+//! own deadlines still run (finding C-34).
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use mqtt_test_broker::FakeBroker;
+use tokio::sync::{oneshot, watch};
 
-use super::{broker_host_port, Backlog, MqttDali, HIGH_WATER, LOW_WATER};
-use crate::config_payload::{BusConfig, BusStatus, DaliConfig};
+use super::{broker_host_port, spawn, Backlog, Bridge, Outage, OutageLog, GOODBYE_BOUND, HIGH_WATER, LOW_WATER, OUTAGE_WARN_AFTER};
+use crate::config_payload::{BusConfig, BusStatus, Channel, DaliConfig};
 use crate::dali_emulator::DaliControllerEmulator;
-use crate::dali_manager::DaliManager;
 use crate::Config;
 
 const NAME: &str = "Saturation";
@@ -18,6 +22,89 @@ fn config_path(tag: &str) -> String {
         .join(format!("mqtt-dali-{tag}-{}.json", std::process::id()))
         .to_string_lossy()
         .into_owned()
+}
+
+fn one_bus() -> DaliConfig {
+    let mut dali_config = DaliConfig::new(NAME);
+    dali_config.buses.push(BusConfig::new(0, BusStatus::Active));
+    dali_config
+}
+
+fn command_topic() -> String {
+    format!("DALI/Controllers/{NAME}/Command")
+}
+
+fn status_topic() -> String {
+    format!("DALI/Status/{NAME}")
+}
+
+fn config_topic() -> String {
+    format!("DALI/Config/{NAME}")
+}
+
+/// The bridge's session on its own thread, through `spawn`, on the test's runtime.
+struct Rig {
+    stop: watch::Sender<bool>,
+    done: oneshot::Receiver<super::Result<()>>,
+}
+
+impl Rig {
+    /// `dali_config` describes the emulated bus; `emulated` may add lights the config lacks.
+    fn start(broker: &FakeBroker, config_filename: String, dali_config: DaliConfig) -> Rig {
+        Rig::start_emulating(broker, config_filename, dali_config, |_| {})
+    }
+
+    fn start_emulating(broker: &FakeBroker, config_filename: String, dali_config: DaliConfig, after: impl FnOnce(&mut DaliConfig)) -> Rig {
+        Rig::start_at(broker.address(), config_filename, dali_config, after)
+    }
+
+    fn start_at(broker: String, config_filename: String, mut dali_config: DaliConfig, after: impl FnOnce(&mut DaliConfig)) -> Rig {
+        let controller = DaliControllerEmulator::try_new(&mut dali_config).expect("the emulator");
+        after(&mut dali_config);
+        let (stop, stop_rx) = watch::channel(false);
+        let bridge = Bridge { config: Config { config_filename }, controller, dali_config, broker };
+        let done = spawn(tokio::runtime::Handle::current(), bridge, stop_rx).expect("the session thread");
+        Rig { stop, done }
+    }
+
+    /// Where the session is, for a failure message.
+    fn state(&mut self) -> String {
+        match self.done.try_recv() {
+            Ok(result) => format!("the session ended: {result:?}"),
+            Err(oneshot::error::TryRecvError::Empty) => "the session is still running".to_owned(),
+            Err(oneshot::error::TryRecvError::Closed) => "the session thread panicked".to_owned(),
+        }
+    }
+
+    /// Asks the session to stop and waits for it, for at most `within`.
+    async fn stop(&mut self, within: Duration) -> Result<super::Result<()>, String> {
+        let _ = self.stop.send(true);
+        match tokio::time::timeout(within, &mut self.done).await {
+            Ok(Ok(result)) => Ok(result),
+            Ok(Err(_)) => Err("the session thread panicked".to_owned()),
+            Err(_) => Err(format!("the session did not end within {within:?} of its stop")),
+        }
+    }
+}
+
+impl Drop for Rig {
+    fn drop(&mut self) {
+        let _ = self.stop.send(true);
+    }
+}
+
+/// Runs `driver` for at most `within`, failing at once if the session ends meanwhile (a panic on
+/// its thread, say) — a session that must outlive the driver.
+async fn alive<T>(rig: &mut Rig, within: Duration, driver: impl std::future::Future<Output = T>) -> T {
+    tokio::select! {
+        result = tokio::time::timeout(within, driver) => {
+            result.unwrap_or_else(|_| panic!("the driver did not finish within {within:?}"))
+        }
+        ended = &mut rig.done => match ended {
+            Ok(result) => panic!("the session ended: {result:?}"),
+            Err(_) => panic!("the session thread panicked"),
+        },
+    }
 }
 
 /// The owner's overload ruling (no-hang §14.6): the forward queue drops nothing; past HIGH_WATER
@@ -42,6 +129,113 @@ fn a_backlog_past_high_water_is_flagged_once_and_cleared_when_it_drains() {
     assert!(backlog.high_since.lock().unwrap().is_none(), "not cleared at the low-water mark");
 }
 
+/// A session that ends with commands still queued (the connection failed under a backlog) drops
+/// them: the episode must still close, or its WARN stands forever and the next session's backlog
+/// starts from a stale depth (finding C-6).
+#[test]
+fn a_session_ending_with_commands_unread_closes_its_backlog_episode() {
+    let (_tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    let backlog = std::sync::Arc::new(Backlog::default());
+    let incoming = super::Incoming { rx, backlog: backlog.clone() };
+    for _ in 0..HIGH_WATER + 5 {
+        backlog.pushed();
+    }
+    assert!(backlog.high_since.lock().unwrap().is_some(), "not flagged at the high-water mark");
+    drop(incoming);
+    assert!(
+        backlog.high_since.lock().unwrap().is_none(),
+        "the session ended with its backlog WARN standing: no drained INFO will ever close it"
+    );
+    assert_eq!(
+        backlog.depth.load(std::sync::atomic::Ordering::SeqCst),
+        0,
+        "the commands the session dropped are still counted"
+    );
+}
+
+/// A subscriber that holds the thread inside its first event until released, as a synchronous
+/// log writer can (tracing-init's console and file writers are synchronous).
+struct Stall {
+    entered: std::sync::mpsc::Sender<()>,
+    release: std::sync::Mutex<std::sync::mpsc::Receiver<()>>,
+}
+
+impl tracing::Subscriber for Stall {
+    fn register_callsite(&self, _: &'static tracing::Metadata<'static>) -> tracing::subscriber::Interest {
+        tracing::subscriber::Interest::always()
+    }
+    fn enabled(&self, _: &tracing::Metadata<'_>) -> bool {
+        true
+    }
+    fn max_level_hint(&self) -> Option<tracing::level_filters::LevelFilter> {
+        Some(tracing::level_filters::LevelFilter::TRACE)
+    }
+    fn new_span(&self, _: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+        tracing::span::Id::from_u64(1)
+    }
+    fn record(&self, _: &tracing::span::Id, _: &tracing::span::Record<'_>) {}
+    fn record_follows_from(&self, _: &tracing::span::Id, _: &tracing::span::Id) {}
+    fn event(&self, _: &tracing::Event<'_>) {
+        let _ = self.entered.send(());
+        let _ = self.release.lock().unwrap().recv_timeout(Duration::from_secs(10));
+    }
+    fn enter(&self, _: &tracing::span::Id) {}
+    fn exit(&self, _: &tracing::span::Id) {}
+}
+
+/// The backlog's WARN is logged after its lock is released: a log write that stalls must not
+/// hold the pump's next push (finding C-10).
+#[test]
+fn the_backlog_logs_after_releasing_its_lock() {
+    use std::sync::mpsc;
+    let backlog = std::sync::Arc::new(Backlog::default());
+    for _ in 0..HIGH_WATER - 1 {
+        backlog.pushed();
+    }
+    let (entered_tx, entered_rx) = mpsc::channel();
+    let (release_tx, release_rx) = mpsc::channel();
+    let logger = {
+        let backlog = backlog.clone();
+        std::thread::spawn(move || {
+            let stall = Stall { entered: entered_tx, release: std::sync::Mutex::new(release_rx) };
+            // Crosses the high-water mark: its WARN stalls inside the subscriber.
+            tracing::subscriber::with_default(stall, || backlog.pushed());
+        })
+    };
+    entered_rx.recv_timeout(Duration::from_secs(10)).expect("the high-water WARN was never logged");
+    let (done_tx, done_rx) = mpsc::channel();
+    {
+        let backlog = backlog.clone();
+        std::thread::spawn(move || {
+            backlog.pushed();
+            let _ = done_tx.send(());
+        });
+    }
+    let pushed = done_rx.recv_timeout(Duration::from_secs(2));
+    let _ = release_tx.send(());
+    let _ = logger.join();
+    assert!(pushed.is_ok(), "a push waited on the backlog's lock while another thread was still logging under it");
+}
+
+/// The logging policy for an outage, across sessions (finding C-5): INFO per attempt, one WARN once
+/// it has lasted OUTAGE_WARN_AFTER, an INFO with its length when it ends; the next outage warns
+/// again.
+#[test]
+fn a_broker_outage_warns_once_and_reports_its_length_on_recovery() {
+    let mut outage = Outage::default();
+    let t0 = Instant::now();
+    assert_eq!(outage.connected(t0), OutageLog::Connected);
+    assert_eq!(outage.failed(t0, "refused"), OutageLog::Attempt);
+    assert_eq!(outage.failed(t0 + OUTAGE_WARN_AFTER / 2, "refused"), OutageLog::Attempt);
+    assert_eq!(outage.failed(t0 + OUTAGE_WARN_AFTER, "refused"), OutageLog::Warned);
+    assert_eq!(outage.failed(t0 + OUTAGE_WARN_AFTER * 2, "refused"), OutageLog::Attempt, "warned twice in one outage");
+    let back = t0 + OUTAGE_WARN_AFTER * 2 + Duration::from_secs(5);
+    assert_eq!(outage.connected(back), OutageLog::Recovered { down_for: OUTAGE_WARN_AFTER * 2 + Duration::from_secs(5) });
+    let t1 = back + Duration::from_secs(1);
+    assert_eq!(outage.failed(t1, "reset"), OutageLog::Attempt);
+    assert_eq!(outage.failed(t1 + OUTAGE_WARN_AFTER, "reset"), OutageLog::Warned, "the next outage did not warn");
+}
+
 #[test]
 fn a_broker_address_may_carry_its_port() {
     assert_eq!(broker_host_port("10.0.0.5"), ("10.0.0.5", 1883));
@@ -57,38 +251,177 @@ fn a_broker_address_may_carry_its_port() {
 async fn a_command_burst_against_a_stalled_broker_completes_once_it_recovers() {
     const COMMANDS: usize = 300;
     let broker = FakeBroker::start_with_receive_max(2).await;
-    let config = Config { config_filename: config_path("burst") };
-    let mut dali_config = DaliConfig::new(NAME);
-    dali_config.buses.push(BusConfig::new(0, BusStatus::Active));
-    let mut controller = DaliControllerEmulator::try_new(&mut dali_config).expect("the emulator");
-    let mut dali_manager = DaliManager::new(controller.as_mut());
-    let config_topic = format!("DALI/Config/{NAME}");
-    let command_topic = format!("DALI/Controllers/{NAME}/Command");
-    let address = broker.address();
-
-    let session = MqttDali::run(&config, &mut dali_manager, &mut dali_config, &address);
+    let mut rig = Rig::start(&broker, config_path("burst"), one_bus());
     let driver = async {
-        assert!(broker.wait_for_subscription(&command_topic, Duration::from_secs(10)).await, "the session never subscribed");
-        let initial = broker.received_on(&config_topic).len();
+        assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+        let initial = broker.received_on(&config_topic()).len();
         broker.hold_acks();
         for _ in 0..COMMANDS {
-            assert!(broker.send(&command_topic, r#"{"command":"UpdateBusStatus"}"#));
+            assert!(broker.send(&command_topic(), r#"{"command":"UpdateBusStatus"}"#));
         }
         // Let the burst saturate: the session takes commands until its channel is full.
         tokio::time::sleep(Duration::from_secs(2)).await;
         broker.release_acks();
         let want = initial + COMMANDS;
-        let done = broker.wait_until(Duration::from_secs(20), |b| b.received_on(&config_topic).len() >= want).await;
-        assert!(
-            done,
-            "{} of {COMMANDS} config publishes arrived after the broker recovered — the session's poller waited on its own \
-             request channel",
-            broker.received_on(&config_topic).len() - initial
-        );
+        let done = broker.wait_until(Duration::from_secs(20), |b| b.received_on(&config_topic()).len() >= want).await;
+        (done, broker.received_on(&config_topic()).len() - initial)
     };
-    tokio::select! {
-        r = session => panic!("the session ended: {r:?}"),
-        () = driver => {}
-    }
+    // The driver's own waits are bounded; this bounds the whole, broker calls included.
+    let (done, arrived) = alive(&mut rig, Duration::from_secs(60), driver).await;
+    assert!(
+        done,
+        "{arrived} of {COMMANDS} config publishes arrived after the broker recovered — the session's poller waited on its own \
+         request channel, or the session is stuck ({})",
+        rig.state()
+    );
     let _ = std::fs::remove_file(config_path("burst"));
+}
+
+/// A stop between commands: the session publishes a retained Active=false, disconnects, and ends
+/// (finding C-7).
+#[tokio::test(flavor = "multi_thread")]
+async fn a_stop_says_goodbye_and_ends_the_session() {
+    let broker = FakeBroker::start().await;
+    let mut rig = Rig::start(&broker, config_path("stop"), one_bus());
+    let active = format!("DALI/Active/{NAME}");
+    assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+    let before = broker.received_on(&active).len();
+    let ended = rig.stop(Duration::from_secs(5)).await;
+    assert!(matches!(ended, Ok(Ok(()))), "the stop did not end the session cleanly: {ended:?}");
+    let said = broker
+        .wait_until(Duration::from_secs(5), |b| {
+            b.received_on(&active)[before..].iter().any(|r| r.payload.as_ref() == b"false" && r.retain)
+        })
+        .await;
+    assert!(said, "the session ended without a retained Active=false: {:?}", &broker.received_on(&active)[before..]);
+    let _ = std::fs::remove_file(config_path("stop"));
+}
+
+/// A stop while the broker withholds its acks: the broker's receive window is full, so rumqttc's
+/// event loop takes no request and the goodbye's DISCONNECT is never written. The session must
+/// still end, within GOODBYE_BOUND (no-hang §14.3: shutdown is bounded as a whole).
+#[tokio::test(flavor = "multi_thread")]
+async fn a_stop_against_a_stalled_broker_is_still_bounded() {
+    let broker = FakeBroker::start_with_receive_max(2).await;
+    let mut rig = Rig::start(&broker, config_path("stalled-stop"), one_bus());
+    assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+    broker.hold_acks();
+    // The commands' QoS 1 publishes (a status, configs) fill the two-message receive window; the
+    // rest wait in rumqttc's queue.
+    for _ in 0..3 {
+        assert!(broker.send(&command_topic(), r#"{"command":"UpdateBusStatus"}"#));
+    }
+    assert!(
+        broker.wait_until(Duration::from_secs(10), |b| b.held_acks() >= 2).await,
+        "the receive window never filled ({} acks held)",
+        broker.held_acks()
+    );
+    // Let the session finish the commands and come back to wait for the next.
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    let start = Instant::now();
+    let ended = rig.stop(GOODBYE_BOUND + Duration::from_secs(3)).await;
+    assert!(matches!(ended, Ok(Ok(()))), "a stop against a stalled broker did not end the session: {ended:?}");
+    assert!(start.elapsed() >= GOODBYE_BOUND / 2, "the goodbye was not waited for ({:?})", start.elapsed());
+    let _ = std::fs::remove_file(config_path("stalled-stop"));
+}
+
+/// A stop while the broker is unreachable: `run` is waiting out its reconnect delay, and the stop
+/// ends it at once rather than after the delay.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_stop_during_a_broker_outage_ends_the_session_at_once() {
+    // A port nothing listens on: every connection is refused.
+    let port = std::net::TcpListener::bind("127.0.0.1:0").expect("a port").local_addr().expect("its address").port();
+    let mut rig = Rig::start_at(format!("127.0.0.1:{port}"), config_path("outage"), one_bus(), |_| {});
+    // Let the first connection fail, so `run` is in its reconnect delay.
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    let ended = rig.stop(Duration::from_secs(3)).await;
+    assert!(matches!(ended, Ok(Ok(()))), "a stop during an outage did not end the session promptly: {ended:?}");
+    let _ = std::fs::remove_file(config_path("outage"));
+}
+
+/// The command succeeds and the config is published, but its file cannot be written: reported on
+/// the status topic, never a panic of the session (finding C-35).
+#[tokio::test(flavor = "multi_thread")]
+async fn a_config_that_cannot_be_saved_is_reported_not_a_panic() {
+    let broker = FakeBroker::start().await;
+    let missing = std::env::temp_dir().join(format!("mqtt-dali-missing-{}", std::process::id()));
+    let mut rig = Rig::start(&broker, missing.join("dali.json").to_string_lossy().into_owned(), one_bus());
+    let driver = async {
+        assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+        assert!(broker.send(&command_topic(), r#"{"command":"RenameBus","bus":0,"name":"Kitchen"}"#));
+        broker
+            .wait_until(Duration::from_secs(10), |b| {
+                b.received_on(&status_topic()).iter().any(|r| String::from_utf8_lossy(&r.payload).contains("saving the configuration"))
+            })
+            .await
+    };
+    let reported = alive(&mut rig, Duration::from_secs(30), driver).await;
+    assert!(reported, "the failed save was not reported on {}: {:?}", status_topic(), broker.received_on(&status_topic()));
+    assert_eq!(rig.state(), "the session is still running");
+}
+
+/// FindNewLights on a bus whose 64 short addresses are all taken finds a light it cannot address:
+/// reported, never a panic of the session (finding C-35).
+#[tokio::test(flavor = "multi_thread")]
+async fn a_new_light_on_a_full_bus_is_reported_not_a_panic() {
+    let broker = FakeBroker::start().await;
+    let mut dali_config = DaliConfig::new(NAME);
+    let mut bus = BusConfig::new(0, BusStatus::Active);
+    for short_address in 0..64u8 {
+        bus.channels.push(Channel { short_address, description: format!("Light {short_address}") });
+    }
+    // An unaddressed light the emulator puts on the bus beside them; the config does not list it.
+    bus.channels.push(Channel { short_address: 0xff, description: "New".into() });
+    dali_config.buses.push(bus);
+    let mut rig = Rig::start_emulating(&broker, config_path("full"), dali_config, |c| c.buses[0].channels.retain(|c| c.short_address < 64));
+    let driver = async {
+        assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+        assert!(broker.send(&command_topic(), r#"{"command":"FindNewLights","bus":0}"#));
+        broker
+            .wait_until(Duration::from_secs(60), |b| {
+                b.received_on(&status_topic()).iter().any(|r| String::from_utf8_lossy(&r.payload).contains("no free short address"))
+            })
+            .await
+    };
+    let reported = alive(&mut rig, Duration::from_secs(90), driver).await;
+    assert!(reported, "the full bus was not reported on {}: {:?}", status_topic(), broker.received_on(&status_topic()));
+    assert_eq!(rig.state(), "the session is still running");
+    let _ = std::fs::remove_file(config_path("full"));
+}
+
+/// A light or group out of range is refused on the status topic, the session lives on, and the
+/// config is left as it was: no group is created for a command that is refused (finding C-35).
+#[tokio::test(flavor = "multi_thread")]
+async fn a_group_out_of_range_leaves_the_config_alone() {
+    let broker = FakeBroker::start().await;
+    let mut dali_config = one_bus();
+    dali_config.buses[0].channels.push(Channel { short_address: 1, description: "Light 1".into() });
+    let mut rig = Rig::start(&broker, config_path("group"), dali_config);
+    let driver = async {
+        assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+        for command in [
+            r#"{"command":"SetLightBrightness","bus":0,"address":64,"value":100}"#,
+            r#"{"command":"SetGroupBrightness","bus":0,"group":16,"value":100}"#,
+            r#"{"command":"AddToGroup","bus":0,"group":20,"address":1}"#,
+            r#"{"command":"MatchGroup","bus":0,"group":17,"pattern":"Light"}"#,
+        ] {
+            let errors = broker.received_on(&status_topic()).len();
+            assert!(broker.send(&command_topic(), command));
+            let refused = broker.wait_until(Duration::from_secs(10), |b| b.received_on(&status_topic()).len() > errors).await;
+            assert!(refused, "{command} was not refused on {}", status_topic());
+        }
+        let published = broker.received_on(&config_topic()).len();
+        assert!(broker.send(&command_topic(), r#"{"command":"RenameBus","bus":0,"name":"Kitchen"}"#));
+        assert!(
+            broker.wait_until(Duration::from_secs(10), |b| b.received_on(&config_topic()).len() > published).await,
+            "the config was not republished"
+        );
+        broker.received_on(&config_topic()).last().cloned().expect("a config")
+    };
+    let last = alive(&mut rig, Duration::from_secs(60), driver).await;
+    let last: serde_json::Value = serde_json::from_slice(&last.payload).expect("the config's JSON");
+    let groups = last["buses"][0]["groups"].clone();
+    assert_eq!(groups, serde_json::json!([]), "a refused group was kept in the config: {groups}");
+    assert_eq!(rig.state(), "the session is still running");
+    let _ = std::fs::remove_file(config_path("group"));
 }
