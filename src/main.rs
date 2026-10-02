@@ -42,9 +42,10 @@ struct Args {
 }
 
 /// How long the process waits, once `run` has returned, for the runtime's blocking threads still
-/// running: a configuration write or a start-up step stuck on a filesystem that stopped answering,
-/// a broker name lookup stuck in the resolver. Past it they are left behind, and the process exits.
-const RUNTIME_SHUTDOWN_BOUND: Duration = Duration::from_secs(2);
+/// running: a configuration write, the logging start or a start-up step stuck on a filesystem
+/// that stopped answering, a broker name lookup stuck in the resolver. Past it they are left
+/// behind, and the process exits.
+const RUNTIME_SHUTDOWN_BOUND: Duration = Duration::from_secs(1);
 
 fn main() -> ExitCode {
     let (args, _) = opts! {
@@ -70,6 +71,8 @@ fn main() -> ExitCode {
     let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
         Ok(runtime) => runtime,
         Err(e) => {
+            // A direct print, and the one on the lifecycle path (fleet class B2): no logging, no
+            // stop handler yet, so a stderr nobody drains holds nothing SIGTERM cannot end.
             eprintln!("mqtt_dali: the async runtime could not start: {e}");
             return ExitCode::FAILURE;
         }
@@ -89,10 +92,35 @@ async fn run(args: Args) -> ExitCode {
     // bridge's own path, not the signal's default action (fleet class F3).
     let (mut signals, unavailable) = shutdown::StopSignals::install();
 
+    // The logging start is synchronous and can wait: tracing-init gives a destination that will
+    // not start 5 s, and reads its logging config with no bound of its own (a hung mount). It runs
+    // on the blocking pool, raced with a stop (fleet class B1); a start still stuck is left to the
+    // runtime's bounded shutdown.
+    //
     // Keep the guard for all of `run`: dropping it shuts down tracing-init's OpenTelemetry providers
     // (guard.rs), so spans and OTLP logs would stop right after startup. Every exit below returns
     // from `run`, so the guard is dropped, and flushes, on every path (finding C-7).
-    let _logging = init_logging(args.log, args.console, &args.filter);
+    let (log, console, filter) = (args.log, args.console, args.filter.clone());
+    let logging_start = tokio::task::spawn_blocking(move || init_logging(log, console, &filter));
+    // WAIT: dali-startup
+    let logging = tokio::select! {
+        started = logging_start => started.ok().flatten(),
+        signal = signals.recv() => {
+            note(format!("{signal} during the logging start: stopping"));
+            return ExitCode::SUCCESS;
+        }
+    };
+    match &logging {
+        Some(guard) => info!("Logging: {guard}"),
+        None => {
+            for missing in &unavailable {
+                note(format!(
+                    "no {} handler ({}): that signal ends the bridge without its bounded shutdown",
+                    missing.signal, missing.error
+                ));
+            }
+        }
+    }
     shutdown::report_unavailable(&unavailable);
 
     info!("Loading configuration from {config_filename}", config_filename = args.config.clone());
@@ -217,12 +245,9 @@ fn init_logging(file: bool, console: bool, filter: &str) -> Option<tracing_init:
         builder.filter("*", filter);
     }
     match builder.init() {
-        Ok(guard) => {
-            println!("Logging: {guard}");
-            Some(guard)
-        }
+        Ok(guard) => Some(guard),
         Err(e) => {
-            eprintln!("mqtt_dali: logging could not start ({e}); running without it");
+            note(format!("logging could not start ({e}); running without it"));
             None
         }
     }
@@ -231,8 +256,17 @@ fn init_logging(file: bool, console: bool, filter: &str) -> Option<tracing_init:
 /// A start-up failure: logged while the logging guard lives, and an exit status systemd restarts on.
 fn startup_failed(stage: &str, error: &str) -> ExitCode {
     warn!(kind = "startup_failed", stage, error, "the DALI bridge could not start");
-    eprintln!("mqtt_dali: {stage}: {error}");
+    note(format!("{stage}: {error}"));
     ExitCode::FAILURE
+}
+
+/// A line for stderr, where logging may not be there to carry it, written by a thread of its own:
+/// a stderr nobody drains holds that thread, never the bridge's start or stop (fleet class B2).
+/// Best effort: the process may end before it is written.
+fn note(line: String) {
+    let _ = std::thread::Builder::new()
+        .name("stderr-note".into())
+        .spawn(move || eprintln!("mqtt_dali: {line}"));
 }
 
 #[cfg(target_os = "linux")]

@@ -150,7 +150,7 @@ name        = "a_failed_save_panics"
 file        = "src/mqtt.rs"
 anchor      = '''                                    if let Err(e) = self.saver.save_config(&config.config_filename, self.dali_config).await {'''
 replacement = '''                                    self.saver.save_config(&config.config_filename, self.dali_config).await.expect("Saving config file");
-                                    if let Err(e) = Ok::<(), String>(()) {'''
+                                    if let Err(e) = Ok::<(), SaveFailure>(()) {'''
 target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_config_that_cannot_be_saved_is_reported_not_a_panic"]
 expect_text = "the session thread panicked"
@@ -449,11 +449,8 @@ guard       = "config_save_bounded"
 [[control]]
 name        = "a_stuck_save_is_stacked"
 file        = "src/mqtt.rs"
-anchor      = '''            if !stuck.is_finished() {
-                return Err(format!("an earlier write of {path} has not finished"));
-            }
-'''
-replacement = ''''''
+anchor      = '''            if writer.busy {'''
+replacement = '''            if false {'''
 target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_config_save_that_stalls_does_not_hold_the_session"]
 expect_text = "a save behind a stuck one started another write"
@@ -468,18 +465,30 @@ name        = "the_signals_are_registered_after_start_up"
 file        = "src/main.rs"
 anchor      = '''    let (mut signals, unavailable) = shutdown::StopSignals::install();
 
+    // The logging start is synchronous and can wait: tracing-init gives a destination that will
+    // not start 5 s, and reads its logging config with no bound of its own (a hung mount). It runs
+    // on the blocking pool, raced with a stop (fleet class B1); a start still stuck is left to the
+    // runtime's bounded shutdown.
+    //
     // Keep the guard for all of `run`: dropping it shuts down tracing-init's OpenTelemetry providers
     // (guard.rs), so spans and OTLP logs would stop right after startup. Every exit below returns
     // from `run`, so the guard is dropped, and flushes, on every path (finding C-7).
-    let _logging = init_logging(args.log, args.console, &args.filter);
-    shutdown::report_unavailable(&unavailable);
+    let (log, console, filter) = (args.log, args.console, args.filter.clone());
+    let logging_start = tokio::task::spawn_blocking(move || init_logging(log, console, &filter));
+    // WAIT: dali-startup
+    let logging = tokio::select! {
+        started = logging_start => started.ok().flatten(),
+        signal = signals.recv() => {
+            note(format!("{signal} during the logging start: stopping"));
+            return ExitCode::SUCCESS;
+        }
+    };
 '''
-replacement = '''    let _logging = init_logging(args.log, args.console, &args.filter);
+replacement = '''    let logging = init_logging(args.log, args.console, &args.filter);
     info!("Loading configuration from {config_filename}", config_filename = args.config.clone());
     let (config_filename, emulation, setup) = (args.config.clone(), args.emulation, args.setup);
     let _ = tokio::task::spawn_blocking(move || start_up(config_filename, emulation, setup)).await;
     let (mut signals, unavailable) = shutdown::StopSignals::install();
-    shutdown::report_unavailable(&unavailable);
 '''
 target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_during_start_up_takes_the_bounded_path"]
@@ -521,3 +530,101 @@ target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_signal_without_a_handler_is_logged_as_signal_handler_unavailable"]
 expect_text = "was not logged as signal_handler_unavailable"
 guard       = "signal_handler_kind"
+
+# --- Round 3 (Store no-hang 3b review 3): the logging start raced (B1), no direct print on the
+# lifecycle path (B2), the config written whole and queued saves written (Q6), and subscribe, then
+# Active, then the model (Q7).
+
+[[control]]
+name        = "the_logging_start_is_not_raced"
+file        = "src/main.rs"
+anchor      = '''    let logging = tokio::select! {
+        started = logging_start => started.ok().flatten(),
+        signal = signals.recv() => {
+            note(format!("{signal} during the logging start: stopping"));
+            return ExitCode::SUCCESS;
+        }
+    };'''
+replacement = '''    let logging = logging_start.await.ok().flatten();'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_while_a_log_destination_is_starting_exits_at_once"]
+expect_text = "it waited for its logging start"
+guard       = "logging_start_raced"
+
+[[control]]
+name        = "a_lifecycle_print_goes_to_stdout_directly"
+file        = "src/main.rs"
+anchor      = '''        Some(guard) => info!("Logging: {guard}"),'''
+replacement = '''        Some(guard) => println!("Logging: {guard}"),'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "a_full_stdout_pipe_never_holds_the_start_or_the_stop"]
+expect_text = "the bridge never subscribed with its stdout full"
+guard       = "no_direct_lifecycle_print"
+
+[[control]]
+name        = "a_save_writes_the_file_in_place"
+file        = "src/mqtt.rs"
+anchor      = '''    std::fs::write(&temporary, contents)?;
+    std::fs::rename(&temporary, path)'''
+replacement = '''    let _ = &temporary;
+    std::fs::write(path, contents)'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "a_config_write_cut_short_leaves_the_last_good_config"]
+expect_text = "dali.json was left unreadable by a write cut short"
+guard       = "config_written_whole"
+
+[[control]]
+name        = "a_queued_save_is_dropped"
+file        = "src/mqtt.rs"
+anchor      = '''            match state.queued.take() {'''
+replacement = '''            match state.queued.take().and(None::<Vec<u8>>) {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_change_queued_behind_a_stuck_write_is_saved_once_it_ends"]
+expect_text = "was never written once that write ended"
+guard       = "queued_save_written"
+
+[[control]]
+name        = "the_model_is_republished_before_active"
+file        = "src/mqtt.rs"
+anchor      = '''        publish_with_trace(&mqtt_client, &active_topic, QoS::AtLeastOnce, true, b"true".to_vec())
+            .await
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
+
+        let version = get_version();
+        publish_with_trace(
+            &mqtt_client,
+            &MqttDali::get_version_topic(&self.dali_config.name),
+            QoS::AtLeastOnce,
+            true,
+            version.into_bytes(),
+        )
+        .await
+        .map_err(|e| CommandError::MqttError(e.to_string()))?;
+
+        MqttDali::publish_config(&mqtt_client, config_topic, self.dali_config)
+            .await
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
+'''
+replacement = '''        let version = get_version();
+        publish_with_trace(
+            &mqtt_client,
+            &MqttDali::get_version_topic(&self.dali_config.name),
+            QoS::AtLeastOnce,
+            true,
+            version.into_bytes(),
+        )
+        .await
+        .map_err(|e| CommandError::MqttError(e.to_string()))?;
+
+        MqttDali::publish_config(&mqtt_client, config_topic, self.dali_config)
+            .await
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
+
+        publish_with_trace(&mqtt_client, &active_topic, QoS::AtLeastOnce, true, b"true".to_vec())
+            .await
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
+'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "active_is_announced_only_after_the_command_subscription"]
+expect_text = "the first publish after the subscription was not Active=true"
+guard       = "active_before_model"

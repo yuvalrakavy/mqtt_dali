@@ -772,7 +772,9 @@ impl<'manager> DaliManager<'manager> {
             if self.is_group_member(bus, short_address, group_address)? {
                 break Ok(DaliBusResult::None);
             } else {
-                println!("Add light {short_address} to group {group_address} failed, retry again");
+                // Logged, not printed: the session runs this, and a stdout nobody drains must not
+                // hold it (fleet class B2).
+                info!("Add light {short_address} to group {group_address} failed, retry again");
 
                 retry_count -= 1;
 

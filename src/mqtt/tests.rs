@@ -343,11 +343,13 @@ async fn a_command_burst_against_a_stalled_broker_completes_once_it_recovers() {
     let _ = std::fs::remove_file(config_path("burst"));
 }
 
-/// Active=true says the bridge is listening, so it goes out only after the command subscription
-/// (fleet class F4). The broker takes one QoS 1 publish and withholds its ack, so rumqttc sends
-/// nothing more (a SUBSCRIBE does not count against that limit): whatever the bridge queued
-/// before its first QoS 1 publish is all the broker sees. In the old order that publish was
-/// Active=true, with no subscription behind it.
+/// Every ConnAck: subscribe, then Active=true, then the model (fleet class F4, finding Q7): Active
+/// says the bridge is listening, so it goes out only after the command subscription, and before
+/// the model it then republishes. The broker takes one QoS 1 publish and withholds its ack, so
+/// rumqttc sends nothing more (a SUBSCRIBE does not count against that limit): what the bridge
+/// queued up to its first QoS 1 publish is all the broker sees. That publish must be Active=true,
+/// with the subscription before it. (The first order put Active=true before the subscription; the
+/// second, the model before Active.)
 #[tokio::test(flavor = "multi_thread")]
 async fn active_is_announced_only_after_the_command_subscription() {
     let broker = FakeBroker::start_with_receive_max(1).await;
@@ -371,7 +373,7 @@ async fn active_is_announced_only_after_the_command_subscription() {
         subscribed.contains(&command_topic()),
         "the first QoS 1 publish went out before the command subscription: published {published:?}, subscribed {subscribed:?}"
     );
-    assert!(!published.contains(&active), "Active went out before the rest of the model: published {published:?}");
+    assert_eq!(published.first(), Some(&active), "the first publish after the subscription was not Active=true: published {published:?}");
     assert!(announced, "Active=true was never published: {:?}", broker.received_on(&active));
     let _ = std::fs::remove_file(config_path("order"));
 }
@@ -465,31 +467,45 @@ async fn a_config_that_cannot_be_saved_is_reported_not_a_panic() {
 struct Fifo(std::path::PathBuf);
 
 impl Fifo {
-    fn new(tag: &str) -> Fifo {
-        let path = std::env::temp_dir().join(format!("mqtt-dali-{tag}-{}.fifo", std::process::id()));
+    fn at(path: std::path::PathBuf) -> Fifo {
         let _ = std::fs::remove_file(&path);
         let made = std::process::Command::new("mkfifo").arg(&path).status().expect("mkfifo");
         assert!(made.success(), "mkfifo {path:?} failed");
         Fifo(path)
     }
 
-    fn path(&self) -> String {
-        self.0.to_string_lossy().into_owned()
-    }
-}
-
-impl Drop for Fifo {
-    fn drop(&mut self) {
+    /// Opens it to read, without waiting: a writer stuck in its open goes on. The returned end
+    /// keeps it open for that writer.
+    fn release(&self) -> Option<std::fs::File> {
         use std::os::unix::fs::OpenOptionsExt;
         #[cfg(target_os = "linux")]
         const O_NONBLOCK: i32 = 0o4000;
         #[cfg(not(target_os = "linux"))]
         const O_NONBLOCK: i32 = 0x0004;
-        let reader = std::fs::OpenOptions::new().read(true).custom_flags(O_NONBLOCK).open(&self.0);
+        std::fs::OpenOptions::new().read(true).custom_flags(O_NONBLOCK).open(&self.0).ok()
+    }
+}
+
+impl Drop for Fifo {
+    fn drop(&mut self) {
+        let reader = self.release();
         std::thread::sleep(Duration::from_millis(100));
         drop(reader);
         let _ = std::fs::remove_file(&self.0);
     }
+}
+
+/// Where the configuration file at `path` is written before it is renamed over it.
+fn temporary_of(path: &str) -> std::path::PathBuf {
+    let path = std::path::Path::new(path);
+    let name = path.file_name().expect("a file name").to_string_lossy();
+    path.with_file_name(format!(".{name}.tmp"))
+}
+
+/// The configuration file at `path` and its temporary, both FIFOs nobody reads: a save waits in
+/// opening whichever it writes.
+fn stall_writes(path: &str) -> (Fifo, Fifo) {
+    (Fifo::at(std::path::PathBuf::from(path)), Fifo::at(temporary_of(path)))
 }
 
 /// The configuration file is written after every command that changes the config. A write that
@@ -500,10 +516,11 @@ impl Drop for Fifo {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_config_save_that_stalls_does_not_hold_the_session() {
     let broker = FakeBroker::start().await;
-    let fifo = Fifo::new("stalled-save");
+    let config = config_path("stalled-save");
+    let _stalled = stall_writes(&config);
     let mut dali_config = one_bus();
     dali_config.buses[0].channels.push(Channel { short_address: 1, description: "Light 1".into() });
-    let mut rig = Rig::start(&broker, fifo.path(), dali_config);
+    let mut rig = Rig::start(&broker, config, dali_config);
     let reply_topic = format!("DALI/Reply/QueryLightStatus/{NAME}/Bus_0/Address_1");
     let driver = async {
         assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
@@ -515,9 +532,9 @@ async fn a_config_save_that_stalls_does_not_hold_the_session() {
             .await;
         assert!(broker.send(&command_topic(), r#"{"command":"QueryLightStatus","bus":0,"address":1}"#));
         let answered = broker.wait_until(Duration::from_secs(10), |b| !b.received_on(&reply_topic).is_empty()).await;
-        // Another change while the first write is still stuck: refused at once, not a second
-        // thread stuck behind the first. (Picked by content: the query's own "OK" status may
-        // arrive after its reply.)
+        // Another change while the first write is still stuck: answered at once (queued), not a
+        // second thread stuck behind the first. (Picked by content: the query's own "OK" status
+        // may arrive after its reply.)
         let saves = |b: &FakeBroker| {
             b.received_on(&status_topic())
                 .iter()
@@ -544,6 +561,51 @@ async fn a_config_save_that_stalls_does_not_hold_the_session() {
         "a save behind a stuck one started another write instead of being refused: {second:?}"
     );
     assert_eq!(rig.state(), "the session is still running");
+}
+
+/// A change saved while an earlier write is stuck is written once that write ends, with no further
+/// command to prompt it (finding Q6): the file must end up with the latest configuration. Refused
+/// and forgotten, it stayed behind until the next change, or for good.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_change_queued_behind_a_stuck_write_is_saved_once_it_ends() {
+    let broker = FakeBroker::start().await;
+    let config = config_path("queued-save");
+    let (file, temporary) = stall_writes(&config);
+    let mut rig = Rig::start(&broker, config.clone(), one_bus());
+    let saves = |b: &FakeBroker| {
+        b.received_on(&status_topic())
+            .iter()
+            .filter(|r| String::from_utf8_lossy(&r.payload).contains("saving the configuration"))
+            .count()
+    };
+    let driver = async {
+        assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+        assert!(broker.send(&command_topic(), r#"{"command":"RenameBus","bus":0,"name":"Kitchen"}"#));
+        assert!(broker.wait_until(Duration::from_secs(10), |b| saves(b) >= 1).await, "the stuck write was never reported");
+        assert!(broker.send(&command_topic(), r#"{"command":"RenameBus","bus":0,"name":"Hall"}"#));
+        assert!(broker.wait_until(Duration::from_secs(10), |b| saves(b) >= 2).await, "the second save was never reported");
+    };
+    alive(&mut rig, Duration::from_secs(40), driver).await;
+    // The filesystem answers again: the stuck write goes on.
+    let _readers = (file.release(), temporary.release());
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let saved = loop {
+        let regular = std::fs::symlink_metadata(&config).map(|m| m.file_type().is_file()).unwrap_or(false);
+        if regular && std::fs::read_to_string(&config).unwrap_or_default().contains("Hall") {
+            break true;
+        }
+        if Instant::now() >= deadline {
+            break false;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    };
+    assert!(
+        saved,
+        "the change saved while a write was stuck was never written once that write ended ({config} holds {:?})",
+        std::fs::symlink_metadata(&config).map(|m| m.file_type())
+    );
+    assert_eq!(rig.state(), "the session is still running");
+    let _ = std::fs::remove_file(&config);
 }
 
 /// FindNewLights on a bus whose 64 short addresses are all taken finds a light it cannot address:

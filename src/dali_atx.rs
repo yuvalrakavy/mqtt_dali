@@ -188,14 +188,8 @@ impl DaliAtx {
             .map_err(DaliAtxError::from)
             .change_context_lazy(into_context)?;
 
-        println!("{}", get_version());
-        println!(
-            "ATX DALI Pi Hat: Hardware version {}, Firmware version {}, {}",
-            hardware_version,
-            firmware_version,
-            DaliAtx::to_bus_count_string(bus_count)
-        );
-
+        // Logged only, never printed: a stdout nobody drains must not hold the start (fleet
+        // class B2).
         info!("Started: {}", get_version());
         info!(
             "ATX DALI Pi Hat: Hardware version {}, Firmware version {}, {}",

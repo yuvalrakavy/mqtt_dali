@@ -37,11 +37,21 @@ The MQTT event loop is polled by `Pump`, a task that waits on nothing else; the 
 (§14.3). The session runs on a thread of its own (`mqtt::spawn`), since its DALI calls are
 synchronous; SIGTERM or SIGINT stops it, and `main` waits for it at most `SHUTDOWN_BOUND`
 (`shutdown.rs`). The stop handlers are installed first thing, before logging, the configuration
-and the hardware; start-up runs on the blocking pool, raced with a stop; the configuration file is
-written off the session, under `SAVE_BOUND`; and `main` ends the runtime with `shutdown_timeout`,
-since dropping it would wait without limit for a blocking thread stuck in the kernel. The bus
-protocol's retry loops are bounded in sends and in time (`dali_manager::BUS_LIMITS`).
-`docs/no-hang-3b-controls.toml` holds the negative controls for every guard.
+and the hardware; the logging start and then start-up each run on the blocking pool, raced with a
+stop; the configuration file is written off the session, under `SAVE_BOUND`, to a temporary file
+renamed over the old one, and a change saved while a write is stuck is queued and written when it
+ends; and `main` ends the runtime with `shutdown_timeout`, since dropping it would wait without
+limit for a blocking thread stuck in the kernel. The bus protocol's retry loops are bounded in
+sends and in time (`dali_manager::BUS_LIMITS`). `docs/no-hang-3b-controls.toml` holds the negative
+controls for every guard.
+
+Nothing on the start, stop or session path prints to stdout or stderr directly: it logs through
+tracing, whose sinks drop what they cannot write, since a supervisor's pipe that stopped draining
+would hold a print for ever. A line needed where logging may not be up goes through `note`, a
+thread of its own. The exemptions are interactive or come before anything can wait: rustop's
+`--help` and argument errors, the runtime's own start failure in `main`, and the interactive
+configuration (`--setup`, a missing config file, an emulator config without buses), which runs
+inside the raced start-up.
 
 Linting and formatting (via trunk):
 

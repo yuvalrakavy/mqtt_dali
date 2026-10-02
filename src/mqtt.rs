@@ -28,38 +28,143 @@ pub struct MqttDali<'a> {
 /// How long the session waits for the configuration file to be written.
 const SAVE_BOUND: Duration = Duration::from_secs(2);
 
-/// Writes the configuration file off the session (fleet class F1): the write runs on the blocking
-/// pool, and the session waits for it at most SAVE_BOUND, since everything the bridge does next
-/// waits on the session. A write that has not finished by then is left running; while it is, a
-/// later save is refused at once, so a filesystem that stopped answering holds one thread, not one
-/// per command. The runtime's bounded shutdown leaves it behind (`dali-runtime-shutdown`).
+/// Writes the configuration file off the session (fleet class F1, finding Q6). The write runs on
+/// the blocking pool, and the session waits for it at most SAVE_BOUND, since everything the bridge
+/// does next waits on the session. Each write goes to a temporary file renamed over the old one,
+/// so a write cut short (the bounded exit abandons it) never leaves the file truncated. A write
+/// that outlives SAVE_BOUND is left running; a save made meanwhile is queued, only the latest,
+/// and written by that same thread once the stuck write ends. So a filesystem that stopped
+/// answering holds one thread, not one per command, and no change is left unwritten. The runtime's
+/// bounded shutdown leaves the thread behind (`dali-runtime-shutdown`).
 #[derive(Default)]
 struct ConfigSaver {
-    /// A write that outlived SAVE_BOUND.
-    stuck: Option<tokio::task::JoinHandle<std::io::Result<()>>>,
+    writer: Arc<Mutex<Writer>>,
+}
+
+/// The writing thread's state, shared with the session.
+#[derive(Default)]
+struct Writer {
+    /// A write is running.
+    busy: bool,
+    /// The latest configuration saved while it ran, written when it ends.
+    queued: Option<Vec<u8>>,
+}
+
+/// Why a save is not on disk yet.
+#[derive(Debug)]
+struct SaveFailure {
+    message: String,
+    /// A failure, logged at WARN; a save queued behind a stuck write (that episode's WARN already
+    /// said) is DEBUG.
+    warn: bool,
+}
+
+impl SaveFailure {
+    fn warn(message: String) -> SaveFailure {
+        SaveFailure { message, warn: true }
+    }
 }
 
 impl ConfigSaver {
-    async fn save_config(&mut self, path: &str, dali_config: &DaliConfig) -> std::result::Result<(), String> {
-        if let Some(stuck) = &self.stuck {
-            if !stuck.is_finished() {
-                return Err(format!("an earlier write of {path} has not finished"));
+    async fn save_config(&mut self, path: &str, dali_config: &DaliConfig) -> std::result::Result<(), SaveFailure> {
+        let json = serde_json::to_vec_pretty(dali_config).map_err(|e| SaveFailure::warn(e.to_string()))?;
+        {
+            // WAIT: dali-config-writer
+            let mut writer = self.writer.lock().unwrap_or_else(|p| p.into_inner());
+            if writer.busy {
+                writer.queued = Some(json);
+                return Err(SaveFailure {
+                    message: format!("an earlier write of {path} has not finished; this change is queued behind it, and written when it ends"),
+                    warn: false,
+                });
             }
-            self.stuck = None;
+            writer.busy = true;
         }
-        let json = serde_json::to_vec_pretty(dali_config).map_err(|e| e.to_string())?;
-        let file = path.to_owned();
-        let mut write = tokio::task::spawn_blocking(move || std::fs::write(file, json));
+        let writer = self.writer.clone();
+        let file = std::path::PathBuf::from(path);
+        let mut write = tokio::task::spawn_blocking(move || write_config(&writer, &file, json));
         // WAIT: dali-config-save
         match tokio::time::timeout(SAVE_BOUND, &mut write).await {
-            Ok(Ok(written)) => written.map_err(|e| e.to_string()),
-            Ok(Err(e)) => Err(format!("the write ended abnormally: {e}")),
-            Err(_) => {
-                self.stuck = Some(write);
-                Err(format!("the write did not finish within {} s", SAVE_BOUND.as_secs()))
-            }
+            Ok(Ok(written)) => written.map_err(|e| SaveFailure::warn(e.to_string())),
+            Ok(Err(e)) => Err(SaveFailure::warn(format!("the write ended abnormally: {e}"))),
+            Err(_) => Err(SaveFailure::warn(format!(
+                "the write did not finish within {} s; later changes are queued behind it",
+                SAVE_BOUND.as_secs()
+            ))),
         }
     }
+}
+
+/// The writing thread: writes `json`, then each configuration queued meanwhile, until none is.
+/// Returns the first write's outcome, which the session may be waiting for; the rest it logs, as
+/// it does the first once the session has stopped waiting for it.
+fn write_config(writer: &Mutex<Writer>, path: &std::path::Path, json: Vec<u8>) -> std::io::Result<()> {
+    let mut release = Release { writer, done: false };
+    let started = Instant::now();
+    let first = replace_file(path, &json);
+    let stuck = started.elapsed() >= SAVE_BOUND;
+    let mut queued = 0u32;
+    let mut failed = 0u32;
+    if stuck {
+        if let Err(e) = &first {
+            failed += 1;
+            warn!(kind = "config_save_failed", path = %path.display(), error = %e, "could not save the DALI configuration");
+        }
+    }
+    loop {
+        let next = {
+            // WAIT: dali-config-writer
+            let mut state = writer.lock().unwrap_or_else(|p| p.into_inner());
+            match state.queued.take() {
+                Some(next) => next,
+                None => {
+                    state.busy = false;
+                    break;
+                }
+            }
+        };
+        queued += 1;
+        if let Err(e) = replace_file(path, &next) {
+            failed += 1;
+            warn!(kind = "config_save_failed", path = %path.display(), error = %e, "could not save the DALI configuration");
+        }
+    }
+    release.done = true;
+    if stuck {
+        info!(path = %path.display(), waited_ms = started.elapsed().as_millis() as u64, queued, failed,
+              "the stuck DALI configuration write ended; the configuration saved meanwhile is written");
+    }
+    first
+}
+
+/// Frees the writer however its thread ends, a panic included, so that no later save is queued
+/// behind a thread that is gone. A queued configuration is dropped with it: the next save writes
+/// the whole configuration anyway.
+struct Release<'a> {
+    writer: &'a Mutex<Writer>,
+    done: bool,
+}
+
+impl Drop for Release<'_> {
+    fn drop(&mut self) {
+        if !self.done {
+            // WAIT: dali-config-writer
+            let mut state = self.writer.lock().unwrap_or_else(|p| p.into_inner());
+            state.busy = false;
+            state.queued = None;
+        }
+    }
+}
+
+/// Writes `contents` to a temporary file beside `path`, then renames it over `path`: a write cut
+/// short leaves the old file whole (finding Q6).
+fn replace_file(path: &std::path::Path, contents: &[u8]) -> std::io::Result<()> {
+    let name = path
+        .file_name()
+        .ok_or_else(|| std::io::Error::other(format!("{} names no file", path.display())))?;
+    let temporary = path.with_file_name(format!(".{}.tmp", name.to_string_lossy()));
+    std::fs::write(&temporary, contents)?;
+    std::fs::rename(&temporary, path)
 }
 
 /// How long `run` waits between a failed session and the next.
@@ -790,13 +895,17 @@ impl<'a> MqttDali<'a> {
         let active_topic = MqttDali::get_is_active_topic(&self.dali_config.name);
 
         // Each session is one connection (a fresh client, a clean start), so this is every
-        // ConnAck's work: subscribe, republish the retained model from the bridge's own state (a
-        // broker that restarted lost it), and only then say Active=true — the bridge is listening
-        // by the time anyone sees it (fleet class F4). One connection delivers these in order.
+        // ConnAck's work (fleet class F4): subscribe; then say Active=true, the bridge listening by
+        // the time anyone sees it; then republish the retained model from the bridge's own state
+        // (a broker that restarted lost it). One connection delivers these in order.
         let command_topic = &self.get_command_topic();
         // WAIT: mqtt-request
         mqtt_client
             .subscribe(command_topic, QoS::AtLeastOnce)
+            .await
+            .map_err(|e| CommandError::MqttError(e.to_string()))?;
+
+        publish_with_trace(&mqtt_client, &active_topic, QoS::AtLeastOnce, true, b"true".to_vec())
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
@@ -815,10 +924,6 @@ impl<'a> MqttDali<'a> {
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
-        publish_with_trace(&mqtt_client, &active_topic, QoS::AtLeastOnce, true, b"true".to_vec())
-            .await
-            .map_err(|e| CommandError::MqttError(e.to_string()))?;
-
         // When this connection, accepted during an outage, will have held long enough to end it.
         let mut holds_at: Option<tokio::time::Instant> = None;
         loop {
@@ -832,12 +937,14 @@ impl<'a> MqttDali<'a> {
                     self.goodbye(&mqtt_client, &mut incoming).await;
                     return Ok(());
                 }
+                // Before the hold timer: an `Ended` queued behind a long command must end the
+                // session before the timer can call its dead connection recovered.
+                event = incoming.recv() => event,
                 () = tokio::time::sleep_until(holds_at.unwrap_or_else(tokio::time::Instant::now)), if holds_at.is_some() => {
                     holds_at = None;
                     self.outage.held();
                     continue;
                 }
-                event = incoming.recv() => event,
             };
             let publish = match event {
                 Some(PumpEvent::Publish(publish)) => publish,
@@ -1055,11 +1162,16 @@ impl<'a> MqttDali<'a> {
                                     // the file is behind. Reported, never a panic (finding C-35),
                                     // and bounded: a stalled write never holds the session (F1).
                                     if let Err(e) = self.saver.save_config(&config.config_filename, self.dali_config).await {
-                                        warn!(kind = "config_save_failed", path = %config.config_filename, error = %e,
-                                              "could not save the DALI configuration");
+                                        if e.warn {
+                                            warn!(kind = "config_save_failed", path = %config.config_filename, error = %e.message,
+                                                  "could not save the DALI configuration");
+                                        } else {
+                                            debug!(path = %config.config_filename, error = %e.message,
+                                                   "DALI configuration save queued behind a stuck write");
+                                        }
                                         let error_message = serde_json::to_string(&format!(
-                                            "Command {:?} completed, but saving the configuration to {} failed: {}",
-                                            command, config.config_filename, e
+                                            "Command {:?} completed, but saving the configuration to {} has not succeeded: {}",
+                                            command, config.config_filename, e.message
                                         ))
                                         .change_context_lazy(into_context)?;
                                         publish_with_trace(
