@@ -125,9 +125,13 @@ Log levels and `kind` fields follow the fleet policy at
 - **DEBUG/TRACE** — developer detail; free.
 
 Every ERROR and WARN must carry a structured `kind` field. Common families for
-this bridge: `external_failure` (broker/DALI-bus failure), `connection_lost`
-(designed reconnect path — INFO), `decode_error` (undecodable MQTT payload),
-`protocol_mismatch` (unexpected packet or emulator unsupported command).
+this bridge: a broker outage is one episode — INFO `connection_lost` on its first
+failed attempt, DEBUG retries, one WARN `external_failure` past 30 s (`attempts`,
+`down_for_ms`), INFO `external_recovered` once a connection has held for 15 s;
+`command_rejected` (a DALI command failed: its error also goes to the status
+topic), `config_save_failed`, `signal_handler_unavailable`, `decode_error`
+(undecodable MQTT payload), `protocol_mismatch` (unexpected packet or emulator
+unsupported command).
 
 The bridge participates in **distributed traces** via MQTT v5 `traceparent` user
 properties (`tracing_init::traceparent`): inbound command packets read the

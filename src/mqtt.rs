@@ -30,9 +30,14 @@ const RECONNECT_DELAY: Duration = Duration::from_secs(10);
 /// How long a stopping session waits for its goodbye (Active=false, DISCONNECT) to be written.
 pub const GOODBYE_BOUND: Duration = Duration::from_secs(2);
 
-/// A broker outage this long is a WARN, once per outage (logging policy: an outage is INFO per
-/// attempt, one WARN past a threshold, INFO with its length on recovery).
-const OUTAGE_WARN_AFTER: Duration = Duration::from_secs(60);
+/// A broker outage this long is a WARN, once per outage (fleet class F2).
+const OUTAGE_WARN_AFTER: Duration = Duration::from_secs(30);
+
+/// How long a connection accepted during an outage must hold before the outage counts as over:
+/// longer than the reconnect delay (10 s), so two bridges taking one client id's session from each
+/// other never look recovered, and than two keep-alive periods (6 s each), by which a broker that
+/// accepts and then never answers has been found out.
+const STABLE_AFTER: Duration = Duration::from_secs(15);
 
 #[derive(Debug, Error)]
 pub enum CommandError {
@@ -776,6 +781,8 @@ impl<'a> MqttDali<'a> {
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
+        // When this connection, accepted during an outage, will have held long enough to end it.
+        let mut holds_at: Option<tokio::time::Instant> = None;
         loop {
             // The session never polls: it waits on the pump's queue, and its publishes wait on
             // rumqttc's request channel, which the pump keeps draining (no-hang §14.3). A stop is
@@ -787,12 +794,19 @@ impl<'a> MqttDali<'a> {
                     self.goodbye(&mqtt_client, &mut incoming).await;
                     return Ok(());
                 }
+                () = tokio::time::sleep_until(holds_at.unwrap_or_else(tokio::time::Instant::now)), if holds_at.is_some() => {
+                    holds_at = None;
+                    self.outage.held();
+                    continue;
+                }
                 event = incoming.recv() => event,
             };
             let publish = match event {
                 Some(PumpEvent::Publish(publish)) => publish,
                 Some(PumpEvent::Connected) => {
-                    self.outage.connected(Instant::now());
+                    if self.outage.connected(Instant::now()) == OutageLog::Reconnected {
+                        holds_at = Some(tokio::time::Instant::now() + STABLE_AFTER);
+                    }
                     continue;
                 }
                 Some(PumpEvent::Disconnected) => continue,
@@ -958,7 +972,9 @@ impl<'a> MqttDali<'a> {
 
                                 // Command execution failed: this is a DALI-bus / validation
                                 // failure — not a code bug, but operator attention is warranted.
-                                warn!(kind = "external_failure", error = format!("{e:#}"),
+                                // Not `external_failure`, which is a broker outage past its
+                                // threshold: the command failed, the link did not.
+                                warn!(kind = "command_rejected", error = format!("{e:#}"),
                                       "DALI command failed");
 
                                 publish_with_trace(
@@ -1138,53 +1154,93 @@ async fn stopped(stop: &mut watch::Receiver<bool>) {
     let _ = stop.wait_for(|stop| *stop).await;
 }
 
-/// The broker's reachability across sessions. Logging policy: an outage is INFO per attempt, one
-/// WARN once it has lasted OUTAGE_WARN_AFTER, and an INFO with its length when it ends.
+/// The broker's reachability across sessions, logged as one episode per outage (fleet class F2):
+/// INFO `connection_lost` on its first failed attempt, DEBUG for every later one, ONE WARN
+/// `external_failure` once it has lasted OUTAGE_WARN_AFTER (with `attempts` and `down_for_ms`), and
+/// INFO `external_recovered` (with `down_for_ms` and `attempts`) once a connection has held for
+/// STABLE_AFTER. A ConnAck alone ends nothing: a broker that accepts a connection and then drops it
+/// is still down.
 #[derive(Default)]
 struct Outage {
+    /// When the current outage began; `None` while the broker is reachable.
     since: Option<Instant>,
+    /// The outage's failed attempts: sessions that failed, or never connected.
+    attempts: u32,
     warned: bool,
+    /// When the connection that may end the outage was accepted.
+    reconnected: Option<Instant>,
 }
 
 /// What `Outage` logged, for its tests.
 #[derive(Debug, PartialEq)]
 enum OutageLog {
-    Attempt,
+    /// The first failure of an outage: the INFO.
+    Lost,
+    /// A later failure: DEBUG.
+    Retry,
+    /// The failure that took the outage past OUTAGE_WARN_AFTER: the WARN.
     Warned,
-    Recovered { down_for: Duration },
+    /// A connection accepted during an outage, which has yet to hold: DEBUG.
+    Reconnected,
+    /// That connection held: the outage is over.
+    Recovered { down_for: Duration, attempts: u32 },
+    /// A connection accepted outside any outage.
     Connected,
+    /// Nothing to say.
+    Quiet,
 }
 
 impl Outage {
     /// A session ended (or never connected) with `error`.
     fn failed(&mut self, now: Instant, error: &str) -> OutageLog {
-        let since = *self.since.get_or_insert(now);
+        // A connection that ends before it held proved nothing: the outage goes on.
+        self.reconnected = None;
+        let Some(since) = self.since else {
+            self.since = Some(now);
+            self.attempts = 1;
+            self.warned = false;
+            info!(kind = "connection_lost", error, "MQTT connection lost; reconnecting every 10 s");
+            return OutageLog::Lost;
+        };
+        self.attempts += 1;
+        let attempts = self.attempts;
         let down_for = now.saturating_duration_since(since);
         let down_for_ms = down_for.as_millis() as u64;
         if !self.warned && down_for >= OUTAGE_WARN_AFTER {
             self.warned = true;
-            warn!(kind = "external_failure", down_for_ms, error, "MQTT broker unreachable; still reconnecting every 10 s");
+            warn!(kind = "external_failure", down_for_ms, attempts, error,
+                  "MQTT broker unreachable, or each connection fails; still reconnecting every 10 s");
             OutageLog::Warned
         } else {
-            info!(kind = "connection_lost", down_for_ms, error, "MQTT session ended, reconnecting in 10 s");
-            OutageLog::Attempt
+            debug!(down_for_ms, attempts, error, "MQTT reconnect failed");
+            OutageLog::Retry
         }
     }
 
-    /// The broker accepted a connection.
+    /// The broker accepted a connection (its ConnAck).
     fn connected(&mut self, now: Instant) -> OutageLog {
-        self.warned = false;
-        match self.since.take() {
-            Some(since) => {
-                let down_for = now.saturating_duration_since(since);
-                info!(kind = "external_recovered", down_for_ms = down_for.as_millis() as u64, "MQTT broker reachable again");
-                OutageLog::Recovered { down_for }
-            }
-            None => {
-                info!("connected to the MQTT broker");
-                OutageLog::Connected
-            }
+        if self.since.is_none() {
+            info!("connected to the MQTT broker");
+            return OutageLog::Connected;
         }
+        self.reconnected = Some(now);
+        debug!(holds_for_ms = STABLE_AFTER.as_millis() as u64,
+               "MQTT broker accepted a connection; the outage ends once it holds");
+        OutageLog::Reconnected
+    }
+
+    /// The connection accepted at the last `connected` has held for STABLE_AFTER.
+    fn held(&mut self) -> OutageLog {
+        let (Some(since), Some(at)) = (self.since, self.reconnected) else {
+            return OutageLog::Quiet;
+        };
+        self.since = None;
+        self.reconnected = None;
+        let down_for = at.saturating_duration_since(since);
+        let attempts = self.attempts;
+        info!(kind = "external_recovered", down_for_ms = down_for.as_millis() as u64, attempts,
+              "MQTT broker reachable again");
+        OutageLog::Recovered { down_for, attempts }
     }
 }
 

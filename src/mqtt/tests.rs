@@ -15,7 +15,9 @@ use crate::config_payload::{BusConfig, BusStatus, Channel, DaliConfig};
 use crate::dali_commands;
 use crate::dali_emulator::DaliControllerEmulator;
 use crate::dali_manager::{self, DaliBusResult, DaliController, BUS_LIMITS};
+use crate::test_log::capture;
 use crate::Config;
+use tracing::Level;
 
 const NAME: &str = "Saturation";
 
@@ -223,23 +225,81 @@ fn the_backlog_logs_after_releasing_its_lock() {
     assert!(pushed.is_ok(), "a push waited on the backlog's lock while another thread was still logging under it");
 }
 
-/// The logging policy for an outage, across sessions (finding C-5): INFO per attempt, one WARN once
-/// it has lasted OUTAGE_WARN_AFTER, an INFO with its length when it ends; the next outage warns
+/// The logging policy for an outage, across sessions (finding C-5, fleet class F2): INFO on its
+/// first failed attempt, DEBUG for the later ones, one WARN once it has lasted OUTAGE_WARN_AFTER,
+/// and an INFO with its length and attempts once a connection has held; the next outage warns
 /// again.
 #[test]
 fn a_broker_outage_warns_once_and_reports_its_length_on_recovery() {
-    let mut outage = Outage::default();
+    let s = Duration::from_secs;
     let t0 = Instant::now();
-    assert_eq!(outage.connected(t0), OutageLog::Connected);
-    assert_eq!(outage.failed(t0, "refused"), OutageLog::Attempt);
-    assert_eq!(outage.failed(t0 + OUTAGE_WARN_AFTER / 2, "refused"), OutageLog::Attempt);
-    assert_eq!(outage.failed(t0 + OUTAGE_WARN_AFTER, "refused"), OutageLog::Warned);
-    assert_eq!(outage.failed(t0 + OUTAGE_WARN_AFTER * 2, "refused"), OutageLog::Attempt, "warned twice in one outage");
-    let back = t0 + OUTAGE_WARN_AFTER * 2 + Duration::from_secs(5);
-    assert_eq!(outage.connected(back), OutageLog::Recovered { down_for: OUTAGE_WARN_AFTER * 2 + Duration::from_secs(5) });
-    let t1 = back + Duration::from_secs(1);
-    assert_eq!(outage.failed(t1, "reset"), OutageLog::Attempt);
-    assert_eq!(outage.failed(t1 + OUTAGE_WARN_AFTER, "reset"), OutageLog::Warned, "the next outage did not warn");
+    let t1 = t0 + s(100);
+    let mut outage = Outage::default();
+    let mut logged = Vec::new();
+    let events = capture(|| {
+        logged.push(outage.connected(t0));
+        for at in [1, 11, 21, 31, 41] {
+            logged.push(outage.failed(t0 + s(at), "refused"));
+        }
+        logged.push(outage.connected(t0 + s(50)));
+        logged.push(outage.held());
+        logged.push(outage.held());
+        logged.push(outage.failed(t1, "reset"));
+        logged.push(outage.failed(t1 + OUTAGE_WARN_AFTER, "reset"));
+    });
+    let mut logged = logged.into_iter();
+    let mut next = || logged.next().expect("one result per call");
+    assert_eq!(next(), OutageLog::Connected);
+    assert_eq!(next(), OutageLog::Lost);
+    assert_eq!(next(), OutageLog::Retry);
+    assert_eq!(next(), OutageLog::Retry);
+    assert_eq!(next(), OutageLog::Warned);
+    assert_eq!(next(), OutageLog::Retry, "warned twice in one outage");
+    assert_eq!(next(), OutageLog::Reconnected, "a ConnAck during the outage ended it");
+    assert_eq!(next(), OutageLog::Recovered { down_for: s(49), attempts: 5 });
+    assert_eq!(next(), OutageLog::Quiet, "recovered twice");
+    assert_eq!(next(), OutageLog::Lost, "the next outage did not start with its INFO");
+    assert_eq!(next(), OutageLog::Warned, "the next outage did not warn");
+
+    let recovered: Vec<_> = events.iter().filter(|e| e.is(Level::INFO, "external_recovered")).collect();
+    assert_eq!(recovered.len(), 1, "{events:#?}");
+    assert_eq!(recovered[0].field("down_for_ms"), Some("49000"));
+    assert_eq!(recovered[0].field("attempts"), Some("5"));
+    let warned: Vec<_> = events.iter().filter(|e| e.is(Level::WARN, "external_failure")).collect();
+    assert_eq!(warned.len(), 2, "{events:#?}");
+    assert_eq!((warned[0].field("down_for_ms"), warned[0].field("attempts")), (Some("30000"), Some("4")));
+    let retries = events.iter().filter(|e| e.level == Level::DEBUG && e.message.contains("reconnect failed")).count();
+    assert_eq!(retries, 3, "the later attempts are not DEBUG: {events:#?}");
+}
+
+/// A link the broker accepts and then drops, again and again (two bridges with one client id take
+/// the session from each other), is one outage (fleet class F2): one INFO `connection_lost`, DEBUG
+/// for every later failure, and ONE WARN once it has lasted 30 s, with `attempts` and
+/// `down_for_ms`. A ConnAck alone proves nothing, so it ends nothing.
+#[test]
+fn a_link_that_connects_and_drops_is_one_outage_that_warns() {
+    let t0 = Instant::now();
+    let events = capture(|| {
+        let mut outage = Outage::default();
+        // The first connection: no outage.
+        outage.connected(t0);
+        // Dropped at 1 s, accepted again a second later, dropped ten seconds on: for a minute.
+        for cycle in 0..6u64 {
+            let at = t0 + Duration::from_secs(1 + cycle * 10);
+            outage.failed(at, "the session was taken over");
+            outage.connected(at + Duration::from_secs(1));
+        }
+    });
+    let recovered = events.iter().filter(|e| e.kind() == Some("external_recovered")).count();
+    assert_eq!(recovered, 0, "a bare ConnAck ended the outage {recovered} times: {events:#?}");
+    let lost = events.iter().filter(|e| e.is(Level::INFO, "connection_lost")).count();
+    assert_eq!(lost, 1, "one outage logged connection_lost at INFO {lost} times: {events:#?}");
+    let warned: Vec<_> = events.iter().filter(|e| e.is(Level::WARN, "external_failure")).collect();
+    assert_eq!(warned.len(), 1, "not one WARN in a minute of failures: {events:#?}");
+    assert_eq!(warned[0].field("attempts"), Some("4"), "the WARN does not count the attempts: {:?}", warned[0]);
+    assert_eq!(warned[0].field("down_for_ms"), Some("30000"), "the WARN came at the wrong time: {:?}", warned[0]);
+    let chatter: Vec<_> = events.iter().filter(|e| e.level == Level::INFO && e.kind().is_none() && e.message.contains("connected")).collect();
+    assert_eq!(chatter.len(), 1, "a ConnAck during the outage logged at INFO: {chatter:#?}");
 }
 
 #[test]

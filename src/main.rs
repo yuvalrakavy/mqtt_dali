@@ -16,6 +16,8 @@ mod dali_atx;
 // The HAT's protocol is used by `dali_atx` (Linux) and tested everywhere.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 mod hat_line;
+#[cfg(test)]
+mod test_log;
 
 use crate::config_payload::DaliConfig;
 use crate::dali_emulator::DaliControllerEmulator;
