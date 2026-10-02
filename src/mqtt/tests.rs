@@ -516,11 +516,18 @@ async fn a_config_save_that_stalls_does_not_hold_the_session() {
         assert!(broker.send(&command_topic(), r#"{"command":"QueryLightStatus","bus":0,"address":1}"#));
         let answered = broker.wait_until(Duration::from_secs(10), |b| !b.received_on(&reply_topic).is_empty()).await;
         // Another change while the first write is still stuck: refused at once, not a second
-        // thread stuck behind the first.
-        let reports = broker.received_on(&status_topic()).len();
+        // thread stuck behind the first. (Picked by content: the query's own "OK" status may
+        // arrive after its reply.)
+        let saves = |b: &FakeBroker| {
+            b.received_on(&status_topic())
+                .iter()
+                .map(|r| String::from_utf8_lossy(&r.payload).into_owned())
+                .filter(|status| status.contains("saving the configuration"))
+                .collect::<Vec<_>>()
+        };
         assert!(broker.send(&command_topic(), r#"{"command":"RenameBus","bus":0,"name":"Hall"}"#));
-        broker.wait_until(Duration::from_secs(10), |b| b.received_on(&status_topic()).len() > reports).await;
-        let second = broker.received_on(&status_topic()).get(reports).map(|r| String::from_utf8_lossy(&r.payload).into_owned());
+        broker.wait_until(Duration::from_secs(10), |b| saves(b).len() >= 2).await;
+        let second = saves(&broker).get(1).cloned();
         (reported, answered, second)
     };
     let (reported, answered, second) = alive(&mut rig, Duration::from_secs(40), driver).await;
