@@ -35,7 +35,9 @@ async fn main()  {
         opt config: String = String::from("dali.json"), desc: "Configuration filename (dali.json)";
     }.parse_or_exit();
     
-    if args.log {
+    // Keep the guard for all of main: dropping it shuts down tracing-init's OpenTelemetry providers
+    // (guard.rs), so spans and OTLP logs would stop right after startup.
+    let _logging = if args.log {
         let mut logging_builder = {
             let mut builder = tracing_init::TracingInit::builder("mqtt_dali");
 
@@ -54,10 +56,12 @@ async fn main()  {
             builder
         };
 
-        let log_description = logging_builder.init().map(|t| format!("{}", t));
-
-        println!("Logging: {}", log_description.unwrap());
-    }
+        let guard = logging_builder.init().unwrap();
+        println!("Logging: {guard}");
+        Some(guard)
+    } else {
+        None
+    };
 
     let config = Config {
         config_filename: args.config.clone(),
