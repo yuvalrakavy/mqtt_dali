@@ -33,6 +33,9 @@ pub enum DaliAtxError {
     #[error("Configured for {0} while hardware reports {1}")]
     MismatchBusCount(usize, usize),
 
+    #[error("The DALI HAT did not answer the version query")]
+    NoVersionReply,
+
     #[error("In context of '{0}'")]
     Context(String),
 }
@@ -156,27 +159,32 @@ impl DaliAtx {
 
     pub fn try_new(dali_config: &mut DaliConfig) -> dali_manager::Result<Box<dyn DaliController>> {
         let into_context = || DaliManagerError::Context("Creating ATX controller".into());
-        let mut uart = Uart::with_path("/dev/serial0", 19200, rppal::uart::Parity::None, 8, 1)
+        let uart = Uart::with_path("/dev/serial0", 19200, rppal::uart::Parity::None, 8, 1)
             .change_context_lazy(into_context)?;
-        let mut buffer = [0u8; 8];
+        let mut port = UartPort { uart, read_timeout: None };
 
-        // Read any pending characters
-        uart.set_read_mode(0, Duration::from_millis(0))
+        // Discard any pending characters (a zero timeout polls the input queue).
+        hat_line::wait_for_idle(&mut port, Duration::ZERO)
+            .map_err(DaliAtxError::from)
             .change_context_lazy(into_context)?;
-        uart.read(&mut buffer).change_context_lazy(into_context)?;
 
         // Send v\n command to get board hardware version, firmware version and number of DALI buses
         // Expected reply is Vxxyyzz\n where:
         //  xx = HW version
         //  yy = FW version
         //  zz = 01, 02, 04 (number of buses)
-        uart.set_read_mode(8, Duration::from_secs(5))
+        // The reply is read under hat_line::VERSION's limits: a HAT that never answers fails the
+        // start-up within seconds (the old read, VMIN 8 with VTIME, waited for its first byte
+        // forever).
+        port.uart.write("v\n".as_bytes())
             .change_context_lazy(into_context)?;
-        uart.write("v\n".as_bytes())
+        let reply = hat_line::read_line(&mut port, &hat_line::VERSION)
+            .map_err(DaliAtxError::from)
+            .change_context_lazy(into_context)?
+            .ok_or(DaliAtxError::NoVersionReply)
             .change_context_lazy(into_context)?;
-        uart.read(&mut buffer).change_context_lazy(into_context)?;
 
-        let (hardware_version, firmware_version, bus_count) = hat_line::parse_version(&buffer)
+        let (hardware_version, firmware_version, bus_count) = hat_line::parse_version(&reply)
             .map_err(DaliAtxError::from)
             .change_context_lazy(into_context)?;
 
@@ -211,7 +219,7 @@ impl DaliAtx {
         }
 
         Ok(Box::new(DaliAtx {
-            port: UartPort { uart, read_timeout: None },
+            port,
             debug_write_buffer: Vec::new(),
         }))
     }

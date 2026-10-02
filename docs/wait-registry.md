@@ -30,12 +30,17 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `mqtt-pump-queue` | acyclic | the pump's forward queue | Unbounded (no-hang §14.6): the pump never waits on the session, so the session's wait ends with the next message, or with `Ended` when the connection fails — the session returns and `run` reconnects. |
 | `mqtt-poll` | acyclic | the broker, over the network | The pump waits on nothing in this process. A dead connection ends the poll with an error within the 6 s keep-alive. |
 | `mqtt-backlog-lock` | acyclic | the forward queue's high-water flag | Held to read or set one timestamp; nothing waits under it. |
+| `dali-uart-idle` | bounded | the DALI HAT's UART, until the bus is quiet (`hat_line::wait_for_idle`) | Each read waits at most the quiet time (termios `VTIME`, which rppal rounds down to tenths of a second, so the 10 ms before a bus command is a poll of the input queue), and the loop gives up once the bus has kept sending for `IDLE_DEADLINE` (1 s): it returns within 1 s and one read. On expiry, `HatError::NeverIdle`: the DALI command fails and its error goes to the status topic; a read error is `HatError::Read`, never a panic. Shown on fake byte sources, failing first (`a_bus_that_never_goes_quiet_ends_the_idle_wait_with_an_error`, `a_read_error_is_an_error_not_a_panic`). |
+| `dali-uart-line` | bounded | the DALI HAT's UART, for one reply line (`hat_line::read_line`) | Each byte waits at most `byte_timeout`; the line ends at its newline, or fails at `max_len` bytes, past `total`, or when it stops before its newline: it returns within `total` and one byte's wait — 1.1 s for a bus command's reply (`REPLY`), 11 s for the version query at start-up (`VERSION`, before the session exists). On expiry, `LineTooLong`, `LineDeadline` or `Truncated`: the command fails with that error (at start-up, the bridge does not start). Shown on fake byte sources, failing first (`a_reply_that_never_ends_is_cut_at_its_length_limit`, `a_reply_that_trickles_without_ending_is_cut_at_its_deadline`, `a_reply_cut_short_is_an_error`). |
 
 ## Settings
 
 ```wait-lint
 # rumqttc's client calls, which wait on its request channel.
 wait-methods = publish, publish_with_properties, subscribe, unsubscribe, disconnect
+# The HAT protocol's one read from the UART (`hat_line::ByteSource`): a synchronous wait on the
+# device.
+blocking-methods = read_byte
 # Dependency calls whose .await waits on nothing in this process.
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
@@ -46,6 +51,8 @@ local-methods = set_light_brightness_async, set_group_brightness_async, run_sess
 ## Waiters (generated)
 
 ```wait-lint-waiters
+dali-uart-idle src/hat_line.rs wait_for_idle
+dali-uart-line src/hat_line.rs read_line
 mqtt-backlog-lock src/mqtt.rs Backlog::popped
 mqtt-backlog-lock src/mqtt.rs Backlog::pushed
 mqtt-poll src/mqtt.rs Pump::start

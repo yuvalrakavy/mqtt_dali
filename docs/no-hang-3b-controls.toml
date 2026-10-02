@@ -34,3 +34,75 @@ target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "wait_registry"]
 expect_text = "`.run_session(..).await` on a receiver other than `self`"
 guard       = "collision_declared"
+
+# --- The HAT's UART loops (findings C-M2 / X-3): each bound removed, its fake-source test must fail.
+
+[[control]]
+name        = "the_idle_wait_has_no_deadline"
+file        = "src/hat_line.rs"
+anchor      = '''        if waited >= IDLE_DEADLINE {'''
+replacement = '''        if false {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_bus_that_never_goes_quiet_ends_the_idle_wait_with_an_error"]
+expect_text = "did not return within 10s: an unbounded wait on the UART"
+guard       = "uart_idle_deadline"
+
+[[control]]
+name        = "the_idle_wait_unwraps_a_read_error"
+file        = "src/hat_line.rs"
+anchor      = '''        match src.read_byte(quiet).map_err(HatError::Read)? {'''
+replacement = '''        match src.read_byte(quiet).unwrap() {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_read_error_is_an_error_not_a_panic"]
+expect_text = "wait_for_idle on a failing UART panicked instead of returning an error"
+guard       = "uart_read_error"
+
+[[control]]
+name        = "a_reply_line_has_no_length_limit"
+file        = "src/hat_line.rs"
+anchor      = '''                if line.len() >= limits.max_len {'''
+replacement = '''                if false {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_reply_that_never_ends_is_cut_at_its_length_limit"]
+expect_text = "a reply that never ends was not cut at its length limit"
+guard       = "uart_line_length"
+
+[[control]]
+name        = "a_reply_line_has_no_deadline"
+file        = "src/hat_line.rs"
+anchor      = '''        if waited >= limits.total {'''
+replacement = '''        if false {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_reply_that_trickles_without_ending_is_cut_at_its_deadline"]
+expect_text = "a trickling reply was not cut at its deadline"
+guard       = "uart_line_deadline"
+
+[[control]]
+name        = "a_reply_cut_short_passes_as_a_line"
+file        = "src/hat_line.rs"
+anchor      = '''            None => return Err(HatError::Truncated { got: line.len() }),'''
+replacement = '''            None => return Ok(Some(line)),'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_reply_cut_short_is_an_error"]
+expect_text = "a reply that stopped before its newline was not an error"
+guard       = "uart_line_truncated"
+
+[[control]]
+name        = "a_short_reply_is_indexed_blindly"
+file        = "src/hat_line.rs"
+anchor      = '''    hex.get(..n).ok_or_else(|| short(hex))'''
+replacement = '''    Ok(&hex[..n])'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_short_or_garbled_reply_is_an_error_not_a_panic"]
+expect_text = "panicked instead of returning an error"
+guard       = "uart_reply_parse"
+
+[[control]]
+name        = "the_uart_read_is_undeclared"
+file        = "docs/wait-registry.md"
+anchor      = '''blocking-methods = read_byte'''
+replacement = '''# blocking-methods = read_byte'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "wait_registry"]
+expect_text = "`// WAIT: dali-uart-idle` covers no wait"
+guard       = "uart_waits_registered"
