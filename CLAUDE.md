@@ -21,6 +21,17 @@ cargo build --target aarch64-apple-darwin   # Apple Silicon
 cargo build --target x86_64-apple-darwin    # Intel Mac
 ```
 
+The DALI hardware driver (`dali_atx`, via `rppal`) is Linux-only, so off the Pi the bridge runs
+with `--emulation` only. Tests run on the Mac against the emulator and an in-process fake broker:
+
+```bash
+cargo test --target aarch64-apple-darwin
+```
+
+Every wait carries a `// WAIT: <row>` tag naming a row of `docs/wait-registry.md`, which
+`tests/wait_registry.rs` checks (Store's no-hang spec §13.3, §14). The MQTT event loop is polled
+by `Pump`, a task that waits on nothing else; the session never polls (§14.3).
+
 Linting and formatting (via trunk):
 
 ```bash

@@ -1,0 +1,36 @@
+# Negative controls for mqtt_dali's no-hang 3b change (Store no-hang §14). Run from Store with
+#     scripts/negative-control.py --root ../Home/mqtt_dali-3b ../Home/mqtt_dali-3b/docs/no-hang-3b-controls.toml
+# (The saturation test's own control is the failing-first run: on the single-task session it
+# reported 1 of 300 config publishes after the broker recovered.)
+
+[[control]]
+name        = "the_backlog_never_raises_its_warn"
+file        = "src/mqtt.rs"
+anchor      = '''            if high.is_none() {
+                *high = Some(Instant::now());'''
+replacement = '''            if false {
+                *high = Some(Instant::now());'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--", "a_backlog_past_high_water"]
+expect_text = "not flagged at the high-water mark"
+guard       = "backlog_high_water"
+
+[[control]]
+name        = "a_wait_loses_its_tag"
+file        = "src/mqtt.rs"
+anchor      = '''            let publish = match incoming.recv().await { // WAIT: mqtt-pump-queue'''
+replacement = '''            let publish = match incoming.recv().await {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "wait_registry"]
+expect_text = "is an untagged wait"
+guard       = "registry_wired"
+
+[[control]]
+name        = "a_collision_is_undeclared"
+file        = "docs/wait-registry.md"
+anchor      = '''local-methods = set_light_brightness_async, set_group_brightness_async, run_session'''
+replacement = '''local-methods = set_light_brightness_async, set_group_brightness_async'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "wait_registry"]
+expect_text = "`.run_session(..).await` on a receiver other than `self`"
+guard       = "collision_declared"

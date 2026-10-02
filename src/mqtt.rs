@@ -8,7 +8,9 @@ use error_stack::{Report, ResultExt};
 use rumqttc::v5::{AsyncClient, Event, EventLoop, MqttOptions};
 use rumqttc::v5::mqttbytes::QoS;
 use rumqttc::v5::mqttbytes::v5::{LastWill, Packet, Publish, PublishProperties};
-use std::time::Duration;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use thiserror::Error;
 use tracing::{info, warn, Instrument};
 
@@ -74,11 +76,108 @@ async fn publish_with_trace(
 {
     let topic = topic.into();
     if let Some(props) = traceparent_properties() {
-        client
-            .publish_with_properties(topic, qos, retain, payload, props)
-            .await
+        // WAIT: mqtt-request
+        client.publish_with_properties(topic, qos, retain, payload, props).await
     } else {
-        client.publish(topic, qos, retain, payload).await
+        client.publish(topic, qos, retain, payload).await // WAIT: mqtt-request
+    }
+}
+
+/// What the pump hands the session.
+enum PumpEvent {
+    Publish(Publish),
+    /// The connection failed; the session ends and `run` reconnects.
+    Ended(String),
+}
+
+/// A forward queue past this many unread publishes is a WARN, once; back under `LOW_WATER`, an
+/// INFO with how long it lasted. Nothing is dropped (Store no-hang §14.6, ruling 1).
+const HIGH_WATER: usize = 1000;
+const LOW_WATER: usize = 100;
+
+/// The forward queue's depth, and whether its high-water WARN is standing.
+#[derive(Default)]
+struct Backlog {
+    depth: AtomicUsize,
+    high_since: Mutex<Option<Instant>>,
+}
+
+impl Backlog {
+    fn pushed(&self) {
+        let depth = self.depth.fetch_add(1, Ordering::SeqCst) + 1;
+        if depth >= HIGH_WATER {
+            let mut high = self.high_since.lock().unwrap_or_else(|p| p.into_inner()); // WAIT: mqtt-backlog-lock
+            if high.is_none() {
+                *high = Some(Instant::now());
+                warn!(kind = "mqtt_backlog_high", depth, "MQTT commands are arriving faster than the bridge handles them");
+            }
+        }
+    }
+
+    fn popped(&self) {
+        let depth = self.depth.fetch_sub(1, Ordering::SeqCst) - 1;
+        if depth <= LOW_WATER {
+            let mut high = self.high_since.lock().unwrap_or_else(|p| p.into_inner()); // WAIT: mqtt-backlog-lock
+            if let Some(since) = high.take() {
+                info!(kind = "mqtt_backlog_drained", depth, lasted_ms = since.elapsed().as_millis() as u64, "MQTT command backlog drained");
+            }
+        }
+    }
+}
+
+/// Polls rumqttc's event loop in a task of its own (Store no-hang §14.3). rumqttc's request
+/// channel drains only while the event loop is polled, so the task that polls waits on nothing
+/// else — no publish, no subscribe, no bounded send — and forwards what arrives on an unbounded
+/// queue. Dropping it stops the task.
+struct Pump {
+    task: tokio::task::JoinHandle<()>,
+}
+
+impl Drop for Pump {
+    fn drop(&mut self) {
+        self.task.abort();
+    }
+}
+
+/// The session's end of the pump's queue.
+struct Incoming {
+    rx: tokio::sync::mpsc::UnboundedReceiver<PumpEvent>,
+    backlog: Arc<Backlog>,
+}
+
+impl Incoming {
+    async fn recv(&mut self) -> Option<PumpEvent> {
+        let event = self.rx.recv().await; // WAIT: mqtt-pump-queue
+        if matches!(event, Some(PumpEvent::Publish(_))) {
+            self.backlog.popped();
+        }
+        event
+    }
+}
+
+impl Pump {
+    fn start(mut events: EventLoop) -> (Pump, Incoming) {
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        let backlog = Arc::new(Backlog::default());
+        let pushed = backlog.clone();
+        let task = tokio::spawn(async move {
+            loop {
+                match events.poll().await { // WAIT: mqtt-poll
+                    Ok(Event::Incoming(Packet::Publish(publish))) => {
+                        pushed.pushed();
+                        if tx.send(PumpEvent::Publish(publish)).is_err() {
+                            return; // the session is gone
+                        }
+                    }
+                    Ok(_) => {}
+                    Err(e) => {
+                        let _ = tx.send(PumpEvent::Ended(e.to_string()));
+                        return;
+                    }
+                }
+            }
+        });
+        (Pump { task }, Incoming { rx, backlog })
     }
 }
 
@@ -545,12 +644,14 @@ impl<'a> MqttDali<'a> {
         &mut self,
         config: &Config,
         mqtt_client: AsyncClient,
-        mut mqtt_events: EventLoop,
+        mqtt_events: EventLoop,
     ) -> Result<()> {
         let into_context = || CommandError::Context("MQTT session: Event loop".to_owned());
         let config_topic = &self.get_config_topic();
         let status_topic = &self.get_status_topic();
         let mut status_ok = false;
+        // Polling first, so every publish below has an event loop draining it (no-hang §14.3).
+        let (_pump, mut incoming) = Pump::start(mqtt_events);
 
         info!("MQTT session started: connecting to broker");
         let active_topic = MqttDali::get_is_active_topic(&self.dali_config.name);
@@ -575,18 +676,21 @@ impl<'a> MqttDali<'a> {
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
         let command_topic = &self.get_command_topic();
+        // WAIT: mqtt-request
         mqtt_client
             .subscribe(command_topic, QoS::AtLeastOnce)
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
         loop {
-            let event = mqtt_events
-                .poll()
-                .await
-                .map_err(|e| CommandError::MqttError(e.to_string()))?;
-
-            if let Event::Incoming(Packet::Publish(publish)) = event {
+            // The session never polls: it waits on the pump's queue, and its publishes wait on
+            // rumqttc's request channel, which the pump keeps draining (no-hang §14.3).
+            let publish = match incoming.recv().await { // WAIT: mqtt-pump-queue
+                Some(PumpEvent::Publish(publish)) => publish,
+                Some(PumpEvent::Ended(e)) => return Err(CommandError::MqttError(e).into()),
+                None => return Err(CommandError::MqttError("the MQTT pump stopped".to_owned()).into()),
+            };
+            {
                 let topic = String::from_utf8_lossy(&publish.topic).into_owned();
                 let Publish { ref payload, ref properties, .. } = publish;
 
@@ -809,7 +913,8 @@ impl<'a> MqttDali<'a> {
             info!("connecting to MQTT broker");
 
             let client_id = format!("DALI-{}", name);
-            let mut mqtt_options = MqttOptions::new(client_id, mqtt_broker, 1883);
+            let (host, port) = broker_host_port(mqtt_broker);
+            let mut mqtt_options = MqttOptions::new(client_id, host, port);
             let last_will = LastWill::new(
                 MqttDali::get_is_active_topic(&name),
                 "false".as_bytes().to_vec(),
@@ -837,3 +942,17 @@ impl<'a> MqttDali<'a> {
         }
     }
 }
+
+/// `host` or `host:port` (default 1883).
+fn broker_host_port(broker: &str) -> (&str, u16) {
+    match broker.rsplit_once(':') {
+        Some((host, port)) if !host.is_empty() => match port.parse() {
+            Ok(port) => (host, port),
+            Err(_) => (broker, 1883),
+        },
+        _ => (broker, 1883),
+    }
+}
+
+#[cfg(test)]
+mod tests;

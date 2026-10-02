@@ -9,10 +9,12 @@ mod dali_commands;
 mod setup;
 
 mod dali_emulator;
+#[cfg(target_os = "linux")]
 mod dali_atx;
 
 use crate::config_payload::DaliConfig;
 use crate::dali_emulator::DaliControllerEmulator;
+#[cfg(target_os = "linux")]
 use crate::dali_atx::DaliAtx;
 use crate::setup::Setup;
 
@@ -74,11 +76,11 @@ async fn main()  {
 
     let mut controller = if args.emulation {
         DaliControllerEmulator::try_new(&mut dali_config)
-    } else { 
-        DaliAtx::try_new(&mut dali_config)
+    } else {
+        hardware_controller(&mut dali_config)
     }.expect("Error when initializing DALI controller - is serial port enabled? (enable using raspi-config)");
 
-    let mut dali_manager = dali_manager::DaliManager::new(controller.as_mut());
+    let mut dali_manager = dali_manager::DaliManager::new(&mut *controller);
 
     if args.setup {
         let setup_result = Setup::interactive_setup(&config, dali_config, &mut dali_manager).expect("Setup failed");
@@ -93,6 +95,18 @@ async fn main()  {
     }
 
     mqtt::MqttDali::run(&config, &mut dali_manager, &mut dali_config, &args.mqtt).await.unwrap();
+}
+
+#[cfg(target_os = "linux")]
+fn hardware_controller(dali_config: &mut DaliConfig) -> dali_manager::Result<Box<dyn dali_manager::DaliController>> {
+    DaliAtx::try_new(dali_config)
+}
+
+/// The DALI hardware is the Pi's UART: elsewhere, only `--emulation` runs.
+#[cfg(not(target_os = "linux"))]
+fn hardware_controller(_dali_config: &mut DaliConfig) -> dali_manager::Result<Box<dyn dali_manager::DaliController>> {
+    eprintln!("the DALI hardware needs Linux (the Pi's UART); run with --emulation here");
+    std::process::exit(2);
 }
 
 pub fn get_version() -> String {

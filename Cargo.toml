@@ -19,7 +19,6 @@ serde = { version = "1.0.215", features = ["derive"] }
 rumqttc = { version = "0.25.1", default-features = false }
 rustop = "1.1.4"
 rand = "0.10.0"
-rppal = "0.22.1"
 tracing = { version = "0.1.41"  }
 log = "0.4.22"
 tracing-init = { git="http://github.com/yuvalrakavy/tracing-init.git", features = ["otel"] }
@@ -30,5 +29,15 @@ built = "0.8.0"
 
 regex = "1.11.1"
 
+# The DALI hardware (the Pi's UART) is Linux-only; elsewhere the bridge runs with --emulation,
+# which is also how its tests run on a development Mac.
+[target.'cfg(target_os = "linux")'.dependencies]
+rppal = "0.22.1"
+
 [build-dependencies]
 built = { version= "0.8.0", features = ["chrono"] }
+
+[dev-dependencies]
+# The fleet's test tools, from the same repository as tracing-init (one revision for all three).
+wait-lint = { git="http://github.com/yuvalrakavy/tracing-init.git" }
+mqtt-test-broker = { git="http://github.com/yuvalrakavy/tracing-init.git" }
