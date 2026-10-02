@@ -152,4 +152,7 @@ and `--log` add the console and a file (`logs/dali.<date>.log`); `LOG_DESTINATIO
 when neither flag is given. The default filter is
 `warn,mqtt_dali=info` (`--filter`). A destination that cannot start is skipped
 (`on_destination_error` is pinned to skip in code), and logging that cannot start at all never
-stops or panics the bridge.
+stops or panics the bridge. tracing-init bounds the rest: starting the file and GELF destinations
+takes at most 5 s (then the destination is skipped, WARN `log_destination_skipped`), console, file
+and GELF writes never block (a full queue drops lines, WARN `log_lines_dropped`), and dropping the
+guard takes at most about 4 s.
