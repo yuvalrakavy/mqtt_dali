@@ -394,3 +394,18 @@ target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_broadcast_that_keeps_colliding_fails_at_its_deadline"]
 expect_text = "past its deadline"
 guard       = "broadcast_deadline"
+
+# --- Every ConnAck: subscribe, republish the model, and only then Active=true (fleet class F4).
+
+[[control]]
+name        = "active_is_announced_before_the_subscription"
+file        = "src/mqtt.rs"
+anchor      = '''        let command_topic = &self.get_command_topic();
+        // WAIT: mqtt-request'''
+replacement = '''        publish_with_trace(&mqtt_client, &active_topic, QoS::AtLeastOnce, true, b"true".to_vec()).await.map_err(|e| CommandError::MqttError(e.to_string()))?;
+        let command_topic = &self.get_command_topic();
+        // WAIT: mqtt-request'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "active_is_announced_only_after_the_command_subscription"]
+expect_text = "the first QoS 1 publish went out before the command subscription"
+guard       = "active_after_subscribe"

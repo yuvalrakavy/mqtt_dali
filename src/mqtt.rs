@@ -746,7 +746,14 @@ impl<'a> MqttDali<'a> {
         debug!("MQTT session started: connecting to broker");
         let active_topic = MqttDali::get_is_active_topic(&self.dali_config.name);
 
-        publish_with_trace(&mqtt_client, &active_topic, QoS::AtLeastOnce, true, b"true".to_vec())
+        // Each session is one connection (a fresh client, a clean start), so this is every
+        // ConnAck's work: subscribe, republish the retained model from the bridge's own state (a
+        // broker that restarted lost it), and only then say Active=true — the bridge is listening
+        // by the time anyone sees it (fleet class F4). One connection delivers these in order.
+        let command_topic = &self.get_command_topic();
+        // WAIT: mqtt-request
+        mqtt_client
+            .subscribe(command_topic, QoS::AtLeastOnce)
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
@@ -765,10 +772,7 @@ impl<'a> MqttDali<'a> {
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 
-        let command_topic = &self.get_command_topic();
-        // WAIT: mqtt-request
-        mqtt_client
-            .subscribe(command_topic, QoS::AtLeastOnce)
+        publish_with_trace(&mqtt_client, &active_topic, QoS::AtLeastOnce, true, b"true".to_vec())
             .await
             .map_err(|e| CommandError::MqttError(e.to_string()))?;
 

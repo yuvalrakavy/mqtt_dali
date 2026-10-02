@@ -283,6 +283,39 @@ async fn a_command_burst_against_a_stalled_broker_completes_once_it_recovers() {
     let _ = std::fs::remove_file(config_path("burst"));
 }
 
+/// Active=true says the bridge is listening, so it goes out only after the command subscription
+/// (fleet class F4). The broker takes one QoS 1 publish and withholds its ack, so rumqttc sends
+/// nothing more (a SUBSCRIBE does not count against that limit): whatever the bridge queued
+/// before its first QoS 1 publish is all the broker sees. In the old order that publish was
+/// Active=true, with no subscription behind it.
+#[tokio::test(flavor = "multi_thread")]
+async fn active_is_announced_only_after_the_command_subscription() {
+    let broker = FakeBroker::start_with_receive_max(1).await;
+    broker.hold_acks();
+    let mut rig = Rig::start(&broker, config_path("order"), one_bus());
+    let active = format!("DALI/Active/{NAME}");
+    let driver = async {
+        let published = broker.wait_until(Duration::from_secs(10), |b| !b.received().is_empty()).await;
+        assert!(published, "the session published nothing");
+        // A moment for anything else the broker would take (it takes nothing more).
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        let first = (broker.subscriptions(), broker.received().into_iter().map(|r| r.topic).collect::<Vec<_>>());
+        broker.release_acks();
+        let announced = broker
+            .wait_until(Duration::from_secs(10), |b| b.received_on(&active).iter().any(|r| r.payload.as_ref() == b"true" && r.retain))
+            .await;
+        (first, announced)
+    };
+    let ((subscribed, published), announced) = alive(&mut rig, Duration::from_secs(30), driver).await;
+    assert!(
+        subscribed.contains(&command_topic()),
+        "the first QoS 1 publish went out before the command subscription: published {published:?}, subscribed {subscribed:?}"
+    );
+    assert!(!published.contains(&active), "Active went out before the rest of the model: published {published:?}");
+    assert!(announced, "Active=true was never published: {:?}", broker.received_on(&active));
+    let _ = std::fs::remove_file(config_path("order"));
+}
+
 /// A stop between commands: the session publishes a retained Active=false, disconnects, and ends
 /// (finding C-7).
 #[tokio::test(flavor = "multi_thread")]
