@@ -20,8 +20,8 @@ Wants=systemd-networkd-wait-online.service
 
 [Service]
 # Log to a file (--log: logs/dali.<date>.log) and to the log server: logging.toml, next to the
-# binary, adds GELF and OpenTelemetry. (A LOG_DESTINATION here would replace logging.toml's
-# destinations, and the log server with them.)
+# binary, adds GELF and OpenTelemetry. (Not LOG_DESTINATION: beside --log it is ignored, and on
+# its own it replaces logging.toml's destinations, the log server with them.)
 ExecStart=/home/yuval/mqtt_dali --log control-bz
 WorkingDirectory=/home/yuval
 StandardError=file:/home/yuval/logs/dali.err.log

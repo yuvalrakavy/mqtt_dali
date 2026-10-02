@@ -12,7 +12,8 @@
 # ADDS GELF and OpenTelemetry to what the command line asks for (--console:
 # the console; --log: a file, logs/dali.<date>.log). A destination the command
 # line switches on stays on whatever this says. "+f" here would add the file
-# without --log. A LOG_DESTINATION in the environment replaces this line.
+# without --log. Without --console or --log, a LOG_DESTINATION in the
+# environment replaces this line; with either, LOG_DESTINATION is ignored.
 destination = "+g+o"
 # Telemetry must never prevent the bridge from starting: a destination that
 # fails to initialize (e.g. unresolvable GELF host) is skipped with a stderr

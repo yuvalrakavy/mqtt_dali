@@ -116,7 +116,8 @@ async fn main() -> ExitCode {
 
 /// tracing-init, always (finding C-M6). `logging.toml` (searched upward from the working
 /// directory; the systemd units set it) or `LOG_DESTINATION` chooses the destinations; `--console`
-/// and `--log` add the console and a file. A destination that cannot start is skipped, and logging
+/// and `--log` add the console and a file (tracing-init ignores `LOG_DESTINATION` once either is
+/// given). A destination that cannot start is skipped, and logging
 /// that cannot start at all leaves the bridge running without it: telemetry never stops the
 /// bridge, and never panics it (finding C-8).
 fn init_logging(file: bool, console: bool, filter: &str) -> Option<tracing_init::TracingGuard> {

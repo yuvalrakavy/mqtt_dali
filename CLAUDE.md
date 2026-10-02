@@ -139,7 +139,8 @@ gated behind the `otel` feature (already enabled).
 tracing-init is always initialised. `logging.toml` (searched upward from the working directory,
 which the systemd units set to the binary's home) or the `LOG_DESTINATION` env var chooses the
 destinations — the committed `logging.toml` adds GELF and OpenTelemetry to logmon — and `--console`
-and `--log` add the console and a file (`logs/dali.<date>.log`). The default filter is
+and `--log` add the console and a file (`logs/dali.<date>.log`); `LOG_DESTINATION` applies only
+when neither flag is given. The default filter is
 `warn,mqtt_dali=info` (`--filter`). A destination that cannot start is skipped
 (`on_destination_error` is pinned to skip in code), and logging that cannot start at all never
 stops or panics the bridge.
