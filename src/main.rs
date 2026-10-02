@@ -101,7 +101,10 @@ async fn run(args: Args) -> ExitCode {
     // (guard.rs), so spans and OTLP logs would stop right after startup. Every exit below returns
     // from `run`, so the guard is dropped, and flushes, on every path (finding C-7).
     let (log, console, filter) = (args.log, args.console, args.filter.clone());
-    let logging_start = tokio::task::spawn_blocking(move || init_logging(log, console, &filter));
+    let logging_start = tokio::task::spawn_blocking(move || {
+        logging_gate();
+        init_logging(log, console, &filter)
+    });
     // WAIT: dali-startup
     let logging = tokio::select! {
         started = logging_start => started.ok().flatten(),
@@ -221,6 +224,21 @@ fn start_up(
     }
     Ok((config, controller, dali_config))
 }
+
+/// A test's hold on the logging start, in debug builds only: when `MQTT_DALI_TEST_LOGGING_GATE`
+/// names a file, the start reads it first. A test names a FIFO it holds, so the start waits there
+/// for as long as the test likes — the deterministic stand-in for a logging start stuck in the
+/// kernel (a hung mount under the logging config), which proves the start is raced with a stop.
+/// Inert unless the variable is set, and absent from a release build.
+#[cfg(debug_assertions)]
+fn logging_gate() {
+    if let Some(gate) = std::env::var_os("MQTT_DALI_TEST_LOGGING_GATE") {
+        let _ = std::fs::read(gate);
+    }
+}
+
+#[cfg(not(debug_assertions))]
+fn logging_gate() {}
 
 /// tracing-init, always (finding C-M6). `logging.toml` (searched upward from the working
 /// directory; the systemd units set it) or `LOG_DESTINATION` chooses the destinations; `--console`

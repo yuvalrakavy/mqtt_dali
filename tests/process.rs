@@ -39,10 +39,9 @@ struct Launch<'a> {
     read_only_cwd: bool,
     /// The configuration file is a FIFO nobody writes: start-up waits in reading it.
     stalled_config: bool,
-    /// The file destination is on (LOG_DESTINATION `cf`), and its log file, `logs/dali.<date>.log`
-    /// for yesterday, today and tomorrow (UTC), is a FIFO nobody reads: tracing-init's start waits
-    /// in opening it until it gives it up, 5 s in.
-    stalled_log_file: bool,
+    /// The logging start is held: `MQTT_DALI_TEST_LOGGING_GATE` names a FIFO (`logging-gate`) that
+    /// the start reads before tracing-init's init, and that the test holds.
+    logging_gate: bool,
     /// Lights in the configuration (a larger file).
     channels: usize,
     /// The bridge may write files of at most 512 bytes (`ulimit -f 1`): a larger write is cut
@@ -59,27 +58,12 @@ impl Default for Launch<'_> {
             destination: "c",
             read_only_cwd: false,
             stalled_config: false,
-            stalled_log_file: false,
+            logging_gate: false,
             channels: 0,
             file_size_limited: false,
             stdout_full: false,
         }
     }
-}
-
-/// The UTC date `days` from today, `YYYY-MM-DD` (the civil-from-days algorithm, Howard Hinnant's).
-fn utc_date(days: i64) -> String {
-    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).expect("after 1970");
-    let z = now.as_secs() as i64 / 86_400 + days + 719_468;
-    let era = z.div_euclid(146_097);
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let day = doy - (153 * mp + 2) / 5 + 1;
-    let month = if mp < 10 { mp + 3 } else { mp - 9 };
-    let year = yoe + era * 400 + i64::from(month <= 2);
-    format!("{year:04}-{month:02}-{day:02}")
 }
 
 /// A pipe filled until a write to it waits: nobody reads it. The filler thread stays blocked until
@@ -153,13 +137,9 @@ impl Bridge {
         }
         let logging = dir.join("logging.toml");
         std::fs::write(&logging, "[logging]\ndestination = \"c\"\n").expect("a logging config");
-        let mut destination = launch.destination;
-        if launch.stalled_log_file {
-            destination = "cf";
-            std::fs::create_dir_all(dir.join("logs")).expect("a logs directory");
-            for day in [-1, 0, 1] {
-                mkfifo(&dir.join("logs").join(format!("dali.{}.log", utc_date(day))));
-            }
+        let gate = dir.join("logging-gate");
+        if launch.logging_gate {
+            mkfifo(&gate);
         }
         let cwd = if launch.read_only_cwd {
             use std::os::unix::fs::PermissionsExt;
@@ -200,11 +180,16 @@ impl Bridge {
             let stderr = std::fs::File::create(dir.join("stderr.log")).expect("stderr file");
             (Stdio::from(stdout), Stdio::from(stderr))
         };
+        if launch.logging_gate {
+            command.env("MQTT_DALI_TEST_LOGGING_GATE", &gate);
+        } else {
+            command.env_remove("MQTT_DALI_TEST_LOGGING_GATE");
+        }
         let child = command
             // A console-only logging config, and LOG_DESTINATION over it: the console and at most
             // a local file. Nothing this test starts sends telemetry anywhere.
             .current_dir(&cwd)
-            .env("LOG_DESTINATION", destination)
+            .env("LOG_DESTINATION", launch.destination)
             .env("LOG_CONFIG", &logging)
             .env_remove("LOG_LEVEL")
             .env_remove("RUST_LOG")
@@ -395,35 +380,47 @@ async fn sigterm_while_a_config_write_is_stuck_exits_in_bounded_time() {
     );
 }
 
-/// The logging start is raced with a stop too (fleet class B1). tracing-init's start is
-/// synchronous: it gives a destination that will not start 5 s, and reads its logging config with
-/// no bound of its own. Here the file destination's log file is a FIFO nobody reads, so its open
-/// waits until tracing-init gives it up, 5 s in. SIGTERM, 1 s in, must end the bridge at once —
-/// within the runtime's 1 s for the stuck start, not when tracing-init gives up 4 s later.
-///
-/// Nothing is logged before logging is up, so no line proves the start has begun; the stop
-/// handlers are installed first thing, milliseconds in. A late SIGTERM could only be a false RED;
-/// and an unraced start can only exit later than this test allows, never sooner.
+/// The logging start is raced with a stop too (fleet class B1). tracing-init's init is
+/// synchronous, and parts of it have no bound (its read of the logging config, on a hung mount).
+/// The test holds the start deterministically: the debug-build gate makes it read a FIFO first,
+/// and the test waits for proof the read began (opening the write end without waiting fails with
+/// ENXIO until a reader is there), keeps the write end open, so the read never ends while the
+/// child lives, and sends SIGTERM. The bridge must exit cleanly within its bound; the gate is
+/// released only after it has. Unraced, or with the runtime dropped unbounded, it never exits.
 #[tokio::test(flavor = "multi_thread")]
-async fn sigterm_while_a_log_destination_is_starting_exits_at_once() {
+async fn sigterm_while_the_logging_start_is_held_exits_cleanly() {
+    use std::os::unix::fs::OpenOptionsExt;
+    #[cfg(target_os = "linux")]
+    const O_NONBLOCK: i32 = 0o4000;
+    #[cfg(not(target_os = "linux"))]
+    const O_NONBLOCK: i32 = 0x0004;
+    const ENXIO: i32 = 6;
     let broker = FakeBroker::start().await;
-    let mut bridge = Bridge::launch(&broker, "stuck-log-file", Launch { stalled_log_file: true, ..Launch::default() });
-    tokio::time::sleep(Duration::from_secs(1)).await;
-    assert!(
-        bridge.child.try_wait().expect("the child's status").is_none(),
-        "the bridge ended before the SIGTERM; stderr:\n{}",
-        bridge.output("stderr.log")
-    );
-    let sent = Instant::now();
+    let mut bridge = Bridge::launch(&broker, "held-logging", Launch { logging_gate: true, ..Launch::default() });
+    let gate = bridge.dir.join("logging-gate");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let held = loop {
+        match std::fs::OpenOptions::new().write(true).custom_flags(O_NONBLOCK).open(&gate) {
+            Ok(writer) => break writer,
+            Err(e) if e.raw_os_error() == Some(ENXIO) => {
+                assert!(
+                    Instant::now() < deadline,
+                    "the logging start never opened its gate; stderr:\n{}",
+                    bridge.output("stderr.log")
+                );
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+            Err(e) => panic!("opening the gate's write end: {e}"),
+        }
+    };
     bridge.terminate();
     let status = bridge.wait(Duration::from_secs(10)).await;
-    let took = sent.elapsed();
-    let status = status.unwrap_or_else(|| panic!("the bridge did not exit within 10 s of SIGTERM during its logging start"));
+    let status = status.unwrap_or_else(|| {
+        panic!("the bridge did not exit within 10 s of SIGTERM while its logging start was held: the logging start is not raced with a stop")
+    });
     assert!(status.success(), "the bridge did not exit cleanly ({})", describe(status));
-    assert!(
-        took <= Duration::from_millis(2500),
-        "the bridge exited {took:?} after SIGTERM: it waited for its logging start (tracing-init gives a stuck destination 5 s) instead of racing it with the stop"
-    );
+    // Only now, the child gone, is the gate released.
+    drop(held);
 }
 
 /// Nothing on the start-up or stop path writes to stdout or stderr directly (fleet class B2): it

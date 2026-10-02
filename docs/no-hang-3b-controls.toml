@@ -277,8 +277,10 @@ guard       = "sigterm_handled"
 [[control]]
 name        = "logging_needs_a_flag_again"
 file        = "src/main.rs"
-anchor      = '''    let _logging = init_logging(args.log, args.console, &args.filter);'''
-replacement = '''    let _logging = if args.log { init_logging(args.log, args.console, &args.filter) } else { None };'''
+anchor      = '''        init_logging(log, console, &filter)
+    });'''
+replacement = '''        if log { init_logging(log, console, &filter) } else { None }
+    });'''
 target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "logging_is_on_without_any_flag"]
 expect_text = "tracing-init was not initialised"
@@ -474,7 +476,10 @@ anchor      = '''    let (mut signals, unavailable) = shutdown::StopSignals::ins
     // (guard.rs), so spans and OTLP logs would stop right after startup. Every exit below returns
     // from `run`, so the guard is dropped, and flushes, on every path (finding C-7).
     let (log, console, filter) = (args.log, args.console, args.filter.clone());
-    let logging_start = tokio::task::spawn_blocking(move || init_logging(log, console, &filter));
+    let logging_start = tokio::task::spawn_blocking(move || {
+        logging_gate();
+        init_logging(log, console, &filter)
+    });
     // WAIT: dali-startup
     let logging = tokio::select! {
         started = logging_start => started.ok().flatten(),
@@ -547,8 +552,8 @@ anchor      = '''    let logging = tokio::select! {
     };'''
 replacement = '''    let logging = logging_start.await.ok().flatten();'''
 target      = "command"
-argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_while_a_log_destination_is_starting_exits_at_once"]
-expect_text = "it waited for its logging start"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_while_the_logging_start_is_held_exits_cleanly"]
+expect_text = "the logging start is not raced with a stop"
 guard       = "logging_start_raced"
 
 [[control]]

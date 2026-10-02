@@ -43,7 +43,9 @@ renamed over the old one, and a change saved while a write is stuck is queued an
 ends; and `main` ends the runtime with `shutdown_timeout`, since dropping it would wait without
 limit for a blocking thread stuck in the kernel. The bus protocol's retry loops are bounded in
 sends and in time (`dali_manager::BUS_LIMITS`). `docs/no-hang-3b-controls.toml` holds the negative
-controls for every guard.
+controls for every guard. One test seam lives in the binary: in debug builds only,
+`MQTT_DALI_TEST_LOGGING_GATE` names a file the logging start reads before tracing-init's init, so
+`tests/process.rs` can hold that start on a FIFO; inert unless set, absent from a release build.
 
 Nothing on the start, stop or session path prints to stdout or stderr directly: it logs through
 tracing, whose sinks drop what they cannot write, since a supervisor's pipe that stopped draining
