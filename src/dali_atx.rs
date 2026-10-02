@@ -1,13 +1,15 @@
 use error_stack::{Report, ResultExt};
-use log::{debug, info, log_enabled, trace, Level::Trace};
+use log::{info, log_enabled, trace, Level::Trace};
 use rppal::{uart, uart::Uart};
 use std::ascii::escape_default;
+use std::io;
 use std::str;
 use std::time::Duration;
 use thiserror::Error;
 
 use crate::config_payload::{BusConfig, BusStatus, DaliConfig};
 use crate::dali_manager::{DaliBusResult, DaliController, DaliManagerError};
+use crate::hat_line::{self, ByteSource, HatError};
 use crate::{dali_manager, get_version};
 
 #[derive(Debug, Error)]
@@ -19,14 +21,8 @@ pub enum DaliAtxError {
         uart::Error,
     ),
 
-    #[error("Invalid hex digit {0}")]
-    InvalidHexDigit(u8),
-
-    #[error("Reply from unexpected bus (expected {0}, reply from {1})")]
-    UnexpectedBus(usize, usize),
-
-    #[error("Unexpected DALI HAT reply: {0}")]
-    UnexpectedReply(u8),
+    #[error(transparent)]
+    Hat(#[from] HatError),
 
     #[error("Unexpected bus result {0:?}")]
     UnexpectedBusResult(DaliBusResult),
@@ -57,8 +53,38 @@ pub enum DaliAtxError {
 pub type Result<T> = std::result::Result<T, Report<DaliAtxError>>;
 
 pub struct DaliAtx {
-    uart: Uart,
+    port: UartPort,
     debug_write_buffer: Vec<u8>,
+}
+
+/// The UART as the HAT protocol's byte source. It remembers the read mode it last set, since
+/// setting one is a system call.
+struct UartPort {
+    uart: Uart,
+    read_timeout: Option<Duration>,
+}
+
+impl ByteSource for UartPort {
+    /// One termios read of one byte: `VMIN` 0 and `VTIME` the timeout, which rppal rounds down to
+    /// tenths of a second (so under 100 ms it is a poll of the input queue).
+    fn read_byte(&mut self, timeout: Duration) -> io::Result<Option<u8>> {
+        if self.read_timeout != Some(timeout) {
+            self.uart.set_read_mode(0, timeout).map_err(uart_io_error)?;
+            self.read_timeout = Some(timeout);
+        }
+        let mut byte = [0u8; 1];
+        match self.uart.read(&mut byte).map_err(uart_io_error)? {
+            0 => Ok(None),
+            _ => Ok(Some(byte[0])),
+        }
+    }
+}
+
+fn uart_io_error(e: uart::Error) -> io::Error {
+    match e {
+        uart::Error::Io(e) => e,
+        other => io::Error::other(other.to_string()),
+    }
 }
 
 impl DaliController for DaliAtx {
@@ -69,7 +95,8 @@ impl DaliController for DaliAtx {
             ))
         };
 
-        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS));
+        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS))
+            .change_context_lazy(into_context)?;
         self.send_command(bus, 'h')
             .change_context_lazy(into_context)?;
         self.send_byte_value(b1).change_context_lazy(into_context)?;
@@ -90,7 +117,8 @@ impl DaliController for DaliAtx {
             ))
         };
 
-        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS));
+        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS))
+            .change_context_lazy(into_context)?;
         self.send_command(bus, 't')
             .change_context_lazy(into_context)?;
         self.send_byte_value(b1).change_context_lazy(into_context)?;
@@ -102,7 +130,8 @@ impl DaliController for DaliAtx {
     fn get_bus_status(&mut self, bus: usize) -> dali_manager::Result<BusStatus> {
         let into_context = || DaliManagerError::Context(format!("Getting status from bus {bus}"));
 
-        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS));
+        self.wait_for_idle(Duration::from_millis(DaliAtx::IDLE_TIME_MILLISECONDS))
+            .change_context_lazy(into_context)?;
         self.send_command(bus, 'd')
             .change_context_lazy(into_context)?;
         self.send_nl().change_context_lazy(into_context)?;
@@ -147,12 +176,9 @@ impl DaliAtx {
             .change_context_lazy(into_context)?;
         uart.read(&mut buffer).change_context_lazy(into_context)?;
 
-        let hardware_version =
-            DaliAtx::get_byte_value(&buffer[1..=2]).change_context_lazy(into_context)?;
-        let firmware_version =
-            DaliAtx::get_byte_value(&buffer[3..=4]).change_context_lazy(into_context)?;
-        let bus_count =
-            DaliAtx::get_byte_value(&buffer[5..=6]).change_context_lazy(into_context)? as usize;
+        let (hardware_version, firmware_version, bus_count) = hat_line::parse_version(&buffer)
+            .map_err(DaliAtxError::from)
+            .change_context_lazy(into_context)?;
 
         println!("{}", get_version());
         println!(
@@ -185,24 +211,13 @@ impl DaliAtx {
         }
 
         Ok(Box::new(DaliAtx {
-            uart,
+            port: UartPort { uart, read_timeout: None },
             debug_write_buffer: Vec::new(),
         }))
     }
 
-    fn wait_for_idle(&mut self, wait_period: Duration) {
-        debug!("Start Waiting for idle");
-        loop {
-            self.uart.set_read_mode(0, wait_period).unwrap();
-            let mut buffer = [0u8; 1];
-            if self.uart.read(&mut buffer).unwrap() == 0 {
-                // If timeout, we're idle
-                debug!("bus is idle");
-                break;
-            } else {
-                debug!("Not idle, Got byte {}", buffer[0]);
-            }
-        }
+    fn wait_for_idle(&mut self, wait_period: Duration) -> Result<()> {
+        Ok(hat_line::wait_for_idle(&mut self.port, wait_period).map_err(DaliAtxError::from)?)
     }
 
     fn to_nice_string(bs: &[u8]) -> String {
@@ -233,7 +248,7 @@ impl DaliAtx {
         }
 
         for c in buffer {
-            self.uart.write(&[*c])?;
+            self.port.uart.write(&[*c])?;
         }
         Ok(buffer.len())
     }
@@ -244,19 +259,6 @@ impl DaliAtx {
         } else {
             format!("{} DALI buses", n)
         }
-    }
-
-    fn get_digit(b: u8) -> Result<u8> {
-        match b as char {
-            'A'..='F' => Ok(b - (b'A') + 10),
-            'a'..='f' => Ok(b - (b'a') + 10),
-            '0'..='9' => Ok(b - (b'0')),
-            _ => Err(DaliAtxError::InvalidHexDigit(b).into()),
-        }
-    }
-
-    fn get_byte_value(buffer: &[u8]) -> Result<u8> {
-        Ok(DaliAtx::get_digit(buffer[0])? * 16 + DaliAtx::get_digit(buffer[1])?)
     }
 
     fn send_command(&mut self, bus: usize, command: char) -> Result<usize> {
@@ -298,107 +300,24 @@ impl DaliAtx {
         self.do_write(&buffer).change_context_lazy(into_context)
     }
 
-    fn receive_value8(&self, buffer: &[u8]) -> Result<u8> {
-        DaliAtx::get_byte_value(buffer)
-    }
-
-    fn receive_value16(&self, buffer: &[u8]) -> Result<u16> {
-        Ok((DaliAtx::get_byte_value(&buffer[0..=1])? as u16) << 8
-            | DaliAtx::get_byte_value(&buffer[2..=3])? as u16)
-    }
-
-    fn receive_value24(&self, buffer: &[u8]) -> Result<u32> {
-        Ok((DaliAtx::get_byte_value(&buffer[0..=1])? as u32) << 16
-            | (DaliAtx::get_byte_value(&buffer[2..=3])? as u32) << 8
-            | DaliAtx::get_byte_value(&buffer[4..=5])? as u32)
-    }
-
-    fn get_line(&mut self, expected_bus: usize) -> Result<Vec<u8>> {
+    fn get_line(&mut self, expected_bus: usize) -> Result<Option<Vec<u8>>> {
         let into_context =
             || DaliAtxError::Context(format!("Getting reply line from DALI bus {expected_bus}"));
-        let mut line = Vec::new();
-
-        self.uart
-            .set_read_mode(0, Duration::from_millis(100))
+        let line = hat_line::read_line(&mut self.port, &hat_line::REPLY)
+            .map_err(DaliAtxError::from)
             .change_context_lazy(into_context)?;
-
-        Ok({
-            let received_line = loop {
-                let mut byte_buffer = [0u8];
-
-                let bytes_read = self
-                    .uart
-                    .read(&mut byte_buffer)
-                    .change_context_lazy(into_context)?;
-
-                if bytes_read == 0 {
-                    trace!("Wait for reply timeout - assuming no reply");
-                    if expected_bus > 0 {
-                        line.push(expected_bus as u8 + b'0');
-                    }
-                    line.push(b'N');
-                    line.push(b'\n');
-                    break line;
-                } else {
-                    line.push(byte_buffer[0]);
-
-                    if byte_buffer[0] == b'\n' {
-                        break line;
-                    }
-                }
-            };
-
-            trace!(
-                "Got reply {}",
-                DaliAtx::to_nice_string(received_line.as_slice())
-            );
-            received_line
-        })
+        match &line {
+            Some(line) => trace!("Got reply {}", DaliAtx::to_nice_string(line)),
+            None => trace!("Wait for reply timeout - assuming no reply"),
+        }
+        Ok(line)
     }
 
     fn receive_reply(&mut self, expected_bus: usize) -> Result<DaliBusResult> {
-        let line = self.get_line(expected_bus)?;
-        let mut i = 0;
-
-        let (bus, reply_type) = {
-            if (b'1'..=b'3').contains(&line[i]) {
-                let bus_number = line[i] - b'0';
-                i += 1;
-
-                let reply_type = line[i];
-                i += 1;
-
-                (bus_number as usize, reply_type)
-            } else {
-                let reply_type = line[i];
-                i += 1;
-
-                (0, reply_type)
-            }
-        };
-
-        if bus == expected_bus {
-            match reply_type {
-                b'H' => {
-                    let v = self.receive_value16(&line[i..])?;
-                    Ok(DaliBusResult::Value16(v))
-                }
-                b'J' | b'D' => {
-                    let v = self.receive_value8(&line[i..])?;
-                    Ok(DaliBusResult::Value8(v))
-                }
-                b'L' | b'V' => {
-                    let v = self.receive_value24(&line[i..])?;
-                    Ok(DaliBusResult::Value24(v))
-                }
-                b'X' => Ok(DaliBusResult::ReceiveCollision),
-                b'Z' => Ok(DaliBusResult::TransmitCollision),
-                b'N' => Ok(DaliBusResult::None),
-
-                _ => Err(DaliAtxError::UnexpectedReply(reply_type).into()),
-            }
-        } else {
-            Err(DaliAtxError::UnexpectedBus(expected_bus, bus).into())
+        match self.get_line(expected_bus)? {
+            // No reply within the byte timeout: the bus answered nothing.
+            None => Ok(DaliBusResult::None),
+            Some(line) => Ok(hat_line::parse_reply(&line, expected_bus).map_err(DaliAtxError::from)?),
         }
     }
 }
