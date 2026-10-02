@@ -25,6 +25,9 @@ pub enum DaliManagerError {
     #[error("Invalid group address: {0}")]
     GroupAddress(u8),
 
+    #[error("Invalid bus number: {0}")]
+    Bus(usize),
+
     #[error("Invalid command: {0}")]
     Command(u16),
 
@@ -60,7 +63,8 @@ pub type Result<T> = std::result::Result<T, Report<DaliManagerError>>;
 pub type FindDeviceProgress = Box<dyn Fn(u8, u8)>;
 pub type MatchGroupProgress = Box<dyn Fn(MatchGroupAction, &str)>;
 
-pub trait DaliController {
+/// `Send`: the bridge's session runs on a thread of its own (`mqtt::spawn`).
+pub trait DaliController: Send {
     fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult>;
     fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> Result<DaliBusResult>;
     fn get_bus_status(&mut self, bus: usize) -> Result<BusStatus>;
@@ -96,30 +100,34 @@ impl<'manager> DaliManager<'manager> {
         DaliManager { controller }
     }
 
-    #[allow(dead_code)]
-    fn to_command_short_address(channel: u8) -> u8 {
-        DaliManager::to_light_short_address(channel) | 0x01
+    fn to_command_short_address(channel: u8) -> Result<u8> {
+        Ok(DaliManager::to_light_short_address(channel)? | 0x01)
     }
 
-    #[allow(dead_code)]
-    fn to_command_group_address(group: u8) -> u8 {
-        DaliManager::to_light_group_address(group) | 0x01
+    fn to_command_group_address(group: u8) -> Result<u8> {
+        Ok(DaliManager::to_light_group_address(group)? | 0x01)
     }
 
-    fn to_light_short_address(channel: u8) -> u8 {
+    // An address comes from an MQTT command or a config file: out of range, it is an error, not
+    // a panic on the session (finding C-35).
+    fn to_light_short_address(channel: u8) -> Result<u8> {
         if channel < 64 {
-            channel << 1
+            Ok(channel << 1)
         } else {
-            panic!("Invalid DALI short address {}", channel)
+            Err(Report::new(DaliManagerError::ShortAddress(channel)))
         }
     }
 
-    fn to_light_group_address(group: u8) -> u8 {
+    fn to_light_group_address(group: u8) -> Result<u8> {
         if group < 16 {
-            0x80 | (group << 1)
+            Ok(0x80 | (group << 1))
         } else {
-            panic!("Invalid DALI group# {}", group)
+            Err(Report::new(DaliManagerError::GroupAddress(group)))
         }
+    }
+
+    fn check_group_address(group: u8) -> Result<()> {
+        DaliManager::to_light_group_address(group).map(|_| ())
     }
 
     pub async fn set_light_brightness_async(
@@ -131,7 +139,7 @@ impl<'manager> DaliManager<'manager> {
         info!("Set light {short_address} on bus {bus} to {value}");
         self.controller.send_2_bytes(
             bus,
-            DaliManager::to_light_short_address(short_address),
+            DaliManager::to_light_short_address(short_address)?,
             value,
         )
     }
@@ -145,7 +153,7 @@ impl<'manager> DaliManager<'manager> {
         info!("Set light {short_address} on bus {bus} to {level}");
         self.controller.send_2_bytes(
             bus,
-            DaliManager::to_light_short_address(short_address),
+            DaliManager::to_light_short_address(short_address)?,
             level,
         )
     }
@@ -158,7 +166,7 @@ impl<'manager> DaliManager<'manager> {
     ) -> Result<DaliBusResult> {
         info!("Set group {group} on bus {bus} to {value}");
         self.controller
-            .send_2_bytes(bus, DaliManager::to_light_group_address(group), value)
+            .send_2_bytes(bus, DaliManager::to_light_group_address(group)?, value)
     }
 
     pub fn set_group_brightness(
@@ -170,7 +178,7 @@ impl<'manager> DaliManager<'manager> {
         info!("Set group {group_address} on bus {bus} to {level}");
         self.controller.send_2_bytes(
             bus,
-            DaliManager::to_light_group_address(group_address),
+            DaliManager::to_light_group_address(group_address)?,
             level,
         )
     }
@@ -196,7 +204,8 @@ impl<'manager> DaliManager<'manager> {
                 .change_context_lazy(into_context);
         }
 
-        let b1 = DaliManager::to_command_short_address(short_address);
+        let b1 = DaliManager::to_command_short_address(short_address)
+            .change_context_lazy(into_context)?;
         let b2 = (command & 0xff) as u8;
 
         if repeat {
@@ -261,7 +270,8 @@ impl<'manager> DaliManager<'manager> {
                 .change_context_lazy(into_context);
         }
 
-        let b1 = DaliManager::to_command_group_address(group_address);
+        let b1 = DaliManager::to_command_group_address(group_address)
+            .change_context_lazy(into_context)?;
         let b2 = (command & 0xff) as u8;
 
         if repeat {
@@ -376,7 +386,8 @@ impl<'manager> DaliManager<'manager> {
             ))
         };
         if short_address >= 64 {
-            panic!("Invalid short address")
+            return Err(DaliManagerError::ShortAddress(short_address))
+                .change_context_lazy(into_context);
         }
 
         debug!("Program short address: {short_address}");
@@ -575,6 +586,8 @@ impl<'manager> DaliManager<'manager> {
                 "Removing light {short_address} from group {group_address} on bus {bus}"
             ))
         };
+        // REMOVE_FROM_GROUP0 + 16 is another command (a query): a group past 15 is refused.
+        DaliManager::check_group_address(group_address).change_context_lazy(into_context)?;
         info!(
             "Remove light {bus}/{short_address} from group {group_address}",
             short_address = short_address,
@@ -640,6 +653,8 @@ impl<'manager> DaliManager<'manager> {
                 "Adding light {short_address} to group {group_address} on bus {bus}"
             ))
         };
+        // ADD_TO_GROUP0 + 16 is REMOVE_FROM_GROUP0: a group past 15 is refused.
+        DaliManager::check_group_address(group_address).change_context_lazy(into_context)?;
         self.send_command_to_address(
             bus,
             dali_commands::DALI_ADD_TO_GROUP0 + (group_address as u16),
@@ -703,10 +718,12 @@ impl<'manager> DaliManager<'manager> {
         };
 
         if existing_address >= 64 {
-            panic!("Invalid existing short address")
+            return Err(DaliManagerError::ShortAddress(existing_address))
+                .change_context_lazy(into_context);
         }
         if new_address >= 64 && new_address != 0xff {
-            panic!("Invalid new short address")
+            return Err(DaliManagerError::ShortAddress(new_address))
+                .change_context_lazy(into_context);
         }
         let bus = bus_config.bus;
 
@@ -1106,3 +1123,6 @@ impl DaliBusIterator {
         self.terminate = true;
     }
 }
+
+#[cfg(test)]
+mod tests;

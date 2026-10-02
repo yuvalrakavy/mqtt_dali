@@ -316,7 +316,7 @@ impl DaliControllerEmulator {
 impl DaliController for DaliControllerEmulator {
     fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
         if bus >= self.buses.len() {
-            panic!("Send to invalid bus {}", bus);
+            return Err(error_stack::Report::new(dali_manager::DaliManagerError::Bus(bus)));
         }
 
         Ok(self.buses[bus].send_2_bytes(b1, b2))
