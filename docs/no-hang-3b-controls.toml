@@ -362,3 +362,35 @@ target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_broker_outage_warns_once_and_reports_its_length_on_recovery"]
 expect_text = "the next outage did not warn"
 guard       = "outage_rearms"
+
+# --- Round 2 (Store no-hang 3b re-review): the bus protocol's loops, bounded in total (finding Q1).
+
+[[control]]
+name        = "the_withdraw_retries_have_no_cap"
+file        = "src/dali_manager.rs"
+anchor      = '''            if sends >= self.limits.withdraw_attempts || now >= deadline {'''
+replacement = '''            if now >= deadline {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_withdraw_that_keeps_being_answered_fails_after_its_retry_cap"]
+expect_text = "its retry loop has no cap"
+guard       = "withdraw_retry_cap"
+
+[[control]]
+name        = "the_withdraw_retries_have_no_deadline"
+file        = "src/dali_manager.rs"
+anchor      = '''            if sends >= self.limits.withdraw_attempts || now >= deadline {'''
+replacement = '''            if sends >= self.limits.withdraw_attempts {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_withdraw_that_keeps_being_answered_fails_at_its_deadline"]
+expect_text = "past their deadline"
+guard       = "withdraw_deadline"
+
+[[control]]
+name        = "a_colliding_broadcast_has_no_deadline"
+file        = "src/dali_manager.rs"
+anchor      = '''                if collision_count > self.limits.broadcast_collisions || Instant::now() >= deadline'''
+replacement = '''                if collision_count > self.limits.broadcast_collisions'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_broadcast_that_keeps_colliding_fails_at_its_deadline"]
+expect_text = "past its deadline"
+guard       = "broadcast_deadline"

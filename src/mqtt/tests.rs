@@ -12,7 +12,9 @@ use tokio::sync::{oneshot, watch};
 
 use super::{broker_host_port, spawn, Backlog, Bridge, Outage, OutageLog, GOODBYE_BOUND, HIGH_WATER, LOW_WATER, OUTAGE_WARN_AFTER};
 use crate::config_payload::{BusConfig, BusStatus, Channel, DaliConfig};
+use crate::dali_commands;
 use crate::dali_emulator::DaliControllerEmulator;
+use crate::dali_manager::{self, DaliBusResult, DaliController, BUS_LIMITS};
 use crate::Config;
 
 const NAME: &str = "Saturation";
@@ -61,6 +63,10 @@ impl Rig {
     fn start_at(broker: String, config_filename: String, mut dali_config: DaliConfig, after: impl FnOnce(&mut DaliConfig)) -> Rig {
         let controller = DaliControllerEmulator::try_new(&mut dali_config).expect("the emulator");
         after(&mut dali_config);
+        Rig::start_with(broker, config_filename, dali_config, controller)
+    }
+
+    fn start_with(broker: String, config_filename: String, dali_config: DaliConfig, controller: Box<dyn DaliController>) -> Rig {
         let (stop, stop_rx) = watch::channel(false);
         let bridge = Bridge { config: Config { config_filename }, controller, dali_config, broker };
         let done = spawn(tokio::runtime::Handle::current(), bridge, stop_rx).expect("the session thread");
@@ -387,6 +393,73 @@ async fn a_new_light_on_a_full_bus_is_reported_not_a_panic() {
     assert!(reported, "the full bus was not reported on {}: {:?}", status_topic(), broker.received_on(&status_topic()));
     assert_eq!(rig.state(), "the session is still running");
     let _ = std::fs::remove_file(config_path("full"));
+}
+
+/// The emulated bus, except that something answers WITHDRAW (which expects no answer): a
+/// misbehaving device, or line noise read as a reply. Past `cap` answers it lets WITHDRAW through
+/// unanswered, so a regressed retry loop ends instead of spinning for the rest of the test run.
+struct AnswersWithdraw {
+    bus: Box<dyn DaliController>,
+    answered: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    cap: usize,
+}
+
+impl DaliController for AnswersWithdraw {
+    fn send_2_bytes(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
+        let reply = self.bus.send_2_bytes(bus, b1, b2)?;
+        if (b1, b2) == ((dali_commands::DALI_WITHDRAW & 0xff) as u8, 0)
+            && self.answered.fetch_add(1, std::sync::atomic::Ordering::SeqCst) < self.cap
+        {
+            return Ok(DaliBusResult::Value8(0xff));
+        }
+        Ok(reply)
+    }
+
+    fn send_2_bytes_repeat(&mut self, bus: usize, b1: u8, b2: u8) -> dali_manager::Result<DaliBusResult> {
+        self.send_2_bytes(bus, b1, b2)
+    }
+
+    fn get_bus_status(&mut self, bus: usize) -> dali_manager::Result<BusStatus> {
+        self.bus.get_bus_status(bus)
+    }
+}
+
+/// FindNewLights on a bus where WITHDRAW keeps being answered: the command fails on the status
+/// topic within its bound, and the session goes on to the next command. Unbounded, the WITHDRAW
+/// loop held the session for ever while the pump kept Active true (finding Q1).
+#[tokio::test(flavor = "multi_thread")]
+async fn find_lights_on_a_bus_that_answers_withdraw_fails_and_the_session_goes_on() {
+    let broker = FakeBroker::start().await;
+    let mut dali_config = one_bus();
+    // One unaddressed light for the emulator; the config does not list it.
+    dali_config.buses[0].channels.push(Channel { short_address: 0xff, description: "New".into() });
+    let controller = DaliControllerEmulator::try_new(&mut dali_config).expect("the emulator");
+    dali_config.buses[0].channels.clear();
+    let answered = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let controller = Box::new(AnswersWithdraw { bus: controller, answered: answered.clone(), cap: 200 });
+    let mut rig = Rig::start_with(broker.address(), config_path("withdraw"), dali_config, controller);
+    let driver = async {
+        assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+        assert!(broker.send(&command_topic(), r#"{"command":"FindNewLights","bus":0}"#));
+        // The command's outcome is its first status: an error, or "OK".
+        let ended = broker.wait_until(Duration::from_secs(30), |b| !b.received_on(&status_topic()).is_empty()).await;
+        assert!(ended, "FindNewLights never ended ({})", answered.load(std::sync::atomic::Ordering::SeqCst));
+        let failed = broker.received_on(&status_topic()).iter().any(|r| String::from_utf8_lossy(&r.payload).contains("WITHDRAW"));
+        let published = broker.received_on(&config_topic()).len();
+        assert!(broker.send(&command_topic(), r#"{"command":"RenameBus","bus":0,"name":"Kitchen"}"#));
+        let went_on = broker.wait_until(Duration::from_secs(10), |b| b.received_on(&config_topic()).len() > published).await;
+        (failed, went_on)
+    };
+    let (failed, went_on) = alive(&mut rig, Duration::from_secs(60), driver).await;
+    let answered = answered.load(std::sync::atomic::Ordering::SeqCst);
+    assert!(
+        answered <= BUS_LIMITS.withdraw_attempts as usize,
+        "WITHDRAW was answered {answered} times and sent again each time: its retry loop has no cap ({} allowed)",
+        BUS_LIMITS.withdraw_attempts
+    );
+    assert!(failed, "FindNewLights was not reported failed on {}: {:?}", status_topic(), broker.received_on(&status_topic()));
+    assert!(went_on, "the session did not handle the next command");
+    let _ = std::fs::remove_file(config_path("withdraw"));
 }
 
 /// A light or group out of range is refused on the status topic, the session lives on, and the

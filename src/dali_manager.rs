@@ -3,7 +3,8 @@ use crate::config_payload::{BusConfig, BusStatus, Channel, Group};
 use crate::dali_commands;
 use error_stack::{Report, ResultExt};
 use log::{debug, info};
-use std::{thread::sleep, time::Duration};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy)]
@@ -55,6 +56,16 @@ pub enum DaliManagerError {
     #[error("No value was returned from the DALI bus")]
     NoResult,
 
+    #[error("the bus answered {sends} sends of a broadcast with a collision, for {waited_ms} ms")]
+    Collisions { sends: u32, waited_ms: u64 },
+
+    #[error("WITHDRAW, which expects no answer, was answered ({last:?}) {sends} times in {waited_ms} ms")]
+    WithdrawAnswered {
+        last: DaliBusResult,
+        sends: u32,
+        waited_ms: u64,
+    },
+
     #[error("In context of '{0}'")]
     Context(String),
 }
@@ -72,7 +83,33 @@ pub trait DaliController: Send {
 
 pub struct DaliManager<'a> {
     pub controller: &'a mut dyn DaliController,
+    limits: BusLimits,
 }
+
+/// The retry limits of the bus protocol's loops. Each call to the HAT is bounded (`hat_line`), and
+/// so is each loop over those calls, in sends and in total time (Store no-hang §14.8 item 5).
+/// Production uses [`BUS_LIMITS`]; a test may shorten them.
+#[derive(Debug, Clone, Copy)]
+pub struct BusLimits {
+    /// Sends of one broadcast that the bus answered with a collision, before the broadcast fails.
+    pub broadcast_collisions: u32,
+    /// How long one broadcast keeps resending after collisions, in all.
+    pub broadcast_deadline: Duration,
+    /// Sends of WITHDRAW that something answered, before programming a short address fails.
+    pub withdraw_attempts: u32,
+    /// The pause before WITHDRAW is sent again.
+    pub withdraw_pause: Duration,
+    /// How long WITHDRAW's retries may take in all, their collisions included.
+    pub withdraw_deadline: Duration,
+}
+
+pub const BUS_LIMITS: BusLimits = BusLimits {
+    broadcast_collisions: 300,
+    broadcast_deadline: Duration::from_secs(10),
+    withdraw_attempts: 10,
+    withdraw_pause: Duration::from_millis(100),
+    withdraw_deadline: Duration::from_secs(5),
+};
 
 pub struct DaliBusIterator {
     progress: Option<FindDeviceProgress>,
@@ -97,7 +134,14 @@ pub enum MatchGroupAction<'a> {
 
 impl<'manager> DaliManager<'manager> {
     pub fn new(controller: &'manager mut dyn DaliController) -> DaliManager<'manager> {
-        DaliManager { controller }
+        DaliManager::with_limits(controller, BUS_LIMITS)
+    }
+
+    pub fn with_limits(
+        controller: &'manager mut dyn DaliController,
+        limits: BusLimits,
+    ) -> DaliManager<'manager> {
+        DaliManager { controller, limits }
     }
 
     fn to_command_short_address(channel: u8) -> Result<u8> {
@@ -300,8 +344,25 @@ impl<'manager> DaliManager<'manager> {
         repeat: bool,
         description: &str,
     ) -> Result<DaliBusResult> {
+        let deadline = Instant::now() + self.limits.broadcast_deadline;
+        self.broadcast_command_until(bus, command, parameter, repeat, description, deadline)
+    }
+
+    /// A broadcast, sent again while the bus answers it with a collision: at most
+    /// `limits.broadcast_collisions` times, and not past `deadline`. Each send is bounded by the
+    /// HAT's own limits (`hat_line`), so this returns by `deadline` and one send.
+    fn broadcast_command_until(
+        &mut self,
+        bus: usize,
+        command: u16,
+        parameter: u8,
+        repeat: bool,
+        description: &str,
+        deadline: Instant,
+    ) -> Result<DaliBusResult> {
         let into_context =
             || DaliManagerError::Context(format!("Broadcast command {command:04x} to bus {bus}"));
+        let start = Instant::now();
 
         let b1 = if (command & 0x100) != 0 {
             (command & 0xff) as u8
@@ -332,10 +393,12 @@ impl<'manager> DaliManager<'manager> {
                 break Ok(result);
             } else {
                 collision_count += 1;
-                if collision_count > 300 {
-                    break Err(DaliManagerError::UnexpectedStatus(
-                        DaliBusResult::TransmitCollision,
-                    ))
+                if collision_count > self.limits.broadcast_collisions || Instant::now() >= deadline
+                {
+                    break Err(DaliManagerError::Collisions {
+                        sends: collision_count,
+                        waited_ms: start.elapsed().as_millis() as u64,
+                    })
                     .change_context_lazy(into_context);
                 }
             }
@@ -412,16 +475,41 @@ impl<'manager> DaliManager<'manager> {
         //     }
         // }
 
+        // WITHDRAW expects no answer; one (a late reply, a misbehaving device, line noise) sends it
+        // again after a pause — a few times, and within a total deadline that covers the retries'
+        // collisions too: the session runs this, and nothing else runs while it does (finding Q1).
+        let start = Instant::now();
+        let deadline = start + self.limits.withdraw_deadline;
+        let mut sends = 0;
         loop {
             let status = self
-                .broadcast_command(bus, dali_commands::DALI_WITHDRAW, 0, false, "Withdraw")
+                .broadcast_command_until(
+                    bus,
+                    dali_commands::DALI_WITHDRAW,
+                    0,
+                    false,
+                    "Withdraw",
+                    deadline,
+                )
                 .change_context_lazy(into_context)?;
+            sends += 1;
 
             if let DaliBusResult::None = status {
                 break;
             }
 
+            let now = Instant::now();
+            if sends >= self.limits.withdraw_attempts || now >= deadline {
+                return Err(DaliManagerError::WithdrawAnswered {
+                    last: status,
+                    sends,
+                    waited_ms: start.elapsed().as_millis() as u64,
+                })
+                .change_context_lazy(into_context);
+            }
+
             debug!("Withdraw status: {:?} - retry", status);
+            sleep(self.limits.withdraw_pause.min(deadline - now));
         }
 
         Ok(())
