@@ -48,6 +48,23 @@ async fn a_session_that_answers_its_stop_is_stopped() {
     assert_eq!(ended, Ended::Stopped);
 }
 
+/// A stop signal whose handler cannot be installed is a WARN `signal_handler_unavailable`, naming
+/// the signal — not `external_failure`, the fleet's kind for a broker outage past its threshold
+/// (fleet class F3).
+#[test]
+fn a_signal_without_a_handler_is_logged_as_signal_handler_unavailable() {
+    let unavailable = [Unavailable {
+        signal: "SIGTERM",
+        error: std::io::Error::other("refused"),
+    }];
+    let events = crate::test_log::capture(|| report_unavailable(&unavailable));
+    assert!(
+        events.iter().any(|e| e.is(tracing::Level::WARN, "signal_handler_unavailable")
+            && e.field("signal") == Some("SIGTERM")),
+        "a missing SIGTERM handler was not logged as signal_handler_unavailable: {events:?}"
+    );
+}
+
 #[tokio::test]
 async fn a_session_that_dies_ends_the_bridge_without_a_signal() {
     let (session, done) = oneshot::channel::<crate::mqtt::Result<()>>();

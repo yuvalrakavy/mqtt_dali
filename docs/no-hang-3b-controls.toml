@@ -148,8 +148,8 @@ guard       = "emulator_bus_range"
 [[control]]
 name        = "a_failed_save_panics"
 file        = "src/mqtt.rs"
-anchor      = '''                                    if let Err(e) = config.save(self.dali_config) {'''
-replacement = '''                                    config.save(self.dali_config).expect("Saving config file");
+anchor      = '''                                    if let Err(e) = self.saver.save_config(&config.config_filename, self.dali_config).await {'''
+replacement = '''                                    self.saver.save_config(&config.config_filename, self.dali_config).await.expect("Saving config file");
                                     if let Err(e) = Ok::<(), String>(()) {'''
 target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_config_that_cannot_be_saved_is_reported_not_a_panic"]
@@ -264,9 +264,9 @@ guard       = "shutdown_bounded"
 
 [[control]]
 name        = "the_sigterm_handler_is_not_installed"
-file        = "src/main.rs"
-anchor      = '''    let signal = shutdown::stop_signal();'''
-replacement = '''    let signal = std::future::pending::<()>();'''
+file        = "src/shutdown.rs"
+anchor      = '''            let term = install("SIGTERM", SignalKind::terminate());'''
+replacement = '''            let term: Option<tokio::signal::unix::Signal> = None;'''
 target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_publishes_inactive_and_exits_cleanly"]
 expect_text = "killed by signal 15"
@@ -432,3 +432,92 @@ target      = "command"
 argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "active_is_announced_only_after_the_command_subscription"]
 expect_text = "the first QoS 1 publish went out before the command subscription"
 guard       = "active_after_subscribe"
+
+# --- The configuration file's write: off the session, bounded, one stuck thread at most (fleet
+# class F1).
+
+[[control]]
+name        = "the_save_waits_unbounded"
+file        = "src/mqtt.rs"
+anchor      = '''        match tokio::time::timeout(SAVE_BOUND, &mut write).await {'''
+replacement = '''        match tokio::time::timeout(Duration::from_secs(3600), &mut write).await {'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_config_save_that_stalls_does_not_hold_the_session"]
+expect_text = "a save into a stalled file was never reported"
+guard       = "config_save_bounded"
+
+[[control]]
+name        = "a_stuck_save_is_stacked"
+file        = "src/mqtt.rs"
+anchor      = '''            if !stuck.is_finished() {
+                return Err(format!("an earlier write of {path} has not finished"));
+            }
+'''
+replacement = ''''''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_config_save_that_stalls_does_not_hold_the_session"]
+expect_text = "a save behind a stuck one started another write"
+guard       = "config_save_one_stuck"
+
+# --- Stop signals first, start-up raced with a stop, and the runtime's bounded shutdown (fleet
+# classes F3 and F1; findings Q3, Q5).
+
+[[control]]
+name        = "the_signals_are_registered_after_start_up"
+# The old order: logging, start-up unraced, then the handlers.
+file        = "src/main.rs"
+anchor      = '''    let (mut signals, unavailable) = shutdown::StopSignals::install();
+
+    // Keep the guard for all of `run`: dropping it shuts down tracing-init's OpenTelemetry providers
+    // (guard.rs), so spans and OTLP logs would stop right after startup. Every exit below returns
+    // from `run`, so the guard is dropped, and flushes, on every path (finding C-7).
+    let _logging = init_logging(args.log, args.console, &args.filter);
+    shutdown::report_unavailable(&unavailable);
+'''
+replacement = '''    let _logging = init_logging(args.log, args.console, &args.filter);
+    info!("Loading configuration from {config_filename}", config_filename = args.config.clone());
+    let (config_filename, emulation, setup) = (args.config.clone(), args.emulation, args.setup);
+    let _ = tokio::task::spawn_blocking(move || start_up(config_filename, emulation, setup)).await;
+    let (mut signals, unavailable) = shutdown::StopSignals::install();
+    shutdown::report_unavailable(&unavailable);
+'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_during_start_up_takes_the_bounded_path"]
+expect_text = "took the signal's default action (killed by signal 15)"
+guard       = "signals_registered_first"
+
+[[control]]
+name        = "start_up_is_not_raced_with_a_stop"
+file        = "src/main.rs"
+anchor      = '''    let started = tokio::select! {
+        started = starting => started,
+        signal = signals.recv() => {
+            info!(signal, "stop signal during start-up: stopping");
+            return ExitCode::SUCCESS;
+        }
+    };'''
+replacement = '''    let started = starting.await;'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_during_start_up_takes_the_bounded_path"]
+expect_text = "did not exit within 10 s of SIGTERM during start-up"
+guard       = "start_up_raced"
+
+[[control]]
+name        = "the_runtime_is_dropped_unbounded"
+file        = "src/main.rs"
+anchor      = '''    runtime.shutdown_timeout(RUNTIME_SHUTDOWN_BOUND);'''
+replacement = '''    drop(runtime);'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--test", "process", "--", "sigterm_while_a_config_write_is_stuck_exits_in_bounded_time"]
+expect_text = "its runtime waited for the write"
+guard       = "runtime_shutdown_bounded"
+
+[[control]]
+name        = "a_missing_handler_is_an_external_failure"
+file        = "src/shutdown.rs"
+anchor      = '''        warn!(kind = "signal_handler_unavailable", signal = missing.signal, error = %missing.error,'''
+replacement = '''        warn!(kind = "external_failure", signal = missing.signal, error = %missing.error,'''
+target      = "command"
+argv        = ["cargo", "test", "-q", "--target", "aarch64-apple-darwin", "--bin", "mqtt_dali", "--", "a_signal_without_a_handler_is_logged_as_signal_handler_unavailable"]
+expect_text = "was not logged as signal_handler_unavailable"
+guard       = "signal_handler_kind"

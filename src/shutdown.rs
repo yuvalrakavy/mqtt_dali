@@ -84,41 +84,96 @@ fn session_ended(
     }
 }
 
-/// Resolves on SIGTERM or SIGINT. A signal whose handler cannot be installed never resolves this.
-pub async fn stop_signal() {
+/// SIGTERM (systemd's stop) and SIGINT (Ctrl-C), registered at once by [`StopSignals::install`],
+/// first thing in `main` — not on the first wait — so a stop during start-up takes the bridge's own
+/// path instead of the signal's default action, which ends the process with nothing logged and
+/// the log unflushed (fleet class F3).
+pub struct StopSignals {
     #[cfg(unix)]
-    {
-        use tokio::signal::unix::{signal, SignalKind};
-        match signal(SignalKind::terminate()) {
-            Ok(mut term) => {
-                // WAIT: dali-signal
-                tokio::select! {
-                    Some(()) = term.recv() => info!("SIGTERM: stopping"),
-                    Ok(()) = tokio::signal::ctrl_c() => info!("SIGINT: stopping"),
-                    // Both streams gone: no signal can come.
-                    else => never().await,
+    term: Option<tokio::signal::unix::Signal>,
+    #[cfg(unix)]
+    int: Option<tokio::signal::unix::Signal>,
+}
+
+/// A stop signal whose handler could not be installed: it keeps its default action.
+#[derive(Debug)]
+pub struct Unavailable {
+    pub signal: &'static str,
+    pub error: std::io::Error,
+}
+
+impl StopSignals {
+    /// Installs both handlers; the ones that could not be installed come back, to be logged once
+    /// logging is up ([`report_unavailable`]).
+    pub fn install() -> (StopSignals, Vec<Unavailable>) {
+        #[cfg(unix)]
+        {
+            use tokio::signal::unix::{signal, SignalKind};
+            let mut unavailable = Vec::new();
+            let mut install = |name: &'static str, kind: SignalKind| match signal(kind) {
+                Ok(handler) => Some(handler),
+                Err(error) => {
+                    unavailable.push(Unavailable { signal: name, error });
+                    None
                 }
-                return;
-            }
-            Err(e) => {
-                warn!(kind = "external_failure", error = %e, "no SIGTERM handler; only SIGINT stops the bridge cleanly");
-            }
+            };
+            let term = install("SIGTERM", SignalKind::terminate());
+            let int = install("SIGINT", SignalKind::interrupt());
+            (StopSignals { term, int }, unavailable)
+        }
+        #[cfg(not(unix))]
+        {
+            (StopSignals {}, Vec::new())
         }
     }
-    // WAIT: dali-signal
-    match tokio::signal::ctrl_c().await {
-        Ok(()) => info!("SIGINT: stopping"),
-        Err(e) => {
-            warn!(kind = "external_failure", error = %e, "no SIGINT handler either; the bridge stops only when killed");
-            never().await;
+
+    /// The next stop signal's name. A signal without a handler never comes; with neither, this
+    /// never returns — `supervise` races it with the session's end, so it holds nothing.
+    pub async fn recv(&mut self) -> &'static str {
+        #[cfg(unix)]
+        {
+            // WAIT: dali-signal
+            tokio::select! {
+                Some(()) = next(&mut self.term) => "SIGTERM",
+                Some(()) = next(&mut self.int) => "SIGINT",
+                else => never().await,
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            // WAIT: dali-signal
+            match tokio::signal::ctrl_c().await {
+                Ok(()) => "SIGINT",
+                Err(_) => never().await,
+            }
         }
     }
 }
 
-/// Never resolves: `supervise` races the signal with the session's end, so this holds nothing.
-async fn never() {
+/// One handler's next signal; never, without the handler.
+#[cfg(unix)]
+async fn next(handler: &mut Option<tokio::signal::unix::Signal>) -> Option<()> {
+    match handler {
+        Some(handler) => {
+            // WAIT: dali-signal
+            handler.recv().await
+        }
+        None => never().await,
+    }
+}
+
+/// Logs each stop signal whose handler could not be installed (`signal_handler_unavailable`).
+pub fn report_unavailable(unavailable: &[Unavailable]) {
+    for missing in unavailable {
+        warn!(kind = "signal_handler_unavailable", signal = missing.signal, error = %missing.error,
+              "a stop signal's handler could not be installed; that signal ends the bridge without its bounded shutdown");
+    }
+}
+
+/// Never resolves.
+async fn never<T>() -> T {
     // WAIT: dali-signal
-    std::future::pending::<()>().await
+    std::future::pending::<T>().await
 }
 
 #[cfg(test)]

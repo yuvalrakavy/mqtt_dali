@@ -36,7 +36,12 @@ Every wait carries a `// WAIT: <row>` tag, on its own line above the statement, 
 The MQTT event loop is polled by `Pump`, a task that waits on nothing else; the session never polls
 (§14.3). The session runs on a thread of its own (`mqtt::spawn`), since its DALI calls are
 synchronous; SIGTERM or SIGINT stops it, and `main` waits for it at most `SHUTDOWN_BOUND`
-(`shutdown.rs`). `docs/no-hang-3b-controls.toml` holds the negative controls for every guard.
+(`shutdown.rs`). The stop handlers are installed first thing, before logging, the configuration
+and the hardware; start-up runs on the blocking pool, raced with a stop; the configuration file is
+written off the session, under `SAVE_BOUND`; and `main` ends the runtime with `shutdown_timeout`,
+since dropping it would wait without limit for a blocking thread stuck in the kernel. The bus
+protocol's retry loops are bounded in sends and in time (`dali_manager::BUS_LIMITS`).
+`docs/no-hang-3b-controls.toml` holds the negative controls for every guard.
 
 Linting and formatting (via trunk):
 

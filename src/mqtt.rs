@@ -22,6 +22,44 @@ pub struct MqttDali<'a> {
     dali_manager: &'a mut DaliManager<'a>,
     /// The broker's reachability, across sessions.
     outage: Outage,
+    saver: ConfigSaver,
+}
+
+/// How long the session waits for the configuration file to be written.
+const SAVE_BOUND: Duration = Duration::from_secs(2);
+
+/// Writes the configuration file off the session (fleet class F1): the write runs on the blocking
+/// pool, and the session waits for it at most SAVE_BOUND, since everything the bridge does next
+/// waits on the session. A write that has not finished by then is left running; while it is, a
+/// later save is refused at once, so a filesystem that stopped answering holds one thread, not one
+/// per command. The runtime's bounded shutdown leaves it behind (`dali-runtime-shutdown`).
+#[derive(Default)]
+struct ConfigSaver {
+    /// A write that outlived SAVE_BOUND.
+    stuck: Option<tokio::task::JoinHandle<std::io::Result<()>>>,
+}
+
+impl ConfigSaver {
+    async fn save_config(&mut self, path: &str, dali_config: &DaliConfig) -> std::result::Result<(), String> {
+        if let Some(stuck) = &self.stuck {
+            if !stuck.is_finished() {
+                return Err(format!("an earlier write of {path} has not finished"));
+            }
+            self.stuck = None;
+        }
+        let json = serde_json::to_vec_pretty(dali_config).map_err(|e| e.to_string())?;
+        let file = path.to_owned();
+        let mut write = tokio::task::spawn_blocking(move || std::fs::write(file, json));
+        // WAIT: dali-config-save
+        match tokio::time::timeout(SAVE_BOUND, &mut write).await {
+            Ok(Ok(written)) => written.map_err(|e| e.to_string()),
+            Ok(Err(e)) => Err(format!("the write ended abnormally: {e}")),
+            Err(_) => {
+                self.stuck = Some(write);
+                Err(format!("the write did not finish within {} s", SAVE_BOUND.as_secs()))
+            }
+        }
+    }
 }
 
 /// How long `run` waits between a failed session and the next.
@@ -1014,8 +1052,9 @@ impl<'a> MqttDali<'a> {
                                     .change_context_lazy(into_context)?;
 
                                     // The command took effect and the config is published; only
-                                    // the file is behind. Reported, never a panic (finding C-35).
-                                    if let Err(e) = config.save(self.dali_config) {
+                                    // the file is behind. Reported, never a panic (finding C-35),
+                                    // and bounded: a stalled write never holds the session (F1).
+                                    if let Err(e) = self.saver.save_config(&config.config_filename, self.dali_config).await {
                                         warn!(kind = "config_save_failed", path = %config.config_filename, error = %e,
                                               "could not save the DALI configuration");
                                         let error_message = serde_json::to_string(&format!(
@@ -1094,6 +1133,7 @@ impl<'a> MqttDali<'a> {
             dali_config,
             dali_manager,
             outage: Outage::default(),
+            saver: ConfigSaver::default(),
         }
     }
 

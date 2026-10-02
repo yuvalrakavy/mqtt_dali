@@ -459,6 +459,86 @@ async fn a_config_that_cannot_be_saved_is_reported_not_a_panic() {
     assert_eq!(rig.state(), "the session is still running");
 }
 
+/// A FIFO at a temp path, standing in for a file on a filesystem that stopped answering: opening
+/// it to write waits until someone opens it to read. Dropped, it is opened to read (without
+/// waiting), which releases a writer stuck in its open, and removed.
+struct Fifo(std::path::PathBuf);
+
+impl Fifo {
+    fn new(tag: &str) -> Fifo {
+        let path = std::env::temp_dir().join(format!("mqtt-dali-{tag}-{}.fifo", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        let made = std::process::Command::new("mkfifo").arg(&path).status().expect("mkfifo");
+        assert!(made.success(), "mkfifo {path:?} failed");
+        Fifo(path)
+    }
+
+    fn path(&self) -> String {
+        self.0.to_string_lossy().into_owned()
+    }
+}
+
+impl Drop for Fifo {
+    fn drop(&mut self) {
+        use std::os::unix::fs::OpenOptionsExt;
+        #[cfg(target_os = "linux")]
+        const O_NONBLOCK: i32 = 0o4000;
+        #[cfg(not(target_os = "linux"))]
+        const O_NONBLOCK: i32 = 0x0004;
+        let reader = std::fs::OpenOptions::new().read(true).custom_flags(O_NONBLOCK).open(&self.0);
+        std::thread::sleep(Duration::from_millis(100));
+        drop(reader);
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
+/// The configuration file is written after every command that changes the config. A write that
+/// stalls (a filesystem that stopped answering; here a FIFO nobody reads) must not hold the
+/// session: the failed save is reported on the status topic within its bound, and the next command
+/// is handled (fleet class F1: no unbounded wait on the filesystem on a path everything waits on).
+/// Synchronous in the session, the write held every later command while the pump kept Active true.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_config_save_that_stalls_does_not_hold_the_session() {
+    let broker = FakeBroker::start().await;
+    let fifo = Fifo::new("stalled-save");
+    let mut dali_config = one_bus();
+    dali_config.buses[0].channels.push(Channel { short_address: 1, description: "Light 1".into() });
+    let mut rig = Rig::start(&broker, fifo.path(), dali_config);
+    let reply_topic = format!("DALI/Reply/QueryLightStatus/{NAME}/Bus_0/Address_1");
+    let driver = async {
+        assert!(broker.wait_for_subscription(&command_topic(), Duration::from_secs(10)).await, "the session never subscribed");
+        assert!(broker.send(&command_topic(), r#"{"command":"RenameBus","bus":0,"name":"Kitchen"}"#));
+        let reported = broker
+            .wait_until(Duration::from_secs(10), |b| {
+                b.received_on(&status_topic()).iter().any(|r| String::from_utf8_lossy(&r.payload).contains("saving the configuration"))
+            })
+            .await;
+        assert!(broker.send(&command_topic(), r#"{"command":"QueryLightStatus","bus":0,"address":1}"#));
+        let answered = broker.wait_until(Duration::from_secs(10), |b| !b.received_on(&reply_topic).is_empty()).await;
+        // Another change while the first write is still stuck: refused at once, not a second
+        // thread stuck behind the first.
+        let reports = broker.received_on(&status_topic()).len();
+        assert!(broker.send(&command_topic(), r#"{"command":"RenameBus","bus":0,"name":"Hall"}"#));
+        broker.wait_until(Duration::from_secs(10), |b| b.received_on(&status_topic()).len() > reports).await;
+        let second = broker.received_on(&status_topic()).get(reports).map(|r| String::from_utf8_lossy(&r.payload).into_owned());
+        (reported, answered, second)
+    };
+    let (reported, answered, second) = alive(&mut rig, Duration::from_secs(40), driver).await;
+    assert!(
+        reported,
+        "a save into a stalled file was never reported: the session is stuck in the write ({}); status: {:?}",
+        rig.state(),
+        broker.received_on(&status_topic())
+    );
+    assert!(answered, "the session did not handle the next command after a save stalled");
+    let second = second.unwrap_or_default();
+    assert!(
+        second.contains("an earlier write"),
+        "a save behind a stuck one started another write instead of being refused: {second:?}"
+    );
+    assert_eq!(rig.state(), "the session is still running");
+}
+
 /// FindNewLights on a bus whose 64 short addresses are all taken finds a light it cannot address:
 /// reported, never a panic of the session (finding C-35).
 #[tokio::test(flavor = "multi_thread")]

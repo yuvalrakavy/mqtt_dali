@@ -1,5 +1,6 @@
 use rustop::opts;
 use std::process::ExitCode;
+use std::time::Duration;
 use tracing::{info, warn};
 
 mod command_payload;
@@ -29,8 +30,23 @@ pub struct Config {
     config_filename: String,
 }
 
-#[tokio::main]
-async fn main() -> ExitCode {
+/// The command line.
+struct Args {
+    mqtt: String,
+    emulation: bool,
+    setup: bool,
+    log: bool,
+    console: bool,
+    filter: String,
+    config: String,
+}
+
+/// How long the process waits, once `run` has returned, for the runtime's blocking threads still
+/// running: a configuration write or a start-up step stuck on a filesystem that stopped answering,
+/// a broker name lookup stuck in the resolver. Past it they are left behind, and the process exits.
+const RUNTIME_SHUTDOWN_BOUND: Duration = Duration::from_secs(2);
+
+fn main() -> ExitCode {
     let (args, _) = opts! {
         synopsis "MQTT Dali Controller";
         param mqtt:String, desc: "MQTT broker to connect";
@@ -41,61 +57,67 @@ async fn main() -> ExitCode {
         opt filter: String = String::from("warn,mqtt_dali=info"), desc: "Filter for logging";
         opt config: String = String::from("dali.json"), desc: "Configuration filename (dali.json)";
     }.parse_or_exit();
-
-    // Keep the guard for all of main: dropping it shuts down tracing-init's OpenTelemetry providers
-    // (guard.rs), so spans and OTLP logs would stop right after startup. Every exit below returns
-    // from main, so the guard is dropped, and flushes, on every path (finding C-7).
-    let _logging = init_logging(args.log, args.console, &args.filter);
-
-    let config = Config {
-        config_filename: args.config.clone(),
+    let args = Args {
+        mqtt: args.mqtt,
+        emulation: args.emulation,
+        setup: args.setup,
+        log: args.log,
+        console: args.console,
+        filter: args.filter,
+        config: args.config,
     };
+
+    let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+        Ok(runtime) => runtime,
+        Err(e) => {
+            eprintln!("mqtt_dali: the async runtime could not start: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    // WAIT: dali-run
+    let code = runtime.block_on(run(args));
+    // Dropping a runtime waits, without limit, for every blocking task still running, so a write
+    // or a name lookup stuck in the kernel would hold the exit however bounded the shutdown before
+    // it (fleet class F1). `run` has returned, its logging guard dropped and flushed.
+    // WAIT: dali-runtime-shutdown
+    runtime.shutdown_timeout(RUNTIME_SHUTDOWN_BOUND);
+    code
+}
+
+async fn run(args: Args) -> ExitCode {
+    // First, before logging, the configuration or the hardware: a stop during start-up takes the
+    // bridge's own path, not the signal's default action (fleet class F3).
+    let (mut signals, unavailable) = shutdown::StopSignals::install();
+
+    // Keep the guard for all of `run`: dropping it shuts down tracing-init's OpenTelemetry providers
+    // (guard.rs), so spans and OTLP logs would stop right after startup. Every exit below returns
+    // from `run`, so the guard is dropped, and flushes, on every path (finding C-7).
+    let _logging = init_logging(args.log, args.console, &args.filter);
+    shutdown::report_unavailable(&unavailable);
 
     info!("Loading configuration from {config_filename}", config_filename = args.config.clone());
 
-    let loaded = if !std::path::Path::new(&args.config).exists() {
-        DaliConfig::interactive_new().map_err(|e| e.to_string())
-    }
-    else {
-        config.load().map_err(|e| e.to_string())
-    };
-    let mut dali_config = match loaded {
-        Ok(dali_config) => dali_config,
-        Err(e) => return startup_failed("loading the configuration", &e),
-    };
-
-    info!("Configuration: loaded");
-
-    let controller = if args.emulation {
-        DaliControllerEmulator::try_new(&mut dali_config)
-    } else {
-        hardware_controller(&mut dali_config)
-    };
-    let mut controller = match controller {
-        Ok(controller) => controller,
-        Err(e) => {
-            return startup_failed(
-                "initializing the DALI controller (is the serial port enabled? raspi-config)",
-                &format!("{e:?}"),
-            )
+    // Start-up waits: on the configuration's file, on the HAT (its version, up to 11 s), on the
+    // operator (an interactive configuration or --setup). It runs on the blocking pool, raced with
+    // a stop, which ends the process at once; a step still stuck is left to the runtime's bounded
+    // shutdown.
+    let (config_filename, emulation, setup) = (args.config.clone(), args.emulation, args.setup);
+    let starting = tokio::task::spawn_blocking(move || start_up(config_filename, emulation, setup));
+    // WAIT: dali-startup
+    let started = tokio::select! {
+        started = starting => started,
+        signal = signals.recv() => {
+            info!(signal, "stop signal during start-up: stopping");
+            return ExitCode::SUCCESS;
         }
     };
+    let (config, controller, dali_config) = match started {
+        Ok(Ok(started)) => started,
+        Ok(Err(code)) => return code,
+        Err(e) => return startup_failed("start-up", &format!("it ended abnormally: {e}")),
+    };
 
-    if args.setup {
-        let mut dali_manager = dali_manager::DaliManager::new(&mut *controller);
-        match Setup::interactive_setup(&config, dali_config, &mut dali_manager) {
-            Ok(setup::SetupAction::Quit) => return ExitCode::SUCCESS,
-            Ok(setup::SetupAction::Start(c)) => {
-                dali_config = c;
-                if let Err(e) = config.save(&dali_config) {
-                    return startup_failed("saving the configuration", &e.to_string());
-                }
-            }
-            Err(e) => return startup_failed("setup", &e.to_string()),
-        }
-    }
-
-    // The session runs on a thread of its own (its DALI calls are synchronous); main waits for a
+    // The session runs on a thread of its own (its DALI calls are synchronous); `run` waits for a
     // signal, then for the session within shutdown::SHUTDOWN_BOUND.
     let (stop, stop_rx) = tokio::sync::watch::channel(false);
     let bridge = mqtt::Bridge {
@@ -108,12 +130,68 @@ async fn main() -> ExitCode {
         Ok(done) => done,
         Err(e) => return startup_failed("starting the session thread", &e.to_string()),
     };
-    // WAIT: dali-signal
-    let signal = shutdown::stop_signal();
+    let signal = async {
+        // WAIT: dali-signal
+        let signal = signals.recv().await;
+        info!(signal, "stop signal: stopping");
+    };
     match shutdown::supervise(done, stop, signal, shutdown::SHUTDOWN_BOUND).await {
         shutdown::Ended::Stopped | shutdown::Ended::Overran => ExitCode::SUCCESS,
         shutdown::Ended::Failed | shutdown::Ended::Panicked => ExitCode::FAILURE,
     }
+}
+
+/// Start-up's synchronous steps, on the blocking pool: the configuration (an interactive one when
+/// its file is missing), the DALI controller, and the interactive setup with --setup. An `Err` is
+/// the exit code to end with, its reason already logged.
+fn start_up(
+    config_filename: String,
+    emulation: bool,
+    setup: bool,
+) -> Result<(Config, Box<dyn dali_manager::DaliController>, DaliConfig), ExitCode> {
+    let config = Config { config_filename };
+    let loaded = if !std::path::Path::new(&config.config_filename).exists() {
+        DaliConfig::interactive_new().map_err(|e| e.to_string())
+    }
+    else {
+        config.load().map_err(|e| e.to_string())
+    };
+    let mut dali_config = match loaded {
+        Ok(dali_config) => dali_config,
+        Err(e) => return Err(startup_failed("loading the configuration", &e)),
+    };
+
+    info!("Configuration: loaded");
+
+    let controller = if emulation {
+        DaliControllerEmulator::try_new(&mut dali_config)
+    } else {
+        hardware_controller(&mut dali_config)
+    };
+    let mut controller = match controller {
+        Ok(controller) => controller,
+        Err(e) => {
+            return Err(startup_failed(
+                "initializing the DALI controller (is the serial port enabled? raspi-config)",
+                &format!("{e:?}"),
+            ))
+        }
+    };
+
+    if setup {
+        let mut dali_manager = dali_manager::DaliManager::new(&mut *controller);
+        match Setup::interactive_setup(&config, dali_config, &mut dali_manager) {
+            Ok(setup::SetupAction::Quit) => return Err(ExitCode::SUCCESS),
+            Ok(setup::SetupAction::Start(c)) => {
+                dali_config = c;
+                if let Err(e) = config.save(&dali_config) {
+                    return Err(startup_failed("saving the configuration", &e.to_string()));
+                }
+            }
+            Err(e) => return Err(startup_failed("setup", &e.to_string())),
+        }
+    }
+    Ok((config, controller, dali_config))
 }
 
 /// tracing-init, always (finding C-M6). `logging.toml` (searched upward from the working
