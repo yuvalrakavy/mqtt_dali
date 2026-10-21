@@ -661,9 +661,10 @@ Pi library/all four binary compilation and whitespace checks. All **15 new
 guard-removal controls** and **8 affected existing metadata/trace controls**
 failed for their intended behavioral assertions. After restoration, all **297
 native tests**, strict scoped Clippy, Pi library/all four binary compilation,
-formatting, whitespace and doctests (none defined) pass. The first sequential
-source review approves the bounded-rejection contract; the second is pending.
-Reviews use the same model family.
+formatting, whitespace and doctests (none defined) pass. Both sequential source
+reviews approve the documented bounded-rejection contract with no additional
+material source finding. Reviews use the same model family. Implementation is
+committed as `5943268`, with the explicit outage limitation in `1dee55e`.
 
 Source review confirmed a broader remaining integration gap: the SDK abandons
 Rejected state requests, so HAT recovery alone does not retry Desired consumed
