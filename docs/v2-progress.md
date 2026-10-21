@@ -310,13 +310,66 @@ service routing, durable-save/retirement/publication ordering, and canonical
 daemon integration remain next; this bridge has not adopted the new dependency
 yet. `mqtt_dali_v2` remains the configuration-check development entry point.
 
+## P3c3a — managed inventory service implemented
+
+`service::DaliService` now owns the durable inventory and routing phase in a
+managed BridgeKit service. Owned snapshots and bounded notifications feed
+frontend handles; one nonwaiting operation permit spans each admitted save or
+recovery. Public edits are metadata-only. Hardware replacement/readdress/group
+membership require later verified commissioning jobs.
+
+Reporter attachment is independent of broker/HAT availability. A durable change
+retires the complete old runtime table, queues Inventory and only then exposes
+Ready. Uncertain saves and failed runtime CAS remain frozen. Explicit recovery
+compares the full public model, including recognized mappings recovered with
+`changed: false`; runtime-only retry retains the original exact CAS precondition.
+The proxy checks both persisted and actual runtime controller identity and
+preserves original caller deadlines. Version and UTC build time are in snapshots.
+
+The bridge pins all tracing-init repository dependencies to local development
+commit `259d963fd448ea2512e36a00e2f22850af0bc1f7`. This includes a reviewed
+single-use command-completion capability: a metadata MQTT command can return one
+original-token success across its own inventory commit; all unrelated/queued old
+work still retires. The dependency is unpublished; a portable fresh clone/release
+still requires publication. Tokio 1.50 in the bridge lock resolves the older
+lock's missing OwnedNotified API.
+
+The independent consumer now buffers bounded State-before-Inventory observations,
+separately from identity and intent. Exact-token retractions, accepted/ignored
+inventory outcomes and total key/payload cache budgets are exercised, along with
+an actual MQTT inventory rename preserving consumer records and owned intent.
+
+Verified on 2026-10-21:
+
+- **201 complete native tests pass**, including actual output/group/bus/description
+  MQTT success replies, canceled-save recovery via MQTT and direct handles,
+  original generation/correlation, stale requests, directory-sync/CAS failure,
+  absolute caller deadlines, instance checks, bounded update lag and actual
+  blocked-filesystem incomplete stop. Existing migration/UART/emulator/legacy
+  regressions and the wait registry remain green.
+- Nine service/consumer controls each failed at the intended assertion; the runner
+  restored source and recorded `v2-service-controls.ledger.json`. Strict scoped
+  Clippy, armv7 library/v2/emulator compilation and changed-file formatting/diff
+  checks passed. The shared completion boundary separately passed 200 kit tests,
+  174 existing unfenced conformance tests and four controls.
+- Sequential source reviewers approved after three reproduced integration findings
+  were fixed: own-command reply retirement, ready-after-deadline acceptance and
+  actual runtime instance mismatch. Review is source-only and same model family.
+  The identity rejection test has a controlled 500 ms absence window; it is not
+  an exhaustive scheduling proof.
+
+See `service-development.md`, `inventory-contract.md` and the P3c3 contract.
+This is still a service-library checkpoint. UART ownership/health and canonical
+daemon startup come next. Physical capabilities, web UI, Store persisted migration,
+live Logmon delivery, hardware validation and release/deployment remain pending.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
-| P3 BridgeKit/service | Codec, managed lifecycle, inventory, durable writer and shared generation fencing implemented | DALI service/proxy, durable routing transitions, dependency pin and canonical v2 daemon |
+| P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, generation fencing and managed service/proxy implemented | Managed UART health/scheduling and canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |

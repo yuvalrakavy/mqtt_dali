@@ -3,13 +3,25 @@
 use mqtt_dali::inventory::{Ledger, Location, Origin, Projection};
 use mqtt_dali::targets::{Namespace, Target};
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
+
+const PENDING_ITEMS: usize = 64;
+const PENDING_BYTES: usize = 64 * 1024;
+const STATE_BYTES: usize = 8 * 1024;
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Acceptance {
+    Applied,
+    Unchanged,
+    Ignored,
+}
 
 #[derive(Clone)]
 pub struct Device {
     pub id: u64,
     pub record: Projection,
     pub intent: Option<Value>,
+    pub observed: Option<Value>,
 }
 #[derive(Clone, Default)]
 pub struct Consumer {
@@ -20,8 +32,100 @@ pub struct Consumer {
     next_id: u64,
     document: Option<Value>,
     ledger: Option<Ledger>,
+    pending: BTreeMap<(String, String), Value>,
+    order: VecDeque<(String, String)>,
 }
 impl Consumer {
+    /// State only: events must never pass through a retained observation cache.
+    pub fn observe(
+        &mut self,
+        target: &str,
+        generation: &str,
+        payload: &[u8],
+    ) -> Result<(), String> {
+        let parsed = Target::parse(target).map_err(|e| e.to_string())?;
+        if parsed.is_inventory() {
+            return Err("inventory uses whole-document acceptance".into());
+        }
+        let (epoch, revision) = parse_generation(generation)?;
+        let key = (target.to_owned(), generation.to_owned());
+        if payload.is_empty() {
+            self.forget_pending(&key);
+            if self.accepts_state(target, generation) {
+                self.devices
+                    .values_mut()
+                    .find(|d| d.record.target == target)
+                    .unwrap()
+                    .observed = None;
+            }
+            return Ok(());
+        }
+        if payload.len() > STATE_BYTES {
+            return Err("State exceeds per-observation budget".into());
+        }
+        let value: Value = serde_json::from_slice(payload).map_err(|e| e.to_string())?;
+        let object = value.as_object().ok_or("State must be an object")?;
+        if object.keys().any(|key| {
+            key.is_empty() || key.contains(['/', '+', '#']) || key.chars().any(char::is_control)
+        }) || object.get("assumed").is_some_and(|v| !v.is_boolean())
+        {
+            return Err("invalid State properties".into());
+        }
+        if self.accepts_state(target, generation) {
+            self.devices
+                .values_mut()
+                .find(|d| d.record.target == target)
+                .unwrap()
+                .observed = Some(value);
+        } else if epoch != self.epoch || revision > self.revision {
+            // Unknown names/epochs cannot create records. Keep at most the
+            // latest value for each key, evicting in first-arrival order.
+            if !self.pending.contains_key(&key) {
+                self.order.push_back(key.clone());
+            }
+            self.pending.insert(key, value);
+            while self.pending.len() > PENDING_ITEMS || self.pending_bytes() > PENDING_BYTES {
+                let oldest = self
+                    .order
+                    .pop_front()
+                    .expect("pending cache has an order entry");
+                self.pending.remove(&oldest);
+            }
+        }
+        Ok(())
+    }
+    pub fn pending_len(&self) -> usize {
+        self.pending.len()
+    }
+    fn pending_bytes(&self) -> usize {
+        self.pending
+            .iter()
+            .map(|((target, generation), value)| {
+                target.len() + generation.len() + value.to_string().len()
+            })
+            .sum()
+    }
+    fn forget_pending(&mut self, key: &(String, String)) {
+        self.pending.remove(key);
+        self.order.retain(|k| k != key);
+    }
+    fn reconcile_observations(&mut self) {
+        let keys: Vec<_> = self.order.iter().cloned().collect();
+        for key in keys {
+            let (epoch, revision) = parse_generation(&key.1).expect("validated pending generation");
+            if self.accepts_state(&key.0, &key.1) {
+                let value = self.pending[&key].clone();
+                self.devices
+                    .values_mut()
+                    .find(|d| d.record.target == key.0)
+                    .unwrap()
+                    .observed = Some(value);
+                self.forget_pending(&key);
+            } else if epoch == self.epoch && revision <= self.revision {
+                self.forget_pending(&key);
+            }
+        }
+    }
     pub fn by_target(&self, target: &str) -> Option<&Device> {
         self.devices.values().find(|d| d.record.target == target)
     }
@@ -37,7 +141,7 @@ impl Consumer {
             generation == format!("{}.{}", self.epoch, device.record.binding_revision)
         })
     }
-    pub fn accept(&mut self, state: &[u8]) -> Result<(), String> {
+    pub fn accept(&mut self, state: &[u8]) -> Result<Acceptance, String> {
         if state.len() > 512 * 1024 {
             return Err("snapshot exceeds consumer budget".into());
         }
@@ -62,11 +166,11 @@ impl Consumer {
             return Err("explicit reset adoption required".into());
         }
         if revision < self.revision {
-            return Ok(());
+            return Ok(Acceptance::Ignored);
         }
         if revision == self.revision {
             return if self.document.as_ref() == Some(document) {
-                Ok(())
+                Ok(Acceptance::Unchanged)
             } else {
                 Err("equal revision changed contents".into())
             };
@@ -182,6 +286,13 @@ impl Consumer {
                 Some(old) => Device {
                     id: old.id,
                     record: record.clone(),
+                    observed: if old.record.target == record.target
+                        && old.record.binding_revision == record.binding_revision
+                    {
+                        old.observed.clone()
+                    } else {
+                        None
+                    },
                     intent: if old.record.binding_revision == record.binding_revision
                         || safe_intent_migration.contains(&origin)
                     {
@@ -196,6 +307,7 @@ impl Consumer {
                         id: accepted.next_id,
                         record,
                         intent: None,
+                        observed: None,
                     }
                 }
             };
@@ -211,9 +323,32 @@ impl Consumer {
         accepted.revision = revision;
         accepted.ledger = Some(ledger);
         accepted.document = Some(document.clone());
+        accepted.reconcile_observations();
         *self = accepted;
-        Ok(())
+        Ok(Acceptance::Applied)
     }
+}
+
+fn parse_generation(text: &str) -> Result<(&str, u64), String> {
+    if text.len() > 128 {
+        return Err("generation exceeds wire budget".into());
+    }
+    let (epoch, revision) = text
+        .split_once('.')
+        .ok_or("invalid observation generation")?;
+    let number = revision
+        .parse::<u64>()
+        .map_err(|_| "invalid generation revision")?;
+    if epoch.len() != 32
+        || !epoch
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        || number == 0
+        || number.to_string() != revision
+    {
+        return Err("invalid observation generation".into());
+    }
+    Ok((epoch, number))
 }
 
 fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<(), String> {

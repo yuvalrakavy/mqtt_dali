@@ -5,4 +5,5 @@ pub mod config;
 pub mod config_store;
 pub mod emulator;
 pub mod inventory;
+pub mod service;
 pub mod targets;

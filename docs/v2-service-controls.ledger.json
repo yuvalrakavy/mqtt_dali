@@ -1,0 +1,158 @@
+{
+ "rows": {
+  "a_ready_response_escapes_its_absolute_deadline": {
+   "last_real": {
+    "at": "2026-10-21T19:29:07Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:76a08cbdabce0f20",
+     "row": "e7eb3d2ade129598",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.6,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  },
+  "frozen_service_routing_accepts_edits": {
+   "last_real": {
+    "at": "2026-10-21T19:28:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cca7ee3c00381a9b",
+     "row": "51d34f52dea82026",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.4,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  },
+  "mqtt_edits_retire_their_own_final_reply": {
+   "last_real": {
+    "at": "2026-10-21T19:29:03Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:484c51625fc5efba",
+     "row": "c633fc7bf8e6b5ff",
+     "test": null
+    },
+    "path": "command",
+    "secs": 3.1,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  },
+  "old_retractions_erase_current_observations": {
+   "last_real": {
+    "at": "2026-10-21T19:29:18Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:51396301aa8d25e1",
+     "row": "69b5230fd3712fc9",
+     "test": null
+    },
+    "path": "command",
+    "secs": 3.3,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  },
+  "pending_cache_ignores_target_key_bytes": {
+   "last_real": {
+    "at": "2026-10-21T19:29:21Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:39a897c780281d15",
+     "row": "dc5b93b532efbdb6",
+     "test": null
+    },
+    "path": "command",
+    "secs": 3.2,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  },
+  "recovery_skips_runtime_activation_for_changed_false": {
+   "last_real": {
+    "at": "2026-10-21T19:29:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:66b2b27fff1130ff",
+     "row": "75db642080ceba35",
+     "test": null
+    },
+    "path": "command",
+    "secs": 3.2,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  },
+  "retired_item_tokens_are_routable_after_recovery": {
+   "last_real": {
+    "at": "2026-10-21T19:28:56Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cca7ee3c00381a9b",
+     "row": "fe7dcbc501017952",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.7,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  },
+  "runtime_instance_can_differ_from_persisted_identity": {
+   "last_real": {
+    "at": "2026-10-21T19:29:11Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:39980df2f72aaa38",
+     "row": "ae5d783ba4e5fc7b",
+     "test": null
+    },
+    "path": "command",
+    "secs": 3.9,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  },
+  "state_before_inventory_is_lost": {
+   "last_real": {
+    "at": "2026-10-21T19:29:15Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:51396301aa8d25e1",
+     "row": "10992ecffa7de1cb",
+     "test": null
+    },
+    "path": "command",
+    "secs": 3.3,
+    "sha": "0592efd221c0335adc28a13e9c3eef9e1180c675",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

@@ -29,6 +29,288 @@ fn renamed(model: &Model, address: u8, name: &str) -> Model {
 }
 
 #[test]
+fn state_before_inventory_is_buffered_without_creating_a_device_or_intent() {
+    let mut consumer = Consumer::default();
+    let token = "0123456789abcdef0123456789abcdef.1";
+    consumer
+        .observe(
+            "Bus1.Outputs.Light1",
+            token,
+            br#"{"PowerState":true,"Brightness":0.25}"#,
+        )
+        .unwrap();
+    assert!(
+        consumer.devices.is_empty(),
+        "unproven State created a device"
+    );
+    consumer.accept(&model().state_bytes().unwrap()).unwrap();
+    let device = consumer.by_target("Bus1.Outputs.Light1").unwrap();
+    assert_eq!(
+        device.observed,
+        Some(json!({"PowerState":true,"Brightness":0.25})),
+        "matching State-before-Inventory was lost"
+    );
+    assert_eq!(device.intent, None);
+}
+
+#[test]
+fn observations_follow_exact_mapping_versions_and_old_retractions_cannot_clear_new_state() {
+    let initial = model();
+    let next = renamed(&initial, 0, "Kitchen");
+    let mut consumer = Consumer::default();
+    consumer.accept(&initial.state_bytes().unwrap()).unwrap();
+    consumer
+        .observe(
+            "Bus1.Outputs.Light1",
+            "0123456789abcdef0123456789abcdef.1",
+            br#"{"Brightness":0.2}"#,
+        )
+        .unwrap();
+    consumer
+        .observe(
+            "Bus1.Outputs.Kitchen",
+            "0123456789abcdef0123456789abcdef.2",
+            br#"{"Brightness":0.8}"#,
+        )
+        .unwrap();
+    consumer.accept(&next.state_bytes().unwrap()).unwrap();
+    consumer
+        .observe(
+            "Bus1.Outputs.Kitchen",
+            "0123456789abcdef0123456789abcdef.1",
+            b"",
+        )
+        .unwrap();
+    assert_eq!(
+        consumer.by_target("Bus1.Outputs.Kitchen").unwrap().observed,
+        Some(json!({"Brightness":0.8})),
+        "old retraction erased fresh observed state"
+    );
+    consumer.accept(&initial.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.by_target("Bus1.Outputs.Kitchen").unwrap().observed,
+        Some(json!({"Brightness":0.8}))
+    );
+    let later = renamed(&next, 0, "Final");
+    consumer.accept(&later.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.by_target("Bus1.Outputs.Final").unwrap().observed,
+        None,
+        "observation was migrated to another mapping"
+    );
+}
+
+#[test]
+fn retractions_remove_pending_state_and_invalid_inventory_does_not_drain_it() {
+    let initial = model();
+    let next = renamed(&initial, 0, "Kitchen");
+    let mut consumer = Consumer::default();
+    consumer.accept(&initial.state_bytes().unwrap()).unwrap();
+    let token = "0123456789abcdef0123456789abcdef.2";
+    consumer
+        .observe("Bus1.Outputs.Kitchen", token, br#"{"PowerState":true}"#)
+        .unwrap();
+    let mut malformed: Value = serde_json::from_slice(&next.state_bytes().unwrap()).unwrap();
+    malformed["Inventory"]["name"] = json!(false);
+    assert!(consumer
+        .accept(&serde_json::to_vec(&malformed).unwrap())
+        .is_err());
+    assert!(consumer.by_target("Bus1.Outputs.Kitchen").is_none());
+    consumer
+        .observe("Bus1.Outputs.Kitchen", token, b"")
+        .unwrap();
+    consumer.accept(&next.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.by_target("Bus1.Outputs.Kitchen").unwrap().observed,
+        None,
+        "pending retraction was ignored"
+    );
+}
+
+#[test]
+fn pending_observations_are_bounded_and_malformed_values_are_atomic() {
+    let mut consumer = Consumer::default();
+    let token = "0123456789abcdef0123456789abcdef.1";
+    consumer
+        .observe("Bus1.Outputs.Light1", token, br#"{"PowerState":true}"#)
+        .unwrap();
+    for n in 0..64 {
+        consumer
+            .observe(
+                &format!("Bus1.Outputs.Unknown{n}"),
+                token,
+                br#"{"PowerState":true}"#,
+            )
+            .unwrap();
+    }
+    assert!(
+        consumer.pending_len() <= 64,
+        "unbounded pending observations"
+    );
+    consumer.accept(&model().state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.by_target("Bus1.Outputs.Light1").unwrap().observed,
+        None,
+        "oldest observation was not evicted"
+    );
+    for (target, generation, bytes) in [
+        ("Bus1.Outputs.Light1", token, b"[]".as_slice()),
+        ("Bus1.Outputs.Light1", token, b"{\"assumed\":42}".as_slice()),
+        ("Bus1.Outputs.Light1", "bad", b"{}".as_slice()),
+        ("bad/target", token, b"{}".as_slice()),
+        ("__inventory", token, b"{}".as_slice()),
+    ] {
+        assert!(
+            consumer.observe(target, generation, bytes).is_err(),
+            "malformed State was accepted"
+        );
+    }
+    consumer
+        .observe("Bus1.Outputs.Light1", token, br#"{"Brightness":0.4}"#)
+        .unwrap();
+    let foreign = "fedcba9876543210fedcba9876543210.1";
+    consumer
+        .observe("Bus1.Outputs.Light1", foreign, br#"{"Brightness":0.9}"#)
+        .unwrap();
+    assert_eq!(
+        consumer.by_target("Bus1.Outputs.Light1").unwrap().observed,
+        Some(json!({"Brightness":0.4})),
+        "foreign epoch changed current observation"
+    );
+}
+
+#[test]
+fn observation_budget_includes_keys_and_payloads_and_inventory_outcomes_are_explicit() {
+    use inventory_consumer::Acceptance;
+    let mut consumer = Consumer::default();
+    let token = "0123456789abcdef0123456789abcdef.1";
+    let payload = serde_json::to_vec(&json!({"Description":"x".repeat(4000)})).unwrap();
+    for n in 0..20 {
+        consumer
+            .observe(
+                &format!("Bus1.Outputs.N{n}{}", "x".repeat(2000)),
+                token,
+                &payload,
+            )
+            .unwrap();
+    }
+    assert!(
+        consumer.pending_len() < 12,
+        "cache budget omitted target keys or payload bytes"
+    );
+    let initial = model();
+    assert_eq!(
+        consumer.accept(&initial.state_bytes().unwrap()).unwrap(),
+        Acceptance::Applied
+    );
+    assert_eq!(
+        consumer.accept(&initial.state_bytes().unwrap()).unwrap(),
+        Acceptance::Unchanged
+    );
+    let next = renamed(&initial, 0, "Kitchen");
+    consumer.accept(&next.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.accept(&initial.state_bytes().unwrap()).unwrap(),
+        Acceptance::Ignored
+    );
+}
+
+#[tokio::test]
+async fn an_independent_consumer_accepts_actual_mqtt_inventory_and_preserves_its_own_binding_and_intent(
+) {
+    use mqtt_bridge_kit::{Bridge, RequestContext};
+    use mqtt_dali::{
+        config::ConfigPaths,
+        service::{DaliService, MetadataEdit, Phase},
+    };
+    use mqtt_test_broker::FakeBroker;
+    use std::{fs, os::unix::fs::PermissionsExt, time::Duration};
+    use tokio::time::Instant;
+    struct Directory(std::path::PathBuf);
+    impl Drop for Directory {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+    let directory = Directory(std::env::temp_dir().join(format!(
+        "dali-consumer-wire-{:032x}",
+        rand::random::<u128>()
+    )));
+    fs::create_dir(&directory.0).unwrap();
+    let paths = ConfigPaths::in_directory(&directory.0);
+    fs::write(
+        &paths.current,
+        serde_json::to_vec(model().inventory()).unwrap(),
+    )
+    .unwrap();
+    fs::set_permissions(&paths.current, fs::Permissions::from_mode(0o600)).unwrap();
+    let broker = FakeBroker::start().await;
+    let (service, handle) = DaliService::new(paths, "HouseController".into());
+    let running = Bridge::new("DALI")
+        .instance("HouseController")
+        .broker(&broker.address())
+        .start_managed(service)
+        .await
+        .unwrap();
+    let topic = "DALI/State/HouseController/__inventory";
+    assert!(
+        broker
+            .wait_until(Duration::from_secs(3), |b| !b.received_on(topic).is_empty())
+            .await
+    );
+    let first = broker.received_on(topic).pop().unwrap();
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.payload).unwrap();
+    let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
+    consumer.set_intent("Bus1.Outputs.Light1", json!({"Brightness":0.3}));
+    let saved = handle
+        .edit(
+            1,
+            MetadataEdit::RenameOutput {
+                bus: 0,
+                address: 0,
+                name: "Kitchen".into(),
+            },
+            RequestContext::new(first.user_property("target-generation").unwrap()).unwrap(),
+            Instant::now() + Duration::from_secs(2),
+        )
+        .await
+        .unwrap();
+    assert_eq!(saved.phase, Phase::Ready);
+    assert!(
+        broker
+            .wait_until(Duration::from_secs(3), |b| b
+                .received_on(topic)
+                .iter()
+                .any(|m| serde_json::from_slice::<Value>(&m.payload)
+                    .is_ok_and(|v| v["Inventory"]["revision"] == 2)))
+            .await
+    );
+    let next = broker
+        .received_on(topic)
+        .into_iter()
+        .find(|m| {
+            serde_json::from_slice::<Value>(&m.payload)
+                .is_ok_and(|v| v["Inventory"]["revision"] == 2)
+        })
+        .unwrap();
+    consumer.accept(&next.payload).unwrap();
+    assert_eq!(
+        next.user_property("target-generation"),
+        Some("0123456789abcdef0123456789abcdef.2")
+    );
+    let renamed = consumer.by_target("Bus1.Outputs.Kitchen").unwrap();
+    assert_eq!(renamed.id, id);
+    assert_eq!(
+        renamed.intent,
+        Some(json!({"Brightness":0.3})),
+        "MQTT inventory rename lost consumer-owned intent"
+    );
+    assert!(consumer.by_target("Bus1.Outputs.Light1").is_none());
+    assert!(running.stop().await);
+}
+
+#[test]
 fn a_consumer_rejects_split_bus_history_before_changing_any_identity() {
     let initial = model();
     let renamed = initial

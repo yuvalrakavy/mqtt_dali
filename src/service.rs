@@ -1,0 +1,229 @@
+//! One managed owner for durable inventory and physical routing.
+use crate::{
+    config::ConfigPaths,
+    inventory::{Edit, Model},
+};
+use mqtt_bridge_kit::{RequestContext, TargetGenerations};
+use std::sync::Arc;
+use tokio::{
+    sync::{broadcast, mpsc, oneshot, watch, OwnedSemaphorePermit, Semaphore},
+    time::{timeout_at, Instant},
+};
+
+mod owner;
+mod proxy;
+mod routing;
+pub use proxy::DaliProxy;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Phase {
+    AwaitingRuntime,
+    Ready,
+    Writing,
+    Uncertain(String),
+    Stopping,
+    Closed,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Hardware {
+    NotStarted,
+}
+#[derive(Debug, Clone)]
+pub struct Snapshot {
+    pub model: Arc<Model>,
+    pub phase: Phase,
+    pub hardware: Hardware,
+    pub version: &'static str,
+    pub build_utc: &'static str,
+}
+#[allow(dead_code)]
+mod build_info {
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
+/// Public metadata changes. Physical changes require verified commissioning jobs.
+#[derive(Debug, Clone)]
+pub enum MetadataEdit {
+    RenameOutput { bus: u8, address: u8, name: String },
+    RenameGroup { bus: u8, address: u8, name: String },
+    RenameBus { bus: u8, name: String },
+    Description(Option<String>),
+}
+impl MetadataEdit {
+    fn into_edit(self) -> Edit {
+        match self {
+            Self::RenameOutput { bus, address, name } => Edit::RenameOutput { bus, address, name },
+            Self::RenameGroup { bus, address, name } => Edit::RenameGroup { bus, address, name },
+            Self::RenameBus { bus, name } => Edit::RenameBus { bus, name },
+            Self::Description(description) => Edit::Description { description },
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum ServiceError {
+    #[error("service is busy")]
+    Busy,
+    #[error("service is closed")]
+    Closed,
+    #[error("request expired before admission")]
+    Expired,
+    #[error("request refused: {0}")]
+    Rejected(String),
+    #[error("outcome uncertain; inspect status before retrying: {0}")]
+    Uncertain(String),
+}
+#[derive(Clone)]
+pub struct ServiceHandle {
+    send: mpsc::Sender<Message>,
+    state: watch::Receiver<Option<Snapshot>>,
+    updates: broadcast::Sender<Snapshot>,
+    permit: Arc<Semaphore>,
+}
+/// Constructing this object opens no files, UART or network connections.
+pub struct DaliService {
+    paths: ConfigPaths,
+    instance: String,
+    receive: mpsc::Receiver<Message>,
+    state: watch::Sender<Option<Snapshot>>,
+    handle: ServiceHandle,
+    #[cfg(test)]
+    hooks: crate::config_store::test_hooks::Hooks,
+    #[cfg(test)]
+    activation_hook: Option<ActivationHook>,
+}
+#[cfg(test)]
+type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations) + Send + Sync>;
+enum Message {
+    Attach(
+        mqtt_bridge_kit::Reporter,
+        oneshot::Sender<Result<(), String>>,
+    ),
+    Change(Request),
+}
+enum Change {
+    Edit { expected: u64, edit: MetadataEdit },
+    Recover,
+}
+struct Request {
+    change: Change,
+    context: RequestContext,
+    completion: Option<mqtt_bridge_kit::CommandCompletion>,
+    deadline: Instant,
+    reply: oneshot::Sender<Result<Snapshot, ServiceError>>,
+    _permit: OwnedSemaphorePermit,
+}
+impl DaliService {
+    pub fn new(paths: ConfigPaths, instance: String) -> (Self, ServiceHandle) {
+        let (send, receive) = mpsc::channel(4);
+        let (state, read) = watch::channel(None);
+        let handle = ServiceHandle {
+            send,
+            state: read,
+            updates: broadcast::channel(16).0,
+            permit: Arc::new(Semaphore::new(1)),
+        };
+        (
+            Self {
+                paths,
+                instance,
+                receive,
+                state,
+                handle: handle.clone(),
+                #[cfg(test)]
+                hooks: Default::default(),
+                #[cfg(test)]
+                activation_hook: None,
+            },
+            handle,
+        )
+    }
+}
+impl ServiceHandle {
+    /// Owned snapshot. After notification lag, resnapshot instead of replaying edits.
+    pub fn snapshot(&self) -> Option<Snapshot> {
+        self.state.borrow().clone()
+    }
+    pub fn subscribe(&self) -> broadcast::Receiver<Snapshot> {
+        self.updates.subscribe()
+    }
+    /// Change saved metadata using the current inventory revision and original
+    /// item token (controller token for bus/description edits). A lost response
+    /// does not undo a save: inspect the owned snapshot before retrying.
+    pub async fn edit(
+        &self,
+        expected: u64,
+        edit: MetadataEdit,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Snapshot, ServiceError> {
+        self.submit(Change::Edit { expected, edit }, context, deadline, None)
+            .await
+    }
+    /// Resolve a frozen uncertain save/activation. A Ready snapshot needs no
+    /// recovery; clients may have missed its already-confirmed result.
+    pub async fn recover(
+        &self,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Snapshot, ServiceError> {
+        self.submit(Change::Recover, context, deadline, None).await
+    }
+    async fn submit(
+        &self,
+        change: Change,
+        context: RequestContext,
+        deadline: Instant,
+        completion: Option<mqtt_bridge_kit::CommandCompletion>,
+    ) -> Result<Snapshot, ServiceError> {
+        if Instant::now() >= deadline {
+            return Err(ServiceError::Expired);
+        }
+        if self.permit.is_closed() {
+            return Err(ServiceError::Closed);
+        }
+        let _permit = self
+            .permit
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| ServiceError::Busy)?;
+        let snapshot = self
+            .snapshot()
+            .ok_or(ServiceError::Rejected("service is starting".into()))?;
+        routing::admit(&snapshot, &change, &context)?;
+        let (reply, result) = oneshot::channel();
+        self.send
+            .try_send(Message::Change(Request {
+                change,
+                context,
+                completion,
+                deadline,
+                reply,
+                _permit,
+            }))
+            .map_err(|_| ServiceError::Closed)?;
+        // WAIT: v2-service-request
+        let result = timeout_at(deadline, result).await;
+        if Instant::now() >= deadline {
+            return Err(ServiceError::Uncertain("caller deadline".into()));
+        }
+        result
+            .map_err(|_| ServiceError::Uncertain("caller deadline".into()))?
+            .map_err(|_| ServiceError::Closed)?
+    }
+    async fn attach(&self, reporter: mqtt_bridge_kit::Reporter) -> Result<(), String> {
+        let (reply, result) = oneshot::channel();
+        self.send
+            .try_send(Message::Attach(reporter, reply))
+            .map_err(|_| "service attachment unavailable")?;
+        let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        // WAIT: v2-service-attach
+        let result = timeout_at(deadline, result).await;
+        if Instant::now() >= deadline {
+            return Err("service attachment deadline".into());
+        }
+        result
+            .map_err(|_| "service attachment deadline")?
+            .map_err(|_| "service ended during attachment")?
+    }
+}
+#[cfg(test)]
+mod tests;

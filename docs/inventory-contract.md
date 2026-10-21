@@ -11,8 +11,10 @@ State payload destined for `DALI/State/<controller>/__inventory`. The property
 `Inventory` contains wire schema 1, epoch/revision, controller/buses/items, and
 the complete named identity ledger. This metadata target is not a fixture.
 The literal [rename fixture](../tests/fixtures/inventory-v1-rename.json) is the
-wire example. The new daemon does not publish it yet; BridgeKit integration is
-still in progress.
+wire example. The managed `service::DaliService` now publishes it through the
+pinned BridgeKit runtime; real FakeBroker integration tests consume that output.
+The command-line v2 binary remains check-only while UART/daemon integration is
+completed. See [service development](service-development.md).
 
 Each item has a `binding_revision`. The opaque request generation is
 `<inventory_epoch>.<binding_revision>`; it versions the mapping, not the device's
@@ -41,12 +43,24 @@ requires explicit adoption. The independent example algorithm under
 the producer's replay/mutation implementation. Actual Store ObjectId/binding
 migration remains a separate implementation phase.
 
+Retained State may arrive before its inventory. The independent consumer caches
+the latest observation per target/token until a complete accepted inventory proves
+that mapping. No unknown State creates a device or changes intent. Current
+observations clear when their mapping version changes. An old retraction removes
+only its exact pending/current token; it cannot erase fresh state. Ignored older
+inventories and malformed/conflicting documents do not drain observations.
+The example bounds pending data to 64 entries and 64 KiB including target/token
+bytes, with an 8 KiB per-State limit and deterministic oldest-entry eviction.
+Eviction leaves state unknown and calls for a read, never an assumed off value.
+Button events must not enter this retained replay cache.
+
 Missing hardware stays in saved inventory. Only explicit removal retires it.
 Device State/events will carry generation tags, and consumers must accept only
 the generation in their current complete inventory. Retired State uses BridgeKit
-`Reporter::remove`; each consumer owns cleanup of its own retained Desired/Config.
-Runtime request/context enforcement and cache invalidation are the next contract
-slice; inventory generation tags alone do not yet provide that enforcement.
+contextual retirement/removal; each consumer owns cleanup of its own retained
+Desired/Config. The adopted runtime enforces original request contexts and
+retires old work/cache entries. Physical output/input State remains a later
+capability slice; metadata service success does not establish HAT connectivity.
 
 Limits are deliberate: config at most 4 MiB; the complete serialized Inventory
 State (including its wrapper) at most 512 KiB; each encoded target at most 4096
@@ -80,6 +94,16 @@ After the worker ends, `recover` reloads only a recognized old/reserved/proposed
 document and confirms file/directory durability before admission resumes. An
 unexpected edited file or persistent sync failure remains frozen. Startup also
 confirms durability before admitting an existing file.
+
+The service has separate routing readiness. It freezes before saving, then
+requires successful complete-table runtime retirement and queues the complete
+inventory before exposing the new mapping as Ready. Recovery activates the
+recognized complete model even when ConfigStore reports `changed: false`.
+Runtime-CAS failure keeps the durable candidate frozen; retry uses only the exact
+original expected table. A persistent conflict requires restart, not adoption of
+an unknown authority. Metadata MQTT commands use a single-use active completion
+capability so their own commit can return one original-token success; unrelated
+and queued retired commands remain refused.
 
 Close has a caller deadline. A false result means filesystem ownership may still
 be held; the managed runtime must take its incomplete-stop path. A true result

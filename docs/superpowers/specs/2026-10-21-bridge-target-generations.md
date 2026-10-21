@@ -3,6 +3,9 @@
 P3c2 implementation design within the approved DALI v2 architecture. T3: stale
 retained intent must never operate replacement hardware. No second MQTT runtime.
 The existing driver defaults and unfenced wire behavior remain unchanged.
+The subsequent [command completion correction](2026-10-21-bridge-command-completion.md)
+preserves only an exact active command's final completion through its own
+successful inventory CAS; ordinary replacement keeps full old-work retirement.
 This first opt-in fencing implementation supports fixed Bridge instances,
 including managed startup, which is DALI's topology. Dynamic Host factories keep
 their existing unfenced construction-window behavior; their description must

@@ -1,0 +1,249 @@
+use super::*;
+use crate::config_store::{ConfigStore, Outcome, Phase as DiskPhase};
+use mqtt_bridge_kit::{ProcessService, Reporter, ServiceContext};
+use std::time::Duration;
+
+struct Owner {
+    store: ConfigStore,
+    model: Arc<Model>,
+    table: TargetGenerations,
+    reporter: Option<Reporter>,
+    // Only a confirmed durable candidate may retry the exact original CAS.
+    pending: Option<Arc<Model>>,
+}
+struct AdmissionGuard(ServiceHandle, watch::Sender<Option<Snapshot>>);
+impl Drop for AdmissionGuard {
+    fn drop(&mut self) {
+        self.0.permit.close();
+        let snapshot = self.0.snapshot();
+        if let Some(mut snapshot) = snapshot {
+            if snapshot.phase != Phase::Closed {
+                snapshot.phase = Phase::Stopping;
+                self.1.send_replace(Some(snapshot.clone()));
+                let _ = self.0.updates.send(snapshot);
+            }
+        }
+    }
+}
+impl DaliService {
+    fn update_snapshot(&self, model: Arc<Model>, phase: Phase) -> Snapshot {
+        let snapshot = Snapshot {
+            model,
+            phase,
+            hardware: Hardware::NotStarted,
+            version: env!("CARGO_PKG_VERSION"),
+            build_utc: build_info::BUILT_TIME_UTC,
+        };
+        self.state.send_replace(Some(snapshot.clone()));
+        let _ = self.handle.updates.send(snapshot.clone());
+        snapshot
+    }
+}
+impl Owner {
+    fn publish_inventory(&self) {
+        let values = serde_json::from_slice::<mqtt_bridge_kit::PropertyMap>(
+            &self.model.state_bytes().expect("preflighted model"),
+        )
+        .expect("inventory State is an object");
+        self.reporter
+            .as_ref()
+            .expect("attached reporter")
+            .state_with_context(
+                "__inventory",
+                values,
+                false,
+                &RequestContext::new(self.table.instance.clone()).expect("validated generation"),
+            );
+    }
+    fn activate(
+        &mut self,
+        service: &DaliService,
+        candidate: Arc<Model>,
+        completion: Option<&mqtt_bridge_kit::CommandCompletion>,
+    ) -> Result<Snapshot, ServiceError> {
+        let next = routing::generations(&candidate);
+        let reporter = self
+            .reporter
+            .as_ref()
+            .ok_or(ServiceError::Rejected("runtime not attached".into()))?;
+        #[cfg(test)]
+        if let Some(hook) = &service.activation_hook {
+            hook(reporter, &self.table);
+        }
+        let result = match completion {
+            Some(completion) => {
+                reporter.replace_generations_for_command(&self.table, next.clone(), completion)
+            }
+            None => reporter.replace_generations(&self.table, next.clone()),
+        };
+        if let Err(error) = result {
+            self.pending = Some(candidate);
+            service.update_snapshot(
+                self.model.clone(),
+                Phase::Uncertain(format!("runtime authority: {error}")),
+            );
+            return Err(ServiceError::Uncertain(error));
+        }
+        self.table = next;
+        self.model = candidate;
+        self.pending = None;
+        self.publish_inventory();
+        Ok(service.update_snapshot(self.model.clone(), Phase::Ready))
+    }
+    async fn change(
+        &mut self,
+        service: &DaliService,
+        request: &mut Request,
+        context: &mut ServiceContext<DaliProxy>,
+    ) -> Result<Snapshot, ServiceError> {
+        if request.reply.is_closed() || Instant::now() >= request.deadline {
+            return Err(ServiceError::Expired);
+        }
+        routing::admit(
+            &service.handle.snapshot().ok_or(ServiceError::Closed)?,
+            &request.change,
+            &request.context,
+        )?;
+        if matches!(request.change, Change::Recover) {
+            if let Some(candidate) = self.pending.clone() {
+                return self.activate(service, candidate, request.completion.as_ref());
+            }
+        }
+        service.update_snapshot(self.model.clone(), Phase::Writing);
+        let operation = async {
+            match &request.change {
+                Change::Edit { expected, edit } => {
+                    self.store
+                        .edit(*expected, vec![edit.clone().into_edit()], request.deadline)
+                        .await
+                }
+                Change::Recover => self.store.recover(request.deadline).await,
+            }
+        };
+        // WAIT: v2-service-save
+        let outcome = tokio::select! {
+            biased;
+            result=operation=>result,
+            _=context.cancelled()=>Outcome::Uncertain("service stopping during save".into()),
+            _=request.reply.closed()=>Outcome::Uncertain("caller canceled during save".into()),
+        };
+        match outcome {
+            Outcome::Committed { .. } => {
+                let disk = self.store.snapshot();
+                if disk.phase != DiskPhase::Ready {
+                    return self.freeze(service, "filesystem not ready after commit".into());
+                }
+                // Recovery may report changed:false for a different mapping.
+                // Activate the entire confirmed model, never that flag.
+                self.activate(service, disk.model, request.completion.as_ref())
+            }
+            Outcome::NotCommitted(reason) => {
+                let disk = self.store.snapshot();
+                if disk.phase == DiskPhase::Ready
+                    && disk.model.state_bytes() == self.model.state_bytes()
+                {
+                    self.model = disk.model;
+                    service.update_snapshot(self.model.clone(), Phase::Ready);
+                    Err(ServiceError::Rejected(reason))
+                } else {
+                    self.freeze(service, reason)
+                }
+            }
+            Outcome::Uncertain(reason) => self.freeze(service, reason),
+        }
+    }
+    fn freeze(&self, service: &DaliService, reason: String) -> Result<Snapshot, ServiceError> {
+        service.update_snapshot(self.model.clone(), Phase::Uncertain(reason.clone()));
+        Err(ServiceError::Uncertain(reason))
+    }
+}
+impl ProcessService for DaliService {
+    type Driver = DaliProxy;
+    async fn run(mut self, mut context: ServiceContext<DaliProxy>) -> Result<(), String> {
+        let _admission = AdmissionGuard(self.handle.clone(), self.state.clone());
+        let deadline = Instant::now() + Duration::from_secs(5);
+        #[cfg(not(test))]
+        let opening = ConfigStore::open(self.paths.clone(), self.instance.clone(), deadline);
+        #[cfg(test)]
+        let opening = crate::config_store::test_hooks::open(
+            self.paths.clone(),
+            self.instance.clone(),
+            deadline,
+            self.hooks.clone(),
+        );
+        // WAIT: v2-service-start
+        let store = tokio::select! {
+            result=opening=>result?,
+            _=context.cancelled()=>return Ok(()),
+        };
+        let model = store.snapshot().model;
+        if model.inventory().name != self.instance {
+            // WAIT: v2-store-close
+            store.close(Instant::now() + Duration::from_secs(1)).await;
+            return Err("--instance must match the persisted controller name".into());
+        }
+        let table = routing::generations(&model);
+        self.update_snapshot(model.clone(), Phase::AwaitingRuntime);
+        if let Err(error) = context.ready(DaliProxy {
+            handle: self.handle.clone(),
+            initial: table.clone(),
+            reporter: None,
+        }) {
+            // WAIT: v2-store-close
+            store.close(Instant::now() + Duration::from_secs(1)).await;
+            return Err(error);
+        }
+        let mut owner = Owner {
+            store,
+            model,
+            table,
+            reporter: None,
+            pending: None,
+        };
+        loop {
+            // WAIT: v2-service-loop
+            let message = tokio::select! {
+                biased;
+                _=context.cancelled()=>break,
+                message=self.receive.recv()=>match message {Some(message)=>message,None=>break},
+            };
+            match message {
+                Message::Attach(reporter, reply) => {
+                    if owner.reporter.is_none() {
+                        owner.reporter = Some(reporter);
+                        owner.publish_inventory();
+                        self.update_snapshot(owner.model.clone(), Phase::Ready);
+                    }
+                    let _ = reply.send(Ok(()));
+                }
+                Message::Change(mut request) => {
+                    let result = owner.change(&self, &mut request, &mut context).await;
+                    let _ = request.reply.send(result);
+                }
+            }
+        }
+        self.handle.permit.close();
+        self.receive.close();
+        self.update_snapshot(owner.model.clone(), Phase::Stopping);
+        while let Ok(message) = self.receive.try_recv() {
+            match message {
+                Message::Attach(_, reply) => {
+                    let _ = reply.send(Err("service stopping".into()));
+                }
+                Message::Change(request) => {
+                    let _ = request.reply.send(Err(ServiceError::Closed));
+                }
+            }
+        }
+        // WAIT: v2-store-close
+        if !owner
+            .store
+            .close(Instant::now() + Duration::from_secs(1))
+            .await
+        {
+            return Err("configuration owner did not finish shutdown".into());
+        }
+        self.update_snapshot(owner.model, Phase::Closed);
+        Ok(())
+    }
+}

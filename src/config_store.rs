@@ -17,6 +17,19 @@ use tokio::{
 mod disk;
 mod worker;
 
+#[cfg(test)]
+pub(crate) mod test_hooks {
+    pub(crate) use super::disk::{Hooks, Stage, Step};
+    pub(crate) async fn open(
+        paths: crate::config::ConfigPaths,
+        name: String,
+        deadline: tokio::time::Instant,
+        hooks: Hooks,
+    ) -> Result<super::ConfigStore, String> {
+        super::ConfigStore::open_with(paths, name, deadline, hooks).await
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Phase {
     Ready,

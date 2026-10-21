@@ -1,0 +1,86 @@
+[[control]]
+name = "frozen_service_routing_accepts_edits"
+file = "src/service/routing.rs"
+anchor = '''_ => {
+            return Err(ServiceError::Rejected(
+                "routing is not ready for this operation".into(),
+            ))
+        }'''
+replacement = "_ => {}"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(routing_is_frozen_until_runtime_is_attached_and_while_a_save_is_uncertain)"]
+expect_text = "frozen routing admitted a mutation"
+
+[[control]]
+name = "retired_item_tokens_are_routable_after_recovery"
+file = "src/service/routing.rs"
+anchor = "if context.generation() != Some(token.as_str()) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(canceled_save_stays_frozen_until_recovery_retires_the_mapping_even_when_changed_is_false)"]
+expect_text = "recovery left retired generation routable"
+
+[[control]]
+name = "recovery_skips_runtime_activation_for_changed_false"
+file = "src/service/owner.rs"
+anchor = "self.activate(service, disk.model, request.completion.as_ref())"
+replacement = '''if matches!(request.change, Change::Recover) { Ok(service.update_snapshot(self.model.clone(), Phase::Ready)) } else { self.activate(service, disk.model, request.completion.as_ref()) }'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(canceled_save_stays_frozen_until_recovery_retires_the_mapping_even_when_changed_is_false)"]
+expect_text = "recovery lost durable mapping"
+
+[[control]]
+name = "mqtt_edits_retire_their_own_final_reply"
+file = "src/service/owner.rs"
+anchor = "reporter.replace_generations_for_command(&self.table, next.clone(), completion)"
+replacement = "reporter.replace_generations(&self.table, next.clone())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_metadata_commands_use_original_tokens_and_publish_the_durable_inventory)"]
+expect_text = "successful MQTT rename retired its own reply"
+
+[[control]]
+name = "a_ready_response_escapes_its_absolute_deadline"
+file = "src/service.rs"
+anchor = '''if Instant::now() >= deadline {
+            return Err(ServiceError::Uncertain("caller deadline".into()));
+        }'''
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(a_ready_response_resumed_after_its_original_deadline_is_uncertain)"]
+expect_text = "ready response escaped original caller deadline"
+
+[[control]]
+name = "runtime_instance_can_differ_from_persisted_identity"
+file = "src/service/proxy.rs"
+anchor = "if ctx.instance() != snapshot.model.inventory().name {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(the_actual_bridge_instance_must_match_the_persisted_controller_before_attachment)"]
+expect_text = "mismatched runtime instance activated persisted controller"
+
+[[control]]
+name = "state_before_inventory_is_lost"
+file = "tests/support/inventory_consumer.rs"
+anchor = "} else if epoch != self.epoch || revision > self.revision {"
+replacement = "} else if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(state_before_inventory_is_buffered_without_creating_a_device_or_intent)"]
+expect_text = "matching State-before-Inventory was lost"
+
+[[control]]
+name = "old_retractions_erase_current_observations"
+file = "tests/support/inventory_consumer.rs"
+anchor = "            if self.accepts_state(target, generation) {"
+replacement = "            if self.by_target(target).is_some() {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(observations_follow_exact_mapping_versions_and_old_retractions_cannot_clear_new_state)"]
+expect_text = "old retraction erased fresh observed state"
+
+[[control]]
+name = "pending_cache_ignores_target_key_bytes"
+file = "tests/support/inventory_consumer.rs"
+anchor = "target.len() + generation.len() + value.to_string().len()"
+replacement = "value.to_string().len()"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(observation_budget_includes_keys_and_payloads_and_inventory_outcomes_are_explicit)"]
+expect_text = "cache budget omitted target keys or payload bytes"

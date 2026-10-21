@@ -23,7 +23,8 @@ rand = "0.10.0"
 libc = "0.2"
 tracing = { version = "0.1.41"  }
 log = "0.4.22"
-tracing-init = { git="http://github.com/yuvalrakavy/tracing-init.git", features = ["otel"] }
+tracing-init = { git="http://github.com/yuvalrakavy/tracing-init.git", rev="259d963fd448ea2512e36a00e2f22850af0bc1f7", features = ["otel"] }
+mqtt-bridge-kit = { git="http://github.com/yuvalrakavy/tracing-init.git", rev="259d963fd448ea2512e36a00e2f22850af0bc1f7" }
 built = "0.8.0" 
 
 # to run with logging use
@@ -42,5 +43,5 @@ built = { version= "0.8.0", features = ["chrono"] }
 [dev-dependencies]
 tokio = { version = "1.41.1", features = ["test-util"] }
 # The fleet's test tools, from the same repository as tracing-init (one revision for all three).
-wait-lint = { git="http://github.com/yuvalrakavy/tracing-init.git" }
-mqtt-test-broker = { git="http://github.com/yuvalrakavy/tracing-init.git" }
+wait-lint = { git="http://github.com/yuvalrakavy/tracing-init.git", rev="259d963fd448ea2512e36a00e2f22850af0bc1f7" }
+mqtt-test-broker = { git="http://github.com/yuvalrakavy/tracing-init.git", rev="259d963fd448ea2512e36a00e2f22850af0bc1f7" }

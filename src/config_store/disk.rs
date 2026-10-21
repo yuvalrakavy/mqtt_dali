@@ -14,12 +14,12 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Stage {
+pub(crate) enum Stage {
     Reservation,
     Mapping,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Step {
+pub(crate) enum Step {
     StartupBeforeLoad,
     StartupSync,
     BeforeRequest,
@@ -30,7 +30,7 @@ pub(super) enum Step {
     RecoverySync,
 }
 #[derive(Clone, Default)]
-pub(super) struct Hooks {
+pub(crate) struct Hooks {
     #[cfg(test)]
     pub callback: Option<Arc<dyn Fn(Step) -> Result<(), String> + Send + Sync>>,
 }

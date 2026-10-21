@@ -28,6 +28,11 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `v2-service-request` | bounded | capacity-one service mutation/recovery reply | Nonwaiting permit and bounded channel admission; the caller supplies an absolute deadline. On expiry report an uncertain result, drop the reply receiver to signal cancellation, and keep routing frozen if saving began. The actor retains the permit until its own operation settles. |
+| `v2-service-attach` | bounded | inventory actor installing its first runtime Reporter | At most 2 s, independently of MQTT and UART. On expiry fail proxy connect; reconnect attachment is idempotent and cannot reopen uncertain routing. |
+| `v2-service-start` | bounded | durable ConfigStore startup or managed cancellation | ConfigStore has a 5 s startup deadline and the select also wakes on parent cancellation. On expiry startup fails; the managed runtime includes any unfinished blocking owner in actual teardown. |
+| `v2-service-save` | bounded | serialized ConfigStore edit/recovery, caller cancellation or managed stop | The original request deadline bounds ConfigStore; caller/parent cancellation drops its request future. On expiry or lost outcome freeze service routing until explicit recognized recovery and successful runtime activation. |
+| `v2-service-loop` | acyclic | bounded service requests or managed cancellation | The actor owns routing and performs no waits on its callers. Idle can wait indefinitely; managed cancellation independently wakes it, closes admission and begins locally bounded cleanup under the parent's forced-cancellation ceiling. |
 | `v2-store-open` | bounded | configuration ownership/import/durability worker | Caller supplies an absolute deadline; on expiry return startup failure and cancel admission. The runtime-owned blocking worker retains its lock until it really ends, so managed-service teardown cannot report success while it remains alive. |
 | `v2-store-request` | bounded | one serialized filesystem operation result | Nonwaiting single-slot admission; caller supplies an absolute deadline. On expiry report Uncertain, retain the slot and lock, and freeze mutations/routing until the worker ends and explicit bounded recovery confirms a recognized durable document. Canceled queued work is skipped. |
 | `v2-store-close` | bounded | configuration worker completion after stop | Caller supplies an absolute deadline; on expiry return false, requiring the managed service/process incomplete-stop path. True is published only after file ownership is dropped, even with retained public clients. |
@@ -89,7 +94,7 @@ blocking-methods = read_byte, shutdown_timeout
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit
 ```
 
 ## Waiters (generated)
@@ -159,7 +164,13 @@ mqtt-request src/mqtt.rs MqttDali::run_session
 mqtt-request src/mqtt.rs publish_with_trace
 v2-config-check src/bin/mqtt_dali_v2.rs main
 v2-config-output src/bin/mqtt_dali_v2.rs output
+v2-service-attach src/service.rs ServiceHandle::attach
+v2-service-loop src/service/owner.rs <DaliService as ProcessService>::run
+v2-service-request src/service.rs ServiceHandle::submit
+v2-service-save src/service/owner.rs Owner::change
+v2-service-start src/service/owner.rs <DaliService as ProcessService>::run
 v2-store-close src/config_store.rs ConfigStore::close
+v2-store-close src/service/owner.rs <DaliService as ProcessService>::run
 v2-store-open src/config_store.rs ConfigStore::open_with
 v2-store-request src/config_store.rs ConfigStore::submit
 v2-store-worker src/config_store/worker.rs run
