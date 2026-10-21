@@ -29,6 +29,13 @@ impl Drop for AdmissionGuard {
 impl DaliService {
     fn update_snapshot(&self, model: Arc<Model>, phase: Phase) -> Snapshot {
         let snapshot = Snapshot {
+            outputs: output::retained(
+                &model,
+                self.handle
+                    .snapshot()
+                    .map(|snapshot| snapshot.outputs)
+                    .unwrap_or_default(),
+            ),
             model,
             phase,
             hardware: self
@@ -237,8 +244,44 @@ impl ProcessService for DaliService {
                     if let Err(error)=result { failure=Some(error);break; }
                     let mut snapshot=self.handle.snapshot().expect("service started");
                     snapshot.hardware=hat.hardware();
+                    let mut completion=hat.take_completed_output();
+                    if let Some(completion)=&mut completion {
+                        if let Some(observation)=&mut completion.observation {
+                            if owner.table.targets.get(&completion.request.target).map(String::as_str)==observation.context.generation() {
+                                snapshot.outputs.insert(completion.request.target.clone(), observation.clone());
+                            }
+                        }
+                    }
+                    #[cfg(test)]
+                    if completion.is_some() {
+                        if let Some(hook)=&self.output_acceptance_hook { hook(&mut hat); }
+                    }
+                    hat.invalidate_outputs(&mut snapshot.outputs);
+                    // Cache and reply share the final validated sample. A second
+                    // independent validation could otherwise change only one.
+                    if let Some(completion)=&mut completion {
+                        if let Some(observation)=&mut completion.observation {
+                            if let Some(accepted)=snapshot.outputs.get(&completion.request.target)
+                                .filter(|sample| sample.context.generation()==observation.context.generation()) {
+                                *observation=accepted.clone();
+                            }
+                            if observation.quality==output::Quality::Stale && completion.error.is_none() {
+                                completion.error=Some(if completion.request.intent.is_some() {ServiceError::Uncertain("output evidence changed before acceptance".into())} else {ServiceError::Rejected("output evidence changed before acceptance".into())});
+                            }
+                        }
+                    }
                     self.state.send_replace(Some(snapshot.clone()));
                     let _=self.handle.updates.send(snapshot);
+                    if let Some(completion)=completion {
+                        let result=match (completion.error, completion.observation) {
+                            (Some(error),_)=>Err(error),
+                            (None,Some(observation)) if owner.table.targets.get(&completion.request.target).map(String::as_str)==observation.context.generation()=>Ok(observation),
+                            _=>Err(ServiceError::Rejected("output mapping changed before completion".into())),
+                        };
+                        let output::Request {reply,_permit,..}=completion.request;
+                        drop(_permit);
+                        let _=reply.send(result);
+                    }
                     None
                 },
             };
@@ -246,6 +289,24 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::Output(request) => {
+                    if request.reply.is_closed() || Instant::now() >= request.deadline {
+                        let _ = request.reply.send(Err(ServiceError::Expired));
+                    } else {
+                        let snapshot = self.handle.snapshot().expect("service started");
+                        match output::resolve(
+                            &snapshot,
+                            &request.target,
+                            &request.context,
+                            request.intent.is_some(),
+                        ) {
+                            Ok(route) => hat.enqueue_output(request, route),
+                            Err(error) => {
+                                let _ = request.reply.send(Err(error));
+                            }
+                        }
+                    }
+                }
                 Message::Attach(reporter, reply) => {
                     if owner.reporter.is_none() {
                         owner.reporter = Some(reporter);
@@ -271,6 +332,9 @@ impl ProcessService for DaliService {
         self.update_snapshot(owner.model.clone(), Phase::Stopping);
         while let Ok(message) = self.receive.try_recv() {
             match message {
+                Message::Output(request) => {
+                    let _ = request.reply.send(Err(ServiceError::Closed));
+                }
                 Message::Attach(_, reply) => {
                     let _ = reply.send(Err("service stopping".into()));
                 }
@@ -286,6 +350,7 @@ impl ProcessService for DaliService {
         let hardware = hat.close(deadline).await;
         let mut snapshot = self.handle.snapshot().expect("service started");
         snapshot.hardware = hat.hardware();
+        hat.invalidate_outputs(&mut snapshot.outputs);
         self.state.send_replace(Some(snapshot.clone()));
         let _ = self.handle.updates.send(snapshot);
         // WAIT: v2-store-close

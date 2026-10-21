@@ -1,0 +1,333 @@
+# P4b3 physical-output safety controls. Run sequentially; source is restored per row.
+
+[[control]]
+name = "frontend_join_is_mistaken_for_backend_retirement"
+file = "src/atx/transactions/engine.rs"
+anchor = '''        let permit = timeout_at(deadline, self.shared.permit.clone().acquire_owned())
+            .await
+            .map_err(|_| TransactionError::Deadline)?
+            .map_err(|_| TransactionError::Closed)?;'''
+replacement = '''        let permit = ();'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(joined_canceled_frontend_does_not_prove_backend_settlement)"]
+expect_text = '''joined frontend was mistaken for settled backend work'''
+
+[[control]]
+name = "terminal_free_permit_is_mistaken_for_transport_join"
+file = "src/atx/transactions/engine.rs"
+anchor = '''    pub(crate) async fn settle_until(&self, deadline: Instant) -> Result<(), TransactionError> {
+        let terminal = || {
+            *self.shared.stop.borrow()
+                || self.status() == SessionState::Closed
+                || self.shared.worker.is_finished()
+        };
+        if terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        // WAIT: atx-transaction-settle
+        let permit = timeout_at(deadline, self.shared.permit.clone().acquire_owned())
+            .await
+            .map_err(|_| TransactionError::Deadline)?
+            .map_err(|_| TransactionError::Closed)?;
+        if terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        drop(permit);
+        Ok(())
+    }
+'''
+replacement = '''    pub(crate) async fn settle_until(&self, deadline: Instant) -> Result<(), TransactionError> {
+        let terminal = || {
+            *self.shared.stop.borrow()
+                || self.status() == SessionState::Closed
+                || self.shared.worker.is_finished()
+        };
+        if false && terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        // WAIT: atx-transaction-settle
+        let permit = timeout_at(deadline, self.shared.permit.clone().acquire_owned())
+            .await
+            .map_err(|_| TransactionError::Deadline)?
+            .map_err(|_| TransactionError::Closed)?;
+        if false && terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        drop(permit);
+        Ok(())
+    }
+'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(terminal_actor_with_free_request_permit_still_requires_actual_join)"]
+expect_text = '''free permit was mistaken for terminal actor teardown'''
+
+[[control]]
+name = "ready_permit_bypasses_original_cleanup_ceiling"
+file = "src/atx/transactions/engine.rs"
+anchor = '''    pub(crate) async fn settle_until(&self, deadline: Instant) -> Result<(), TransactionError> {
+        let terminal = || {
+            *self.shared.stop.borrow()
+                || self.status() == SessionState::Closed
+                || self.shared.worker.is_finished()
+        };
+        if terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        // WAIT: atx-transaction-settle
+        let permit = timeout_at(deadline, self.shared.permit.clone().acquire_owned())
+            .await
+            .map_err(|_| TransactionError::Deadline)?
+            .map_err(|_| TransactionError::Closed)?;
+        if terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        drop(permit);
+        Ok(())
+    }
+'''
+replacement = '''    pub(crate) async fn settle_until(&self, deadline: Instant) -> Result<(), TransactionError> {
+        let terminal = || {
+            *self.shared.stop.borrow()
+                || self.status() == SessionState::Closed
+                || self.shared.worker.is_finished()
+        };
+        if terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if false && Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        // WAIT: atx-transaction-settle
+        let permit = timeout_at(deadline, self.shared.permit.clone().acquire_owned())
+            .await
+            .map_err(|_| TransactionError::Deadline)?
+            .map_err(|_| TransactionError::Closed)?;
+        if terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if false && Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        drop(permit);
+        Ok(())
+    }
+'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(expired_settlement_cannot_succeed_with_a_free_permit)"]
+expect_text = '''expired cleanup accepted a ready semaphore permit'''
+
+[[control]]
+name = "coalesced_ready_erases_ordering_loss"
+file = "src/atx/transactions/engine.rs"
+anchor = '''                    self.life.invalidate();
+                    Mode::Late(pending)'''
+replacement = '''                    Mode::Late(pending)'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(actor_invalidation_survives_an_unobserved_late_to_ready_transition)"]
+expect_text = '''coalesced Ready erased the actor's ordering-loss evidence'''
+
+[[control]]
+name = "retired_epoch_can_start_fixture_io"
+file = "src/atx/transactions/engine.rs"
+anchor = '''if let Some((ordering, bus_epoch)) = epoch {'''
+replacement = '''if let Some((ordering, bus_epoch)) = epoch.filter(|_| false) {'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(retired_epoch_guard_refuses_io_while_an_unrelated_bus_stays_usable)"]
+expect_text = '''retired bus epoch admitted a fixture command'''
+
+[[control]]
+name = "absolute_request_receives_a_new_window"
+file = "src/atx/transactions/engine.rs"
+anchor = '''    pub(crate) async fn execute_until(
+        &self,
+        command: Command,
+        deadline: Instant,
+        epoch: Option<(u64, u64)>,
+    ) -> Result<Response, TransactionError> {
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        command
+            .encode()
+            .map_err(crate::atx::monitor::TransportError::from)?;
+        terminal_count(&command, self.shared.repeat)?;
+        self.enqueue_until(
+            Operation::Command {
+                command,
+                initializing: false,
+                epoch,
+            },
+            deadline,
+        )
+        .await
+    }
+'''
+replacement = '''    pub(crate) async fn execute_until(
+        &self,
+        command: Command,
+        deadline: Instant,
+        epoch: Option<(u64, u64)>,
+    ) -> Result<Response, TransactionError> {
+        let _original = deadline;
+        let deadline = Instant::now() + Duration::from_millis(20);
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        command
+            .encode()
+            .map_err(crate::atx::monitor::TransportError::from)?;
+        terminal_count(&command, self.shared.repeat)?;
+        self.enqueue_until(
+            Operation::Command {
+                command,
+                initializing: false,
+                epoch,
+            },
+            deadline,
+        )
+        .await
+    }
+'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(an_expired_absolute_request_never_gets_a_fresh_submission_window)"]
+expect_text = '''expired absolute request added a UART write'''
+
+[[control]]
+name = "new_transport_bytes_are_accepted_after_expiry"
+file = "src/atx/monitor.rs"
+anchor = '''                        if tokio::time::Instant::now() >= deadline {
+                            return Poll::Ready(Err(std::io::Error::from(std::io::ErrorKind::TimedOut)));
+                        }'''
+replacement = ''''''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_transport_becoming_writable_after_expiry_never_accepts_new_bytes)"]
+expect_text = '''writable transport accepted a command after its original deadline'''
+
+[[control]]
+name = "close_event_releases_physical_admission"
+file = "src/service/hat.rs"
+anchor = '''        if let Some(physical) = &mut self.physical {'''
+replacement = '''        self.physical.take();
+        if let Some(physical) = &mut self.physical {'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(physical_admission_outlives_frontend_loss_and_actual_transport_teardown)"]
+expect_text = '''transport event released physical admission before backend teardown'''
+
+[[control]]
+name = "queued_output_adopts_a_new_bus_epoch"
+file = "src/service/hat.rs"
+anchor = '''} else if self.stamp(physical.route.bus) != Some(physical.stamp)'''
+replacement = '''} else if false && self.stamp(physical.route.bus) != Some(physical.stamp)'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(queued_output_refuses_a_power_cycle_even_when_health_completed_successfully)"]
+expect_text = '''queued output bypassed its captured bus epoch before hardware admission'''
+
+[[control]]
+name = "completed_output_ignores_bus_epoch_loss"
+file = "src/service/hat.rs"
+anchor = '''(self.stamp(physical.route.bus) != Some(physical.stamp)'''
+replacement = '''(false && self.stamp(physical.route.bus) != Some(physical.stamp)'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(completed_readback_before_a_power_cycle_is_partial_evidence_not_current_state)"]
+expect_text = '''post-sample power cycle became a fresh readback'''
+
+[[control]]
+name = "caller_uses_earlier_acceptance_sample"
+file = "src/service/owner.rs"
+anchor = '''                                *observation=accepted.clone();'''
+replacement = '''                                let _ = accepted;'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_reply_and_cache_share_the_final_acceptance_sample)"]
+expect_text = '''caller accepted current output while the final cached sample was stale'''
+
+[[control]]
+name = "retired_target_token_is_accepted"
+file = "src/service/output.rs"
+anchor = '''if (writing || cause.generation().is_some()) && cause.generation() != Some(token.as_str()) {'''
+replacement = '''if false && (writing || cause.generation().is_some()) && cause.generation() != Some(token.as_str()) {'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_service_uses_real_readback_and_keeps_original_generations)"]
+expect_text = '''old.context.clone()'''
+
+[[control]]
+name = "rename_retains_old_mapping_samples"
+file = "src/service/output.rs"
+anchor = '''table.targets.get(target).map(String::as_str) == observation.context.generation()'''
+replacement = '''true || table.targets.get(target).map(String::as_str) == observation.context.generation()'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_service_uses_real_readback_and_keeps_original_generations)"]
+expect_text = '''rename carried stale observations into a new token'''
+
+[[control]]
+name = "partial_level_becomes_known_power"
+file = "src/service/output.rs"
+anchor = '''if self.quality != Quality::Current {'''
+replacement = '''if false && self.quality != Quality::Current {'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_samples_distinguish_mask_missing_collision_and_partial_answers)"]
+expect_text = '''incomplete samples became known power'''
+
+[[control]]
+name = "missing_fixture_write_is_reported_successful"
+file = "src/service/output.rs"
+anchor = '''Ok(()) if intent.is_some() && observation.quality != Quality::Current => Some('''
+replacement = '''Ok(()) if false && intent.is_some() && observation.quality != Quality::Current => Some('''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(missing_fixture_and_bus_loss_preserve_truth_and_do_not_need_mqtt)"]
+expect_text = '''Err(ServiceError::Uncertain(_))'''
+
+[[control]]
+name = "write_echoes_requested_brightness"
+file = "src/service/output.rs"
+anchor = '''observation.actual_level = Some(Query::ActualLevel.decode(level));'''
+replacement = '''observation.actual_level = Some(Query::ActualLevel.decode(if intent.is_some() { BusReply::Value(254) } else { level }));'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(write_completion_uses_observed_level_instead_of_echoing_requested_brightness)"]
+expect_text = '''write completion echoed requested brightness'''
+
+[[control]]
+name = "pending_output_waits_for_health_before_expiring"
+file = "src/service/hat.rs"
+anchor = '''Some(p) if p.stage==output::Stage::Pending=>{'''
+replacement = '''Some(p) if false && p.stage==output::Stage::Pending=>{'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(canceled_or_expired_queued_output_retires_while_health_is_still_pending)"]
+expect_text = '''queued output waited for the independent health reply'''
+
+[[control]]
+name = "ready_reply_bypasses_original_caller_expiry"
+file = "src/service/output.rs"
+anchor = '''        if Instant::now() >= deadline {
+            return Err(ServiceError::Uncertain("caller deadline".into()));
+        }'''
+replacement = ''''''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_reply_ready_before_expiry_is_uncertain_when_caller_resumes_late)"]
+expect_text = '''ready output reply bypassed original caller expiry'''
+
+[[control]]
+name = "queued_read_loses_original_trace"
+file = "src/service/output.rs"
+anchor = '''.with_traceparent(cause.traceparent()),'''
+replacement = '''.with_traceparent(None),'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_service_uses_real_readback_and_keeps_original_generations)"]
+expect_text = '''queued output read lost its original trace without OTel'''

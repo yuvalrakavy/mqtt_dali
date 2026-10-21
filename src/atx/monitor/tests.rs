@@ -11,6 +11,102 @@ async fn next(events: &mut broadcast::Receiver<Event>) -> Event {
         .unwrap()
 }
 
+struct HeldWrite {
+    stream: tokio::io::DuplexStream,
+    ready: Arc<AtomicBool>,
+    entered: Option<oneshot::Sender<()>>,
+}
+impl AsyncRead for HeldWrite {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        Pin::new(&mut self.stream).poll_read(cx, buf)
+    }
+}
+impl DrainRead for HeldWrite {
+    fn poll_drain(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<std::io::Result<Drain>> {
+        Pin::new(&mut self.stream).poll_drain(cx, buf)
+    }
+}
+impl AsyncWrite for HeldWrite {
+    fn poll_write(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        bytes: &[u8],
+    ) -> Poll<std::io::Result<usize>> {
+        if !self.ready.load(Ordering::Acquire) {
+            if let Some(entered) = self.entered.take() {
+                let _ = entered.send(());
+            }
+            cx.waker().wake_by_ref();
+            return Poll::Pending;
+        }
+        Pin::new(&mut self.stream).poll_write(cx, bytes)
+    }
+    fn poll_flush(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        Pin::new(&mut self.stream).poll_flush(cx)
+    }
+    fn poll_shutdown(
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        Pin::new(&mut self.stream).poll_shutdown(cx)
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_transport_becoming_writable_after_expiry_never_accepts_new_bytes() {
+    let (stream, mut peer) = tokio::io::duplex(128);
+    let ready = Arc::new(AtomicBool::new(false));
+    let (entered, waiting) = oneshot::channel();
+    let (monitor, _) = Monitor::start(HeldWrite {
+        stream,
+        ready: ready.clone(),
+        entered: Some(entered),
+    });
+    let deadline = tokio::time::Instant::now() + Duration::from_millis(10);
+    let command = Command::Version;
+    let mut writing = Box::pin(monitor.write_correlated_until(
+        &command,
+        deadline,
+        Arc::new(AtomicU64::new(u64::MAX)),
+    ));
+    // Do not poll the write again until BOTH the clock and transport readiness
+    // have changed; timer scheduling cannot rescue a missing per-poll guard.
+    assert!(
+        std::future::poll_fn(|cx| std::task::Poll::Ready(std::future::Future::poll(
+            writing.as_mut(),
+            cx
+        )))
+        .await
+        .is_pending()
+    );
+    waiting.await.unwrap();
+    tokio::time::advance(Duration::from_millis(20)).await;
+    ready.store(true, Ordering::Release);
+    assert_eq!(
+        writing.await,
+        Err(TransportError::Deadline),
+        "writable transport accepted a command after its original deadline"
+    );
+    assert!(
+        timeout(Duration::from_millis(1), peer.read_u8())
+            .await
+            .is_err(),
+        "expired transport wrote bytes"
+    );
+    monitor.close().await.unwrap();
+}
+
 #[tokio::test(start_paused = true)]
 async fn quiet_fence_measures_silence_and_restarts_on_partial_raw_input() {
     let (stream, mut hat) = tokio::io::duplex(1024);

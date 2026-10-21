@@ -573,6 +573,39 @@ approved without material findings. Reviews use the same model family.
 This closes scheduling prerequisites; physical property execution and readback
 remain pending. No live HAT, broker, Store or deployment changed.
 
+## P4b3 — owned output operations and actual fixture readback
+
+The shared service now reads an individual saved output and applies validated
+power/brightness intents through its sole UART owner. Metadata and physical
+operations share admission. A frontend timeout does not release that admission:
+the owner keeps it until actual actor retirement or transport teardown. One
+original deadline reaches transaction admission, receive fences and every new
+write poll; cleanup has a fixed ceiling. No new frontend owns a UART clone.
+
+Post-write actual-level/status queries provide observed results. Missing fixtures,
+MASK, collisions and partial samples remain typed evidence, not an invented off
+or echoed request. UART and per-bus counters invalidate stale work even when a
+watch value returns to Ready before the owner polls. Mapping changes retain only
+exact surviving tokens. Cache and reply share the same final validated sample.
+
+Two source-review findings were reproduced behaviorally before correction:
+an expired cleanup could accept a ready permit, and a bus transition could leave
+a stale cache paired with successful current readback. Both regressions now pass.
+Both sequential source reviews approved; they use the same model family.
+
+The initial full native gate passed **282 tests**, plus strict scoped Clippy,
+Pi library/all four binary compilation, wait registry and whitespace checks.
+All **19 new guard-removal controls** detected their intended behavioral faults.
+All **42 existing affected controls** also behaved as declared: transaction,
+UART monitor, service lifecycle, quiet recovery and dispatch progress. The
+status-ordering control now targets the current early-close detection site;
+its original failure assertion is preserved. After restoration, all **282 native
+tests** passed again; strict Clippy, Pi compilation, formatting, whitespace and
+doctests (none defined) passed. Hardware validation remains pending.
+
+This is a library execution boundary. Physical MQTT properties, group execution,
+color and inputs remain subsequent P4 work. See [the service API](output-service.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -580,7 +613,7 @@ remain pending. No live HAT, broker, Store or deployment changed.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery and pure output codec implemented | Physical output service/driver paths, color representations, DALI-2 inputs and explicit capability support |
+| P4 capabilities | Quiet recovery, typed output codec and individual output service implemented | MQTT output driver paths, color representations, DALI-2 inputs and explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

@@ -10,7 +10,7 @@ use std::sync::{
 };
 use std::task::Poll;
 use std::time::Duration;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf, WriteHalf};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, ReadBuf, WriteHalf};
 use tokio::sync::{broadcast, mpsc, oneshot, watch, Mutex};
 use tokio::task::AbortHandle;
 
@@ -160,6 +160,12 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
             .ok_or(TransportError::Deadline)?;
         self.fence_until(deadline, None).await
     }
+    pub(crate) async fn receive_fence_until(
+        &self,
+        deadline: tokio::time::Instant,
+    ) -> Result<ReceiveFence, TransportError> {
+        self.fence_until(deadline, None).await
+    }
     async fn fence_until(
         &self,
         deadline: tokio::time::Instant,
@@ -267,10 +273,19 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
         within: Duration,
         started: Arc<AtomicU64>,
     ) -> Result<WriteReceipt, TransportError> {
-        let bytes = command.encode()?;
         let deadline = tokio::time::Instant::now()
             .checked_add(within)
             .ok_or(TransportError::Deadline)?;
+        self.write_correlated_until(command, deadline, started)
+            .await
+    }
+    pub(crate) async fn write_correlated_until(
+        &self,
+        command: &Command,
+        deadline: tokio::time::Instant,
+        started: Arc<AtomicU64>,
+    ) -> Result<WriteReceipt, TransportError> {
+        let bytes = command.encode()?;
         // WAIT: atx-write-lock
         let mut writer = tokio::time::timeout_at(deadline, self.inner.writer.lock())
             .await
@@ -296,7 +311,22 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
         let written = tokio::select! {
             biased;
             _ = stopped(&mut stop) => return Err(TransportError::Closed),
-            written = tokio::time::timeout_at(deadline, writer.write_all(&bytes)) => written,
+            written = tokio::time::timeout_at(deadline, async {
+                let mut offset = 0;
+                while offset < bytes.len() {
+                    // A ready inner future may win timeout_at after expiry.
+                    // Check the original ceiling before every transport poll.
+                    let count = poll_fn(|cx| {
+                        if tokio::time::Instant::now() >= deadline {
+                            return Poll::Ready(Err(std::io::Error::from(std::io::ErrorKind::TimedOut)));
+                        }
+                        Pin::new(&mut *writer).poll_write(cx, &bytes[offset..])
+                    }).await?;
+                    if count == 0 { return Err(std::io::Error::from(std::io::ErrorKind::WriteZero)); }
+                    offset += count;
+                }
+                Ok(())
+            }) => written,
         };
         match written {
             Ok(Ok(())) => {
@@ -304,6 +334,12 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
                 Ok(WriteReceipt {
                     bytes_accepted: bytes.len(),
                 })
+            }
+            Ok(Err(error))
+                if error.kind() == std::io::ErrorKind::TimedOut
+                    && tokio::time::Instant::now() >= deadline =>
+            {
+                Err(TransportError::Deadline)
             }
             Ok(Err(error)) => Err(TransportError::Io(error.to_string())),
             Err(_) => Err(TransportError::Deadline),

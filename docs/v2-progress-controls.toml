@@ -64,10 +64,12 @@ expect_text = "normal EOF became fatal before public closure delivery"
 [[control]]
 name = "normal_closed_status_is_fatal_before_eof"
 file = "src/service/hat.rs"
-anchor = '''// Only the actual owned join classifies teardown success.
-                    self.begin_close();'''
-replacement = '''// Removed owned teardown classification.
-                    return Err("unexplained closed status".into());'''
+anchor = '''.is_some_and(|s| s.link.status() == SessionState::Closed)
+        {
+            self.begin_close();'''
+replacement = '''.is_some_and(|s| s.link.status() == SessionState::Closed)
+        {
+            return Err("unexplained closed status".into());'''
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(closed_status_before_public_eof_starts_owned_teardown)"]
 expect_text = "normal EOF status became fatal before public closure delivery"

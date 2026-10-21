@@ -9,6 +9,7 @@ fn snapshot(model: Model, phase: Phase) -> Snapshot {
         model: Arc::new(model),
         phase,
         hardware: Hardware::NotStarted,
+        outputs: Default::default(),
         version: env!("CARGO_PKG_VERSION"),
         build_utc: build_info::BUILT_TIME_UTC,
     }
@@ -126,6 +127,15 @@ impl Fixture {
     }
     pub(super) fn service(&self) -> (DaliService, ServiceHandle) {
         DaliService::new(self.paths.clone(), "Controller".into())
+    }
+    pub(super) fn add_output(&self, address: u8, name: &str) {
+        let mut inventory = self.disk();
+        inventory.buses[0].outputs.push(crate::config::Output {
+            short_address: address,
+            name: name.into(),
+            description: None,
+        });
+        fs::write(&self.paths.current, serde_json::to_vec(&inventory).unwrap()).unwrap();
     }
     fn disk(&self) -> Inventory {
         serde_json::from_slice(&fs::read(&self.paths.current).unwrap()).unwrap()

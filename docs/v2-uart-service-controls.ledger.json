@@ -2,41 +2,41 @@
  "rows": {
   "buffered_boot_clears_reopen_latch": {
    "last_real": {
-    "at": "2026-10-21T22:07:17Z",
+    "at": "2026-10-21T22:36:56Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:315af00fc1fe2cf7",
+     "guard": "item:94fad6dbe092e0e9",
      "row": "d2232ef7d13578b5",
      "test": null
     },
     "path": "command",
-    "secs": 5.2,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.2,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "failed_boundary_retry_loses_timer": {
    "last_real": {
-    "at": "2026-10-21T22:07:23Z",
+    "at": "2026-10-21T22:37:04Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:1d8920a233282cd6",
+     "guard": "item:41a04e540a91bb97",
      "row": "373bb6d8a7d15fc4",
      "test": null
     },
     "path": "command",
-    "secs": 6.2,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.9,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "fresh_boot_discards_completed_boundary": {
    "last_real": {
-    "at": "2026-10-21T22:06:52Z",
+    "at": "2026-10-21T22:36:25Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,14 +46,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 3.9,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 4.3,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "hardware_event_discards_completed_helper_panic": {
    "last_real": {
-    "at": "2026-10-21T22:07:29Z",
+    "at": "2026-10-21T22:37:12Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -63,31 +63,31 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.1,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.2,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "metadata_resets_hardware_snapshot": {
    "last_real": {
-    "at": "2026-10-21T22:07:40Z",
+    "at": "2026-10-21T22:37:25Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:0a6a47633bfb61c7",
+     "guard": "item:81b38736292cdc38",
      "row": "fb6b0e0cb4685a76",
      "test": null
     },
     "path": "command",
-    "secs": 4.7,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 5.9,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "query_result_overwrites_later_bus_observation": {
    "last_real": {
-    "at": "2026-10-21T22:07:35Z",
+    "at": "2026-10-21T22:37:20Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,14 +97,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.8,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.2,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "serial_opener_escapes_runtime_ownership": {
    "last_real": {
-    "at": "2026-10-21T22:06:59Z",
+    "at": "2026-10-21T22:36:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -114,25 +114,25 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.4,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.1,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "timed_out_serial_open_is_retried": {
    "last_real": {
-    "at": "2026-10-21T22:07:12Z",
+    "at": "2026-10-21T22:36:49Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:e2ddfb3eb4ed8e1d",
+     "guard": "item:21aab7a47a52303b",
      "row": "28a4ecd84a0fcac8",
      "test": null
     },
     "path": "command",
-    "secs": 13.2,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 15.7,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   }

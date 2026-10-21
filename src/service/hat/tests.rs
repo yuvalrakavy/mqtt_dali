@@ -79,6 +79,465 @@ fn settings(path: PathBuf) -> Settings {
     settings
 }
 
+async fn ready_output_hat(pty: &mut Pty) -> Hat {
+    let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
+    drive(&mut hat, |h| matches!(h, Hardware::Initializing)).await;
+    assert_eq!(line(&mut pty.peer).await, b"v\n");
+    pty.peer.write_all(b"V013204\n").await.unwrap();
+    tokio::select! {result=hat.changed()=>result.unwrap(),_=tokio::time::sleep(Duration::from_millis(10))=>{}}
+    assert_eq!(line(&mut pty.peer).await, b"d\n");
+    pty.peer.write_all(b"D24\n").await.unwrap();
+    drive(&mut hat, |h| matches!(h, Hardware::Ready { .. })).await;
+    hat
+}
+fn queue_output(
+    hat: &mut Hat,
+    intent: Option<crate::dali::gear::Intent>,
+    until: Instant,
+) -> (
+    tokio::sync::oneshot::Receiver<Result<output::Observation, ServiceError>>,
+    std::sync::Arc<tokio::sync::Semaphore>,
+) {
+    let admission = std::sync::Arc::new(tokio::sync::Semaphore::new(1));
+    let (reply, receive) = tokio::sync::oneshot::channel();
+    let route = output::Route {
+        controller: "Controller".into(),
+        bus: 0,
+        address: crate::dali::gear::ShortAddress::new(0).unwrap(),
+        context: context(1),
+    };
+    hat.enqueue_output(
+        output::Request {
+            target: "Bus1.Outputs.Light1".into(),
+            intent,
+            context: context(1),
+            deadline: until,
+            reply,
+            _permit: admission.clone().try_acquire_owned().unwrap(),
+        },
+        route,
+    );
+    (receive, admission)
+}
+async fn output_complete(hat: &mut Hat) {
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while hat.completed.is_none() {
+            hat.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn write_completion_uses_observed_level_instead_of_echoing_requested_brightness() {
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    let (receive, _admission) = queue_output(
+        &mut hat,
+        Some(crate::dali::gear::Intent::new(None, Some(1.0)).unwrap()),
+        Instant::now() + Duration::from_secs(1),
+    );
+    hat.changed().await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h00FE\n");
+    pty.peer.write_all(b"N\n").await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h01A0\n");
+    pty.peer.write_all(b"J7F\n").await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h0190\n");
+    pty.peer.write_all(b"J04\n").await.unwrap();
+    output_complete(&mut hat).await;
+    let completed = hat.take_completed_output().unwrap();
+    assert!(completed.error.is_none());
+    assert_eq!(
+        completed.observation.as_ref().unwrap().brightness(),
+        Some(0.5),
+        "write completion echoed requested brightness"
+    );
+    drop(completed);
+    drop(receive);
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn output_samples_distinguish_mask_missing_collision_and_partial_answers() {
+    use crate::dali::gear::{Level, LevelValue, QueryReply};
+    use output::Quality;
+    for (level, status, quality, expected, available) in [
+        (
+            b"JFF\n".as_slice(),
+            b"J04\n".as_slice(),
+            Quality::Partial,
+            Some(LevelValue::UnavailableMask),
+            true,
+        ),
+        (b"N\n", b"N\n", Quality::Unavailable, None, false),
+        (b"X\n", b"J04\n", Quality::Partial, None, false),
+        (
+            b"J7F\n",
+            b"N\n",
+            Quality::Partial,
+            Some(LevelValue::Known(Level::new(127).unwrap())),
+            false,
+        ),
+        (
+            b"J00\n",
+            b"J00\n",
+            Quality::Current,
+            Some(LevelValue::Known(Level::new(0).unwrap())),
+            true,
+        ),
+    ] {
+        let mut pty = Pty::new();
+        let mut hat = ready_output_hat(&mut pty).await;
+        let (receive, _admission) =
+            queue_output(&mut hat, None, Instant::now() + Duration::from_secs(1));
+        let responder = tokio::spawn(async move {
+            assert_eq!(line(&mut pty.peer).await, b"h01A0\n");
+            pty.peer.write_all(b"L020401\n").await.unwrap();
+            pty.peer.write_all(level).await.unwrap();
+            assert_eq!(line(&mut pty.peer).await, b"h0190\n");
+            pty.peer.write_all(status).await.unwrap();
+            pty
+        });
+        output_complete(&mut hat).await;
+        let completed = hat.take_completed_output().unwrap();
+        assert!(completed.error.is_none());
+        let observation = completed.observation.unwrap();
+        assert_eq!(
+            observation.quality, quality,
+            "fixture sample quality was invented"
+        );
+        assert_eq!(
+            observation.level(),
+            expected,
+            "fixture sample changed MASK/missing/collision meaning"
+        );
+        assert_eq!(observation.available(), available);
+        if quality != Quality::Current {
+            assert_eq!(
+                observation.power(),
+                None,
+                "incomplete samples became known power"
+            );
+        }
+        if level == b"X\n" {
+            assert!(matches!(
+                observation.actual_level,
+                Some(QueryReply::ReceiveCollision(_))
+            ));
+        }
+        let _ = completed.request.reply.send(Ok(observation));
+        receive.await.unwrap().unwrap();
+        let _pty = responder.await.unwrap();
+        hat.close(Instant::now() + Duration::from_secs(1))
+            .await
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn physical_admission_outlives_frontend_loss_and_actual_transport_teardown() {
+    use crate::dali::gear::Intent;
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    let (receive, admission) = queue_output(
+        &mut hat,
+        Some(Intent::new(None, Some(1.0)).unwrap()),
+        Instant::now() + Duration::from_secs(1),
+    );
+    hat.changed().await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h00FE\n");
+    pty.peer.write_all(b"N\n").await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h01A0\n");
+    drop(receive);
+    let link = hat.session.as_ref().unwrap().link.clone();
+    hat.event(Ok(Event::Closed(CloseReason::Eof))).unwrap();
+    assert_eq!(
+        admission.available_permits(),
+        0,
+        "transport event released physical admission before backend teardown"
+    );
+    drop(pty);
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while hat.job.as_ref().is_none_or(|job| job.1 != JobKind::Close) {
+            hat.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(
+        admission.available_permits(),
+        0,
+        "frontend helper join released physical admission before transport join"
+    );
+    link.close().await.unwrap();
+    assert_eq!(
+        admission.available_permits(),
+        0,
+        "backend teardown released owner-held physical admission before collection"
+    );
+    output_complete(&mut hat).await;
+    let completed = hat.take_completed_output().unwrap();
+    assert!(matches!(completed.error, Some(ServiceError::Uncertain(_))));
+    assert_eq!(admission.available_permits(), 0);
+    drop(completed);
+    assert_eq!(admission.available_permits(), 1);
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn canceled_or_expired_queued_output_retires_while_health_is_still_pending() {
+    for cancel in [false, true] {
+        let mut pty = Pty::new();
+        let mut hat = ready_output_hat(&mut pty).await;
+        let link = hat.session.as_ref().unwrap().link.clone();
+        hat.spawn(JobKind::Query, async move {
+            Done::Poll(query_health(&link, &[0], Instant::now() + Duration::from_secs(1)).await)
+        });
+        assert_eq!(line(&mut pty.peer).await, b"d\n");
+        let (receive, admission) = queue_output(
+            &mut hat,
+            Some(crate::dali::gear::Intent::new(Some(true), None).unwrap()),
+            Instant::now() + Duration::from_millis(20),
+        );
+        let mut receive = Some(receive);
+        if cancel {
+            drop(receive.take());
+        }
+        output_complete(&mut hat).await;
+        assert!(
+            hat.job
+                .as_ref()
+                .is_some_and(|job| job.1 == JobKind::Query && !job.0.is_finished()),
+            "queued output waited for the independent health reply"
+        );
+        let completed = hat.take_completed_output().unwrap();
+        assert_eq!(completed.error, Some(ServiceError::Expired));
+        drop(completed);
+        drop(receive);
+        assert_eq!(
+            admission.available_permits(),
+            1,
+            "queued cancellation retained service admission"
+        );
+        pty.peer.write_all(b"D24\n").await.unwrap();
+        tokio::time::timeout(Duration::from_secs(1), async {
+            while hat.job.is_some() {
+                hat.changed().await.unwrap();
+            }
+        })
+        .await
+        .unwrap();
+        quiet(&mut pty.peer).await;
+        hat.close(Instant::now() + Duration::from_secs(1))
+            .await
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn queued_output_cannot_recapture_ready_after_unobserved_ordering_loss() {
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    hat.settings.as_mut().unwrap().timing.retry = Duration::from_secs(60);
+    let link = hat.session.as_ref().unwrap().link.clone();
+    let query = link.clone();
+    hat.spawn(JobKind::Query, async move {
+        Done::Poll(
+            query
+                .execute(
+                    Command::Send {
+                        bus: 0,
+                        frame: crate::atx::wire::DaliFrame::Bits16(0x0190),
+                        repeat: false,
+                    },
+                    Duration::from_millis(20),
+                )
+                .await
+                .map(|_| vec![]),
+        )
+    });
+    assert_eq!(line(&mut pty.peer).await, b"h0190\n");
+    let (receive, _admission) = queue_output(
+        &mut hat,
+        Some(crate::dali::gear::Intent::new(Some(true), None).unwrap()),
+        Instant::now() + Duration::from_secs(1),
+    );
+    let captured = hat.physical.as_ref().unwrap().stamp;
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while !hat.job.as_ref().unwrap().0.is_finished() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    pty.peer.write_all(b"N\n").await.unwrap();
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while link.status() != SessionState::Ready {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_ne!(link.observation_epoch(), captured.actor);
+    output_complete(&mut hat).await;
+    let completed = hat.take_completed_output().unwrap();
+    assert!(
+        completed.observation.is_none(),
+        "stale queued output adopted a new UART epoch"
+    );
+    assert!(matches!(completed.error, Some(ServiceError::Rejected(_))));
+    drop(completed);
+    drop(receive);
+    quiet(&mut pty.peer).await;
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn queued_output_refuses_a_power_cycle_even_when_health_completed_successfully() {
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    let link = hat.session.as_ref().unwrap().link.clone();
+    let query = link.clone();
+    hat.spawn(JobKind::Query, async move {
+        Done::Poll(query_health(&query, &[0], Instant::now() + Duration::from_secs(1)).await)
+    });
+    assert_eq!(line(&mut pty.peer).await, b"d\n");
+    let (receive, _admission) = queue_output(
+        &mut hat,
+        Some(crate::dali::gear::Intent::new(Some(true), None).unwrap()),
+        Instant::now() + Duration::from_secs(1),
+    );
+    let captured = hat.physical.as_ref().unwrap().stamp;
+    pty.peer.write_all(b"D04\nD24\n").await.unwrap();
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while link.bus_epoch(0) == captured.bus || !hat.job.as_ref().unwrap().0.is_finished() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    hat.next = Instant::now() + Duration::from_secs(60);
+    output_complete(&mut hat).await;
+    let completed = hat.take_completed_output().unwrap();
+    assert!(
+        completed.observation.is_none(),
+        "queued output bypassed its captured bus epoch before hardware admission"
+    );
+    assert!(matches!(completed.error, Some(ServiceError::Rejected(_))));
+    drop(completed);
+    drop(receive);
+    quiet(&mut pty.peer).await;
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn completed_readback_before_a_power_cycle_is_partial_evidence_not_current_state() {
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    let link = hat.session.as_ref().unwrap().link.clone();
+    let (receive, _admission) =
+        queue_output(&mut hat, None, Instant::now() + Duration::from_secs(1));
+    hat.changed().await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h01A0\n");
+    pty.peer.write_all(b"J7F\n").await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h0190\n");
+    pty.peer.write_all(b"J04\n").await.unwrap();
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while !hat.job.as_ref().unwrap().0.is_finished() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    let before = link.bus_epoch(0);
+    pty.peer.write_all(b"D04\nD24\n").await.unwrap();
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while link.bus_epoch(0) == before {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    output_complete(&mut hat).await;
+    let completed = hat.take_completed_output().unwrap();
+    let observation = completed.observation.as_ref().unwrap();
+    assert_eq!(
+        observation.quality,
+        output::Quality::Stale,
+        "post-sample power cycle became a fresh readback"
+    );
+    assert_eq!(
+        observation.level(),
+        Some(crate::dali::gear::LevelValue::Known(
+            crate::dali::gear::Level::new(127).unwrap()
+        )),
+        "invalidated readback lost its partial diagnostic evidence"
+    );
+    assert_eq!(observation.power(), None);
+    assert!(matches!(completed.error, Some(ServiceError::Rejected(_))));
+    drop(completed);
+    drop(receive);
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn managed_stop_with_active_output_joins_hardware_despite_retained_clients() {
+    let fixture = Fixture::new();
+    let mut pty = Pty::new();
+    let broker = mqtt_test_broker::FakeBroker::start().await;
+    let (service, handle) = fixture.service();
+    let running = start(
+        service.with_uart(pty.path.clone(), RepeatPolicy::Unverified),
+        &handle,
+        &broker,
+    )
+    .await;
+    assert_eq!(line(&mut pty.peer).await, b"v\n");
+    pty.peer.write_all(b"V013204\n").await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"d\n");
+    pty.peer.write_all(b"D24\n").await.unwrap();
+    wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+    let client = handle.clone();
+    let pending = tokio::spawn(async move {
+        client
+            .apply_output(
+                "Bus1.Outputs.Light1",
+                crate::dali::gear::Intent::new(Some(true), None).unwrap(),
+                context(1),
+                deadline(),
+            )
+            .await
+    });
+    assert_eq!(line(&mut pty.peer).await, b"h0105\n");
+    pty.peer.write_all(b"N\n").await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h01A0\n");
+    drop(pty._slave);
+    assert!(
+        running.stop().await,
+        "active output prevented managed teardown"
+    );
+    assert!(pending.await.unwrap().is_err());
+    assert_eq!(handle.snapshot().unwrap().hardware, Hardware::Closed);
+    let closed = tokio::time::timeout(Duration::from_millis(300), pty.peer.read_u8())
+        .await
+        .expect("retained output client kept UART alive");
+    assert!(
+        closed.is_err(),
+        "closed output owner produced extra UART bytes"
+    );
+}
+
 #[tokio::test]
 async fn renewed_input_cannot_starve_completed_helper_or_hide_its_panic() {
     for panic in [false, true] {

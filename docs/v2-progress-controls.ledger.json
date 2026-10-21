@@ -2,24 +2,24 @@
  "rows": {
   "actor_join_failure_is_silently_retried": {
    "last_real": {
-    "at": "2026-10-21T22:05:12Z",
+    "at": "2026-10-21T22:40:29Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:e2ddfb3eb4ed8e1d",
+     "guard": "item:21aab7a47a52303b",
      "row": "71caf33f5f23d2cb",
      "test": null
     },
     "path": "command",
-    "secs": 5.7,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.8,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "input_precedes_queued_request_retirement": {
    "last_real": {
-    "at": "2026-10-21T22:04:42Z",
+    "at": "2026-10-21T22:39:49Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -29,76 +29,76 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.6,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.1,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "late_eof_cancels_owned_close": {
    "last_real": {
-    "at": "2026-10-21T22:04:54Z",
+    "at": "2026-10-21T22:40:04Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:1d8920a233282cd6",
+     "guard": "item:41a04e540a91bb97",
      "row": "63a11e8309b77940",
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.8,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "normal_closed_query_is_fatal_before_eof": {
    "last_real": {
-    "at": "2026-10-21T22:05:00Z",
+    "at": "2026-10-21T22:40:12Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:e2ddfb3eb4ed8e1d",
+     "guard": "item:21aab7a47a52303b",
      "row": "3cd3d2dd5aac410e",
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.8,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "normal_closed_status_is_fatal_before_eof": {
    "last_real": {
-    "at": "2026-10-21T22:05:06Z",
+    "at": "2026-10-21T22:40:20Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:1d8920a233282cd6",
-     "row": "93d07953bc65adb1",
+     "guard": "item:94fad6dbe092e0e9",
+     "row": "cd9fb7dc3e13d5cd",
      "test": null
     },
     "path": "command",
-    "secs": 5.9,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.8,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "renewed_events_postpone_ready_helper_join": {
    "last_real": {
-    "at": "2026-10-21T22:04:48Z",
+    "at": "2026-10-21T22:39:57Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:1d8920a233282cd6",
+     "guard": "item:41a04e540a91bb97",
      "row": "841c2d6179e1cdf2",
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.8,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   }

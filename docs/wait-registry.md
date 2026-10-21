@@ -28,7 +28,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
-| `v2-service-request` | bounded | capacity-one service mutation/recovery reply | Nonwaiting permit and bounded channel admission; the caller supplies an absolute deadline. On expiry report an uncertain result, drop the reply receiver to signal cancellation, and keep routing frozen if saving began. The actor retains the permit until its own operation settles. |
+| `v2-service-request` | bounded | capacity-one service operation reply | Nonwaiting permit and bounded channel admission; the caller supplies an absolute deadline. On expiry report an uncertain result and drop the reply receiver. Keep routing frozen if saving began; physical jobs retain service admission until their backend request settles or actual transport teardown completes under its fixed cleanup ceiling. |
 | `v2-service-attach` | bounded | inventory actor installing its first runtime Reporter | At most 2 s, independently of MQTT and UART. On expiry fail proxy connect; reconnect attachment is idempotent and cannot reopen uncertain routing. |
 | `v2-service-start` | bounded | durable ConfigStore startup or managed cancellation | ConfigStore has a 5 s startup deadline and the select also wakes on parent cancellation. On expiry startup fails; the managed runtime includes any unfinished blocking owner in actual teardown. |
 | `v2-service-save` | bounded | serialized ConfigStore edit/recovery, caller cancellation or managed stop | The original request deadline bounds ConfigStore; caller/parent cancellation drops its request future. On expiry or lost outcome freeze service routing until explicit recognized recovery and successful runtime activation. |
@@ -52,6 +52,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `emulator-output` | bounded | best-effort raw-descriptor startup/diagnostic writer | At most 200 ms; on expiry detach and continue/exit. The writer duplicates the descriptor and bypasses Rust stdio locks, so an unread output pipe cannot hold process exit. |
 | `atx-receive-fence` | bounded | same-reader receive drain and its oneshot result | Caller deadline bounds the oneshot; on expiry return Deadline. Reader drain separately stops after 4096 bytes or 100 ms with Busy. Explicit nonblocking Empty ends draining; retry Pending remains pending under the 100 ms bound. Close aborts the reader and drops the sender. |
 | `atx-transaction-result` | bounded | capacity-one actor response | One total caller deadline covers fence, write and response, or explicit quiet recovery. On expiry return Deadline and retain unresolved ordering until its terminal, qualified quiet recovery, or accepted Boot. A ready response is rejected if the caller resumes after expiry. |
+| `atx-transaction-settle` | bounded | actual transaction admission after the preceding frontend has joined | Caller supplies one absolute cleanup ceiling (the service selects 1 s once). Acquiring the shared permit proves prior actor requests retired while service admission excludes other producers. Terminal/stopping sessions require actual close/join even if the permit is free. On expiry return Deadline and retain service admission through actual bounded teardown; a failed join fails the service. |
 | `atx-reset-guard` | acyclic | synchronous reader reset-slot mutex | Only clones, installs or removes an Arc. No await, I/O, stream lock or cancellation lock is acquired while this mutex is held. The split reader may snapshot it but drops it before any other work. |
 | `atx-recovery-cancel` | acyclic | synchronous caller cancellation / reader authorization mutex | Caller Drop and actor checks only set/read a bool. Reader takes it under the split-stream lock and holds it through synchronous framing reset; no await or I/O occurs while held, and no other holder acquires the stream lock. No holder waits on an actor or caller. |
 | `atx-quiet` | bounded | raw-byte activity, guarded same-reader fence, actor events or cancellation | One original caller deadline bounds the measured interval and all retries/fences. Managed acquisition supplies quiet interval plus setup allowance. Raw input restarts the timer without discarding complete events. On expiry or cancellation recovery remains required. Guarded framing reset checks identity, cancellation, activity and deadline under the split-stream lock at Empty. New activity after reader proof requires another interval; write poison/EOF never become successful recovery. |
@@ -104,7 +105,7 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until
 ```
 
 ## Waiters (generated)
@@ -131,13 +132,14 @@ atx-serial-open src/atx/serial.rs Serial::open_using
 atx-transaction-close src/atx/transactions/engine.rs Transactions::close_until
 atx-transaction-dispatch src/atx/transactions/engine.rs Actor::drive
 atx-transaction-response src/atx/transactions/engine.rs Actor::await_response
-atx-transaction-result src/atx/transactions/engine.rs Transactions::enqueue
+atx-transaction-result src/atx/transactions/engine.rs Transactions::enqueue_until
+atx-transaction-settle src/atx/transactions/engine.rs Transactions::settle_until
 atx-transaction-stop src/atx/transactions/engine.rs stop_requested
 atx-transaction-write src/atx/transactions/engine.rs Actor::command
 atx-transaction-write src/atx/transactions/engine.rs Actor::write
-atx-write src/atx/monitor.rs Monitor::write_correlated
+atx-write src/atx/monitor.rs Monitor::write_correlated_until
 atx-write src/atx/monitor.rs stopped
-atx-write-lock src/atx/monitor.rs Monitor::write_correlated
+atx-write-lock src/atx/monitor.rs Monitor::write_correlated_until
 dali-config-save src/mqtt.rs ConfigSaver::save_config
 dali-config-writer src/mqtt.rs <Release as Drop>::drop
 dali-config-writer src/mqtt.rs ConfigSaver::save_config
@@ -186,7 +188,6 @@ mqtt-request src/mqtt.rs publish_with_trace
 v2-config-check src/config_check.rs run
 v2-config-output src/config_check.rs output
 v2-daemon-run src/daemon.rs run
-v2-hat-close src/service/hat.rs Hat::advance
 v2-hat-close src/service/hat.rs Hat::close
 v2-hat-close src/service/owner.rs <DaliService as ProcessService>::run
 v2-hat-health src/service/hat.rs query_health
@@ -196,6 +197,7 @@ v2-hat-setup src/service/hat.rs Hat::advance
 v2-service-attach src/service.rs ServiceHandle::attach
 v2-service-loop src/service/owner.rs <DaliService as ProcessService>::run
 v2-service-request src/service.rs ServiceHandle::submit
+v2-service-request src/service/output.rs ServiceHandle::output
 v2-service-save src/service/owner.rs Owner::change
 v2-service-start src/service/owner.rs <DaliService as ProcessService>::run
 v2-store-close src/config_store.rs ConfigStore::close

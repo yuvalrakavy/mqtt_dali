@@ -1,11 +1,13 @@
 # Managed inventory service (v2 development)
 
 This guide is for bridge contributors and embedders. The service library owns
-durable configuration, runtime routing and optional UART health. The canonical
+durable configuration, runtime routing, optional UART health and individual-output
+library operations. The canonical
 `mqtt_dali` executable now runs it through BridgeKit; `mqtt_dali_v2` is an alias.
 `--check-config` remains an explicit offline operation. See
-[running the development daemon](running-v2.md). Web handlers and fixture
-capabilities are not available yet.
+[running the development daemon](running-v2.md). Web handlers and MQTT fixture
+properties are not available yet; embedders can use the
+[single-output service API](output-service.md).
 
 `DaliService::new(paths, instance)` returns a resource-free service and a
 `ServiceHandle`. Start it with a fixed Bridge's `start_managed`/`run_managed`.
@@ -31,7 +33,8 @@ Optionally follow it with
 `with_uart_quiet_period(Duration::from_millis(250))?`; the builder validates a
 1 ms..5 s interval and requires UART to be enabled first. The builders open
 nothing. The managed service owns one Serial/Transactions
-session and sends only HAT Version and enabled-bus Status queries. Hardware
+session. Background health uses HAT Version and enabled-bus Status queries;
+explicit library output operations share that same owner. Hardware
 snapshots distinguish Connecting, Resynchronizing, Initializing, Ready (raw version strings and
 bus observations), unavailable retry, waiting for a late reply, ResetRequired
 and Closed. Bus power loss remains a bus fact, rather than disconnecting a
@@ -65,8 +68,9 @@ Caller cancellation reaches reader reset authorization directly, even if the
 actor has not been polled. Its event loop also checks the original deadline
 before each select so ready input cannot starve expiry. Cancellation/expiry leaves
 recovery required. Managed startup applies that
-policy automatically. The current surface still exposes only UART health;
-fixture capabilities arrive in P4.
+policy automatically. The MQTT surface still exposes metadata and UART health;
+the output-service API adds individual physical reads/writes through the same
+admission and actual teardown path.
 
 Queued transaction requests take priority over idle input dispatch; command
 admission still drains and classifies old records and fences the receive stream.

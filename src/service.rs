@@ -11,6 +11,7 @@ use tokio::{
 };
 
 mod hat;
+pub mod output;
 mod owner;
 mod proxy;
 mod routing;
@@ -56,6 +57,7 @@ pub struct Snapshot {
     pub model: Arc<Model>,
     pub phase: Phase,
     pub hardware: Hardware,
+    pub outputs: std::collections::BTreeMap<String, output::Observation>,
     pub version: &'static str,
     pub build_utc: &'static str,
 }
@@ -113,10 +115,15 @@ pub struct DaliService {
     hooks: crate::config_store::test_hooks::Hooks,
     #[cfg(test)]
     activation_hook: Option<ActivationHook>,
+    #[cfg(test)]
+    output_acceptance_hook: Option<OutputAcceptanceHook>,
 }
 #[cfg(test)]
 type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations) + Send + Sync>;
+#[cfg(test)]
+type OutputAcceptanceHook = Arc<dyn Fn(&mut hat::Hat) + Send + Sync>;
 enum Message {
+    Output(output::Request),
     Attach(
         mqtt_bridge_kit::Reporter,
         oneshot::Sender<Result<(), String>>,
@@ -179,6 +186,8 @@ impl DaliService {
                 hooks: Default::default(),
                 #[cfg(test)]
                 activation_hook: None,
+                #[cfg(test)]
+                output_acceptance_hook: None,
             },
             handle,
         )

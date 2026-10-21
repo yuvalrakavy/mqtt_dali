@@ -18,6 +18,7 @@ enum Operation {
     Command {
         command: Command,
         initializing: bool,
+        epoch: Option<(u64, u64)>,
     },
     Resynchronize {
         quiet: Duration,
@@ -37,6 +38,7 @@ struct Request {
     permit: OwnedSemaphorePermit,
 }
 struct Shared<S> {
+    epoch: Arc<Epochs>,
     monitor: Monitor<S>,
     requests: mpsc::Sender<Request>,
     permit: Arc<Semaphore>,
@@ -67,9 +69,46 @@ impl<S> Clone for Transactions<S> {
 }
 struct Life {
     status: watch::Sender<SessionState>,
+    epoch: Arc<Epochs>,
+    buses: [Option<(u8, u8)>; 4],
+}
+#[derive(Default)]
+struct Epochs {
+    ordering: AtomicU64,
+    buses: [AtomicU64; 4],
+}
+fn invalidate(counter: &AtomicU64) {
+    // The actor lifecycle is the sole writer; clients only sample evidence.
+    counter.store(
+        counter.load(Ordering::Relaxed).saturating_add(1),
+        Ordering::Release,
+    );
+}
+impl Life {
+    fn new(status: watch::Sender<SessionState>) -> Self {
+        Self {
+            status,
+            epoch: Arc::new(Epochs::default()),
+            buses: [None; 4],
+        }
+    }
+    fn invalidate(&self) {
+        invalidate(&self.epoch.ordering);
+    }
+    fn observe(&mut self, packet: &Packet) {
+        if let Kind::BusStatus { status, channels } = packet.kind {
+            if let Some(previous) = self.buses.get_mut(usize::from(packet.bus)) {
+                if *previous != Some((status, channels)) {
+                    *previous = Some((status, channels));
+                    invalidate(&self.epoch.buses[usize::from(packet.bus)]);
+                }
+            }
+        }
+    }
 }
 impl Drop for Life {
     fn drop(&mut self) {
+        self.invalidate();
         self.status.send_replace(SessionState::Closed);
     }
 }
@@ -80,6 +119,7 @@ struct Pending {
     remaining: u8,
     replies: Vec<BusReply>,
     result: Option<Response>,
+    epoch: Option<(u64, u64)>,
 }
 enum Mode {
     Uninitialized,
@@ -107,15 +147,15 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
         let (status_send, status) = watch::channel(SessionState::Uninitialized);
         let (stop, stop_receive) = watch::channel(false);
         let (shutdown, shutdown_receive) = watch::channel(None);
+        let life = Life::new(status_send);
+        let epoch = life.epoch.clone();
         let actor = Actor {
             monitor: monitor.clone(),
             events,
             mode: Mode::Uninitialized,
             requests: receive,
             stop: stop_receive,
-            life: Life {
-                status: status_send,
-            },
+            life,
             repeat,
             shutdown: shutdown_receive,
         };
@@ -131,6 +171,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
         (
             Self {
                 shared: Arc::new(Shared {
+                    epoch,
                     monitor,
                     requests: send,
                     permit: Arc::new(Semaphore::new(1)),
@@ -147,6 +188,44 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
     }
     pub fn status(&self) -> SessionState {
         *self.shared.status.borrow()
+    }
+    pub(crate) fn observation_epoch(&self) -> u64 {
+        self.shared.epoch.ordering.load(Ordering::Acquire)
+    }
+    pub(crate) fn bus_epoch(&self, bus: u8) -> u64 {
+        self.shared
+            .epoch
+            .buses
+            .get(usize::from(bus))
+            .map_or(u64::MAX, |value| value.load(Ordering::Acquire))
+    }
+    /// Call only after joining the preceding frontend, while its service still
+    /// excludes all other producers. Retirement is not terminal session teardown.
+    pub(crate) async fn settle_until(&self, deadline: Instant) -> Result<(), TransactionError> {
+        let terminal = || {
+            *self.shared.stop.borrow()
+                || self.status() == SessionState::Closed
+                || self.shared.worker.is_finished()
+        };
+        if terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        // WAIT: atx-transaction-settle
+        let permit = timeout_at(deadline, self.shared.permit.clone().acquire_owned())
+            .await
+            .map_err(|_| TransactionError::Deadline)?
+            .map_err(|_| TransactionError::Closed)?;
+        if terminal() {
+            return Err(TransactionError::Closed);
+        }
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        drop(permit);
+        Ok(())
     }
     #[cfg(test)]
     pub(crate) fn abort_worker_for_test(&self) {
@@ -219,6 +298,29 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
     ) -> Result<Response, TransactionError> {
         self.submit(command, false, within).await
     }
+    pub(crate) async fn execute_until(
+        &self,
+        command: Command,
+        deadline: Instant,
+        epoch: Option<(u64, u64)>,
+    ) -> Result<Response, TransactionError> {
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        command
+            .encode()
+            .map_err(crate::atx::monitor::TransportError::from)?;
+        terminal_count(&command, self.shared.repeat)?;
+        self.enqueue_until(
+            Operation::Command {
+                command,
+                initializing: false,
+                epoch,
+            },
+            deadline,
+        )
+        .await
+    }
     async fn submit(
         &self,
         command: Command,
@@ -233,6 +335,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
             Operation::Command {
                 command,
                 initializing,
+                epoch: None,
             },
             within,
         )
@@ -243,12 +346,22 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
         operation: Operation,
         within: Duration,
     ) -> Result<Response, TransactionError> {
-        if *self.shared.stop.borrow() {
-            return Err(TransactionError::Closed);
-        }
         let deadline = Instant::now()
             .checked_add(within)
             .ok_or(TransactionError::Deadline)?;
+        self.enqueue_until(operation, deadline).await
+    }
+    async fn enqueue_until(
+        &self,
+        operation: Operation,
+        deadline: Instant,
+    ) -> Result<Response, TransactionError> {
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        if *self.shared.stop.borrow() {
+            return Err(TransactionError::Closed);
+        }
         let permit = Arc::clone(&self.shared.permit)
             .try_acquire_owned()
             .map_err(|_| TransactionError::Busy)?;
@@ -375,6 +488,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
         });
     }
     fn reset(&mut self, after: u64) {
+        self.life.invalidate();
         self.mode = Mode::Reset { after };
     }
     async fn run(mut self) -> Result<(), TransactionError> {
@@ -418,6 +532,12 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
         }
     }
     fn idle_event(&mut self, event: Result<Event, broadcast::error::RecvError>) {
+        if let Ok(Event::Packet {
+            packet: Ok(packet), ..
+        }) = &event
+        {
+            self.life.observe(packet);
+        }
         let mut late = match std::mem::replace(&mut self.mode, Mode::Uninitialized) {
             Mode::Late(pending) => Some(pending),
             mode => {
@@ -449,6 +569,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
                     }),
             }) => {
                 if !matches!(self.mode, Mode::Reset { after } if sequence < after) {
+                    self.life.invalidate();
                     self.monitor.rearm_after_boot();
                     self.mode = Mode::Uninitialized;
                 }
@@ -489,7 +610,9 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
                         return Err(TransactionError::StreamLoss);
                     }
                 };
+                self.life.observe(&packet);
                 if matches!(packet.kind, Kind::Boot(_)) {
+                    self.life.invalidate();
                     self.mode = Mode::Uninitialized;
                     return Err(TransactionError::Reboot);
                 }
@@ -548,7 +671,8 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
             Operation::Command {
                 command,
                 initializing,
-            } => self.command(request, command, initializing).await,
+                epoch,
+            } => self.command(request, command, initializing, epoch).await,
             Operation::Resynchronize { quiet } => {
                 self.reset(self.monitor.receive_sequence() + 1);
                 let result = self.recover(request, quiet).await;
@@ -641,20 +765,20 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
         request: &mut Request,
         command: Command,
         initializing: bool,
+        epoch: Option<(u64, u64)>,
     ) -> Result<Response, TransactionError> {
         self.drain(request.deadline)?;
         self.publish_mode();
         admission(*self.life.status.borrow(), initializing)?;
+        self.check_epoch(&command, epoch)?;
         if Instant::now() >= request.deadline {
             return Err(TransactionError::Deadline);
         }
-        let fence = self
-            .monitor
-            .fence(request.deadline.saturating_duration_since(Instant::now()))
-            .await?;
+        let fence = self.monitor.receive_fence_until(request.deadline).await?;
         self.drain(request.deadline)?;
         self.publish_mode();
         admission(*self.life.status.borrow(), initializing)?;
+        self.check_epoch(&command, epoch)?;
         if request.reply.is_closed() {
             return Err(TransactionError::Canceled);
         }
@@ -665,6 +789,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
             remaining: terminal_count(&command, self.repeat)?,
             replies: Vec::new(),
             result: None,
+            epoch,
         };
         let started = Arc::new(AtomicU64::new(u64::MAX));
         self.life.status.send_replace(SessionState::Writing);
@@ -694,6 +819,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
                         Mode::Ready
                     }
                 } else {
+                    self.life.invalidate();
                     Mode::Late(pending)
                 };
                 Err(error)
@@ -710,17 +836,15 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
         let monitor = self.monitor.clone();
         let command = pending.command.clone();
         // WAIT: atx-transaction-write
-        let write = monitor.write_correlated(
-            &command,
-            request.deadline.saturating_duration_since(Instant::now()),
-            Arc::clone(&started),
-        );
+        let write =
+            monitor.write_correlated_until(&command, request.deadline, Arc::clone(&started));
         tokio::pin!(write);
         let base_minimum = pending.minimum;
         loop {
             if Instant::now() >= request.deadline {
                 return Err(TransactionError::Deadline);
             }
+            self.check_epoch(&pending.command, pending.epoch)?;
             pending.minimum = base_minimum.max(started.load(Ordering::Acquire));
             // WAIT: atx-transaction-write
             tokio::select! {
@@ -736,6 +860,30 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
                 },
             }
         }
+    }
+    fn check_epoch(
+        &self,
+        command: &Command,
+        epoch: Option<(u64, u64)>,
+    ) -> Result<(), TransactionError> {
+        if let Some((ordering, bus_epoch)) = epoch {
+            let Command::Send { bus, .. } = command else {
+                return Err(TransactionError::UnsupportedMode);
+            };
+            if ordering == u64::MAX
+                || bus_epoch == u64::MAX
+                || self.life.epoch.ordering.load(Ordering::Acquire) != ordering
+                || self
+                    .life
+                    .epoch
+                    .buses
+                    .get(usize::from(*bus))
+                    .is_none_or(|value| value.load(Ordering::Acquire) != bus_epoch)
+            {
+                return Err(TransactionError::Desynchronized);
+            }
+        }
+        Ok(())
     }
     async fn await_response(
         &mut self,
@@ -812,6 +960,260 @@ mod tests {
     use std::{future::Future, task::Poll};
 
     #[tokio::test(start_paused = true)]
+    async fn retired_epoch_guard_refuses_io_while_an_unrelated_bus_stays_usable() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let (stream, mut hat) = tokio::io::duplex(256);
+        let (link, _) = Transactions::start(stream, RepeatPolicy::Unverified);
+        let query = link.clone();
+        let setup = tokio::spawn(async move { query.initialize(Duration::from_secs(1)).await });
+        let mut version = [0; 2];
+        hat.read_exact(&mut version).await.unwrap();
+        hat.write_all(b"V013204\n").await.unwrap();
+        setup.await.unwrap().unwrap();
+        hat.write_all(b"D24\n1D24\n").await.unwrap();
+        tokio::time::timeout(Duration::from_secs(1), async {
+            while link.bus_epoch(0) == 0 || link.bus_epoch(1) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        let initial = (link.observation_epoch(), link.bus_epoch(0));
+        let old_bus1 = (link.observation_epoch(), link.bus_epoch(1));
+        hat.write_all(b"1D04\n1D24\n").await.unwrap();
+        tokio::time::timeout(Duration::from_secs(1), async {
+            while link.bus_epoch(1) == old_bus1.1 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(
+            link.execute_until(
+                Command::Send {
+                    bus: 1,
+                    frame: DaliFrame::Bits16(0x00fe),
+                    repeat: false
+                },
+                Instant::now() + Duration::from_millis(20),
+                Some(old_bus1)
+            )
+            .await,
+            Err(TransactionError::Desynchronized),
+            "retired bus epoch admitted a fixture command"
+        );
+        assert!(
+            tokio::time::timeout(Duration::from_millis(1), hat.read_u8())
+                .await
+                .is_err(),
+            "retired epoch added a UART write"
+        );
+        let query = link.clone();
+        let healthy = tokio::spawn(async move {
+            query
+                .execute_until(
+                    Command::Send {
+                        bus: 0,
+                        frame: DaliFrame::Bits16(0x01a0),
+                        repeat: false,
+                    },
+                    Instant::now() + Duration::from_secs(1),
+                    Some(initial),
+                )
+                .await
+        });
+        let mut bytes = [0; 6];
+        hat.read_exact(&mut bytes).await.unwrap();
+        assert_eq!(&bytes, b"h01A0\n");
+        hat.write_all(b"J7F\n").await.unwrap();
+        healthy.await.unwrap().unwrap();
+        link.close().await.unwrap();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn joined_canceled_frontend_does_not_prove_backend_settlement() {
+        use crate::atx::test_support::HeldDrain;
+        use std::sync::atomic::AtomicBool;
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let (stream, mut hat) = tokio::io::duplex(128);
+        let held = Arc::new(AtomicBool::new(true));
+        let (entered, waiting) = oneshot::channel();
+        let (link, _) = Transactions::start(
+            HeldDrain {
+                stream,
+                held: held.clone(),
+                entered: Some(entered),
+            },
+            RepeatPolicy::Unverified,
+        );
+        let query = link.clone();
+        let frontend = tokio::spawn(async move { query.initialize(Duration::from_secs(2)).await });
+        tokio::time::timeout(Duration::from_secs(1), waiting)
+            .await
+            .unwrap()
+            .unwrap();
+        frontend.abort();
+        assert!(frontend.await.unwrap_err().is_cancelled());
+        assert_eq!(
+            link.shared.permit.available_permits(),
+            0,
+            "fixture did not hold a real actor request"
+        );
+        let mut settlement = Box::pin(link.settle_until(Instant::now() + Duration::from_secs(1)));
+        assert!(
+            std::future::poll_fn(|cx| Poll::Ready(settlement.as_mut().poll(cx)))
+                .await
+                .is_pending(),
+            "joined frontend was mistaken for settled backend work"
+        );
+        held.store(false, Ordering::Release);
+        settlement.await.unwrap();
+        assert!(
+            tokio::time::timeout(Duration::from_millis(1), hat.read_u8())
+                .await
+                .is_err(),
+            "canceled fenced request transmitted after settlement"
+        );
+        let query = link.clone();
+        let healthy = tokio::spawn(async move { query.initialize(Duration::from_secs(1)).await });
+        let mut bytes = [0; 2];
+        hat.read_exact(&mut bytes).await.unwrap();
+        assert_eq!(&bytes, b"v\n");
+        hat.write_all(b"V013204\n").await.unwrap();
+        healthy.await.unwrap().unwrap();
+        link.close().await.unwrap();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn expired_settlement_cannot_succeed_with_a_free_permit() {
+        let (stream, _hat) = tokio::io::duplex(128);
+        let (link, _) = Transactions::start(stream, RepeatPolicy::Unverified);
+        let original = Instant::now() + Duration::from_millis(10);
+        tokio::time::advance(Duration::from_millis(20)).await;
+        assert_eq!(link.shared.permit.available_permits(), 1);
+        assert_eq!(
+            link.settle_until(original).await,
+            Err(TransactionError::Deadline),
+            "expired cleanup accepted a ready semaphore permit"
+        );
+        link.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn terminal_actor_with_free_request_permit_still_requires_actual_join() {
+        let (stream, _hat) = tokio::io::duplex(128);
+        let (link, _) = Transactions::start(stream, RepeatPolicy::Unverified);
+        link.abort_worker_for_test();
+        let mut status = link.observe_status();
+        tokio::time::timeout(
+            Duration::from_secs(1),
+            status.wait_for(|s| *s == SessionState::Closed),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(link.shared.permit.available_permits(), 1);
+        assert_eq!(
+            link.settle_until(Instant::now() + Duration::from_secs(1))
+                .await,
+            Err(TransactionError::Closed),
+            "free permit was mistaken for terminal actor teardown"
+        );
+        assert_eq!(link.close().await, Err(TransactionError::StreamLoss));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn actor_invalidation_survives_an_unobserved_late_to_ready_transition() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let (stream, mut hat) = tokio::io::duplex(128);
+        let (link, _) = Transactions::start(stream, RepeatPolicy::Unverified);
+        let query = link.clone();
+        let initialize =
+            tokio::spawn(async move { query.initialize(Duration::from_secs(1)).await });
+        let mut version = [0; 2];
+        hat.read_exact(&mut version).await.unwrap();
+        hat.write_all(b"V013204\n").await.unwrap();
+        initialize.await.unwrap().unwrap();
+        let mut owner_status = link.observe_status();
+        owner_status.borrow_and_update();
+        let before = link.observation_epoch();
+        let query = link.clone();
+        let read = tokio::spawn(async move {
+            query
+                .execute(
+                    Command::Send {
+                        bus: 0,
+                        frame: DaliFrame::Bits16(0x01a0),
+                        repeat: false,
+                    },
+                    Duration::from_millis(10),
+                )
+                .await
+        });
+        let mut bytes = [0; 6];
+        hat.read_exact(&mut bytes).await.unwrap();
+        assert_eq!(&bytes, b"h01A0\n");
+        tokio::time::advance(Duration::from_millis(20)).await;
+        assert_eq!(read.await.unwrap(), Err(TransactionError::Deadline));
+        hat.write_all(b"N\n").await.unwrap();
+        // Deliberately withhold the owner's watch polling across Late -> Ready.
+        tokio::time::timeout(Duration::from_secs(1), async {
+            while link.status() != SessionState::Ready {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(*owner_status.borrow_and_update(), SessionState::Ready);
+        assert_ne!(
+            link.observation_epoch(),
+            before,
+            "coalesced Ready erased the actor's ordering-loss evidence"
+        );
+        link.close().await.unwrap();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn an_expired_absolute_request_never_gets_a_fresh_submission_window() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let (stream, mut hat) = tokio::io::duplex(128);
+        let (link, _) = Transactions::start(stream, RepeatPolicy::Unverified);
+        let query = link.clone();
+        let initialize =
+            tokio::spawn(async move { query.initialize(Duration::from_secs(1)).await });
+        let mut version = [0; 2];
+        hat.read_exact(&mut version).await.unwrap();
+        assert_eq!(&version, b"v\n");
+        hat.write_all(b"V013204\n").await.unwrap();
+        initialize.await.unwrap().unwrap();
+        let original = Instant::now() + Duration::from_millis(10);
+        tokio::time::advance(Duration::from_millis(20)).await;
+        let result = link
+            .execute_until(
+                Command::Send {
+                    bus: 0,
+                    frame: DaliFrame::Bits16(0x00fe),
+                    repeat: false,
+                },
+                original,
+                None,
+            )
+            .await;
+        assert_eq!(
+            result,
+            Err(TransactionError::Deadline),
+            "expired absolute request received a fresh window"
+        );
+        assert!(
+            tokio::time::timeout(Duration::from_millis(1), hat.read_u8())
+                .await
+                .is_err(),
+            "expired absolute request added a UART write"
+        );
+        link.close().await.unwrap();
+    }
+
+    #[tokio::test(start_paused = true)]
     async fn canceled_and_expired_queued_callers_retire_under_continuous_input() {
         for canceled in [true, false] {
             let (stream, _hat) = tokio::io::duplex(128);
@@ -827,7 +1229,7 @@ mod tests {
                 mode: Mode::Uninitialized,
                 requests,
                 stop: stop_rx,
-                life: Life { status },
+                life: Life::new(status),
                 repeat: RepeatPolicy::Unverified,
                 shutdown: shutdown_rx,
             };
@@ -861,6 +1263,7 @@ mod tests {
             });
             let link = Transactions {
                 shared: Arc::new(Shared {
+                    epoch: Arc::new(Epochs::default()),
                     monitor,
                     requests: send,
                     permit: Arc::new(Semaphore::new(1)),
@@ -914,7 +1317,7 @@ mod tests {
             mode: Mode::Reset { after: 0 },
             requests,
             stop,
-            life: Life { status },
+            life: Life::new(status),
             repeat: RepeatPolicy::Unverified,
             shutdown,
         };
@@ -998,6 +1401,7 @@ mod tests {
         let dummy = tokio::spawn(std::future::pending::<()>());
         let link = Transactions {
             shared: Arc::new(Shared {
+                epoch: Arc::new(Epochs::default()),
                 monitor: monitor.clone(),
                 requests: send,
                 permit: Arc::new(Semaphore::new(1)),
@@ -1015,7 +1419,7 @@ mod tests {
             mode: Mode::Reset { after: 0 },
             requests,
             stop: stop_rx,
-            life: Life { status },
+            life: Life::new(status),
             repeat: RepeatPolicy::Unverified,
             shutdown: shutdown_rx,
         };
@@ -1095,7 +1499,7 @@ mod tests {
             mode: Mode::Reset { after: 0 },
             requests,
             stop,
-            life: Life { status },
+            life: Life::new(status),
             repeat: RepeatPolicy::Unverified,
             shutdown,
         };
@@ -1147,7 +1551,7 @@ mod tests {
             mode: Mode::Ready,
             requests,
             stop,
-            life: Life { status },
+            life: Life::new(status),
             repeat: RepeatPolicy::Unverified,
             shutdown,
         };
@@ -1158,6 +1562,7 @@ mod tests {
             operation: Operation::Command {
                 command: Command::Version,
                 initializing: true,
+                epoch: None,
             },
             deadline: Instant::now(),
             reply,
@@ -1166,6 +1571,7 @@ mod tests {
         let mut pending = Pending {
             command: Command::Version,
             initializing: true,
+            epoch: None,
             minimum: 1,
             remaining: 0,
             replies: Vec::new(),

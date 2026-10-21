@@ -2,7 +2,7 @@
  "rows": {
   "actor_accepts_stale_quiet_proof": {
    "last_real": {
-    "at": "2026-10-21T22:08:07Z",
+    "at": "2026-10-21T22:38:03Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -12,14 +12,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.2,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.7,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "actor_ignores_caller_flag_at_recovery_commit": {
    "last_real": {
-    "at": "2026-10-21T22:09:07Z",
+    "at": "2026-10-21T22:39:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -29,31 +29,31 @@
      "test": null
     },
     "path": "command",
-    "secs": 3.8,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 4.3,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "actor_panic_cleanup_is_not_owned": {
    "last_real": {
-    "at": "2026-10-21T22:08:45Z",
+    "at": "2026-10-21T22:38:52Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:13c80a5a68cdf32d",
+     "guard": "item:ded768dce4eac1a6",
      "row": "f794f16e44aa09bb",
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.4,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "caller_cancellation_does_not_reach_reader": {
    "last_real": {
-    "at": "2026-10-21T22:09:04Z",
+    "at": "2026-10-21T22:39:30Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -63,14 +63,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.6,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.2,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "canceled_reset_is_still_authorized": {
    "last_real": {
-    "at": "2026-10-21T22:07:57Z",
+    "at": "2026-10-21T22:37:48Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -80,14 +80,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.8,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 6.1,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "close_waiter_owns_resource_cleanup": {
    "last_real": {
-    "at": "2026-10-21T22:08:52Z",
+    "at": "2026-10-21T22:39:04Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,14 +97,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.7,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 11.8,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "completion_precedes_actual_join": {
    "last_real": {
-    "at": "2026-10-21T22:08:58Z",
+    "at": "2026-10-21T22:39:21Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -114,14 +114,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 17.2,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "configured_quiet_is_ignored": {
    "last_real": {
-    "at": "2026-10-21T22:08:26Z",
+    "at": "2026-10-21T22:38:28Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -131,31 +131,31 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.2,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.6,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "failed_recovery_reopens_admission": {
    "last_real": {
-    "at": "2026-10-21T22:08:14Z",
+    "at": "2026-10-21T22:38:11Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:98dab27d5a76c987",
+     "guard": "item:0f71909b2248c614",
      "row": "aaa2155096f047b8",
      "test": null
     },
     "path": "command",
-    "secs": 6.8,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.5,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "new_activity_reset_guard_is_removed": {
    "last_real": {
-    "at": "2026-10-21T22:08:01Z",
+    "at": "2026-10-21T22:37:54Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -165,31 +165,31 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.3,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 6.3,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "poison_discovered_during_close_is_lost": {
    "last_real": {
-    "at": "2026-10-21T22:08:39Z",
+    "at": "2026-10-21T22:38:44Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:e2ddfb3eb4ed8e1d",
+     "guard": "item:21aab7a47a52303b",
      "row": "e4e63e4fba3dc415",
      "test": null
     },
     "path": "command",
-    "secs": 3.2,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 5.6,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "quiet_interval_range_is_not_validated": {
    "last_real": {
-    "at": "2026-10-21T22:08:36Z",
+    "at": "2026-10-21T22:38:38Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -199,14 +199,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 9.7,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 10.7,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "quiet_timer_is_skipped": {
    "last_real": {
-    "at": "2026-10-21T22:07:46Z",
+    "at": "2026-10-21T22:37:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -216,14 +216,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.3,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 8.4,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "raw_activity_is_not_tracked": {
    "last_real": {
-    "at": "2026-10-21T22:07:52Z",
+    "at": "2026-10-21T22:37:42Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -233,14 +233,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.9,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.7,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "ready_event_backlog_starves_recovery_deadline": {
    "last_real": {
-    "at": "2026-10-21T22:09:13Z",
+    "at": "2026-10-21T22:39:41Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -250,25 +250,25 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.9,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.5,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   },
   "startup_quiet_is_skipped": {
    "last_real": {
-    "at": "2026-10-21T22:08:20Z",
+    "at": "2026-10-21T22:38:19Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:e2ddfb3eb4ed8e1d",
+     "guard": "item:21aab7a47a52303b",
      "row": "a5d399f93ad5569c",
      "test": null
     },
     "path": "command",
-    "secs": 5.9,
-    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "secs": 7.8,
+    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
     "verdict": "RED"
    }
   }
