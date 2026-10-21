@@ -727,7 +727,8 @@ failed at their intended behavioral assertions. The restored gate passes all
 **314 native tests**, strict scoped Clippy, Pi library/all four binary
 compilation, changed-file formatting, whitespace and doctests (none defined).
 The existing wait registry test passes; this boundary adds no waits. Final
-sequential source reviews are in progress. Hardware discovery,
+sequential source reviews approve frozen `c87bde8` with no material finding.
+Reviews were source-only and used the same model family. Hardware discovery,
 current input State, native action events/configuration/feedback remain required.
 See [the input inventory spec](superpowers/specs/2026-10-22-dali-v2-p4c-input-inventory.md).
 

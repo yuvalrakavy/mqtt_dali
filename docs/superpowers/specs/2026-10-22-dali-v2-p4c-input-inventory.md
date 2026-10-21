@@ -121,3 +121,10 @@ The parent reviewed the complete production/test/doc diff; the first design
 finding is covered by both producer and consumer controls. Final source reviews
 will read the frozen implementation commit. No hardware or production broker
 was contacted, and no shared SDK or Store code changed.
+
+Both sequential source reviewers approve frozen `c87bde8` against `2a5bfa8`
+without material findings. They checked additive compatibility, hierarchy,
+replacement/rename continuity, metadata admission and the independent behavioral
+oracles. Reviews were source-only, same-family; tests were run by the parent.
+The implementation and restored gate completed within the stated 30-minute
+budget (approximately 12 minutes including design and review dispatches).
