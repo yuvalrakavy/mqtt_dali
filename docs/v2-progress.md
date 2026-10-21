@@ -279,13 +279,44 @@ belong to canonical daemon integration; physical power-loss behavior and Pi
 runtime are unverified. Operator-owned directories and ordinary local Unix
 filesystems are assumed. No new daemon MQTT/hardware routing is admitted yet.
 
+## P3c2 — shared request-generation fencing implemented
+
+Shared dependency commit: `273062f05c1f0df05cb35f19bad458f2691d8dea` on
+`feat/dali-managed-services` in `Projects/tracing-init-dali-v2`. The reviewed
+contract and verification record are mirrored in
+`superpowers/specs/2026-10-21-bridge-target-generations.md`.
+
+Fixed Bridge instances (including managed startup) can opt into complete target
+generation tables. MQTT metadata, queued work, configuration, commands, reads,
+reports/removals and sealed publications retain their original context. Atomic
+admission/table retirement prevents old intent replacing fresh queued work;
+late observations cannot enter a replacement's model or conflict history.
+Default unfenced behavior remains compatible. Dynamic factory fencing is
+explicitly unsupported and rejected before connection.
+
+The full kit gate passed 194 tests and the existing black-box conformance suite
+passed 174 tests. Strict all-target Clippy, three rustdoc tests and the armv7
+library compile check passed. Sixteen guard-removal controls each failed at its
+intended behavior assertion, including admission/post interleaving, stale direct
+and proving reads, original output metadata, late removals and legacy retry/cache/
+partial-state compatibility. The scheduling test is controlled coverage with a
+200 ms window, not an exhaustive interleaving proof. Two sequential source
+reviews approved after four reproduced compatibility findings were fixed;
+cross-family review is unavailable. No live broker, HAT or Pi runtime was tested.
+
+The shared runtime spec, README, tutorial and canonical bridge skill were
+synchronized. The dependency commit is still local/unpublished. Actual DALI
+service routing, durable-save/retirement/publication ordering, and canonical
+daemon integration remain next; this bridge has not adopted the new dependency
+yet. `mqtt_dali_v2` remains the configuration-check development entry point.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
-| P3 BridgeKit/service | Codec, managed lifecycle, inventory and durable writer implemented | Fenced runtime context, retirement ordering and canonical v2 daemon |
+| P3 BridgeKit/service | Codec, managed lifecycle, inventory, durable writer and shared generation fencing implemented | DALI service/proxy, durable routing transitions, dependency pin and canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
