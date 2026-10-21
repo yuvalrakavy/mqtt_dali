@@ -29,6 +29,14 @@ New migration safety controls are in `docs/v2-migration-controls.toml`. Run them
 with Store's `scripts/negative-control.py --root <this-worktree> <table>`; the
 runner restores each mutation. Avoid simultaneous builds or edits while it runs.
 
+The v2 library's `atx` modules provide typed line framing, continuous monitoring
+and a common raw Unix UART/PTY adapter. `Monitor::write` reports bytes accepted
+only; it does not correlate HAT replies or confirm device state. Transaction
+matching remains the next P1 slice. Subscribe before checking `status()` so a
+terminal link is not missed; any broadcast Lagged invalidates inferred state.
+`docs/v2-uart-controls.toml` contains the substrate safety controls. All automated
+PTY tests are local and never open `/dev/serial0` or contact a real DALI bus.
+
 The default build target is `armv7-unknown-linux-musleabihf` (set in `.cargo/config.toml`). To cross-compile for Pi:
 
 ```bash

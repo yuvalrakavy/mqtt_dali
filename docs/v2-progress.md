@@ -47,11 +47,52 @@ as stalled workers; path-safety tests must start with absent files, since an
 unrelated parse error can otherwise hide a missing guard. No shared skill files
 were changed during bridge implementation.
 
+## P1a — typed wire, monitoring and serial substrate implemented
+
+`src/atx/wire.rs` preserves bus, width, collision and version fields; its
+incremental framer bounds storage and partial-line lifetime without discarding
+idle events. `monitor.rs` owns one continuous reader and serializes byte writes
+under caller deadlines. Subscribers get explicit lag, persistent lifecycle status
+and error/EOF/panic notification. Cancellation during a possibly partial write
+prevents further writes. Close cancels an active writer and releases both stream
+halves even when client handles remain.
+
+`serial.rs` uses nonblocking Unix descriptors with raw 19200/8N1 settings on both
+Pi UART and desktop PTY. Opening/configuration runs on a detached worker under a
+2 s caller deadline. A local PTY test checks actual terminal settings, idle input
+events and exact outgoing bytes through the production adapter.
+
+Verified on 2026-10-21:
+
+- Full native nextest suite: **92 passed**, including 20 new wire/monitor/PTY
+  cases and all 72 previous regressions. Tests and close/write-failure regressions
+  were observed failing before their corresponding implementations/fixes.
+- Strict Clippy for the library, v2 binary and config process tests: passed;
+  Raspberry Pi library/v2 compile check: passed. Neither is a Pi runtime test.
+- Six reproducible UART negative controls all failed for their expected reasons:
+  line size/lifetime, write poisoning, close cancellation/resource release and
+  raw mode. See `v2-uart-controls.toml` and its recorded ledger.
+- Fresh source review requested descriptor release and EINTR handling. Fixes were
+  reviewed again and approved for this substrate scope. EINTR retry was inspected,
+  not fault-injected; physical UART teardown remains unverified.
+
+Review learning: resource ownership must be tested after close while public
+handles remain alive. Tests also distinguish canceling a queued write from
+canceling a potentially partial write, since only the latter poisons admission.
+
+The `write` receipt means only bytes accepted by the kernel. **No correlated
+transaction dispatcher exists yet**, and P1 is not complete. Its next slice needs
+the receive-order fence, cancellation/timeout tombstones, explicit firmware
+completion policy for j/t, and interference handling specified in the P1 contract.
+The design review established that an interference tombstone cannot be cleared by
+an arbitrary terminal frame. L input events must also be distinguished from
+24-bit commands before they can trigger interference handling.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
-| P1 UART | In preparation | Typed packets, continuous reader, command matching, timeout retirement, serial/PTY tests |
+| P1 UART | Substrate verified; dispatcher pending | Receive-order fence, transaction state machine, firmware completion policy and late-reply tests |
 | P2 ATX emulator | Pending | Independent hardware model through actual serial framing |
 | P3 BridgeKit/service | Pending | Runtime lifecycle and inventory/retired-request contract; canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |

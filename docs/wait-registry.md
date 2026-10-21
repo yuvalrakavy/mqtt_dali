@@ -28,6 +28,11 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `atx-reader` | acyclic | nonblocking UART/PTY reads or a partial-line timer | The one reader never waits for a writer or subscriber: it broadcasts without awaiting. Empty input may wait indefinitely, but nothing joins that read unbounded. Close and final-handle drop abort it; partial lines expire within 1 s and recover at a newline. A read error/EOF closes admission and publishes a terminal event. |
+| `atx-write-lock` | bounded | serialized access to the UART writer | Total caller-supplied deadline includes lock and write. On expiry before acquiring the lock, return Deadline without poisoning an unwritten command. The holder waits only on nonblocking I/O under its own deadline, never on a receiver or this lock. |
+| `atx-write` | bounded | nonblocking UART write, cancellation/EOF/close, and caller deadline | The write is raced with stop and the caller's total deadline. On expiry, I/O failure or caller cancellation after starting, a drop guard poisons further admission and emits WriteIndeterminate. Stop cancels a potentially partial write. The stop helper waits only for the reader/closer, both independent; it is itself raced against the write deadline. |
+| `atx-close` | bounded | confirmation that the aborted async reader dropped its resources | At most 500 ms. On expiry return Deadline; the reader remains aborted. Close sets the stop flag first, canceling an in-progress writer, then aborts the reader. Reader teardown publishes Closed and marks completion, without awaiting any caller. |
+| `atx-serial-open` | bounded | a detached thread opening/configuring a serial path | At most 2 s. On expiry the receiver is dropped, so a late returned owned fd is closed rather than used to create a reader. No join is performed on the worker. Process-wide worker budgeting and startup supervision belong to P3. |
 | `v2-config-check` | bounded | the check command's filesystem worker, through `recv_timeout` | At most 3 s. The worker's handle is detached before waiting; on expiry, `main` returns a failure without joining a filesystem operation. `stalled_configuration_worker_does_not_hold_process_exit` holds an actual FIFO read in the worker and full unread output pipes while the child exits. The library loader is synchronous; daemon integration must supply its own bounded worker. |
 | `v2-config-output` | bounded | best-effort check-command output on a detached writer thread | At most 200 ms; on expiry the command returns without joining the writer. The writer duplicates the raw output descriptor and never locks Rust's global stdio handles. A full pipe can hold that thread until the process exits, but holds neither the caller nor stdio cleanup. `unread_full_output_pipes_cannot_hold_success_error_or_help_exit` exercises success, invalid options and help with a prefilled pipe kept unread; the filesystem deadline test also holds stderr full. |
 | `mqtt-request` | acyclic | rumqttc's request channel (`publish`, `publish_with_properties`, `subscribe`) | The channel drains only while the event loop is polled, and the pump (`Pump::start`) polls it in a task of its own that waits on nothing but the network. So a full channel is back-pressure on the session, never a cycle: with the broker stalled the session waits until it recovers, the pump reading its acks meanwhile (`a_command_burst_against_a_stalled_broker_completes_once_it_recovers`; it failed on the single-task session, where the poller awaited its own publishes). A session held here does not see a stop until it is released; `main`'s wait for it is bounded all the same (`dali-shutdown`), and the session's goodbye never waits here (`try_publish`, `try_disconnect`). |
@@ -67,6 +72,13 @@ local-methods = set_light_brightness_async, set_group_brightness_async, run_sess
 ## Waiters (generated)
 
 ```wait-lint-waiters
+atx-close src/atx/monitor.rs Monitor::close
+atx-reader src/atx/monitor.rs line_deadline
+atx-reader src/atx/monitor.rs read_loop
+atx-serial-open src/atx/serial.rs Serial::open
+atx-write src/atx/monitor.rs Monitor::write
+atx-write src/atx/monitor.rs stopped
+atx-write-lock src/atx/monitor.rs Monitor::write
 dali-config-save src/mqtt.rs ConfigSaver::save_config
 dali-config-writer src/mqtt.rs <Release as Drop>::drop
 dali-config-writer src/mqtt.rs ConfigSaver::save_config

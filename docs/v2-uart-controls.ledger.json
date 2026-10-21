@@ -1,0 +1,107 @@
+{
+ "rows": {
+  "an_in_progress_write_ignores_close": {
+   "last_real": {
+    "at": "2026-10-21T12:44:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:026f95623c365e34",
+     "row": "656bc7127d9791ea",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.3,
+    "sha": "86c774b230140b1359135ce0143c791788f1fb17",
+    "verdict": "RED"
+   }
+  },
+  "an_oversized_line_has_no_bound": {
+   "last_real": {
+    "at": "2026-10-21T12:43:53Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:c937872f6c83f0b6",
+     "row": "4b841af9fd3e2175",
+     "test": null
+    },
+    "path": "command",
+    "secs": 1.8,
+    "sha": "86c774b230140b1359135ce0143c791788f1fb17",
+    "verdict": "RED"
+   }
+  },
+  "close_keeps_the_serial_descriptor_open": {
+   "last_real": {
+    "at": "2026-10-21T12:43:58Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:dd23d7d502001d05",
+     "row": "36a4b8a3bb4f9584",
+     "test": null
+    },
+    "path": "command",
+    "secs": 1.7,
+    "sha": "86c774b230140b1359135ce0143c791788f1fb17",
+    "verdict": "RED"
+   }
+  },
+  "partial_lines_never_expire": {
+   "last_real": {
+    "at": "2026-10-21T12:43:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:438268b72f304fc0",
+     "row": "955537cd2250a9c1",
+     "test": null
+    },
+    "path": "command",
+    "secs": 1.5,
+    "sha": "86c774b230140b1359135ce0143c791788f1fb17",
+    "verdict": "RED"
+   }
+  },
+  "partial_write_cancellation_does_not_poison_admission": {
+   "last_real": {
+    "at": "2026-10-21T12:43:56Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:c09c308ba2b88e4f",
+     "row": "cb4d6ca80a7a7983",
+     "test": null
+    },
+    "path": "command",
+    "secs": 1.7,
+    "sha": "86c774b230140b1359135ce0143c791788f1fb17",
+    "verdict": "RED"
+   }
+  },
+  "serial_keeps_canonical_and_echo_processing": {
+   "last_real": {
+    "at": "2026-10-21T12:44:02Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cb67309d193ef62d",
+     "row": "b13be859fa4c118b",
+     "test": null
+    },
+    "path": "command",
+    "secs": 1.7,
+    "sha": "86c774b230140b1359135ce0143c791788f1fb17",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

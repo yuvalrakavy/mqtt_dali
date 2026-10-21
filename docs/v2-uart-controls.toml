@@ -1,0 +1,55 @@
+# Negative controls for the P1a substrate. Only isolated wire/duplex/PTY tests.
+
+[[control]]
+name = "an_oversized_line_has_no_bound"
+file = "src/atx/wire.rs"
+anchor = "if self.line.len() >= MAX_LINE_BYTES - 1 {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(oversized_lines_are_bounded_and_recover_only_at_the_next_newline)"]
+expect_text = "LineTooLong"
+
+[[control]]
+name = "partial_lines_never_expire"
+file = "src/atx/wire.rs"
+anchor = "if self.deadline().is_some_and(|deadline| now >= deadline) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(trickling_lines_expire_by_total_time_and_later_events_still_decode)"]
+expect_text = "LineDeadline"
+
+[[control]]
+name = "partial_write_cancellation_does_not_poison_admission"
+file = "src/atx/monitor.rs"
+anchor = "self.state.poisoned.store(true, Ordering::Release);"
+replacement = "// negative control: leave write admission open"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_stalled_or_canceled_partial_write_poison_admission_but_monitoring_continues)"]
+expect_text = "IndeterminateWrite"
+
+[[control]]
+name = "close_keeps_the_serial_descriptor_open"
+file = "src/atx/monitor.rs"
+anchor = "writer.take();"
+replacement = "// negative control: retain the writer"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(close_releases_the_stream_even_when_monitor_handles_are_retained)"]
+expect_text = "closed monitor retained the underlying stream"
+
+[[control]]
+name = "an_in_progress_write_ignores_close"
+file = "src/atx/monitor.rs"
+anchor = "_ = stopped(&mut stop) => return Err(TransportError::Closed),"
+replacement = "_ = std::future::pending::<()>() => return Err(TransportError::Closed),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(close_also_cancels_an_in_progress_write)"]
+expect_text = "close left an in-progress writer running"
+
+[[control]]
+name = "serial_keeps_canonical_and_echo_processing"
+file = "src/atx/serial.rs"
+anchor = "unsafe { libc::cfmakeraw(&mut settings) };"
+replacement = "// negative control: omit raw mode"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(production_serial_adapter_uses_raw_19200_and_preserves_idle_pty_events)"]
+expect_text = "UART must be raw without canonical/echo processing"
