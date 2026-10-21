@@ -8,7 +8,7 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 |---|---|---|
 | v1 configuration import | Library and canonical process tests; v1 bytes preserved; v2 precedence and reimport | Persisted Store-object migration in P8 |
 | ATX I4 UART | Typed frames, continuous monitoring, measured quiet recovery, managed health and real PTY/process crash-restart tests; known partial-write poison survives in-process reopen | Physical timing/firmware transcripts; j/t completion policies; no persistent inference of partial writes across process death |
-| Base output model | Independent levels/MASK, off/steps/max/min, DTRs, groups/scenes, selected queries/configuration | P4 driver paths, faults and timed fades |
+| Base output model | Independent emulator levels/MASK, off/steps/max/min, DTRs, groups/scenes and selected queries/configuration; pure validated base-output codec with literal vectors | P4 service/driver execution, faults and timed fades |
 | Addressing model | INITIALISE modes/expiry, seeded randomization, search/compare/program/withdraw, duplicate address responses | P5 bridge jobs and commissioning UI |
 | DALI-2 event transport | Async L records remain public during transactions; local injection | P4 Parts 301–304 decoding, discovery, state and configuration |
 | DT7 switching | Pending | P4 model/driver |

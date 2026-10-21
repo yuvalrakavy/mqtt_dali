@@ -1,0 +1,118 @@
+# Isolated behavioral guard-removal controls for the pure output codec.
+
+[[control]]
+name = "short_address_bound_is_removed"
+file = "src/dali/gear.rs"
+anchor = "if raw > 63 {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(address_bounds_are_rejected_before_frame_creation)"]
+expect_text = "invalid short address was accepted"
+
+[[control]]
+name = "group_address_bound_is_removed"
+file = "src/dali/gear.rs"
+anchor = "if raw > 15 {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(address_bounds_are_rejected_before_frame_creation)"]
+expect_text = "invalid group address was accepted"
+
+[[control]]
+name = "short_address_is_not_shifted"
+file = "src/dali/gear.rs"
+anchor = "Self::Short(address) => address.0 << 1,"
+replacement = "Self::Short(address) => address.0,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_frames_match_independent_short_group_and_broadcast_vectors)"]
+expect_text = "DAPC address/control byte is wrong"
+
+[[control]]
+name = "group_address_loses_its_prefix"
+file = "src/dali/gear.rs"
+anchor = "Self::Group(address) => 0x80 | (address.0 << 1),"
+replacement = "Self::Group(address) => address.0 << 1,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_frames_match_independent_short_group_and_broadcast_vectors)"]
+expect_text = "DAPC address/control byte is wrong"
+
+[[control]]
+name = "command_address_bit_is_cleared"
+file = "src/dali/gear.rs"
+anchor = "u16::from_be_bytes([self.address() | 1, opcode])"
+replacement = "u16::from_be_bytes([self.address(), opcode])"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_frames_match_independent_short_group_and_broadcast_vectors)"]
+expect_text = "OFF address/control byte is wrong"
+
+[[control]]
+name = "raw_mask_is_accepted_as_level"
+file = "src/dali/gear.rs"
+anchor = "if raw == 255 {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(normalized_maximum_is_254_and_mask_is_not_an_ordinary_level)"]
+expect_text = "MASK was accepted as an ordinary level"
+
+[[control]]
+name = "normalized_maximum_selects_mask"
+file = "src/dali/gear.rs"
+anchor = "value * 254.0"
+replacement = "value * 255.0"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(normalized_maximum_is_254_and_mask_is_not_an_ordinary_level)"]
+expect_text = "maximum brightness selected DALI MASK"
+
+[[control]]
+name = "positive_sub_step_level_turns_off"
+file = "src/dali/gear.rs"
+anchor = ".round() as u8).max(1)"
+replacement = ".round() as u8).max(0)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(normalized_maximum_is_254_and_mask_is_not_an_ordinary_level)"]
+expect_text = "positive sub-step brightness became OFF"
+
+[[control]]
+name = "contradictory_off_intent_is_accepted"
+file = "src/dali/gear.rs"
+anchor = "(Some(false), Some(level)) if level.raw() > 0 => {\n                return Err(Error::ContradictoryIntent)\n            }"
+replacement = "(Some(false), Some(level)) if level.raw() > 0 => Drive::Off,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(invalid_or_contradictory_intent_cannot_produce_a_partial_plan)"]
+expect_text = "invalid or contradictory output intent was accepted"
+
+[[control]]
+name = "masked_reply_becomes_maximum"
+file = "src/dali/gear.rs"
+anchor = "255 => Self::UnavailableMask,"
+replacement = "255 => Self::Known(Level(254)),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mask_type_and_status_sentinels_are_specific_to_the_query)"]
+expect_text = "query-specific MASK or device type was decoded as ordinary brightness"
+
+[[control]]
+name = "multiple_device_types_are_erased"
+file = "src/dali/gear.rs"
+anchor = "255 => DeviceType::Multiple,"
+replacement = "255 => DeviceType::None,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mask_type_and_status_sentinels_are_specific_to_the_query)"]
+expect_text = "query-specific MASK or device type was decoded as ordinary brightness"
+
+[[control]]
+name = "no_response_becomes_off"
+file = "src/dali/gear.rs"
+anchor = "BusReply::NoResponse => return QueryReply::NoResponse,"
+replacement = "BusReply::NoResponse => return QueryReply::Value(QueryValue::ActualLevel(LevelValue::Known(Level(0)))),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(no_response_and_collisions_never_become_an_off_state)"]
+expect_text = "transport failure became a successful fixture value"
+
+[[control]]
+name = "fade_running_bit_is_inverted"
+file = "src/dali/gear.rs"
+anchor = "self.0 & 0x10 != 0"
+replacement = "self.0 & 0x10 == 0"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(status_bits_preserve_raw_fault_power_and_fade_running_semantics)"]
+expect_text = "status bit meaning is inverted or shifted"

@@ -5,6 +5,7 @@ pub mod config;
 mod config_check;
 pub mod config_store;
 pub mod daemon;
+pub mod dali;
 pub mod emulator;
 pub mod inventory;
 pub mod service;

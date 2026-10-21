@@ -517,6 +517,31 @@ Review learning: a cancellation flag must reach the resource owner directly,
 actual task joins must precede resource-release claims, and a biased event loop
 must check its total deadline independently of lower-priority timer polling.
 
+## P4b1 — typed base-output codec implemented and verified locally
+
+Two sequential design reviews approved a pure Part 102 codec. It validates
+short/group addresses, normalizes ordinary levels within 0..254, creates basic
+write/query frames and preserves query-specific MASK/type/status meanings plus
+no-response/collision outcomes. Twelve literal-vector tests pass; the initial
+new-API build could not compile until its types were implemented. This was not
+a behavioral regression RED. Thirteen guard-removal controls subsequently failed
+for their intended behavioral assertions, establishing sensitivity to removed
+bounds, address/control bits, max/MASK distinctions, positive-level handling,
+intent validation, no-response meaning and status polarity. The ATX integration
+vector uses the production encoder.
+
+Verified on 2026-10-22: all **258 native tests passed**, including the full restored
+suite after controls; scoped strict Clippy and Pi library/all four binaries compile
+checks passed. Formatting, whitespace, wait registry and doctests (none defined)
+passed. Two sequential read-only source reviews approved the final codec; the
+only requested cleanup was a stale design-status sentence. Reviews remain
+same-family, and physical fixture behavior is unverified.
+
+No MQTT fixture writes, configuration changes or emulator codec sharing are
+introduced. Physical execution, original-generation admission, readback and
+fair collection of jobs/events remain the next integration boundary. Reference:
+[dali output contract](dali-output-contract.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -524,7 +549,7 @@ must check its total deadline independently of lower-priority timer polling.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
+| P4 capabilities | Quiet recovery and pure output codec implemented | Physical output service/driver paths, color representations, DALI-2 inputs and explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
