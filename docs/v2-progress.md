@@ -606,6 +606,27 @@ doctests (none defined) passed. Hardware validation remains pending.
 This is a library execution boundary. Physical MQTT properties, group execution,
 color and inputs remain subsequent P4 work. See [the service API](output-service.md).
 
+## P4b4 prerequisite — explicit request context for SDK reads
+
+Shared commit `153d38051f5197b060fa4281efe6136cffee7419` adds the optional
+`read_state_with_request_context` hook. Queued refresh and individual conflict
+reads now pass their owned original context; compatible defaults preserve
+existing contextual/plain drivers and independently captured observation tokens.
+Four focused tests include actual ephemeral-broker State/reply traces and
+explicit absence across a driver-owned task without OTel. Both dispatch
+regressions failed behaviorally before the worker fix.
+
+Both sequential design/source reviews approved; reviews remain same-family.
+The restored shared gate passed **215 kit tests** and **174 full conformance
+tests**, all-target strict Clippy, Pi library compilation, formatting and wait
+registry. Three new and ten affected existing controls detected their intended
+faults. All four DALI dependencies now pin this exact commit; DALI's full
+**282 native tests**, strict scoped Clippy and Pi library/all four binaries
+compile checks pass with the new pin. Physical MQTT property execution is next.
+
+The revision remains local and unpublished. The bridge-development skill and
+shared README/tutorial describe the new method; no Store code changed.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
