@@ -1,0 +1,92 @@
+[[control]]
+name = "two_daemons_can_own_one_configuration"
+file = "src/config_store/disk.rs"
+anchor = "if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(a_second_writer_is_refused_and_a_retained_handle_does_not_prevent_close)"]
+expect_text = "two writers acquired one config lifetime"
+
+[[control]]
+name = "a_canceled_finalization_publishes_ready"
+file = "src/config_store/worker.rs"
+anchor = '''if request.expired(control)
+                || snapshot.as_ref().is_none_or(|s| s.phase != Phase::Writing)'''
+replacement = "if false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(cancellation_winning_finalization_keeps_edit_and_recovery_frozen)"]
+expect_text = "canceled finalization skipped required recovery"
+
+[[control]]
+name = "recovery_adopts_an_unrecognized_document"
+file = "src/config_store/disk.rs"
+anchor = '.find(|model| model.inventory() == &current)'
+replacement = '.find(|_| true)'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(unrecognized_external_files_are_never_adopted_or_overwritten_by_recovery)"]
+expect_text = "recovery adopted an unrecognized canonical document"
+
+[[control]]
+name = "descriptive_edits_do_not_reserve_revisions"
+file = "src/config_store/worker.rs"
+anchor = 'reservation.revision_high_water = Some(proposed.inventory().revision);'
+replacement = 'reservation.revision_high_water = self.model.inventory().revision_high_water;'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(failures_before_replace_are_not_committed_and_descriptive_revisions_are_reserved_too)"]
+expect_text = "descriptive save reused a durably reserved revision"
+
+[[control]]
+name = "the_lock_can_alias_a_missing_v1_file"
+file = "src/config_store/disk.rs"
+anchor = 'legacy: paths.legacy.clone(),'
+replacement = 'legacy: paths.current.clone(),'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(the_adjacent_lock_must_not_create_or_modify_the_legacy_config_path)"]
+expect_text = "opening the lock created the legacy configuration file"
+
+[[control]]
+name = "close_reports_success_with_a_blocked_writer"
+file = "src/config_store.rs"
+anchor = 'Instant::now() < deadline && result == Ok(true)'
+replacement = 'true'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(canceled_callers_keep_the_slot_and_close_does_not_claim_a_blocked_writer_finished)"]
+expect_text = "close claimed a blocked worker had released ownership"
+
+[[control]]
+name = "failed_create_new_unlinks_someone_elses_file"
+file = "src/config_store/disk.rs"
+anchor = '''let file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .custom_flags(libc::O_CLOEXEC)
+        .open(&path)?;
+    let temporary = Temporary(path);'''
+replacement = '''let temporary = Temporary(path);
+    let file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .custom_flags(libc::O_CLOEXEC)
+        .open(&temporary.0)?;'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(failing_to_create_a_temporary_file_preserves_the_existing_path)"]
+expect_text = "failed create_new removed a file it did not own"
+
+[[control]]
+name = "a_late_save_skips_required_recovery"
+file = "src/config_store/worker.rs"
+anchor = '''if request.expired(control) {
+            return self.uncertain(
+                "mapping save finished after caller ended; reload required".into(),
+                control,
+            );
+        }'''
+replacement = '''if request.expired(control) {
+            self.ready(proposed, control);
+            return Outcome::Uncertain("late completion".into());
+        }'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(timeouts_around_both_replacements_freeze_admission_until_reload_and_burn_the_revision)"]
+expect_text = "late filesystem completion skipped recovery"

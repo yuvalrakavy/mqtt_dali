@@ -235,12 +235,49 @@ their removed guards, and the armv7 library/v2/emulator compile check passed.
 Scoped strict Clippy is part of the checkpoint gate. New behaviors were observed
 failing first, including identical-text replacement and rename-back intent
 continuity. Two sequential design reviews cleared this slice after uncertain
-save, transition-chain and runtime-bypass refinements. Fresh source review is
-pending. Guidance and current limitations are in `inventory-contract.md`.
+save, transition-chain and runtime-bypass refinements. Fresh source review found
+missing intermediate bus-name/index consistency and incomplete metadata checks
+in the reference consumer. Three regressions reproduced those gaps; fixes were
+reviewed again and approved. The complete gate below includes those regressions.
+Guidance and current limitations are in `inventory-contract.md`.
 
-This remains a pure proposal/snapshot API: durable single-writer reservation and
-uncertain-save recovery are next. Generation-context enforcement and runtime
+This remains a pure proposal/snapshot API; the durable owner below applies its
+proposals. Generation-context enforcement and runtime
 state retirement ordering require the P3c2 gate before mutable daemon integration.
+
+## P3c1b — durable configuration owner implemented
+
+`config_store::ConfigStore` owns one runtime blocking worker and an adjacent
+private lifetime lock. Save admission is nonwaiting and serialized. Both candidate
+documents are preflighted before an old-mapping revision reservation is saved,
+then the new mapping is atomically replaced and synced. Every public revision,
+including descriptions, is reserved; v1 is never created or modified by this owner.
+
+Timeout/cancellation preserves the active worker's slot and lock. Uncertain
+replacement stays frozen until explicit recovery reloads a recognized candidate
+and confirms file/directory durability. Cancellation and successful finalization
+share one state transition. Startup confirms durability too. Close releases file
+ownership across retained handles; a blocked worker returns false under the
+caller deadline and remains part of managed-runtime teardown.
+
+Verified on 2026-10-21:
+
+- **182 full native tests passed**, including 15 persistence tests and three
+  inventory review regressions. Local fault injection covers before/after both
+  replacements, cancellation, queued/startup cancellation, failed sync/recovery,
+  revision burning/restart, unknown external edits and lock/path safety.
+- Eight reproducible negative controls all detected their declared removed
+  guards; see `v2-persistence-controls.toml` and its recorded ledger. The restored
+  full suite and wait registry passed. Strict scoped Clippy and the armv7
+  library/v2/emulator compile check passed; changed Rust formatting/diff checked.
+- Fresh source review found a finalization/cancellation race and cleanup armed
+  before temporary-file ownership. Deterministic regressions were observed
+  failing first; fixes passed re-review. Review was source-only, same model family.
+
+This is a library checkpoint. Process-level stalled-filesystem SIGTERM tests
+belong to canonical daemon integration; physical power-loss behavior and Pi
+runtime are unverified. Operator-owned directories and ordinary local Unix
+filesystems are assumed. No new daemon MQTT/hardware routing is admitted yet.
 
 ## Remaining phases
 
@@ -248,7 +285,7 @@ state retirement ordering require the P3c2 gate before mutable daemon integratio
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
-| P3 BridgeKit/service | Codec, managed lifecycle and pure inventory contract implemented | Durable inventory writer, fenced runtime context and canonical v2 daemon |
+| P3 BridgeKit/service | Codec, managed lifecycle, inventory and durable writer implemented | Fenced runtime context, retirement ordering and canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |

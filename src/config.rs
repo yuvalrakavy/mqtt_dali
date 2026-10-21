@@ -420,7 +420,7 @@ fn parent(path: &Path) -> &Path {
         .unwrap_or(Path::new("."))
 }
 
-fn check_distinct_paths(paths: &ConfigPaths) -> Result<(), ConfigError> {
+pub(crate) fn check_distinct_paths(paths: &ConfigPaths) -> Result<(), ConfigError> {
     if paths.current == paths.legacy {
         return Err(ConfigError::AliasedPaths);
     }
@@ -444,7 +444,7 @@ fn check_distinct_paths(paths: &ConfigPaths) -> Result<(), ConfigError> {
     Ok(())
 }
 
-fn load_current(path: &Path) -> Result<Option<Inventory>, ConfigError> {
+pub(crate) fn load_current(path: &Path) -> Result<Option<Inventory>, ConfigError> {
     let Some(bytes) = read_regular(path)? else {
         return Ok(None);
     };

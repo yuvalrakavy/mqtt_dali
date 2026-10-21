@@ -155,7 +155,34 @@ replay must equal current configured targets/locations. Initialize the explicit
 ledger before the first real mutation. The wire carries the resulting per-item
 binding revisions and the complete explicit baseline/history.
 
-## Generic request metadata and atomic routing
+## P3c1b worker implementation boundaries
+
+`config_store` owns one runtime blocking worker, one capacity-one request slot
+and an adjacent lifetime lock. The worker is not a detached OS thread: managed
+runtime destruction includes it, so a stalled filesystem cannot outlive a
+successful service stop. Caller deadlines bound open/edit/recover/close; false
+close requires the process incomplete-stop path. Retained client handles do not
+retain a released lock. Never unlink its inode.
+
+Admission changes to Writing before enqueue. A canceled/expired queued request
+does no filesystem work. Once a save may be in progress, cancellation/deadline
+reports Uncertain without releasing its slot or lock. The worker checks its own
+deadline too; late completion stays Uncertain until explicit recovery reloads a
+recognized candidate, syncs the file and directory, and checks the canonical
+document again. Persistent failure or an unexpected document remains frozen.
+Recovery cannot overlap the original worker. Public snapshots are detached clones,
+so clients cannot retain a watch lock across I/O.
+
+Both private reservation and proposed documents are preflighted first. A failed
+reservation never starts mapping replacement. An uncertain reservation admits
+only old/reserved documents on recovery; an uncertain mapping admits only
+reserved/proposed documents. Reservation remains private and burns the revision
+even if the mapping never commits. Startup also syncs the loaded file/directory
+before Ready, covering a prior process ending after rename. The lock pathname
+must not alias v1; validate before creating it. The operator-owned directory is
+trusted; deleting/replacing a live lock or editing a live config is unsupported.
+
+## P3c2 generic request metadata and atomic routing
 
 Add optional MQTT v5 user property target-generation. Missing remains compatible
 with existing drivers. If present it must occur exactly once and contain 1..128

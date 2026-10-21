@@ -28,6 +28,10 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `v2-store-open` | bounded | configuration ownership/import/durability worker | Caller supplies an absolute deadline; on expiry return startup failure and cancel admission. The runtime-owned blocking worker retains its lock until it really ends, so managed-service teardown cannot report success while it remains alive. |
+| `v2-store-request` | bounded | one serialized filesystem operation result | Nonwaiting single-slot admission; caller supplies an absolute deadline. On expiry report Uncertain, retain the slot and lock, and freeze mutations/routing until the worker ends and explicit bounded recovery confirms a recognized durable document. Canceled queued work is skipped. |
+| `v2-store-close` | bounded | configuration worker completion after stop | Caller supplies an absolute deadline; on expiry return false, requiring the managed service/process incomplete-stop path. True is published only after file ownership is dropped, even with retained public clients. |
+| `v2-store-worker` | bounded | capacity-one synchronous request channel on the blocking worker | recv_timeout wakes at least every 50 ms; on expiry recheck closing. No async caller waits for the filesystem without its own deadline. Filesystem syscalls themselves may block; the managed runtime includes this worker in its outer shutdown bound. |
 | `emulator-runtime-shutdown` | bounded | Tokio worker shutdown | At most 500 ms; on expiry abandon any remaining worker. Detached filesystem and output threads are never joined. |
 | `emulator-control` | bounded | actor's capacity-32 local control queue response | Admission is nonwaiting. The caller supplies a total deadline; on expiry return an error saying an applied mutation is not undone. Expired/canceled requests are skipped before execution. Socket controls supply a 1 s bound. |
 | `emulator-close` | bounded | emulator session completion | At most 1 s; on expiry return shutdown-deadline error. Stop wakes the select even with unread UART or no input. Final handle drop aborts the worker and releases both PTY descriptors. |
@@ -155,4 +159,8 @@ mqtt-request src/mqtt.rs MqttDali::run_session
 mqtt-request src/mqtt.rs publish_with_trace
 v2-config-check src/bin/mqtt_dali_v2.rs main
 v2-config-output src/bin/mqtt_dali_v2.rs output
+v2-store-close src/config_store.rs ConfigStore::close
+v2-store-open src/config_store.rs ConfigStore::open_with
+v2-store-request src/config_store.rs ConfigStore::submit
+v2-store-worker src/config_store/worker.rs run
 ```

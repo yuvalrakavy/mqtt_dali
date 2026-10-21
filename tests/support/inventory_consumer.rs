@@ -219,6 +219,8 @@ impl Consumer {
 fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<(), String> {
     let mut places = BTreeSet::new();
     let mut origins = BTreeSet::new();
+    let mut ancestors = BTreeMap::new();
+    let mut physical_buses = BTreeMap::new();
     let outputs: BTreeMap<_, _> = active
         .values()
         .filter_map(|(origin, record)| match record.location {
@@ -228,6 +230,19 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
         .collect();
     for (origin, record) in active.values() {
         let target = Target::parse(&record.target).map_err(|e| e.to_string())?;
+        let name = target.bus().ok_or("no bus ancestor in history")?;
+        let index = match record.location {
+            Location::Output { bus, .. } | Location::Group { bus, .. } => bus,
+        };
+        if ancestors
+            .insert(index, name.to_owned())
+            .is_some_and(|old| old != name)
+            || physical_buses
+                .insert(name.to_owned(), index)
+                .is_some_and(|old| old != index)
+        {
+            return Err("history splits a bus ancestor name or index".into());
+        }
         let valid = match record.location {
             Location::Output { bus, short_address } => {
                 bus < 4
@@ -243,6 +258,7 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
             }
         };
         if !valid
+            || target.instance().is_some()
             || record.binding_revision == 0
             || !places.insert(record.location)
             || !origins.insert(origin)
@@ -257,8 +273,24 @@ fn verify_current(
     document: &Value,
     active: &BTreeMap<String, (Origin, Projection)>,
 ) -> Result<(), String> {
+    let controller = document["name"].as_str().ok_or("no controller name")?;
+    valid_name(controller)?;
+    let chars: Vec<_> = controller.chars().collect();
+    if controller.contains(['+', '#'])
+        || controller.starts_with(['@', '*'])
+        || (controller.starts_with('{') && controller.ends_with('}'))
+        || controller.ends_with('@')
+        || (chars.len() >= 2
+            && chars[chars.len() - 1] == '_'
+            && chars[chars.len() - 2].is_ascii_digit())
+        || (chars.len() >= 3 && chars[0] == '_' && chars[1] != '_' && chars[2..].contains(&'_'))
+    {
+        return Err("invalid controller wire name".into());
+    }
+    valid_description(document)?;
     let mut seen = BTreeSet::new();
     let mut buses = BTreeSet::new();
+    let mut bus_names = BTreeSet::new();
     let outputs: BTreeMap<_, _> = active
         .values()
         .map(|(origin, r)| (r.location, origin))
@@ -270,14 +302,21 @@ fn verify_current(
         let index = u8::try_from(bus["bus"].as_u64().ok_or("no bus index")?)
             .map_err(|_| "bus index too large")?;
         let name = bus["name"].as_str().ok_or("no bus name")?;
-        if !buses.insert(index) {
-            return Err("duplicate bus".into());
+        valid_name(name)?;
+        valid_description(bus)?;
+        if index >= 4
+            || !buses.insert(index)
+            || !bus_names.insert(name)
+            || !bus["enabled"].is_boolean()
+        {
+            return Err("invalid or duplicate bus metadata".into());
         }
         for (field, space) in [
             ("outputs", Namespace::Outputs),
             ("groups", Namespace::Groups),
         ] {
             for item in bus[field].as_array().ok_or("incomplete item array")? {
+                valid_description(item)?;
                 let expected =
                     Target::item(name, space, item["name"].as_str().ok_or("no item name")?)
                         .map_err(|e| e.to_string())?
@@ -339,6 +378,26 @@ fn verify_current(
     }
     if seen.len() != active.len() {
         return Err("partial current inventory".into());
+    }
+    Ok(())
+}
+
+fn valid_name(name: &str) -> Result<(), String> {
+    if name.trim().is_empty()
+        || name.contains('/')
+        || matches!(name, "." | "..")
+        || name.chars().any(char::is_control)
+    {
+        return Err("invalid inventory name".into());
+    }
+    Ok(())
+}
+fn valid_description(object: &Value) -> Result<(), String> {
+    if object
+        .get("description")
+        .is_some_and(|value| !value.is_null() && !value.is_string())
+    {
+        return Err("description must be a string or null".into());
     }
     Ok(())
 }

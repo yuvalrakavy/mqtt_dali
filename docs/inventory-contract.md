@@ -63,7 +63,27 @@ live v2 file or remove its writer lock.
 
 `Model::edit` proposes an immutable next configuration; it does not save or verify
 hardware. Its caller must complete commissioning verification before applying an
-address change. The persistence layer being implemented next must reserve every
-public revision durably, keep one writer, distinguish uncertain outcomes and
-confirm recovery before routing through an uncertain mapping. Private
-`revision_high_water` is absent from MQTT and prevents reuse of reserved revisions.
+address change. `config_store::ConfigStore` supplies serialized durable saving
+with expected-revision checks. It holds an adjacent private `.lock` file for its
+lifetime; a second writer is refused. Do not delete a live lock. Reads of complete
+configuration documents remain possible.
+
+A change first saves the old inventory with its next revision reserved, then
+saves the new mapping. Private `revision_high_water` is absent from MQTT and
+prevents reuse of reserved revisions, including after a failed or interrupted
+save. A reservation may leave a legal gap in public revisions.
+
+Save outcomes distinguish Committed, NotCommitted and Uncertain. On timeout or
+uncertain replacement, the worker keeps its slot/lock and conflicting operations
+stay frozen. Caller cancellation does not undo a possible file replacement.
+After the worker ends, `recover` reloads only a recognized old/reserved/proposed
+document and confirms file/directory durability before admission resumes. An
+unexpected edited file or persistent sync failure remains frozen. Startup also
+confirms durability before admitting an existing file.
+
+Close has a caller deadline. A false result means filesystem ownership may still
+be held; the managed runtime must take its incomplete-stop path. A true result
+means the file owner ended even if client handles remain. These are library
+contracts; v2 daemon/hardware/web integration is still pending. The operator-owned
+directory and ordinary local Unix filesystem are assumed; physical power-loss
+behavior is not tested.

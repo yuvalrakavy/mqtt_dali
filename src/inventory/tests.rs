@@ -18,6 +18,49 @@ fn baseline() -> Inventory {
 }
 
 #[test]
+fn bus_ancestor_names_must_remain_consistent_after_every_history_batch() {
+    let initial = Model::new(baseline()).unwrap();
+    let renamed = initial
+        .edit(
+            1,
+            &[Edit::RenameBus {
+                bus: 0,
+                name: "Upper".into(),
+            }],
+        )
+        .unwrap();
+    let mut invalid = renamed.inventory().clone();
+    invalid.revision = 3;
+    invalid.revision_high_water = Some(3);
+    let ledger = invalid.identity_ledger.as_mut().unwrap();
+    let mut later = ledger.batches[0].transitions.split_off(1);
+    for edge in &mut later {
+        edge.to.as_mut().unwrap().binding_revision = 3;
+    }
+    ledger.batches.push(Batch {
+        revision: 3,
+        transitions: later,
+    });
+    assert!(
+        Model::new(invalid).is_err(),
+        "accepted a split ancestor rename with an impossible intermediate bus"
+    );
+
+    let mut invalid = baseline();
+    invalid.buses[0].groups.clear();
+    let mut ledger = Model::new(invalid.clone()).unwrap().ledger().clone();
+    if let Location::Output { bus, .. } = &mut ledger.baseline[1].location {
+        *bus = 1;
+    }
+    // The final configuration would disagree too; assert replay itself catches
+    // one public ancestor assigned to two numeric buses at the baseline.
+    assert!(
+        ledger::replay(&ledger, 1).is_err(),
+        "accepted one ancestor name for two physical buses"
+    );
+}
+
+#[test]
 fn an_old_schema_two_document_gets_a_complete_named_baseline_without_changing_its_identity() {
     let inventory = baseline();
     let model = Model::new(inventory.clone()).expect("valid P0 inventory did not get a baseline");

@@ -27,6 +27,139 @@ fn renamed(model: &Model, address: u8, name: &str) -> Model {
         )
         .unwrap()
 }
+
+#[test]
+fn a_consumer_rejects_split_bus_history_before_changing_any_identity() {
+    let initial = model();
+    let renamed = initial
+        .edit(
+            1,
+            &[Edit::RenameBus {
+                bus: 0,
+                name: "Upper".into(),
+            }],
+        )
+        .unwrap();
+    let mut invalid: Value = serde_json::from_slice(&renamed.state_bytes().unwrap()).unwrap();
+    invalid["Inventory"]["revision"] = 3.into();
+    let batches = invalid["Inventory"]["identity_ledger"]["batches"]
+        .as_array_mut()
+        .unwrap();
+    let mut later = batches[0]["transitions"]
+        .as_array_mut()
+        .unwrap()
+        .split_off(1);
+    for edge in &mut later {
+        edge["to"]["binding_revision"] = 3.into();
+    }
+    batches.push(json!({"revision":3,"transitions":later}));
+    for item in invalid["Inventory"]["buses"][0]["outputs"]
+        .as_array_mut()
+        .unwrap()
+    {
+        item["binding_revision"] = 3.into();
+    }
+    let mut consumer = Consumer::default();
+    consumer.accept(&initial.state_bytes().unwrap()).unwrap();
+    let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
+    assert!(
+        consumer
+            .accept(&serde_json::to_vec(&invalid).unwrap())
+            .is_err(),
+        "accepted split bus ancestor history"
+    );
+    assert_eq!(consumer.revision, 1);
+    assert_eq!(consumer.by_target("Bus1.Outputs.Light1").unwrap().id, id);
+    // The complete ancestor rename remains valid.
+    consumer.accept(&renamed.state_bytes().unwrap()).unwrap();
+    assert_eq!(consumer.by_target("Upper.Outputs.Light1").unwrap().id, id);
+}
+
+#[test]
+fn a_consumer_validates_required_metadata_even_for_empty_buses() {
+    let fixture: Value =
+        serde_json::from_str(include_str!("fixtures/inventory-v1-rename.json")).unwrap();
+    let initial = model();
+    let empty = json!({"bus":1,"name":"Unused","enabled":false,"outputs":[],"groups":[]});
+    for case in 0..15 {
+        let mut invalid = fixture.clone();
+        match case {
+            0 => {
+                invalid["Inventory"].as_object_mut().unwrap().remove("name");
+            }
+            1 => {
+                invalid["Inventory"]["buses"][0]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("enabled");
+            }
+            2 => {
+                let mut bus = empty.clone();
+                bus["bus"] = 255.into();
+                invalid["Inventory"]["buses"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(bus);
+            }
+            3 => invalid["Inventory"]["name"] = "Bad/#".into(),
+            4 => {
+                let mut bus = empty.clone();
+                bus["name"] = "Bus1".into();
+                invalid["Inventory"]["buses"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(bus);
+            }
+            5 => {
+                let mut bus = empty.clone();
+                bus["name"] = "..".into();
+                invalid["Inventory"]["buses"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(bus);
+            }
+            6 => invalid["Inventory"]["description"] = 42.into(),
+            7 => invalid["Inventory"]["buses"][0]["description"] = json!({}),
+            8 => invalid["Inventory"]["buses"][0]["enabled"] = "true".into(),
+            9 => invalid["Inventory"]["buses"][0]["outputs"][0]["description"] = false.into(),
+            10 => invalid["Inventory"]["buses"][0]["groups"][0]["description"] = json!([]),
+            11 => {
+                let mut bus = empty.clone();
+                bus.as_object_mut().unwrap().remove("enabled");
+                invalid["Inventory"]["buses"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(bus);
+            }
+            12 => invalid["Inventory"]["name"] = "_3_Sorted".into(),
+            13 => invalid["Inventory"]["name"] = "Controller2_".into(),
+            _ => invalid["Inventory"]["name"] = "Controller@".into(),
+        }
+        let mut consumer = Consumer::default();
+        consumer.accept(&initial.state_bytes().unwrap()).unwrap();
+        let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
+        consumer.set_intent("Bus1.Outputs.Light1", json!({"Brightness":0.5}));
+        assert!(
+            consumer
+                .accept(&serde_json::to_vec(&invalid).unwrap())
+                .is_err(),
+            "accepted incomplete snapshot metadata case {case}"
+        );
+        assert_eq!(consumer.revision, 1);
+        let device = consumer.by_target("Bus1.Outputs.Light1").unwrap();
+        assert_eq!(device.id, id);
+        assert_eq!(device.intent, Some(json!({"Brightness":0.5})));
+        assert!(consumer.retired.is_empty());
+    }
+    let mut valid = fixture;
+    valid["Inventory"]["buses"]
+        .as_array_mut()
+        .unwrap()
+        .push(empty);
+    Consumer::default()
+        .accept(&serde_json::to_vec(&valid).unwrap())
+        .unwrap();
+}
 #[test]
 fn an_offline_consumer_preserves_binding_ids_through_renames_but_never_moves_intent_to_a_replacement(
 ) {

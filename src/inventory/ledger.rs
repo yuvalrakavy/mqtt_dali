@@ -167,9 +167,25 @@ fn valid_records(records: &Records) -> Result<(), String> {
     let mut locations = BTreeSet::new();
     let mut origins = BTreeSet::new();
     let mut output_origins = BTreeMap::new();
+    let mut bus_names = BTreeMap::new();
+    let mut bus_indices = BTreeMap::new();
     for record in records.values() {
         let projection = &record.projection;
         shape(projection)?;
+        let target = Target::parse(&projection.target).map_err(|e| e.to_string())?;
+        let name = target.bus().ok_or("identity projection has no bus")?;
+        let bus = match projection.location {
+            Location::Output { bus, .. } | Location::Group { bus, .. } => bus,
+        };
+        if bus_names
+            .insert(bus, name.to_owned())
+            .is_some_and(|old| old != name)
+            || bus_indices
+                .insert(name.to_owned(), bus)
+                .is_some_and(|old| old != bus)
+        {
+            return Err("identity ledger has inconsistent bus ancestor names or indices".into());
+        }
         if !locations.insert(projection.location) || !origins.insert(&record.origin) {
             return Err("duplicate physical location or active lifetime in identity ledger".into());
         }

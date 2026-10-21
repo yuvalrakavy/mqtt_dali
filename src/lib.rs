@@ -2,6 +2,7 @@
 
 pub mod atx;
 pub mod config;
+pub mod config_store;
 pub mod emulator;
 pub mod inventory;
 pub mod targets;
