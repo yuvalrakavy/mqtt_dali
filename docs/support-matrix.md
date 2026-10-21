@@ -10,7 +10,7 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 | ATX I4 UART | Typed frames, continuous monitoring, measured quiet recovery, bounded request/helper progress under input traffic, managed health and real PTY/process crash-restart tests; known partial-write poison survives in-process reopen | Physical timing/firmware transcripts; j/t completion policies; no persistent inference of partial writes across process death |
 | Base output model | Independent emulator levels/MASK, off/steps/max/min, DTRs, groups/scenes and selected queries/configuration; validated base-output codec, service and MQTT PowerState/Brightness with actual readback and real PTY/emulator evidence | Group execution, settings/fault extensions and timed fades |
 | Addressing model | INITIALISE modes/expiry, seeded randomization, search/compare/program/withdraw, duplicate address responses | P5 bridge jobs and commissioning UI |
-| DALI-2 event transport | Async L records remain public during transactions; local injection | P4 Parts 301–304 decoding, discovery, state and configuration |
+| DALI-2 inputs | Async L records remain public during transactions; standard source/native button/occupancy/raw position/light codec and individual read-query frames have literal-vector tests | Named discovery, state/events, configuration, feedback and semantic emulator controls |
 | DT7 switching | Pending | P4 model/driver |
 | DT8 Tc/xy/RGBWAF | Pending | P4 limits, commands and color-aware scenes |
 | Split-address RGB/RGBW | Pending | P4 representation-specific components and bindings |

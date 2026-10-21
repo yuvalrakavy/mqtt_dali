@@ -42,8 +42,9 @@ BridgeKit owns signal handling, tracing-init, MQTT reconnects and bounded stop.
 SIGINT/SIGTERM requests shutdown. An owner that cannot actually finish produces
 a failed/incomplete stop; a supervisor may restart it. UART and metadata ownership
 continue through broker outages. UART health uses only Version/bus-status queries
-and the conservative unverified repeat policy. Fixture commands remain pending
-the capability phase.
+and the conservative unverified repeat policy. Individual PowerState/Brightness
+operations use owned physical jobs and actual readback; see the
+[MQTT output guide](mqtt-outputs.md). Further capability paths remain in progress.
 
 Startup and reconnects wait for **250 ms of actual UART silence** before sending
 initialization queries. Change this with `--uart-quiet-ms 1..5000`. Every raw

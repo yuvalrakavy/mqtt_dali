@@ -678,6 +678,29 @@ and simpler alternatives before expanding infrastructure for another edge case.
 See [the MQTT output guide](mqtt-outputs.md) and the
 [slice spec](superpowers/specs/2026-10-22-dali-v2-p4b-mqtt-outputs.md).
 
+## P4c1 — common input protocol codec
+
+The pure `dali::input` module decodes all five standard input-source schemes,
+preserves device/instance type ambiguity and the full 10-bit information, and
+distinguishes commands from events. Native Part 301 actions, Part 303 flags and
+raw Part 302/304 data are typed without invented gestures or universal lux units.
+Read-only device/instance query builders use validated independent input addresses.
+This adds no UART reader, scheduler, saved schema or MQTT interface.
+
+Eight literal-vector tests pass. Before implementation, seven tests failed for
+missing decode/query behavior while the API skeleton's bounds checks passed. The initial
+full gate passed **305 native tests**, strict scoped Clippy, Pi library/all four
+binary compilation and whitespace checks. All **7 focused protocol controls**
+failed at their intended behavioral assertions. After restoration, all **305
+native tests**, strict scoped Clippy, Pi library/all four binary compilation,
+formatting, whitespace, wait registry and doctests (none defined) pass. Sequential
+source reviews are in progress.
+
+Both source-grounded design reviews approved this limited boundary; source
+reviews remain same-family. Named discovery, persisted input identities, current
+state, MQTT actions/configuration/feedback and semantic emulator controls remain
+required P4 integration work. See [the codec guide](dali-input-contract.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -685,7 +708,7 @@ See [the MQTT output guide](mqtt-outputs.md) and the
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, typed output codec, individual output service and MQTT base properties implemented | Color representations, DALI-2 inputs and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, output codec/service/MQTT base properties and common input codec implemented | Input discovery/state/events/configuration, color representations and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

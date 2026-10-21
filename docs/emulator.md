@@ -12,8 +12,8 @@ target/aarch64-apple-darwin/debug/dali_hat_emulator \
 ```
 
 Use the actual Cargo target directory if `CARGO_TARGET_DIR` is set, and your host
-target on Linux. The JSON ready record gives the PTY slave path. P3 connects the
-v2 daemon to it; currently `mqtt_dali_v2` only checks configuration. Scenario IDs
+target on Linux. The JSON ready record gives the PTY slave path. Supply it as the
+v2 daemon's `--uart` argument; see [running v2](running-v2.md). Scenario IDs
 are private fixture identifiers, not bridge names. Unknown fields/ranges fail.
 Runtime address/group/scene changes are in memory; the scenario is not rewritten.
 

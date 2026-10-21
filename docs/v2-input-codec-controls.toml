@@ -1,0 +1,64 @@
+# Pure protocol controls; each must fail at its named behavioral assertion.
+
+[[control]]
+name = "monitored_command_is_mistaken_for_input_event"
+file = "src/dali/input.rs"
+anchor = "if raw & (1 << 16) != 0 {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(input_commands_and_reserved_sources_never_become_events)"]
+expect_text = "a monitored input command became an event"
+
+[[control]]
+name = "event_information_is_truncated_to_a_byte"
+file = "src/dali/input.rs"
+anchor = "information: (raw & 0x3ff) as u16,"
+replacement = "information: (raw & 0xff) as u16,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(all_standard_input_source_schemes_match_literal_frames)"]
+expect_text = "high event information bits were lost"
+
+[[control]]
+name = "device_instance_is_assumed_to_be_a_button"
+file = "src/dali/input.rs"
+anchor = "(None, discovered) => discovered,"
+replacement = "(None, discovered) => discovered.or(Some(InstanceType::Button)),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(device_instance_type_requires_discovery_and_cannot_override_reported_type)"]
+expect_text = "device/instance event guessed a button type"
+
+[[control]]
+name = "double_press_uses_an_unassigned_code"
+file = "src/dali/input.rs"
+anchor = "5 => Payload::Button(ButtonAction::DoublePress),"
+replacement = "3 => Payload::Button(ButtonAction::DoublePress),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(native_button_actions_match_standard_codes_without_synthesized_gestures)"]
+expect_text = "native button action code changed"
+
+[[control]]
+name = "reserved_occupancy_data_fabricates_a_state"
+file = "src/dali/input.rs"
+anchor = "InstanceType::Occupancy if self.information & !0x0f == 0 =>"
+replacement = "InstanceType::Occupancy =>"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(occupancy_flags_and_reserved_bits_preserve_their_native_meaning)"]
+expect_text = "reserved occupancy data fabricated a valid sensor state"
+
+[[control]]
+name = "device_query_loses_its_device_wide_selector"
+file = "src/dali/input.rs"
+anchor = "self.command(0xfe, query.opcode())"
+replacement = "self.command(0, query.opcode())"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(individual_input_queries_match_literal_device_and_instance_frames)"]
+expect_text = "device query address/FE selector/opcode changed"
+
+[[control]]
+name = "input_query_loses_its_command_bit"
+file = "src/dali/input.rs"
+anchor = "u32::from_be_bytes([0, (self.0 << 1) | 1, instance, opcode])"
+replacement = "u32::from_be_bytes([0, self.0 << 1, instance, opcode])"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(individual_input_queries_match_literal_device_and_instance_frames)"]
+expect_text = "device query address/FE selector/opcode changed"

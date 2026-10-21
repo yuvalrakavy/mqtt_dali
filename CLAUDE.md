@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 mqtt_dali is a Rust service that bridges MQTT and DALI (Digital Addressable Lighting Interface) protocols, enabling remote control of DALI lighting buses via MQTT commands. It targets Raspberry Pi (ARMv7) deployment.
 
+Before expanding infrastructure, establish that the problem is real, assess its
+likelihood/impact and consider simpler alternatives. The owner accepts dropped
+commands during extremely rare DALI bus outages; do not restart the abandoned
+target-deferral effort. If progress stalls for an extended period, explain the
+problem, attempted approaches and alternatives promptly so the owner can steer.
+
 ## Build Commands
 
 The `feat/dali-v2` worktree is developing the approved migration in phases. Current
@@ -145,6 +151,11 @@ Only the SDK owns publication coalescing; a helper-local skip cache can hide a
 physical return after a newer driver report. Aggregate reads retain cursor progress
 before each await, skip disabled buses and reject absent UART before admission.
 The regression controls are `docs/v2-mqtt-output-controls.toml`.
+
+`dali::input` decodes standard Part 103 source schemes and native Part 301–304
+data, and builds individual read-query frames; see `docs/dali-input-contract.md`.
+It is a pure codec. Named input discovery, MQTT state/events and configuration
+are subsequent integration work, not implied by successful decoding alone.
 
 ## Architecture (legacy)
 
