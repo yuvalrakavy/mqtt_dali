@@ -2,7 +2,7 @@
  "rows": {
   "buffered_boot_clears_reopen_latch": {
    "last_real": {
-    "at": "2026-10-21T21:35:59Z",
+    "at": "2026-10-21T22:07:17Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -12,31 +12,31 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.8,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 5.2,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "failed_boundary_retry_loses_timer": {
    "last_real": {
-    "at": "2026-10-21T21:36:05Z",
+    "at": "2026-10-21T22:07:23Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:5dbf5c77722faf1a",
+     "guard": "item:1d8920a233282cd6",
      "row": "373bb6d8a7d15fc4",
      "test": null
     },
     "path": "command",
-    "secs": 5.8,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.2,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "fresh_boot_discards_completed_boundary": {
    "last_real": {
-    "at": "2026-10-21T21:35:36Z",
+    "at": "2026-10-21T22:06:52Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,14 +46,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 3.2,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 3.9,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "hardware_event_discards_completed_helper_panic": {
    "last_real": {
-    "at": "2026-10-21T21:36:11Z",
+    "at": "2026-10-21T22:07:29Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -63,14 +63,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.6,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.1,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "metadata_resets_hardware_snapshot": {
    "last_real": {
-    "at": "2026-10-21T21:36:20Z",
+    "at": "2026-10-21T22:07:40Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -80,14 +80,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.4,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 4.7,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "query_result_overwrites_later_bus_observation": {
    "last_real": {
-    "at": "2026-10-21T21:36:16Z",
+    "at": "2026-10-21T22:07:35Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,14 +97,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.3,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 5.8,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "serial_opener_escapes_runtime_ownership": {
    "last_real": {
-    "at": "2026-10-21T21:35:42Z",
+    "at": "2026-10-21T22:06:59Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -114,25 +114,25 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.4,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "timed_out_serial_open_is_retried": {
    "last_real": {
-    "at": "2026-10-21T21:35:54Z",
+    "at": "2026-10-21T22:07:12Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:ba54bdd33001cb8c",
+     "guard": "item:e2ddfb3eb4ed8e1d",
      "row": "28a4ecd84a0fcac8",
      "test": null
     },
     "path": "command",
-    "secs": 12.9,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 13.2,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   }

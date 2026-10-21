@@ -1,0 +1,107 @@
+{
+ "rows": {
+  "actor_join_failure_is_silently_retried": {
+   "last_real": {
+    "at": "2026-10-21T22:05:12Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e2ddfb3eb4ed8e1d",
+     "row": "71caf33f5f23d2cb",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.7,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "verdict": "RED"
+   }
+  },
+  "input_precedes_queued_request_retirement": {
+   "last_real": {
+    "at": "2026-10-21T22:04:42Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:db1b21c7c2692689",
+     "row": "f2c489107571faaf",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.6,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "verdict": "RED"
+   }
+  },
+  "late_eof_cancels_owned_close": {
+   "last_real": {
+    "at": "2026-10-21T22:04:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:1d8920a233282cd6",
+     "row": "63a11e8309b77940",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.0,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "verdict": "RED"
+   }
+  },
+  "normal_closed_query_is_fatal_before_eof": {
+   "last_real": {
+    "at": "2026-10-21T22:05:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e2ddfb3eb4ed8e1d",
+     "row": "3cd3d2dd5aac410e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.0,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "verdict": "RED"
+   }
+  },
+  "normal_closed_status_is_fatal_before_eof": {
+   "last_real": {
+    "at": "2026-10-21T22:05:06Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:1d8920a233282cd6",
+     "row": "93d07953bc65adb1",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.9,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "verdict": "RED"
+   }
+  },
+  "renewed_events_postpone_ready_helper_join": {
+   "last_real": {
+    "at": "2026-10-21T22:04:48Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:1d8920a233282cd6",
+     "row": "841c2d6179e1cdf2",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.0,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

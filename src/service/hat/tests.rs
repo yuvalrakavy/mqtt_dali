@@ -80,6 +80,251 @@ fn settings(path: PathBuf) -> Settings {
 }
 
 #[tokio::test]
+async fn renewed_input_cannot_starve_completed_helper_or_hide_its_panic() {
+    for panic in [false, true] {
+        let pty = Pty::new();
+        let serial = Serial::open(&pty.path).await.unwrap();
+        let (link, _) = Transactions::start(serial, RepeatPolicy::Unverified);
+        let (flood, events) = broadcast::channel(128);
+        let status = link.observe_status();
+        let mut hat = Hat::new(Some(settings(pty.path)), vec![0]);
+        hat.session = Some(Session {
+            link,
+            events,
+            status,
+        });
+        hat.version = Some(Version {
+            hardware: "01".into(),
+            firmware: "32".into(),
+            variant: "04".into(),
+        });
+        hat.next = Instant::now() + Duration::from_secs(60);
+        hat.published = hat.hardware();
+        hat.spawn(JobKind::Query, async move {
+            assert!(!panic, "injected saturated helper panic");
+            Done::Poll(Ok(vec![BusHealth {
+                bus: 0,
+                status: 2,
+                channels: 4,
+            }]))
+        });
+        tokio::time::timeout(Duration::from_secs(1), async {
+            while !hat.job.as_ref().unwrap().0.is_finished() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        let mut fatal = false;
+        for _ in 0..3 {
+            for sequence in 1..=128 {
+                flood
+                    .send(Event::Packet {
+                        sequence,
+                        packet: Ok(crate::atx::wire::Packet {
+                            bus: 0,
+                            kind: Kind::BusStatus {
+                                status: 0,
+                                channels: 4,
+                            },
+                        }),
+                    })
+                    .unwrap();
+            }
+            if tokio::time::timeout(Duration::from_millis(150), hat.changed())
+                .await
+                .expect("helper collection waited after processing input")
+                .is_err()
+            {
+                fatal = true;
+                break;
+            }
+            if hat.job.is_none() {
+                break;
+            }
+        }
+        assert!(
+            hat.job.is_none(),
+            "renewed input starved completed helper collection"
+        );
+        assert_eq!(fatal, panic, "renewed input hid a completed helper panic");
+        if !panic {
+            assert_eq!(
+                hat.observations[0].status, 0,
+                "older helper replaced proactive observation"
+            );
+        }
+        hat.close(Instant::now() + Duration::from_secs(1))
+            .await
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn closed_query_before_public_eof_joins_transport_before_retry() {
+    let mut pty = Pty::new();
+    let serial = Serial::open(&pty.path).await.unwrap();
+    let (link, _real_events) = Transactions::start(serial, RepeatPolicy::Unverified);
+    // Hold the public EOF until the actor's real result has reached the owner.
+    let (forward, events) = broadcast::channel(128);
+    let status = link.observe_status();
+    let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
+    hat.session = Some(Session {
+        link: link.clone(),
+        events,
+        status,
+    });
+    let query = link.clone();
+    hat.spawn(JobKind::Query, async move {
+        Done::Setup(
+            query
+                .initialize(Duration::from_secs(1))
+                .await
+                .map(|v| (v, vec![])),
+        )
+    });
+    assert_eq!(line(&mut pty.peer).await, b"v\n");
+    drop(pty);
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while link.status() != SessionState::Closed || !hat.job.as_ref().unwrap().0.is_finished() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    hat.published = hat.hardware();
+    assert!(
+        tokio::time::timeout(Duration::from_millis(150), hat.changed())
+            .await
+            .unwrap()
+            .is_ok(),
+        "normal EOF became fatal before public closure delivery"
+    );
+    // Complete/discard the query, then start the real owned close helper.
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while hat.job.as_ref().is_none_or(|job| job.1 != JobKind::Close) {
+            hat.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    let close_id = hat.job.as_ref().unwrap().0.id();
+    forward.send(Event::Closed(CloseReason::Eof)).unwrap();
+    tokio::time::timeout(Duration::from_millis(150), hat.changed())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        !hat.discard_job,
+        "delayed EOF canceled the owned close helper"
+    );
+    if let Some(job) = &hat.job {
+        assert_eq!(job.0.id(), close_id);
+    }
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while hat.session.is_some() {
+            hat.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    // A successful real close is authoritative even when the frontend is retained.
+    link.close().await.unwrap();
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn closed_status_before_public_eof_starts_owned_teardown() {
+    let pty = Pty::new();
+    let serial = Serial::open(&pty.path).await.unwrap();
+    let (link, _) = Transactions::start(serial, RepeatPolicy::Unverified);
+    let (_forward, events) = broadcast::channel(128);
+    let status = link.observe_status();
+    let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
+    hat.next = Instant::now() + Duration::from_secs(60);
+    hat.session = Some(Session {
+        link: link.clone(),
+        events,
+        status,
+    });
+    drop(pty);
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while link.status() != SessionState::Closed {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    hat.published = hat.hardware();
+    assert!(
+        tokio::time::timeout(Duration::from_millis(150), hat.changed())
+            .await
+            .unwrap()
+            .is_ok(),
+        "normal EOF status became fatal before public closure delivery"
+    );
+    assert!(hat.closing && hat.job.as_ref().is_some_and(|j| j.1 == JobKind::Close));
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while hat.session.is_some() {
+            hat.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    link.close().await.unwrap();
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn failed_actor_join_remains_fatal_when_public_evidence_is_delayed() {
+    let mut pty = Pty::new();
+    let serial = Serial::open(&pty.path).await.unwrap();
+    let (link, _) = Transactions::start(serial, RepeatPolicy::Unverified);
+    let (_forward, events) = broadcast::channel(128);
+    let status = link.observe_status();
+    let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
+    hat.session = Some(Session {
+        link: link.clone(),
+        events,
+        status,
+    });
+    let query = link.clone();
+    hat.spawn(JobKind::Query, async move {
+        Done::Setup(
+            query
+                .initialize(Duration::from_secs(1))
+                .await
+                .map(|v| (v, vec![])),
+        )
+    });
+    assert_eq!(line(&mut pty.peer).await, b"v\n");
+    link.abort_worker_for_test();
+    let error = tokio::time::timeout(Duration::from_secs(1), async {
+        loop {
+            if let Err(error) = hat.changed().await {
+                return error;
+            }
+        }
+    })
+    .await
+    .expect("failed actor join became a retry loop");
+    assert!(
+        error.contains("HAT close incomplete"),
+        "failure skipped actual actor join: {error}"
+    );
+    assert!(
+        hat.session.is_some(),
+        "failed join released the session for reopening"
+    );
+    assert!(hat.job.is_none());
+    assert_eq!(link.close().await, Err(TransactionError::StreamLoss));
+}
+
+#[tokio::test]
 async fn uart_owner_measures_a_quiet_interval_before_first_initialization_without_boot() {
     let mut pty = Pty::new();
     let mut config = settings(pty.path.clone());

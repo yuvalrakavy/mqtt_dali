@@ -68,6 +68,16 @@ recovery required. Managed startup applies that
 policy automatically. The current surface still exposes only UART health;
 fixture capabilities arrive in P4.
 
+Queued transaction requests take priority over idle input dispatch; command
+admission still drains and classifies old records and fences the receive stream.
+Canceled or expired callers therefore release admission even under continuous
+input. The HAT owner processes at most 129 public receive attempts per turn, then
+collects a completed helper through its actual join. This keeps recent transport
+and bus observations ahead of older query results without starving completion.
+Once close starts, later public records cannot cancel its owned helper. A Closed
+query or status may arrive before public EOF; successful actual teardown permits
+the paced retry, while an actual task failure remains fatal.
+
 ## Read and edit
 
 `handle.snapshot()` clones an owned snapshot; no borrowed lock guard escapes.
@@ -135,7 +145,7 @@ controller identity, outage independence, notification lag and blocked-owner
 shutdown, late/reset/reopen boundaries, helper panic handling and blocked-opener
 incomplete stop. The declared guard-removal controls are in
 `v2-service-controls.toml`, `v2-uart-service-controls.toml` and
-`v2-quiet-controls.toml`, with runner results beside them. The complete native
+`v2-quiet-controls.toml` and `v2-progress-controls.toml`, with runner results beside them. The complete native
 suite also covers the existing migration/UART/emulator and legacy regressions.
 Pi checks compile the library/v2/emulator for armv7; physical I4 behavior, live
 Logmon delivery and Pi runtime still require later verification.

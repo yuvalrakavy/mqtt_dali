@@ -179,7 +179,39 @@ impl Hat {
             return pending().await;
         }
         self.advance()?;
-        if self.hardware() != self.published {
+        let mut progressed = false;
+        // Preserve queued transport evidence without allowing renewed input to
+        // postpone an actual helper join indefinitely. Each lag also uses budget.
+        for _ in 0..=crate::atx::monitor::EVENT_CAPACITY {
+            if self.closing {
+                break;
+            }
+            let Some(session) = self.session.as_mut() else {
+                break;
+            };
+            let event = match session.events.try_recv() {
+                Ok(event) => Ok(event),
+                Err(broadcast::error::TryRecvError::Empty) => break,
+                Err(broadcast::error::TryRecvError::Lagged(n)) => {
+                    Err(broadcast::error::RecvError::Lagged(n))
+                }
+                Err(broadcast::error::TryRecvError::Closed) => {
+                    Err(broadcast::error::RecvError::Closed)
+                }
+            };
+            self.event(event)?;
+            progressed = true;
+        }
+        if let Some(job) = self.job.as_mut().filter(|job| job.0.is_finished()) {
+            // The hint never substitutes for the actual join. Keep ownership if
+            // this future is canceled before the result becomes ready.
+            // WAIT: v2-hat-loop
+            let result = (&mut job.0).await;
+            self.joined(result)?;
+            progressed = true;
+        }
+        self.advance()?;
+        if progressed || self.hardware() != self.published {
             self.published = self.hardware();
             return Ok(());
         }
@@ -197,8 +229,8 @@ impl Hat {
             };
             // WAIT: v2-hat-loop
             tokio::select! {
-                // Public transport evidence must be consumed before classifying
-                // a Closed status or the command helper's Closed error.
+                // Prefer public transport evidence; owned close also handles
+                // EOF that reaches this receiver after a Closed result/status.
                 biased;
                 event=async { match events { Some(events) if !closing => {
                     // WAIT: v2-hat-loop
@@ -217,17 +249,7 @@ impl Hat {
         };
         match wake {
             Wake::Job(result) => {
-                self.job.take();
-                if self.discard_job {
-                    self.discard_job = false;
-                    if let Err(error) = result {
-                        if !error.is_cancelled() {
-                            return Err(format!("HAT helper failed: {error}"));
-                        }
-                    }
-                } else {
-                    self.finished(result.map_err(|error| format!("HAT helper failed: {error}"))?)?;
-                }
+                self.joined(result)?;
             }
             Wake::Event(event) => self.event(event)?,
             Wake::Status => {
@@ -236,17 +258,29 @@ impl Hat {
                     .as_ref()
                     .is_some_and(|s| s.link.status() == SessionState::Closed)
                 {
-                    // The biased public branch above has consumed every already
-                    // queued event; no normal transport close was observed.
-                    return Err(
-                        "HAT transaction actor closed without transport-loss evidence".into(),
-                    );
+                    // Closure can reach watch/results before the public EOF.
+                    // Only the actual owned join classifies teardown success.
+                    self.begin_close();
                 }
             }
             Wake::Timer => {}
         }
         self.advance()?;
         self.published = self.hardware();
+        Ok(())
+    }
+    fn joined(&mut self, result: Result<Done, tokio::task::JoinError>) -> Result<(), String> {
+        self.job.take();
+        if self.discard_job {
+            self.discard_job = false;
+            if let Err(error) = result {
+                if !error.is_cancelled() {
+                    return Err(format!("HAT helper failed: {error}"));
+                }
+            }
+        } else {
+            self.finished(result.map_err(|error| format!("HAT helper failed: {error}"))?)?;
+        }
         Ok(())
     }
     fn can_query(&self) -> bool {
@@ -259,6 +293,15 @@ impl Hat {
                     SessionState::Ready | SessionState::Uninitialized
                 )
             })
+    }
+    fn begin_close(&mut self) {
+        self.error = "serial transport lost; resynchronizing after reopen".into();
+        self.reset = true;
+        self.version = None;
+        self.observations.clear();
+        self.boot = None;
+        self.cancel_job();
+        self.closing = true;
     }
     fn advance(&mut self) -> Result<(), String> {
         if self.job.is_some() || self.terminal || self.settings.is_none() {
@@ -355,8 +398,7 @@ impl Hat {
             SessionState::Resynchronizing
             | SessionState::Writing
             | SessionState::Awaiting { .. } => {}
-            // Let the biased public event branch consume transport evidence
-            // before the status branch classifies an unexplained actor exit.
+            // Public events, a result, or the status branch starts owned close.
             SessionState::Closed => {}
             SessionState::Uninitialized | SessionState::Ready => {
                 if Instant::now() < self.next {
@@ -431,7 +473,8 @@ impl Hat {
             }
             Done::Recover(Err(error)) => {
                 if error == TransactionError::Closed && !self.closing {
-                    return Err("HAT recovery owner unexpectedly closed".into());
+                    self.begin_close();
+                    return Ok(());
                 }
                 self.error = error.to_string();
                 self.reset = true;
@@ -440,7 +483,8 @@ impl Hat {
             }
             Done::Setup(Err(error)) | Done::Poll(Err(error)) => {
                 if error == TransactionError::Closed && !self.closing {
-                    return Err("HAT request owner unexpectedly closed".into());
+                    self.begin_close();
+                    return Ok(());
                 }
                 self.error = error.to_string();
                 self.version = None;
@@ -461,14 +505,8 @@ impl Hat {
     fn event(&mut self, event: Result<Event, broadcast::error::RecvError>) -> Result<(), String> {
         match event {
             Ok(Event::Closed(CloseReason::Eof | CloseReason::Io(_))) => {
-                self.error = "serial transport lost; resynchronizing after reopen".into();
-                self.reset = true;
-                self.version = None;
-                self.observations.clear();
-                self.boot = None;
                 // Inspect the canceled helper before starting close/recovery.
-                self.cancel_job();
-                self.closing = true;
+                self.begin_close();
             }
             Ok(Event::Closed(reason)) => {
                 return Err(format!("HAT monitor unexpectedly stopped: {reason:?}"))

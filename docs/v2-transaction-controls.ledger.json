@@ -2,7 +2,7 @@
  "rows": {
   "actor_accepts_completion_after_expiry": {
    "last_real": {
-    "at": "2026-10-21T21:41:55Z",
+    "at": "2026-10-21T22:06:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -12,14 +12,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.7,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.1,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "caller_accepts_a_ready_result_after_expiry": {
    "last_real": {
-    "at": "2026-10-21T21:41:49Z",
+    "at": "2026-10-21T22:06:28Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -29,14 +29,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.9,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "drain_retry_is_mistaken_for_empty": {
    "last_real": {
-    "at": "2026-10-21T21:41:37Z",
+    "at": "2026-10-21T22:06:16Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,14 +46,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.6,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 8.2,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "first_write_ignores_an_incomplete_line": {
    "last_real": {
-    "at": "2026-10-21T21:41:43Z",
+    "at": "2026-10-21T22:06:21Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -63,14 +63,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.4,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 5.8,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "timeout_discards_the_late_terminal_slot": {
    "last_real": {
-    "at": "2026-10-21T21:42:01Z",
+    "at": "2026-10-21T22:06:41Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -80,14 +80,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.7,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.9,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "unverified_repeat_mode_is_allowed": {
    "last_real": {
-    "at": "2026-10-21T21:42:08Z",
+    "at": "2026-10-21T22:06:48Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,8 +97,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.4,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.8,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   }

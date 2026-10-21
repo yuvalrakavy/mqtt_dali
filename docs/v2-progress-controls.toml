@@ -1,0 +1,82 @@
+# P4b2 scheduling and closure-ordering guard-removal controls.
+
+[[control]]
+name = "input_precedes_queued_request_retirement"
+file = "src/atx/transactions/engine.rs"
+anchor = '''_ = stop_requested(&mut self.stop) => return,
+                request = self.requests.recv() => {
+                    let Some(mut request) = request else { return; };
+                    let result = self.request(&mut request).await;
+                    self.publish_mode();
+                    let Request { reply, permit, .. } = request;
+                    drop(permit); // Retire admission before waking the caller.
+                    let _ = reply.send(result);
+                },
+                event = self.events.recv() => { self.idle_event(event); self.publish_mode(); },'''
+replacement = '''_ = stop_requested(&mut self.stop) => return,
+                event = self.events.recv() => { self.idle_event(event); self.publish_mode(); },
+                request = self.requests.recv() => {
+                    let Some(mut request) = request else { return; };
+                    let result = self.request(&mut request).await;
+                    self.publish_mode();
+                    let Request { reply, permit, .. } = request;
+                    drop(permit);
+                    let _ = reply.send(result);
+                },'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(canceled_and_expired_queued_callers_retire_under_continuous_input)"]
+expect_text = "continuous input stranded a canceled or expired request's admission permit"
+
+[[control]]
+name = "renewed_events_postpone_ready_helper_join"
+file = "src/service/hat.rs"
+anchor = "if let Some(job) = self.job.as_mut().filter(|job| job.0.is_finished()) {"
+replacement = "if let Some(job) = self.job.as_mut().filter(|_| false) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(renewed_input_cannot_starve_completed_helper_or_hide_its_panic)"]
+expect_text = "renewed input starved completed helper collection"
+
+[[control]]
+name = "late_eof_cancels_owned_close"
+file = "src/service/hat.rs"
+anchor = "if self.closing {\n                break;\n            }"
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(closed_query_before_public_eof_joins_transport_before_retry)"]
+expect_text = "delayed EOF canceled the owned close helper"
+
+[[control]]
+name = "normal_closed_query_is_fatal_before_eof"
+file = "src/service/hat.rs"
+anchor = '''Done::Setup(Err(error)) | Done::Poll(Err(error)) => {
+                if error == TransactionError::Closed && !self.closing {
+                    self.begin_close();
+                    return Ok(());
+                }'''
+replacement = '''Done::Setup(Err(error)) | Done::Poll(Err(error)) => {
+                if error == TransactionError::Closed && !self.closing {
+                    return Err("unexplained closed query".into());
+                }'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(closed_query_before_public_eof_joins_transport_before_retry)"]
+expect_text = "normal EOF became fatal before public closure delivery"
+
+[[control]]
+name = "normal_closed_status_is_fatal_before_eof"
+file = "src/service/hat.rs"
+anchor = '''// Only the actual owned join classifies teardown success.
+                    self.begin_close();'''
+replacement = '''// Removed owned teardown classification.
+                    return Err("unexplained closed status".into());'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(closed_status_before_public_eof_starts_owned_teardown)"]
+expect_text = "normal EOF status became fatal before public closure delivery"
+
+[[control]]
+name = "actor_join_failure_is_silently_retried"
+file = "src/service/hat.rs"
+anchor = 'result.map_err(|error| format!("HAT close incomplete: {error}"))?;'
+replacement = "let _ = result;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(failed_actor_join_remains_fatal_when_public_evidence_is_delayed)"]
+expect_text = "failed actor join became a retry loop"

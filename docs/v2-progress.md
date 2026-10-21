@@ -542,6 +542,37 @@ introduced. Physical execution, original-generation admission, readback and
 fair collection of jobs/events remain the next integration boundary. Reference:
 [dali output contract](dali-output-contract.md).
 
+## P4b2 — bounded dispatch and helper collection
+
+Deterministic fail-first probes reproduced queued admission being stranded by
+continuous input, completed HAT helpers being starved by renewed observations,
+and normal EOF becoming fatal when its query result preceded public delivery.
+Transaction dispatch now prefers queued requests after stop; ordinary command
+drain/fence/deadline checks remain intact. The HAT owner consumes a bounded prefix
+of 129 public receive attempts, then actually joins a completed helper and retires
+the stored handle without a suspension between those steps. Queued bus facts keep
+priority over earlier query snapshots. Processing work returns promptly even
+when it leaves the hardware snapshot unchanged.
+
+A Closed query or status starts owned teardown; its actual join determines
+whether a paced retry is allowed. Late EOF cannot abort an owned Close helper.
+Actual helper/actor failures remain fatal and post-join partial-write poison is
+preserved. Five new tests cover cancellation/expiry, renewed input plus completed
+panic/newer bus data, actual PTY EOF ordering, late EOF, status ordering and an
+actual aborted actor with delayed public evidence. Six new guard-removal controls
+all failed for their intended assertions. The test fixtures use private streams
+and PTYs and remain bounded.
+
+The full native suite passed **263 tests**; strict scoped Clippy,
+Pi library/all four binaries compilation, wait registry, formatting, whitespace
+and doctests (none defined) passed. All 30 existing transaction, UART-service and
+quiet-recovery controls failed for their intended assertions. After restoration,
+the full native suite again passed **263 tests**. Both sequential source reviews
+approved without material findings. Reviews use the same model family.
+
+This closes scheduling prerequisites; physical property execution and readback
+remain pending. No live HAT, broker, Store or deployment changed.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |

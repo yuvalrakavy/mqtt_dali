@@ -18,6 +18,8 @@ mod recovery;
 pub(crate) use recovery::RecoveryCancellation;
 use recovery::{Activity, FenceRequest, Reset};
 
+pub(crate) const EVENT_CAPACITY: usize = 128;
+
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum TransportError {
     #[error("ATX receive fence is busy")]
@@ -197,7 +199,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
         self.inner.state.poisoned.store(false, Ordering::Release);
     }
     pub fn start(stream: S) -> (Self, broadcast::Receiver<Event>) {
-        let (events, receive) = broadcast::channel(128);
+        let (events, receive) = broadcast::channel(EVENT_CAPACITY);
         let (stop, _) = watch::channel(false);
         let (deadline, _) = watch::channel(None);
         let (marker, _) = watch::channel(None);

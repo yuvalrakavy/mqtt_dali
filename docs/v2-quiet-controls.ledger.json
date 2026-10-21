@@ -2,7 +2,7 @@
  "rows": {
   "actor_accepts_stale_quiet_proof": {
    "last_real": {
-    "at": "2026-10-21T21:40:30Z",
+    "at": "2026-10-21T22:08:07Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -12,14 +12,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.2,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "actor_ignores_caller_flag_at_recovery_commit": {
    "last_real": {
-    "at": "2026-10-21T21:41:26Z",
+    "at": "2026-10-21T22:09:07Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -29,14 +29,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 3.6,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 3.8,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "actor_panic_cleanup_is_not_owned": {
    "last_real": {
-    "at": "2026-10-21T21:41:05Z",
+    "at": "2026-10-21T22:08:45Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,14 +46,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.7,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.0,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "caller_cancellation_does_not_reach_reader": {
    "last_real": {
-    "at": "2026-10-21T21:41:22Z",
+    "at": "2026-10-21T22:09:04Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -63,14 +63,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.5,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 5.6,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "canceled_reset_is_still_authorized": {
    "last_real": {
-    "at": "2026-10-21T21:40:20Z",
+    "at": "2026-10-21T22:07:57Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -80,14 +80,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.4,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 4.8,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "close_waiter_owns_resource_cleanup": {
    "last_real": {
-    "at": "2026-10-21T21:41:12Z",
+    "at": "2026-10-21T22:08:52Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,14 +97,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.2,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.7,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "completion_precedes_actual_join": {
    "last_real": {
-    "at": "2026-10-21T21:41:17Z",
+    "at": "2026-10-21T22:08:58Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -114,14 +114,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.3,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.0,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "configured_quiet_is_ignored": {
    "last_real": {
-    "at": "2026-10-21T21:40:48Z",
+    "at": "2026-10-21T22:08:26Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -131,14 +131,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.1,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.2,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "failed_recovery_reopens_admission": {
    "last_real": {
-    "at": "2026-10-21T21:40:36Z",
+    "at": "2026-10-21T22:08:14Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -148,14 +148,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.5,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.8,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "new_activity_reset_guard_is_removed": {
    "last_real": {
-    "at": "2026-10-21T21:40:24Z",
+    "at": "2026-10-21T22:08:01Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -165,31 +165,31 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.2,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 4.3,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "poison_discovered_during_close_is_lost": {
    "last_real": {
-    "at": "2026-10-21T21:41:00Z",
+    "at": "2026-10-21T22:08:39Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:ba54bdd33001cb8c",
+     "guard": "item:e2ddfb3eb4ed8e1d",
      "row": "e4e63e4fba3dc415",
      "test": null
     },
     "path": "command",
-    "secs": 2.9,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 3.2,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "quiet_interval_range_is_not_validated": {
    "last_real": {
-    "at": "2026-10-21T21:40:57Z",
+    "at": "2026-10-21T22:08:36Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -199,14 +199,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 9.2,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 9.7,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "quiet_timer_is_skipped": {
    "last_real": {
-    "at": "2026-10-21T21:40:10Z",
+    "at": "2026-10-21T22:07:46Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -216,14 +216,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.5,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 6.3,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "raw_activity_is_not_tracked": {
    "last_real": {
-    "at": "2026-10-21T21:40:15Z",
+    "at": "2026-10-21T22:07:52Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -233,14 +233,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.5,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 5.9,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "ready_event_backlog_starves_recovery_deadline": {
    "last_real": {
-    "at": "2026-10-21T21:41:32Z",
+    "at": "2026-10-21T22:09:13Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -250,25 +250,25 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.8,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 5.9,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   },
   "startup_quiet_is_skipped": {
    "last_real": {
-    "at": "2026-10-21T21:40:42Z",
+    "at": "2026-10-21T22:08:20Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:ba54bdd33001cb8c",
+     "guard": "item:e2ddfb3eb4ed8e1d",
      "row": "a5d399f93ad5569c",
      "test": null
     },
     "path": "command",
-    "secs": 5.3,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 5.9,
+    "sha": "fd863415a0a8848bb3e01987163739a32495d44c",
     "verdict": "RED"
    }
   }

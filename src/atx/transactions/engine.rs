@@ -148,6 +148,10 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
     pub fn status(&self) -> SessionState {
         *self.shared.status.borrow()
     }
+    #[cfg(test)]
+    pub(crate) fn abort_worker_for_test(&self) {
+        self.shared.worker.abort();
+    }
     pub fn subscribe(&self) -> broadcast::Receiver<Event> {
         self.shared.monitor.subscribe()
     }
@@ -398,7 +402,6 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
             tokio::select! {
                 biased;
                 _ = stop_requested(&mut self.stop) => return,
-                event = self.events.recv() => { self.idle_event(event); self.publish_mode(); },
                 request = self.requests.recv() => {
                     let Some(mut request) = request else { return; };
                     let result = self.request(&mut request).await;
@@ -407,6 +410,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
                     drop(permit); // Retire admission before waking the caller.
                     let _ = reply.send(result);
                 },
+                event = self.events.recv() => { self.idle_event(event); self.publish_mode(); },
             }
             if matches!(self.mode, Mode::Closed) {
                 return;
@@ -806,6 +810,94 @@ fn response(command: &Command, packet: &Packet) -> Option<Response> {
 mod tests {
     use super::*;
     use std::{future::Future, task::Poll};
+
+    #[tokio::test(start_paused = true)]
+    async fn canceled_and_expired_queued_callers_retire_under_continuous_input() {
+        for canceled in [true, false] {
+            let (stream, _hat) = tokio::io::duplex(128);
+            let (monitor, _) = Monitor::start(stream);
+            let (flood, events) = broadcast::channel(128);
+            let (send, requests) = mpsc::channel(1);
+            let (stop, stop_rx) = watch::channel(false);
+            let (status, status_rx) = watch::channel(SessionState::Uninitialized);
+            let (shutdown, shutdown_rx) = watch::channel(None);
+            let actor = Actor {
+                monitor: monitor.clone(),
+                events,
+                mode: Mode::Uninitialized,
+                requests,
+                stop: stop_rx,
+                life: Life { status },
+                repeat: RepeatPolicy::Unverified,
+                shutdown: shutdown_rx,
+            };
+            let (begin, gated) = oneshot::channel();
+            let (polled, first_poll) = oneshot::channel();
+            let (worker, completed) = joined::start(async move {
+                gated.await.unwrap();
+                let operation = actor.run();
+                tokio::pin!(operation);
+                let mut polled = Some(polled);
+                std::future::poll_fn(|cx| {
+                    // Refill on every task poll, including after cooperative yield.
+                    for _ in 0..128 {
+                        flood
+                            .send(Event::Packet {
+                                sequence: 1,
+                                packet: Ok(Packet {
+                                    bus: 0,
+                                    kind: Kind::Dali(DaliFrame::Bits24(0x020401)),
+                                }),
+                            })
+                            .unwrap();
+                    }
+                    let result = operation.as_mut().poll(cx);
+                    if let Some(polled) = polled.take() {
+                        let _ = polled.send(());
+                    }
+                    result
+                })
+                .await
+            });
+            let link = Transactions {
+                shared: Arc::new(Shared {
+                    monitor,
+                    requests: send,
+                    permit: Arc::new(Semaphore::new(1)),
+                    status: status_rx,
+                    stop,
+                    completed,
+                    shutdown,
+                    worker,
+                    repeat: RepeatPolicy::Unverified,
+                }),
+            };
+            let mut caller = Some(Box::pin(link.initialize(Duration::from_millis(20))));
+            assert!(std::future::poll_fn(|cx| Poll::Ready(
+                caller.as_mut().unwrap().as_mut().poll(cx)
+            ))
+            .await
+            .is_pending());
+            assert_eq!(link.shared.permit.available_permits(), 0);
+            if canceled {
+                drop(caller.take());
+            } else {
+                tokio::time::advance(Duration::from_millis(30)).await;
+            }
+            begin.send(()).unwrap();
+            tokio::time::timeout(Duration::from_secs(1), first_poll)
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(
+                link.shared.permit.available_permits(),
+                1,
+                "continuous input stranded a canceled or expired request's admission permit"
+            );
+            drop(caller);
+            link.close().await.unwrap();
+        }
+    }
 
     #[tokio::test(start_paused = true)]
     async fn recovery_deadline_survives_a_ready_event_backlog_without_caller_polling() {
