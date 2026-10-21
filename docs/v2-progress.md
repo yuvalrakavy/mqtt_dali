@@ -661,8 +661,18 @@ Pi library/all four binary compilation and whitespace checks. All **15 new
 guard-removal controls** and **8 affected existing metadata/trace controls**
 failed for their intended behavioral assertions. After restoration, all **297
 native tests**, strict scoped Clippy, Pi library/all four binary compilation,
-formatting, whitespace and doctests (none defined) pass. Sequential source reviews
-are in progress.
+formatting, whitespace and doctests (none defined) pass. The first sequential
+source review approves the bounded-rejection contract; the second is pending.
+Reviews use the same model family.
+
+Source review confirmed a broader remaining integration gap: the SDK abandons
+Rejected state requests, so HAT recovery alone does not retry Desired consumed
+during an outage or before UART startup readiness. This slice explicitly uses
+target rejection to preserve metadata and healthy fixtures. The guide now states
+the limitation. The next required slice is target-scoped deferred state in the
+SDK and its DALI adoption, with causal outage/convergence tests; a proxy-owned
+queue or whole-controller Link outage would violate the existing ownership and
+availability boundaries.
 See [the MQTT output guide](mqtt-outputs.md) and the
 [slice spec](superpowers/specs/2026-10-22-dali-v2-p4b-mqtt-outputs.md).
 
