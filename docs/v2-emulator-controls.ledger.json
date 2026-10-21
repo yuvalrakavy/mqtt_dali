@@ -1,0 +1,107 @@
+{
+ "rows": {
+  "emulator_partial_lines_never_expire": {
+   "last_real": {
+    "at": "2026-10-21T16:36:19Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:c5b32c356f2f2155",
+     "row": "bd0fc3126ad48fb2",
+     "test": null
+    },
+    "path": "command",
+    "secs": 1.9,
+    "sha": "fc65453deb9ff10311e07e44ddfe8422d30be3db",
+    "verdict": "RED"
+   }
+  },
+  "range_match_can_program_an_address": {
+   "last_real": {
+    "at": "2026-10-21T16:36:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:81a77c1131d0ecad",
+     "row": "211ee25e7093cee9",
+     "test": null
+    },
+    "path": "command",
+    "secs": 1.9,
+    "sha": "fc65453deb9ff10311e07e44ddfe8422d30be3db",
+    "verdict": "RED"
+   }
+  },
+  "reboot_ignores_an_emitted_truncated_prefix": {
+   "last_real": {
+    "at": "2026-10-21T16:36:13Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:0121ae4a7d66d27a",
+     "row": "32a3204a722cf288",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.3,
+    "sha": "fc65453deb9ff10311e07e44ddfe8422d30be3db",
+    "verdict": "RED"
+   }
+  },
+  "retired_controls_are_still_executed": {
+   "last_real": {
+    "at": "2026-10-21T16:36:15Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:8bce1a2759f49574",
+     "row": "86468252d0f49575",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.5,
+    "sha": "fc65453deb9ff10311e07e44ddfe8422d30be3db",
+    "verdict": "RED"
+   }
+  },
+  "single_configuration_frame_is_allowed": {
+   "last_real": {
+    "at": "2026-10-21T16:36:08Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:81a77c1131d0ecad",
+     "row": "c10c72c58ffd031f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.3,
+    "sha": "fc65453deb9ff10311e07e44ddfe8422d30be3db",
+    "verdict": "RED"
+   }
+  },
+  "timer_queue_has_no_limit": {
+   "last_real": {
+    "at": "2026-10-21T16:36:18Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:4e609a8afc4cf68e",
+     "row": "adc463f40f3430e3",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.5,
+    "sha": "fc65453deb9ff10311e07e44ddfe8422d30be3db",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

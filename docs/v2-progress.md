@@ -120,12 +120,59 @@ than an empty buffer. Correlation requires a stronger explicit drain contract.
 Deadline tests must separately exercise actor completion and a caller resuming
 after a ready result, since either check can hide a missing guard in the other.
 
+## P2 — independent standalone ATX emulator implemented
+
+`src/emulator` owns strict physical scenarios independently of bridge inventory,
+with separate UART parsing/formatting and literal vectors. Its base gear model
+supports levels/MASK, steps, limits, selected status/configuration queries, DTRs,
+groups/scenes and commissioning address selection/search/program/withdraw. Model
+time can be realtime or frozen/advanced; seeded randomization is reproducible.
+Duplicate addresses affect all selected fixtures and conflicting replies collide.
+
+`dali_hat_emulator` creates a private PTY and optional private Unix JSON-control
+socket. It uses tracing-init, bounded detached startup/output workers, bounded
+queues/timers/clients, persistent UART write offsets and independent transport
+deadlines. Controls inject events/faults, inspect actual fixture state and simulate
+address loss, bus power changes and HAT reboot. Reboot preserves fixture DTR and
+initialization state and delimits truncated output. Both PTY descriptors are
+close-on-exec and released before successful close.
+
+Verified on 2026-10-21:
+
+- Full native nextest suite: **146 passed**, including 24 emulator library tests
+  and four standalone process tests, plus all 118 previous regressions. Real PTY
+  tests use production Serial/Transactions and verify independent snapshots.
+- Process checks cover private socket permissions, refusing existing paths,
+  invalid/oversized/unfinished controls, and SIGTERM with full unread output.
+  Model tests cover range versus exact selection, binary search, repeat windows,
+  expiry, RESET retention/isolation and unsupported operation behavior.
+- Strict scoped Clippy passed. Pi library/v2/emulator compile check passed.
+  Wait registry and formatting passed. Cross-linking and Pi runtime remain P9.
+- Six emulator negative controls failed for their declared assertions: repeat
+  gating, exact selection, reboot delimiter, retired controls, timer bounds and
+  partial-line lifetime. See the control table and recorded ledger.
+- Sequential design/code reviews completed. Code findings for truncated-record
+  recovery, mixed-width repeat invalidation and STEP UP/RESET semantics were
+  observed failing in regressions, fixed and reviewed again with approval.
+  A further two-fixture RESET test closes the review's nonblocking coverage gap.
+  Reviews are source-only and from one model family; physical behavior unverified.
+
+Limits: immediate direct/scene levels, no timed UP/DOWN/fade physics yet. DT8,
+semantic inputs, emergency and memory/data models belong to P4. The synthetic
+version/repeat profiles are not real-firmware evidence. Unix socket cleanup is
+best effort after exit. Usage and capability boundaries are in `emulator.md` and
+`support-matrix.md`. Browser emulator controls follow the protected HTTP phases.
+
+Review learning: track UART record boundaries from accepted bytes across frames,
+including deliberate faults; HAT reset must not reset separately powered gear.
+Independent models need adjacent opcode/default tests as well as roundtrips.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
-| P2 ATX emulator | Pending | Independent hardware model through actual serial framing |
+| P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Pending | Runtime lifecycle and inventory/retired-request contract; canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |

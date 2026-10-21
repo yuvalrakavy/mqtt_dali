@@ -43,6 +43,14 @@ does not establish emptiness. Transaction negative controls are recorded in
 `docs/v2-uart-controls.toml` contains the substrate safety controls. All automated
 PTY tests are local and never open `/dev/serial0` or contact a real DALI bus.
 
+The standalone `dali_hat_emulator` owns a separate strict physical scenario and
+exposes a PTY plus optional mode-0600 Unix control socket in a private directory.
+It uses an independent ATX codec/model, seeded addressing, configurable repeat
+terminal count and faults; no broker or bridge inventory. See `docs/emulator.md`
+and `examples/emulator/basic-i4.json`. `docs/support-matrix.md` distinguishes base
+local coverage from P4 extensions and unverified physical behavior. Emulator
+safety controls are in `docs/v2-emulator-controls.toml`.
+
 The default build target is `armv7-unknown-linux-musleabihf` (set in `.cargo/config.toml`). To cross-compile for Pi:
 
 ```bash

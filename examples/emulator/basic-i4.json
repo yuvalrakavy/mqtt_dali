@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "seed": 42,
+  "repeat": "one_terminal",
+  "buses": [
+    {
+      "number": 0,
+      "outputs": [
+        { "id": "ceiling-a", "short_address": 0, "level": 100 },
+        { "id": "ceiling-b", "short_address": 1, "level": 0 },
+        { "id": "new-fixture", "short_address": null, "level": 0 }
+      ],
+      "inputs": [
+        { "id": "wall-buttons", "short_address": 0, "instances": [1, 1] }
+      ]
+    },
+    { "number": 1 },
+    { "number": 2 },
+    { "number": 3 }
+  ]
+}

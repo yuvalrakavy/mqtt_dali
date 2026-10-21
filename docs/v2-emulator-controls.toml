@@ -1,0 +1,53 @@
+[[control]]
+name = "single_configuration_frame_is_allowed"
+file = "src/emulator/model.rs"
+anchor = "if repeat_required && !repeated {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(configuration_requires_an_adjacent_repeat_within_the_total_window)"]
+expect_text = "single configuration frame changed groups"
+
+[[control]]
+name = "range_match_can_program_an_address"
+file = "src/emulator/model.rs"
+anchor = "let exact = eligible && gear.config.random_address == Some(gear.search);"
+replacement = "let exact = eligible;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(addressing_compares_a_range_but_only_programs_exact_eligible_matches)"]
+expect_text = "Value(255)"
+
+[[control]]
+name = "reboot_ignores_an_emitted_truncated_prefix"
+file = "src/emulator/session.rs"
+anchor = "let partial = self.unterminated_output;"
+replacement = "let partial = false;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(a_truncated_record_is_delimited_before_a_reboot_so_transactions_can_reinitialize)"]
+expect_text = "truncated prefix swallowed the reboot record"
+
+[[control]]
+name = "retired_controls_are_still_executed"
+file = "src/emulator/session.rs"
+anchor = "if !request.reply.is_closed() && Instant::now() < request.deadline {"
+replacement = "if true {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(canceled_and_expired_queued_controls_do_not_mutate_the_model)"]
+expect_text = "retired queued control still mutated a fixture"
+
+[[control]]
+name = "timer_queue_has_no_limit"
+file = "src/emulator/session.rs"
+anchor = "if self.scheduled.len() >= 64 {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(timer_and_uart_output_overflow_fail_explicitly_instead_of_dropping_bytes)"]
+expect_text = "unwrap_err()"
+
+[[control]]
+name = "emulator_partial_lines_never_expire"
+file = "src/emulator/wire.rs"
+anchor = "if self.deadline().is_some_and(|deadline| now >= deadline) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_framer_bounds_storage_and_total_partial_lifetime)"]
+expect_text = "partial command deadline"

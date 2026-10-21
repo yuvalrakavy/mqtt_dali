@@ -28,6 +28,18 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `emulator-runtime-shutdown` | bounded | Tokio worker shutdown | At most 500 ms; on expiry abandon any remaining worker. Detached filesystem and output threads are never joined. |
+| `emulator-control` | bounded | actor's capacity-32 local control queue response | Admission is nonwaiting. The caller supplies a total deadline; on expiry return an error saying an applied mutation is not undone. Expired/canceled requests are skipped before execution. Socket controls supply a 1 s bound. |
+| `emulator-close` | bounded | emulator session completion | At most 1 s; on expiry return shutdown-deadline error. Stop wakes the select even with unread UART or no input. Final handle drop aborts the worker and releases both PTY descriptors. |
+| `emulator-loop` | acyclic | UART readiness, model-independent transport timers, controls or stop | One session owns the model without sharing locks. Controls never wait for output consumers. Output offsets survive select cancellation; frame writes expire after 1 s and fail the session. Partial commands expire after 1 s. Idle may wait indefinitely; close independently wakes stop and bounds completion. |
+| `emulator-pty-open` | bounded | detached openpty/configuration worker | At most 2 s; on expiry return an error. Late owned descriptors are dropped; no worker join occurs at shutdown. |
+| `emulator-control-bind` | bounded | detached local socket setup worker | At most 2 s; on expiry return an error. A late listener and owned cleanup guard are dropped. Existing paths are never removed. |
+| `emulator-control-serve` | acyclic | local listener, at most 16 client tasks or stop | Each client has a separate 3 s outer bound. Session controls do not await client output. Stop drops the JoinSet, aborting clients; it never joins their I/O. Excess connections are closed without creating tasks. |
+| `emulator-control-client` | bounded | one bounded JSON request, actor operation and socket output | Outer bound 3 s; inner request read and response write each 1 s. On expiry drop the client. Maximum request 16 KiB, response 1 MiB. A nonreading client holds no session resource. |
+| `emulator-startup` | acyclic | bounded startup workers, PTY creation, optional control binding or stop | Signals are installed first and race all startup. Workers are detached and bounded separately (3 s filesystem/logging, 2 s PTY/control bind). Diagnostic output has its own 200 ms bound. No startup worker waits for this caller. |
+| `emulator-startup-worker` | bounded | detached logging/scenario worker | At most 3 s; on expiry return startup-deadline error, dropping any late owned result. Never join a blocked filesystem/logging worker during exit. |
+| `emulator-supervise` | acyclic | signals, emulator lifecycle or local control server completion | Lifecycle is published without waiting for this receiver. Signals are independent. Shutdown sets stop, aborts endpoint clients and bounds emulator close to 1 s; runtime shutdown is capped at 500 ms. |
+| `emulator-output` | bounded | best-effort raw-descriptor startup/diagnostic writer | At most 200 ms; on expiry detach and continue/exit. The writer duplicates the descriptor and bypasses Rust stdio locks, so an unread output pipe cannot hold process exit. |
 | `atx-receive-fence` | bounded | same-reader receive drain and its oneshot result | Caller deadline bounds the oneshot; on expiry return Deadline. Reader drain separately stops after 4096 bytes or 100 ms with Busy. Explicit nonblocking Empty ends draining; retry Pending remains pending under the 100 ms bound. Close aborts the reader and drops the sender. |
 | `atx-transaction-result` | bounded | capacity-one actor response | One total caller deadline covers fence, write and response. On expiry return Deadline and retain an unconsumed terminal slot; never admit another request until that slot retires or a later boot clears uncertainty. A ready response is rejected if the caller resumes after expiry. |
 | `atx-transaction-close` | bounded | monitor resource release and actor completion | At most 1 s. Stop wakes the active or idle actor; monitor close aborts its reader. On expiry return Deadline without joining an unresponsive task. |
@@ -73,7 +85,7 @@ blocking-methods = read_byte, shutdown_timeout
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control
 ```
 
 ## Waiters (generated)
@@ -113,6 +125,24 @@ dali-stop src/mqtt.rs stopped
 dali-supervise src/shutdown.rs supervise
 dali-uart-idle src/hat_line.rs wait_for_idle
 dali-uart-line src/hat_line.rs read_line
+emulator-close src/bin/dali_hat_emulator.rs run
+emulator-close src/emulator/session.rs Emulator::close
+emulator-control src/emulator/session.rs Emulator::control
+emulator-control-bind src/emulator/control.rs Endpoint::bind
+emulator-control-client src/emulator/control.rs Endpoint::run
+emulator-control-client src/emulator/control.rs handle
+emulator-control-serve src/bin/dali_hat_emulator.rs run
+emulator-control-serve src/emulator/control.rs Endpoint::run
+emulator-loop src/emulator/session.rs due
+emulator-loop src/emulator/session.rs run
+emulator-output src/bin/dali_hat_emulator.rs output
+emulator-pty-open src/bin/dali_hat_emulator.rs run
+emulator-pty-open src/emulator/pty.rs spawn
+emulator-runtime-shutdown src/bin/dali_hat_emulator.rs main
+emulator-startup src/bin/dali_hat_emulator.rs run
+emulator-startup-worker src/bin/dali_hat_emulator.rs worker
+emulator-supervise src/bin/dali_hat_emulator.rs main
+emulator-supervise src/bin/dali_hat_emulator.rs run
 mqtt-backlog-lock src/mqtt.rs Backlog::popped
 mqtt-backlog-lock src/mqtt.rs Backlog::pushed
 mqtt-backlog-lock src/mqtt.rs Backlog::session_ended
