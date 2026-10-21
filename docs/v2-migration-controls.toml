@@ -1,0 +1,47 @@
+# Each row removes one P0 safety guard. Run with Store/scripts/negative-control.py
+# and CARGO_TARGET_DIR set to the existing native build cache. No network/HAT.
+
+[[control]]
+name = "aliased_paths_can_initialize_the_legacy_file"
+file = "src/config.rs"
+anchor = "    check_distinct_paths(paths)?;"
+replacement = "    // negative control: omit path alias check"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(same_paths_and_hard_link_aliases_are_rejected)"]
+expect_text = "Err(ConfigError::AliasedPaths)"
+
+[[control]]
+name = "a_swapped_symlink_is_followed"
+file = "src/config.rs"
+anchor = ".custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)"
+replacement = ".custom_flags(libc::O_NONBLOCK)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_symlink_swapped_after_metadata_check_is_not_followed)"]
+expect_text = "the descriptor must be opened with no-follow"
+
+[[control]]
+name = "publication_replaces_a_concurrent_winner"
+file = "src/config.rs"
+anchor = "match fs::hard_link(&temporary.0, path) {"
+replacement = "match fs::rename(&temporary.0, path) {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_creator_arriving_at_publication_cannot_be_overwritten)"]
+expect_text = "a publication replaced the concurrent winner"
+
+[[control]]
+name = "output_wait_is_unbounded"
+file = "src/bin/mqtt_dali_v2.rs"
+anchor = "receive.recv_timeout(Duration::from_millis(200))"
+replacement = "receive.recv()"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "config_startup", "-E", "test(unread_full_output_pipes_cannot_hold_success_error_or_help_exit)"]
+expect_text = "v2 config process did not exit in time"
+
+[[control]]
+name = "filesystem_worker_is_joined_at_exit"
+file = "src/bin/mqtt_dali_v2.rs"
+anchor = "Ok(worker) => drop(worker), // Do not join a filesystem worker at process exit."
+replacement = "Ok(worker) => { let _ = worker.join(); },"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "config_startup", "-E", "test(stalled_configuration_worker_does_not_hold_process_exit)"]
+expect_text = "v2 config process did not exit in time"

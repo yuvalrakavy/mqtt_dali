@@ -8,6 +8,27 @@ mqtt_dali is a Rust service that bridges MQTT and DALI (Digital Addressable Ligh
 
 ## Build Commands
 
+The `feat/dali-v2` worktree is developing the approved migration in phases. Current
+scope, verification and remaining work are recorded in `docs/v2-progress.md`.
+The default binary remains the legacy daemon until P3 promotes BridgeKit. The new
+`mqtt_dali_v2` binary currently supports only `--check-config`: it imports v1 into
+the separate `dali.v2.json` if absent, or validates existing v2, without MQTT/HAT
+or terminal setup. It must not fall through into the legacy runtime. For example:
+
+```bash
+cargo run --target aarch64-apple-darwin --bin mqtt_dali_v2 -- --check-config
+cargo nextest run --target aarch64-apple-darwin --lib --test config_startup
+```
+
+`--legacy-config` and `--config` select distinct import/current paths. Existing
+v2 always wins; deleting it forces a fresh import on the next check/start. v1
+bytes are never changed. Use a local operator-owned directory on a filesystem
+with hard links and directory fsync. No migration command contacts the real bus.
+
+New migration safety controls are in `docs/v2-migration-controls.toml`. Run them
+with Store's `scripts/negative-control.py --root <this-worktree> <table>`; the
+runner restores each mutation. Avoid simultaneous builds or edits while it runs.
+
 The default build target is `armv7-unknown-linux-musleabihf` (set in `.cargo/config.toml`). To cross-compile for Pi:
 
 ```bash
@@ -28,7 +49,7 @@ against fake byte sources. Tests run on the Mac against the emulator and an in-p
 on 127.0.0.1 (`tests/process.rs` runs the built binary against it):
 
 ```bash
-cargo test --target aarch64-apple-darwin
+cargo nextest run --target aarch64-apple-darwin
 ```
 
 Every wait carries a `// WAIT: <row>` tag, on its own line above the statement, naming a row of

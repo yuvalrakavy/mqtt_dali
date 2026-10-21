@@ -774,6 +774,7 @@ version = "0.1.2"
 dependencies = [
  "built",
  "error-stack",
+ "libc",
  "log",
  "mqtt-test-broker",
  "rand 0.10.0",

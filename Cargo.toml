@@ -2,6 +2,7 @@
 name = "mqtt_dali"
 version = "0.1.2"
 edition = "2021"
+default-run = "mqtt_dali"
 
 build = "build.rs"
 
@@ -19,6 +20,7 @@ serde = { version = "1.0.215", features = ["derive"] }
 rumqttc = { version = "0.25.1", default-features = false }
 rustop = "1.1.4"
 rand = "0.10.0"
+libc = "0.2"
 tracing = { version = "0.1.41"  }
 log = "0.4.22"
 tracing-init = { git="http://github.com/yuvalrakavy/tracing-init.git", features = ["otel"] }

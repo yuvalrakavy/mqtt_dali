@@ -2,3 +2,4 @@
 Cargo.lock
 src/.DS_Store
 .DS_Store
+*.ledger.json.lock

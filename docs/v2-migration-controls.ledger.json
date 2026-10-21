@@ -1,0 +1,90 @@
+{
+ "rows": {
+  "a_swapped_symlink_is_followed": {
+   "last_real": {
+    "at": "2026-10-21T12:26:01Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:53b8d611c5204a5c",
+     "row": "47e2f5027f7510f9",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.8,
+    "sha": "db6f39f63da75a0614eb8f1a3b274a163bc4b307",
+    "verdict": "RED"
+   }
+  },
+  "aliased_paths_can_initialize_the_legacy_file": {
+   "last_real": {
+    "at": "2026-10-21T12:25:58Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7c6ba9dec49c4101",
+     "row": "60bdc038fd0729e5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 1.5,
+    "sha": "db6f39f63da75a0614eb8f1a3b274a163bc4b307",
+    "verdict": "RED"
+   }
+  },
+  "filesystem_worker_is_joined_at_exit": {
+   "last_real": {
+    "at": "2026-10-21T12:26:22Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:a22799709aecea66",
+     "row": "9bfc2578fb84a985",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.5,
+    "sha": "db6f39f63da75a0614eb8f1a3b274a163bc4b307",
+    "verdict": "RED"
+   }
+  },
+  "output_wait_is_unbounded": {
+   "last_real": {
+    "at": "2026-10-21T12:26:14Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3b871fa0165994ef",
+     "row": "3c5f6622ff9343f4",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.4,
+    "sha": "db6f39f63da75a0614eb8f1a3b274a163bc4b307",
+    "verdict": "RED"
+   }
+  },
+  "publication_replaces_a_concurrent_winner": {
+   "last_real": {
+    "at": "2026-10-21T12:26:03Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7ce11a09e3b9318c",
+     "row": "9b517d810e26f011",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.5,
+    "sha": "db6f39f63da75a0614eb8f1a3b274a163bc4b307",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}
