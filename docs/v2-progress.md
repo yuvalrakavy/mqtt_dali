@@ -167,13 +167,35 @@ Review learning: track UART record boundaries from accepted bytes across frames,
 including deliberate faults; HAT reset must not reset separately powered gear.
 Independent models need adjacent opcode/default tests as well as roundtrips.
 
+## P3a — qualified target codec frozen and implemented
+
+`src/targets.rs` provides typed construction/parsing for output/input/group/scene
+targets and input instances, with a separate inventory route. Uppercase UTF-8
+percent escaping preserves names exactly while keeping dot-separated targets
+inside one MQTT topic segment. Strict canonical decoding rejects aliases and
+invalid names; the 4096-byte encoded bound counts separators and namespaces.
+
+Verified: four focused tests cover literal/collision/Unicode/metadata vectors,
+invalid forms and exact 4096/4097-byte output/instance boundaries. Three meaningful
+cases were observed failing before implementation. Three negative controls caught
+removed canonicality, dot escaping and encoded-size guards. Separate design and
+code reviews approved the slice; review additions cover lowercase valid-name
+escapes and the exact instance bound. Full native suite: **150 passed**; strict
+scoped Clippy and Pi compile checks passed. No MQTT/Store caller uses this codec
+yet; complete topic/packet validation belongs to integration.
+
+The remaining P3 work includes shared managed-service lifecycle, authoritative
+inventory/request-generation fencing, the DALI service and canonical v2 daemon.
+The managed-service design is grounded in current BridgeKit's run/start split;
+it retains the single shared logging/signals/watchdog policy.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
-| P3 BridgeKit/service | Pending | Runtime lifecycle and inventory/retired-request contract; canonical v2 daemon |
+| P3 BridgeKit/service | Target codec implemented; integration pending | Managed lifecycle and inventory/retired-request contract; canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |

@@ -3,3 +3,4 @@
 pub mod atx;
 pub mod config;
 pub mod emulator;
+pub mod targets;

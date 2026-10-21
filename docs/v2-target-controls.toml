@@ -1,0 +1,26 @@
+[[control]]
+name = "target_aliases_are_accepted"
+file = "src/targets.rs"
+anchor = "if target.as_str() != text {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(parsing_rejects_noncanonical_aliases_invalid_names_and_structure)"]
+expect_text = "accepted invalid target Bus1.Outputs.%41"
+
+[[control]]
+name = "literal_dots_are_not_escaped"
+file = "src/targets.rs"
+anchor = "matches!(byte, b'_' | b'-')"
+replacement = "matches!(byte, b'_' | b'-' | b'.')"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_names_roundtrip_without_unicode_case_or_whitespace_normalization)"]
+expect_text = "Bus%2E1"
+
+[[control]]
+name = "encoded_construction_has_no_bound"
+file = "src/targets.rs"
+anchor = "if encoded.len() > MAX_TARGET_BYTES {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(encoded_bound_counts_all_separators_and_namespace_bytes)"]
+expect_text = "4097-byte target bypassed encoded limit"
