@@ -30,7 +30,10 @@ impl DaliService {
         let snapshot = Snapshot {
             model,
             phase,
-            hardware: Hardware::NotStarted,
+            hardware: self
+                .handle
+                .snapshot()
+                .map_or(Hardware::NotStarted, |snapshot| snapshot.hardware),
             version: env!("CARGO_PKG_VERSION"),
             build_utc: build_info::BUILT_TIME_UTC,
         };
@@ -200,12 +203,33 @@ impl ProcessService for DaliService {
             reporter: None,
             pending: None,
         };
+        let buses = owner
+            .model
+            .inventory()
+            .buses
+            .iter()
+            .filter(|bus| bus.enabled)
+            .map(|bus| bus.bus)
+            .collect();
+        let mut hat = hat::Hat::new(self.uart.take(), buses);
+        let mut failure = None;
         loop {
             // WAIT: v2-service-loop
             let message = tokio::select! {
                 biased;
                 _=context.cancelled()=>break,
-                message=self.receive.recv()=>match message {Some(message)=>message,None=>break},
+                message=self.receive.recv()=>match message {Some(message)=>Some(message),None=>break},
+                result=hat.changed()=>{
+                    if let Err(error)=result { failure=Some(error);break; }
+                    let mut snapshot=self.handle.snapshot().expect("service started");
+                    snapshot.hardware=hat.hardware();
+                    self.state.send_replace(Some(snapshot.clone()));
+                    let _=self.handle.updates.send(snapshot);
+                    None
+                },
+            };
+            let Some(message) = message else {
+                continue;
             };
             match message {
                 Message::Attach(reporter, reply) => {
@@ -235,13 +259,22 @@ impl ProcessService for DaliService {
                 }
             }
         }
+        // Hardware and disk share one local absolute cleanup budget. The parent
+        // managed runtime's cancellation/actual destruction remains authoritative.
+        let deadline = Instant::now() + Duration::from_millis(1500);
+        // WAIT: v2-hat-close
+        let hardware = hat.close(deadline).await;
+        let mut snapshot = self.handle.snapshot().expect("service started");
+        snapshot.hardware = hat.hardware();
+        self.state.send_replace(Some(snapshot.clone()));
+        let _ = self.handle.updates.send(snapshot);
         // WAIT: v2-store-close
-        if !owner
-            .store
-            .close(Instant::now() + Duration::from_secs(1))
-            .await
-        {
+        if !owner.store.close(deadline).await {
             return Err("configuration owner did not finish shutdown".into());
+        }
+        hardware?;
+        if let Some(error) = failure {
+            return Err(error);
         }
         self.update_snapshot(owner.model, Phase::Closed);
         Ok(())

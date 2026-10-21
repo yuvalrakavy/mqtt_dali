@@ -1,13 +1,13 @@
 # v2 capability status
 
-This is development status after P2, not a release or certification statement.
-The v2 executable remains configuration-check only until P3. No v2 physical HAT
+This is development status during P3, not a release or certification statement.
+The v2 executable remains configuration-check only until daemon integration. No v2 physical HAT
 or fixture behavior has been validated. The v1 maintenance binary is separate.
 
 | Capability | Local implementation/evidence | Remaining work |
 |---|---|---|
 | v1 configuration import | P0 library/process tests; v1 bytes preserved | Integrate daemon startup in P3 |
-| ATX I4 UART | Typed frames, continuous monitoring, transaction matching and real PTY tests | Physical firmware transcripts; j/t hardware completion policies |
+| ATX I4 UART | Typed frames, continuous monitoring, transaction matching, managed health/recovery and real PTY/emulator tests | Canonical daemon; physical firmware transcripts; j/t hardware completion policies; durable crash/reset boundary before fixture Send |
 | Base output model | Independent levels/MASK, off/steps/max/min, DTRs, groups/scenes, selected queries/configuration | P4 driver paths, faults and timed fades |
 | Addressing model | INITIALISE modes/expiry, seeded randomization, search/compare/program/withdraw, duplicate address responses | P5 bridge jobs and commissioning UI |
 | DALI-2 event transport | Async L records remain public during transactions; local injection | P4 Parts 301–304 decoding, discovery, state and configuration |
@@ -19,7 +19,7 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 | Data Parts 251–253 | Pending | P4 luminaire/energy/diagnostics with units/status |
 | DT1 emergency | Pending | P4 status/configuration/test operations |
 | Group/scene operator workflows | Pending | P5 verification, repair, assignment, recall/copy/clear |
-| BridgeKit MQTT | Pending | P3 runtime/service and inventory/identity contract |
+| BridgeKit MQTT | Managed inventory service, fenced targets, metadata commands, independent consumer and ephemeral-broker tests | Canonical daemon, physical capability paths; local shared dependency commit must be published for portable clones |
 | Protected web UI | Approved design; implementation pending | P6/P7 service/authentication/browser tests |
 | Store device/preset integration | Approved design; implementation pending | P8 schema and persisted migration |
 

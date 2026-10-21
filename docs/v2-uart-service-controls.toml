@@ -1,0 +1,79 @@
+[[control]]
+name = "fresh_boot_discards_completed_boundary"
+file = "src/service/hat.rs"
+anchor = ".is_some_and(|job| job.1 == JobKind::Query)"
+replacement = ".is_some_and(|_| true)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(fresh_boot_keeps_a_completed_receive_boundary_instead_of_requiring_another_reboot)"]
+expect_text = "fresh Boot discarded its already-completed receive boundary"
+
+[[control]]
+name = "serial_opener_escapes_runtime_ownership"
+file = "src/atx/serial.rs"
+anchor = "let worker = tokio::task::spawn_blocking(open);"
+replacement = '''let (send,receive)=tokio::sync::oneshot::channel();
+        std::thread::spawn(move || {let _=send.send(open());});
+        let worker=tokio::spawn(async move {receive.await.expect("detached opener disappeared")});'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(an_expired_serial_opener_remains_owned_until_its_late_descriptor_is_dropped)"]
+expect_text = "runtime forgot a still-running serial opener"
+
+[[control]]
+name = "timed_out_serial_open_is_retried"
+file = "src/service/hat.rs"
+anchor = "self.terminal = error.kind() == io::ErrorKind::TimedOut;"
+replacement = "self.terminal = false;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(blocked_open_is_terminal_and_prevents_a_false_clean_managed_stop)"]
+expect_text = "timed-out opener remained eligible for retry"
+
+[[control]]
+name = "buffered_boot_clears_reopen_latch"
+file = "src/service/hat.rs"
+anchor = "self.boundary.is_none_or(|min| sequence >= min)"
+replacement = "true"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(reopen_boundary_excludes_complete_and_partial_buffered_boot_records)"]
+expect_text = "buffered pre-open boot cleared the reopen latch"
+
+[[control]]
+name = "failed_boundary_retry_loses_timer"
+file = "src/service/hat.rs"
+anchor = "self.session.is_none() || self.needs_boundary || self.can_query()"
+replacement = "self.session.is_none() || self.can_query()"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(failed_boundary_retries_on_a_quiet_transport_without_new_events)"]
+expect_text = "failed receive boundary had no timer to retry on a quiet transport"
+
+[[control]]
+name = "hardware_event_discards_completed_helper_panic"
+file = "src/service/hat.rs"
+anchor = '''if let Some(job) = &self.job {
+            self.discard_job = true;
+            job.0.abort();
+        }'''
+replacement = "self.job.take(); self.discard_job = false;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(boot_and_transport_loss_cannot_hide_an_already_panicked_helper)"]
+expect_text = "hardware event hid an already-panicked helper"
+
+[[control]]
+name = "query_result_overwrites_later_bus_observation"
+file = "src/service/hat.rs"
+anchor = "fn fill_missing(&mut self, buses: Vec<BusHealth>) {"
+replacement = "fn fill_missing(&mut self, buses: Vec<BusHealth>) { self.observations.clear();"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(an_earlier_query_snapshot_cannot_replace_a_later_proactive_bus_observation)"]
+expect_text = "old poll result replaced a newer proactive observation"
+
+[[control]]
+name = "metadata_resets_hardware_snapshot"
+file = "src/service/owner.rs"
+anchor = '''hardware: self
+                .handle
+                .snapshot()
+                .map_or(Hardware::NotStarted, |snapshot| snapshot.hardware),'''
+replacement = "hardware: Hardware::NotStarted,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(healthy_uart_remains_independent_of_broker_and_metadata_updates_preserve_health)"]
+expect_text = "metadata update erased hardware facts"

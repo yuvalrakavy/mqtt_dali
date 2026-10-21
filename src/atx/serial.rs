@@ -17,30 +17,58 @@ pub struct Serial {
 }
 
 impl Serial {
-    /// Open/configure on a detached worker. A late result drops its owned fd;
-    /// no reader task is started by this function.
+    /// Open/configure on this runtime's blocking pool. A late result drops its
+    /// owned fd, and actual runtime teardown includes the worker. No reader is
+    /// started here. An owner must not retry a timed-out open and accumulate
+    /// outstanding workers; the managed service treats that timeout as terminal.
     pub async fn open(path: impl AsRef<Path>) -> io::Result<Self> {
         let path = path.as_ref().to_owned();
-        let (send, receive) = tokio::sync::oneshot::channel();
-        let worker = std::thread::Builder::new()
-            .name("atx-serial-open".into())
-            .spawn(move || {
-                let _ = send.send(open_configured(path));
-            })?;
-        drop(worker);
+        Self::open_using(move || open_configured(path), Duration::from_secs(2)).await
+    }
+    async fn open_using(
+        open: impl FnOnce() -> io::Result<OwnedFd> + Send + 'static,
+        within: Duration,
+    ) -> io::Result<Self> {
+        let deadline = tokio::time::Instant::now() + within;
+        let worker = tokio::task::spawn_blocking(open);
         // WAIT: atx-serial-open
-        let descriptor = tokio::time::timeout(Duration::from_secs(2), receive)
+        let result = tokio::time::timeout_at(deadline, worker)
             .await
             .map_err(|_| {
                 io::Error::new(
                     io::ErrorKind::TimedOut,
-                    "serial open/configure exceeded 2 s",
+                    "serial open/configure exceeded its deadline",
                 )
-            })?
-            .map_err(|_| io::Error::other("serial open worker ended without a result"))??;
+            })?;
+        let descriptor = match result {
+            Ok(result) => result?,
+            Err(error) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
+            Err(_) => return Err(io::Error::other("serial open worker was canceled")),
+        };
+        if tokio::time::Instant::now() >= deadline {
+            return Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "serial open/configure exceeded its deadline",
+            ));
+        }
         Ok(Self {
             descriptor: AsyncFd::new(descriptor)?,
         })
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn open_with_hook(
+        path: std::path::PathBuf,
+        hook: OpenHook,
+    ) -> io::Result<Self> {
+        Self::open_using(
+            move || {
+                hook()?;
+                open_configured(path)
+            },
+            Duration::from_secs(2),
+        )
+        .await
     }
 
     /// Adopt a TTY/PTY owned by the caller. This synchronous initialization must
@@ -53,6 +81,9 @@ impl Serial {
         })
     }
 }
+
+#[cfg(test)]
+pub(crate) type OpenHook = std::sync::Arc<dyn Fn() -> io::Result<()> + Send + Sync>;
 
 fn open_configured(path: PathBuf) -> io::Result<OwnedFd> {
     let file = OpenOptions::new()

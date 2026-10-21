@@ -5,6 +5,67 @@ use std::ffi::CStr;
 use std::os::fd::FromRawFd;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[test]
+fn an_expired_serial_opener_remains_owned_until_its_late_descriptor_is_dropped() {
+    use std::sync::{
+        atomic::{AtomicBool, AtomicI32, Ordering},
+        mpsc, Arc,
+    };
+    let (_master, slave, _path) = pty();
+    let release = Arc::new(AtomicBool::new(false));
+    let descriptor = Arc::new(AtomicI32::new(-1));
+    let (timed_out, receive_timeout) = mpsc::channel();
+    let (destroyed, receive_destroyed) = mpsc::channel();
+    let resume = release.clone();
+    let opened = descriptor.clone();
+    let worker = std::thread::spawn(move || {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        runtime.block_on(async move {
+            let result = Serial::open_using(
+                move || {
+                    let until = std::time::Instant::now() + Duration::from_secs(5);
+                    while !resume.load(Ordering::SeqCst) {
+                        assert!(
+                            std::time::Instant::now() < until,
+                            "test opener was not released"
+                        );
+                        std::thread::sleep(Duration::from_millis(1));
+                    }
+                    let fd = unsafe { libc::dup(slave.as_raw_fd()) };
+                    assert!(fd >= 0);
+                    opened.store(fd, Ordering::SeqCst);
+                    Ok(unsafe { OwnedFd::from_raw_fd(fd) })
+                },
+                Duration::from_millis(30),
+            )
+            .await;
+            assert_eq!(result.err().unwrap().kind(), io::ErrorKind::TimedOut);
+            timed_out.send(()).unwrap();
+        });
+        drop(runtime);
+        let _ = destroyed.send(());
+    });
+    receive_timeout
+        .recv_timeout(Duration::from_secs(2))
+        .unwrap();
+    let ended_early = receive_destroyed
+        .recv_timeout(Duration::from_millis(60))
+        .is_ok();
+    release.store(true, Ordering::SeqCst);
+    worker.join().unwrap();
+    assert!(!ended_early, "runtime forgot a still-running serial opener");
+    let fd = descriptor.load(Ordering::SeqCst);
+    assert!(fd >= 0);
+    assert_eq!(
+        unsafe { libc::fcntl(fd, libc::F_GETFD) },
+        -1,
+        "late serial descriptor escaped runtime teardown"
+    );
+}
+
 fn pty() -> (OwnedFd, OwnedFd, PathBuf) {
     let mut master = -1;
     let mut slave = -1;

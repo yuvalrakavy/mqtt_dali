@@ -363,13 +363,54 @@ This is still a service-library checkpoint. UART ownership/health and canonical
 daemon startup come next. Physical capabilities, web UI, Store persisted migration,
 live Logmon delivery, hardware validation and release/deployment remain pending.
 
+## P3c3b — managed UART health implemented
+
+The optional `with_uart` builder starts one Serial/Transactions owner inside the
+managed service runtime. Version and enabled-bus status queries use one original
+setup deadline; metadata remains available during initialization, MQTT/HAT loss
+and poisoned-response waits. Hardware snapshots preserve raw version/status
+facts independently of saved routing phase, including Connecting and actual
+Closed. Bus power faults do not masquerade as a disconnected HAT.
+
+Late/reset states keep the same owner. Reopen retains a reset latch and a
+no-write receive fence excludes already-readable complete/partial Boot records.
+Only qualifying Boot plus the transaction actor's Uninitialized state admits
+initialization. This does not attribute upstream-delayed data to a physical reset.
+Before fixture Send is enabled, P4 must also preserve unresolved transport
+ambiguity across process crashes/startup; health queries do not claim that wider
+guarantee. Firmware fields never select repeat policy implicitly.
+
+Open/configuration uses a runtime-owned blocking worker. Open timeout is terminal
+for the UART owner; actual runtime teardown still includes a blocked opener.
+Owned helper results survive canceled selects, and panic results are inspected
+before recovery. Hardware/configuration cleanup shares one absolute local budget.
+
+The focused PTY/emulator cases cover late Version retirement, poisoned-owner
+Boot recovery, actual transport replacement, complete/partial buffered Boot,
+quiet retry after failed boundary, completed-helper panic during Boot/loss,
+completed-boundary/fresh-Boot ordering, proactive observation ordering, metadata
+during unanswered setup and actual descriptor release with retained handles.
+The blocked-opener case confirms incomplete managed stop and no retry eligibility.
+
+Source reviews reproduced and fixed three recovery/ownership issues: a missing
+retry timer, a completed panic discarded by a simultaneous hardware event, and
+a successful boundary discarded before a qualifying Boot was evaluated. Connecting
+and Closed publication were corrected too. These are source-only same-family
+reviews. Final verification on 2026-10-21: **215 full native tests passed**,
+scoped strict Clippy and armv7 library/v2/emulator compilation passed, and changed
+Rust formatting/diff checks passed. All eight controls in
+`v2-uart-service-controls.toml` failed at their intended assertions; restored
+source passed the full gate. No physical I4, live broker/Logmon or Pi runtime is
+implied. The UART slice remains a library integration; canonical daemon startup
+is next.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
-| P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, generation fencing and managed service/proxy implemented | Managed UART health/scheduling and canonical v2 daemon |
+| P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, generation fencing, managed service/proxy and UART health implemented | Canonical v2 daemon; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |

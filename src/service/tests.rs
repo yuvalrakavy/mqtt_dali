@@ -102,12 +102,12 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
-struct Fixture {
+pub(super) struct Fixture {
     directory: PathBuf,
     paths: ConfigPaths,
 }
 impl Fixture {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         let directory = std::env::temp_dir().join(format!(
             "dali-service-{}-{:032x}",
             std::process::id(),
@@ -124,7 +124,7 @@ impl Fixture {
         fs::write(&paths.legacy, b"legacy must not be touched").unwrap();
         Self { directory, paths }
     }
-    fn service(&self) -> (DaliService, ServiceHandle) {
+    pub(super) fn service(&self) -> (DaliService, ServiceHandle) {
         DaliService::new(self.paths.clone(), "Controller".into())
     }
     fn disk(&self) -> Inventory {
@@ -136,10 +136,10 @@ impl Drop for Fixture {
         let _ = fs::remove_dir_all(&self.directory);
     }
 }
-fn deadline() -> Instant {
+pub(super) fn deadline() -> Instant {
     Instant::now() + Duration::from_secs(2)
 }
-fn context(revision: u64) -> RequestContext {
+pub(super) fn context(revision: u64) -> RequestContext {
     RequestContext::new(format!("0123456789abcdef0123456789abcdef.{revision}")).unwrap()
 }
 
@@ -196,7 +196,7 @@ async fn the_actual_bridge_instance_must_match_the_persisted_controller_before_a
         .is_empty());
     assert!(running.stop().await);
 }
-async fn wait_for(handle: &ServiceHandle, predicate: impl Fn(&Snapshot) -> bool) {
+pub(super) async fn wait_for(handle: &ServiceHandle, predicate: impl Fn(&Snapshot) -> bool) {
     tokio::time::timeout(Duration::from_secs(3), async {
         loop {
             if handle.snapshot().is_some_and(|s| predicate(&s)) {
@@ -208,7 +208,11 @@ async fn wait_for(handle: &ServiceHandle, predicate: impl Fn(&Snapshot) -> bool)
     .await
     .expect("service did not reach expected phase");
 }
-async fn start(service: DaliService, handle: &ServiceHandle, broker: &FakeBroker) -> Running {
+pub(super) async fn start(
+    service: DaliService,
+    handle: &ServiceHandle,
+    broker: &FakeBroker,
+) -> Running {
     let running = Bridge::new("DALI")
         .instance("Controller")
         .broker(&broker.address())

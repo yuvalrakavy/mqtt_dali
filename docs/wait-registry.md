@@ -60,7 +60,11 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `atx-write-lock` | bounded | serialized access to the UART writer | Total caller-supplied deadline includes lock and write. On expiry before acquiring the lock, return Deadline without poisoning an unwritten command. The holder waits only on nonblocking I/O under its own deadline, never on a receiver or this lock. |
 | `atx-write` | bounded | nonblocking UART write, cancellation/EOF/close, and caller deadline | The write is raced with stop and the caller's total deadline. On expiry, I/O failure or cancellation after possible byte acceptance, a drop guard poisons admission and emits WriteIndeterminate. A Pending write that accepted no bytes stays usable. Stop cancels a potentially partial write. The stop helper waits only for the independent reader/closer and is raced against the write deadline. |
 | `atx-close` | bounded | confirmation that the aborted async reader dropped its resources | At most 500 ms. On expiry return Deadline; the reader remains aborted. Close sets the stop flag first, canceling an in-progress writer, then aborts the reader. Reader teardown publishes Closed and marks completion, without awaiting any caller. |
-| `atx-serial-open` | bounded | a detached thread opening/configuring a serial path | At most 2 s. On expiry the receiver is dropped, so a late returned owned fd is closed rather than used to create a reader. No join is performed on the worker. Process-wide worker budgeting and startup supervision belong to P3. |
+| `atx-serial-open` | bounded | runtime-owned blocking task opening/configuring a serial path | At most 2 s. On expiry a late owned fd is dropped; the managed HAT owner never retries that timeout. Actual runtime teardown includes the blocked worker and cannot report a clean stop while it remains alive. |
+| `v2-hat-loop` | acyclic | owned UART helper, independent monitor/status stream or paced retry/poll timer | The parent actor selects managed cancellation independently. No branch waits on the parent; canceled selects retain the stored join handle and session. Poison waits for an eligible late reply or Boot rather than a guessed timeout. |
+| `v2-hat-setup` | bounded | version and enabled-bus status sequence on the existing transaction owner | One original 5 s setup deadline spans the sequence. On expiry retain the session's Late/reset state; metadata stays available and no new probe bypasses that state. |
+| `v2-hat-health` | bounded | a local HAT bus-status snapshot query | Uses the remaining original setup deadline. On expiry retain the same transaction owner and poison state. The proactive D snapshot is not a causal acknowledgement or fixture capability claim. |
+| `v2-hat-close` | bounded | helper abort/join and actual UART close, alongside configuration cleanup | Both resource owners share one absolute local 1.5 s deadline inside managed cooperative stop. On expiry report incomplete cleanup; parent cancellation/runtime destruction includes remaining work, including a blocked opener. |
 | `v2-config-check` | bounded | the check command's filesystem worker, through `recv_timeout` | At most 3 s. The worker's handle is detached before waiting; on expiry, `main` returns a failure without joining a filesystem operation. `stalled_configuration_worker_does_not_hold_process_exit` holds an actual FIFO read in the worker and full unread output pipes while the child exits. The library loader is synchronous; daemon integration must supply its own bounded worker. |
 | `v2-config-output` | bounded | best-effort check-command output on a detached writer thread | At most 200 ms; on expiry the command returns without joining the writer. The writer duplicates the raw output descriptor and never locks Rust's global stdio handles. A full pipe can hold that thread until the process exits, but holds neither the caller nor stdio cleanup. `unread_full_output_pipes_cannot_hold_success_error_or_help_exit` exercises success, invalid options and help with a prefilled pipe kept unread; the filesystem deadline test also holds stderr full. |
 | `mqtt-request` | acyclic | rumqttc's request channel (`publish`, `publish_with_properties`, `subscribe`) | The channel drains only while the event loop is polled, and the pump (`Pump::start`) polls it in a task of its own that waits on nothing but the network. So a full channel is back-pressure on the session, never a cycle: with the broker stalled the session waits until it recovers, the pump reading its acks meanwhile (`a_command_burst_against_a_stalled_broker_completes_once_it_recovers`; it failed on the single-task session, where the poller awaited its own publishes). A session held here does not see a stop until it is released; `main`'s wait for it is bounded all the same (`dali-shutdown`), and the session's goodbye never waits here (`try_publish`, `try_disconnect`). |
@@ -94,7 +98,7 @@ blocking-methods = read_byte, shutdown_timeout
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize
 ```
 
 ## Waiters (generated)
@@ -106,7 +110,7 @@ atx-reader src/atx/monitor.rs read_loop
 atx-receive-fence src/atx/monitor.rs Monitor::fence
 atx-receive-fence src/atx/monitor.rs read_available
 atx-receive-fence src/atx/monitor.rs read_loop
-atx-serial-open src/atx/serial.rs Serial::open
+atx-serial-open src/atx/serial.rs Serial::open_using
 atx-transaction-close src/atx/transactions/engine.rs Transactions::close
 atx-transaction-dispatch src/atx/transactions/engine.rs Actor::run
 atx-transaction-response src/atx/transactions/engine.rs Actor::await_response
@@ -164,6 +168,13 @@ mqtt-request src/mqtt.rs MqttDali::run_session
 mqtt-request src/mqtt.rs publish_with_trace
 v2-config-check src/bin/mqtt_dali_v2.rs main
 v2-config-output src/bin/mqtt_dali_v2.rs output
+v2-hat-close src/service/hat.rs Hat::advance
+v2-hat-close src/service/hat.rs Hat::close
+v2-hat-close src/service/owner.rs <DaliService as ProcessService>::run
+v2-hat-health src/service/hat.rs query_health
+v2-hat-loop src/service/hat.rs Hat::changed
+v2-hat-loop src/service/hat.rs dormant
+v2-hat-setup src/service/hat.rs Hat::advance
 v2-service-attach src/service.rs ServiceHandle::attach
 v2-service-loop src/service/owner.rs <DaliService as ProcessService>::run
 v2-service-request src/service.rs ServiceHandle::submit

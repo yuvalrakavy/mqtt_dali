@@ -1,0 +1,141 @@
+{
+ "rows": {
+  "buffered_boot_clears_reopen_latch": {
+   "last_real": {
+    "at": "2026-10-21T19:54:04Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:8fc5e3447746fcee",
+     "row": "d2232ef7d13578b5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 3.8,
+    "sha": "c0883aa7e5442b81ff9ee692e1ae6a9fcfb80607",
+    "verdict": "RED"
+   }
+  },
+  "failed_boundary_retry_loses_timer": {
+   "last_real": {
+    "at": "2026-10-21T19:54:09Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:264eec2673f160d5",
+     "row": "39d040d19fdc8190",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.6,
+    "sha": "c0883aa7e5442b81ff9ee692e1ae6a9fcfb80607",
+    "verdict": "RED"
+   }
+  },
+  "fresh_boot_discards_completed_boundary": {
+   "last_real": {
+    "at": "2026-10-21T19:53:44Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:fc675ba1daa7a07d",
+     "row": "8bb8437756b04fed",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.7,
+    "sha": "c0883aa7e5442b81ff9ee692e1ae6a9fcfb80607",
+    "verdict": "RED"
+   }
+  },
+  "hardware_event_discards_completed_helper_panic": {
+   "last_real": {
+    "at": "2026-10-21T19:54:13Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:297d959f5a5d13ee",
+     "row": "f679fa51359d7e0a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.3,
+    "sha": "c0883aa7e5442b81ff9ee692e1ae6a9fcfb80607",
+    "verdict": "RED"
+   }
+  },
+  "metadata_resets_hardware_snapshot": {
+   "last_real": {
+    "at": "2026-10-21T19:54:21Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:0a6a47633bfb61c7",
+     "row": "fb6b0e0cb4685a76",
+     "test": null
+    },
+    "path": "command",
+    "secs": 3.5,
+    "sha": "c0883aa7e5442b81ff9ee692e1ae6a9fcfb80607",
+    "verdict": "RED"
+   }
+  },
+  "query_result_overwrites_later_bus_observation": {
+   "last_real": {
+    "at": "2026-10-21T19:54:17Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:022f4cdfdc6dfcef",
+     "row": "ab5c0aa60a70a090",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.2,
+    "sha": "c0883aa7e5442b81ff9ee692e1ae6a9fcfb80607",
+    "verdict": "RED"
+   }
+  },
+  "serial_opener_escapes_runtime_ownership": {
+   "last_real": {
+    "at": "2026-10-21T19:53:49Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:2c9ce0c14743b152",
+     "row": "f230b151711e2a47",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.5,
+    "sha": "c0883aa7e5442b81ff9ee692e1ae6a9fcfb80607",
+    "verdict": "RED"
+   }
+  },
+  "timed_out_serial_open_is_retried": {
+   "last_real": {
+    "at": "2026-10-21T19:54:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:9c35b965fa8de63e",
+     "row": "28a4ecd84a0fcac8",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.6,
+    "sha": "c0883aa7e5442b81ff9ee692e1ae6a9fcfb80607",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

@@ -10,6 +10,7 @@ use tokio::{
     time::{timeout_at, Instant},
 };
 
+mod hat;
 mod owner;
 mod proxy;
 mod routing;
@@ -27,6 +28,27 @@ pub enum Phase {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Hardware {
     NotStarted,
+    Closed,
+    Connecting,
+    Initializing,
+    Ready {
+        version: crate::atx::wire::Version,
+        buses: Vec<BusHealth>,
+    },
+    Unavailable {
+        reason: String,
+        retrying: bool,
+    },
+    WaitingLateReply {
+        remaining: u8,
+    },
+    ResetRequired,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BusHealth {
+    pub bus: u8,
+    pub status: u8,
+    pub channels: u8,
 }
 #[derive(Debug, Clone)]
 pub struct Snapshot {
@@ -85,6 +107,7 @@ pub struct DaliService {
     receive: mpsc::Receiver<Message>,
     state: watch::Sender<Option<Snapshot>>,
     handle: ServiceHandle,
+    uart: Option<hat::Settings>,
     #[cfg(test)]
     hooks: crate::config_store::test_hooks::Hooks,
     #[cfg(test)]
@@ -112,6 +135,16 @@ struct Request {
     _permit: OwnedSemaphorePermit,
 }
 impl DaliService {
+    /// Enable a real UART/PTY. Construction performs no I/O; firmware version
+    /// never supplies an implicit repeat policy.
+    pub fn with_uart(
+        mut self,
+        path: impl Into<std::path::PathBuf>,
+        repeat: crate::atx::transactions::RepeatPolicy,
+    ) -> Self {
+        self.uart = Some(hat::Settings::new(path.into(), repeat));
+        self
+    }
     pub fn new(paths: ConfigPaths, instance: String) -> (Self, ServiceHandle) {
         let (send, receive) = mpsc::channel(4);
         let (state, read) = watch::channel(None);
@@ -128,6 +161,7 @@ impl DaliService {
                 receive,
                 state,
                 handle: handle.clone(),
+                uart: None,
                 #[cfg(test)]
                 hooks: Default::default(),
                 #[cfg(test)]

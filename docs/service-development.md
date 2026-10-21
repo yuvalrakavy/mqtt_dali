@@ -1,8 +1,8 @@
 # Managed inventory service (v2 development)
 
 This guide is for bridge contributors and embedders. The service library owns
-durable configuration and runtime routing; UART integration and the canonical
-v2 daemon are the next slice. `mqtt_dali_v2` currently remains a configuration
+durable configuration, runtime routing and optional UART health. The canonical
+v2 daemon is the next slice. `mqtt_dali_v2` currently remains a configuration
 check command. Web handlers and hardware capabilities are not available yet.
 
 `DaliService::new(paths, instance)` returns a resource-free service and a
@@ -14,13 +14,40 @@ the constructor. All tracing-init repository dependencies are pinned to one
 revision in Cargo.toml/lock; that development commit is currently local and must
 be published before promising a portable fresh clone or release.
 
-The first proxy connection attaches the runtime Reporter before any HAT work.
-This is independent of MQTT availability. Inventory and metadata editing therefore
+The first proxy connection attaches the runtime Reporter independently of UART
+setup and MQTT availability. Inventory and metadata editing therefore
 remain available through retained frontend handles during a broker outage.
 Snapshot fields distinguish routing phase and hardware facts; `NotStarted`
-currently means exactly that. Version and UTC build time accompany the saved
+means no UART was enabled. Version and UTC build time accompany the saved
 controller identity. Resource shutdown remains the managed runtime's ownership
 responsibility even if a filesystem worker is blocked.
+
+## Optional UART health
+
+Call `service.with_uart(path, RepeatPolicy::Unverified)` before managed startup.
+The builder opens nothing. The managed service owns one Serial/Transactions
+session and sends only HAT Version and enabled-bus Status queries. Hardware
+snapshots distinguish Connecting, Initializing, Ready (raw version strings and
+bus observations), unavailable retry, waiting for a late reply, ResetRequired
+and Closed. Bus power loss remains a bus fact, rather than disconnecting a
+responding HAT. Raw input frames are drained but do not yet produce input actions.
+
+A timed-out transaction keeps its owner; a delayed eligible terminal can retire
+it. ResetRequired waits for a Boot accepted by the transaction actor. Transport
+loss retains a reset latch across reopening: the reopened port monitors until
+Boot arrives beyond a receive boundary that excludes already-readable complete
+and partial records. ATX provides no physical reset timestamp; this boundary
+does not exclude data delayed upstream. Version never overrides uncertain
+ordering. A serial-open timeout is terminal for this UART owner, avoiding an
+accumulation of blocked openers; restart after resolving the underlying problem.
+
+Helpers remain owned through cancellation and their completed panic results are
+inspected before recovery. Hardware and disk cleanup share an absolute 1.5 s
+local budget; the managed runtime's shared stop ceiling and actual destruction
+remain authoritative. Retained frontend handles keep snapshots, not descriptors.
+Before P4 enables fixture Send commands, daemon integration must preserve
+unresolved transport ambiguity across process crashes/startup too. The current
+health-only surface does not claim that mutating-command guarantee.
 
 ## Read and edit
 
@@ -75,11 +102,13 @@ consumer-owned intent continuity.
 ## Local verification
 
 Tests use ephemeral loopback FakeBroker instances, temporary private config
-directories and controlled filesystem faults. They cover actual MQTT replies and
+directories, real Unix PTYs, the independent ATX emulator and controlled faults.
+They cover actual MQTT replies and
 an independent consumer, cancellations, sync/CAS failures, original deadlines,
 controller identity, outage independence, notification lag and blocked-owner
-shutdown. The declared guard-removal controls are in
-`v2-service-controls.toml`, with runner results beside it. The complete native
+shutdown, late/reset/reopen boundaries, helper panic handling and blocked-opener
+incomplete stop. The declared guard-removal controls are in
+`v2-service-controls.toml` and `v2-uart-service-controls.toml`, with runner results beside them. The complete native
 suite also covers the existing migration/UART/emulator and legacy regressions.
 Pi checks compile the library/v2/emulator for armv7; physical I4 behavior, live
 Logmon delivery and Pi runtime still require later verification.
