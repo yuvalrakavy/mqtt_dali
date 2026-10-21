@@ -1,6 +1,7 @@
 use super::*;
 use crate::{config::Inventory, inventory::Location};
 use serde_json::json;
+mod input;
 
 #[derive(Default)]
 pub(super) struct Pause {

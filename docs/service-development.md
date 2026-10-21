@@ -88,11 +88,16 @@ the paced retry, while an actual task failure remains fatal.
 `subscribe()` is a bounded notification stream. On lag, read a fresh complete
 snapshot. Notifications are not a replayable edit log.
 
-Public `MetadataEdit` operations rename an output/group/bus or update the
+Public `MetadataEdit` operations rename an output/group/input module/input
+instance/bus or update the
 controller description. Supply the expected current inventory revision, original
 item token (instance token for bus/description), and one absolute deadline.
 Admission is nonwaiting and exclusive; Busy is a refusal to wait in another queue.
-The actor rechecks phase/revision/token before saving. No public metadata call
+The actor rechecks phase/revision/token before saving. Input and instance names
+use the same MQTT `rename` command as outputs, with their exact qualified target.
+Renaming a module rotates descendant mappings together; the original module
+token still applies if only a child was renamed earlier. See the
+[input inventory contract](inventory-contract.md). No public metadata call
 can claim a physical replacement, address assignment or group-member change.
 Those require verified commissioning jobs in a later slice.
 

@@ -154,8 +154,13 @@ The regression controls are `docs/v2-mqtt-output-controls.toml`.
 
 `dali::input` decodes standard Part 103 source schemes and native Part 301–304
 data, and builds individual read-query frames; see `docs/dali-input-contract.md`.
-It is a pure codec. Named input discovery, MQTT state/events and configuration
-are subsequent integration work, not implied by successful decoding alone.
+The codec is pure. Saved Inputs/Instances use the existing named identity ledger
+and durable metadata rename path; see `docs/inventory-contract.md`. Module
+replacement retires every child lifetime; ordinary rename preserves them. Replay
+validates hierarchy and continuing parent origins at every batch, and the
+independent consumer verifies this without producer replay helpers. Hardware
+input discovery, MQTT state/events and configuration remain subsequent work,
+not implied by successful decoding or saved metadata alone.
 
 ## Architecture (legacy)
 

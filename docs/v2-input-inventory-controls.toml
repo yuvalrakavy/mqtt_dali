@@ -1,0 +1,55 @@
+# Focused behavioral controls for hierarchy and independent consumer acceptance.
+
+[[control]]
+name = "producer_carries_children_across_parent_replacement"
+file = "src/inventory/ledger.rs"
+anchor = "if parents.get(&child).is_some_and(|old| *old != parent) {"
+replacement = "if false && parents.get(&child).is_some_and(|old| *old != parent) {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(input_history_rejects_orphans_partial_renames_and_parent_only_replacements)"]
+expect_text = "parent-only replacement carried old child lifetimes"
+
+[[control]]
+name = "producer_accepts_split_module_rename"
+file = "src/inventory/ledger.rs"
+anchor = "if child_target.name() != parent_target.name() {"
+replacement = "if false && child_target.name() != parent_target.name() {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(input_history_rejects_orphans_partial_renames_and_parent_only_replacements)"]
+expect_text = "split module rename was accepted"
+
+[[control]]
+name = "consumer_carries_children_across_parent_replacement"
+file = "tests/support/inventory_consumer.rs"
+anchor = "if prior_parents.get(&child).is_some_and(|old| old != &parent) {"
+replacement = "if false && prior_parents.get(&child).is_some_and(|old| old != &parent) {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "inventory_contract", "-E", "test(input_consumer_rejects_partial_parent_rename_or_replacement_before_mutation)"]
+expect_text = "consumer accepted parent-only replacement"
+
+[[control]]
+name = "consumer_ignores_impossible_intermediate_module_ancestry"
+file = "tests/support/inventory_consumer.rs"
+anchor = "if target.name() != parent_target.name() {"
+replacement = "if false && target.name() != parent_target.name() {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "inventory_contract", "-E", "test(input_consumer_rejects_partial_parent_rename_or_replacement_before_mutation)"]
+expect_text = "consumer accepted an impossible intermediate input hierarchy"
+
+[[control]]
+name = "consumer_carries_button_binding_through_type_change"
+file = "tests/support/inventory_consumer.rs"
+anchor = "|| from.instance_type != to.instance_type"
+replacement = "|| false"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "inventory_contract", "-E", "test(input_consumer_does_not_carry_binding_intent_through_rename_with_type_change)"]
+expect_text = "type change carried old button binding intent"
+
+[[control]]
+name = "mqtt_instance_rename_changes_module_instead"
+file = "src/service/proxy.rs"
+anchor = "MetadataEdit::RenameInputInstance {\n                    bus,\n                    address: short_address,\n                    instance,\n                    name: params.name,\n                }"
+replacement = "{ let _ = instance; MetadataEdit::RenameInput { bus, address: short_address, name: params.name } }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mqtt_input_renames_persist_nested_names_and_refuse_retired_descendants)"]
+expect_text = "input rename failed"

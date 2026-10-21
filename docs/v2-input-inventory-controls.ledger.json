@@ -1,0 +1,107 @@
+{
+ "rows": {
+  "consumer_carries_button_binding_through_type_change": {
+   "last_real": {
+    "at": "2026-10-21T23:41:07Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e9724bdfb986c70b",
+     "row": "fc0a5023769c23ee",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.6,
+    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "verdict": "RED"
+   }
+  },
+  "consumer_carries_children_across_parent_replacement": {
+   "last_real": {
+    "at": "2026-10-21T23:40:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e9724bdfb986c70b",
+     "row": "28f06f1fa480a6f0",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.3,
+    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "verdict": "RED"
+   }
+  },
+  "consumer_ignores_impossible_intermediate_module_ancestry": {
+   "last_real": {
+    "at": "2026-10-21T23:41:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6904e33005115b36",
+     "row": "fdd49ae9dcdadd3d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.5,
+    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "verdict": "RED"
+   }
+  },
+  "mqtt_instance_rename_changes_module_instead": {
+   "last_real": {
+    "at": "2026-10-21T23:41:12Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:75ff362a1316ec69",
+     "row": "6a8caceba38790ce",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.9,
+    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "verdict": "RED"
+   }
+  },
+  "producer_accepts_split_module_rename": {
+   "last_real": {
+    "at": "2026-10-21T23:40:42Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:c2ee2880e4b1de5a",
+     "row": "a15616fdc7cf4822",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.8,
+    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "verdict": "RED"
+   }
+  },
+  "producer_carries_children_across_parent_replacement": {
+   "last_real": {
+    "at": "2026-10-21T23:40:37Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:bf79321da7b210e2",
+     "row": "aa6b3a5fcf39c762",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.0,
+    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

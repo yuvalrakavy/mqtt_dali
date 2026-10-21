@@ -49,6 +49,29 @@ pub struct Bus {
     pub outputs: Vec<Output>,
     #[serde(default)]
     pub groups: Vec<Group>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inputs: Vec<Input>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Input {
+    pub short_address: u8,
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub instances: Vec<InputInstance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct InputInstance {
+    pub number: u8,
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// Native type, including unrecognized types. Not a capability claim.
+    pub instance_type: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -257,6 +280,7 @@ impl LegacyInventory {
                 name: bus.description,
                 description: None,
                 enabled: true,
+                inputs: Vec::new(),
                 outputs: bus
                     .channels
                     .into_iter()
@@ -387,6 +411,34 @@ pub(crate) fn validate_structure(inventory: &Inventory) -> Result<(), String> {
             }
         }
         let mut groups = HashSet::new();
+        let mut input_addresses = HashSet::new();
+        let mut input_names = HashSet::new();
+        for (i, input) in bus.inputs.iter().enumerate() {
+            let at = format!("{at}.inputs[{i}]");
+            validate_name(&input.name).map_err(|why| format!("{at}.name: {why}"))?;
+            if input.short_address >= 64 || !input_addresses.insert(input.short_address) {
+                return Err(format!(
+                    "{at}.short_address must be unique in inputs and in 0..63"
+                ));
+            }
+            if !input_names.insert(&input.name) {
+                return Err(format!("{at}.name duplicates another input name"));
+            }
+            let mut numbers = HashSet::new();
+            let mut instance_names = HashSet::new();
+            for (j, instance) in input.instances.iter().enumerate() {
+                let at = format!("{at}.instances[{j}]");
+                validate_name(&instance.name).map_err(|why| format!("{at}.name: {why}"))?;
+                if instance.number >= 32 || !numbers.insert(instance.number) {
+                    return Err(format!(
+                        "{at}.number must be unique in its module and in 0..31"
+                    ));
+                }
+                if !instance_names.insert(&instance.name) {
+                    return Err(format!("{at}.name duplicates another instance name"));
+                }
+            }
+        }
         let mut group_names = HashSet::new();
         for (i, group) in bus.groups.iter().enumerate() {
             let at = format!("{at}.groups[{i}]");

@@ -693,14 +693,43 @@ full gate passed **305 native tests**, strict scoped Clippy, Pi library/all four
 binary compilation and whitespace checks. All **7 focused protocol controls**
 failed at their intended behavioral assertions. After restoration, all **305
 native tests**, strict scoped Clippy, Pi library/all four binary compilation,
-formatting, whitespace, wait registry and doctests (none defined) pass. Sequential
-both sequential source reviews approve with no material finding. Reviews were
+formatting, whitespace, wait registry and doctests (none defined) pass. Both
+sequential source reviews approve with no material finding. Reviews were
 source-only and used the same model family; they did not independently rerun tests.
 
 Both source-grounded design reviews approved this limited boundary; source
 reviews remain same-family. Named discovery, persisted input identities, current
 state, MQTT actions/configuration/feedback and semantic emulator controls remain
 required P4 integration work. See [the codec guide](dali-input-contract.md).
+
+## P4c2 — named input inventory and durable rename
+
+Saved configuration now has separate input modules and nested typed instances.
+The complete inventory gives both levels targets and mapping revisions. Empty
+input arrays are omitted, preserving existing output-only documents and v1
+import behavior. Input/output short addresses are independent; unknown native
+instance types remain metadata. Input metadata uses the existing durable save,
+complete-table runtime activation and MQTT rename command.
+
+Module/bus rename preserves descendant lifetimes and rotates affected mappings.
+Module replacement/removal retires all descendants even with unchanged text.
+Producer and independent consumer validate hierarchy after every batch and
+refuse a continuing child attached to a replacement parent lifetime. Instance
+type changes retire mapping authority and prevent unsafe binding-intent carry.
+
+The first JSON/projection test failed on unsupported inputs before implementation.
+Nine new tests cover validation, literal nested projections, rename/replacement,
+invalid history, independent consumer behavior and actual MQTT rename/persistence
+with retired-token refusal. The initial gate passes **314 native tests**, strict
+scoped Clippy, Pi library/all four binary compilation and whitespace checks.
+All **6 new focused controls** and **6 affected existing identity controls**
+failed at their intended behavioral assertions. The restored gate passes all
+**314 native tests**, strict scoped Clippy, Pi library/all four binary
+compilation, changed-file formatting, whitespace and doctests (none defined).
+The existing wait registry test passes; this boundary adds no waits. Final
+sequential source reviews are in progress. Hardware discovery,
+current input State, native action events/configuration/feedback remain required.
+See [the input inventory spec](superpowers/specs/2026-10-22-dali-v2-p4c-input-inventory.md).
 
 ## Remaining phases
 
@@ -709,7 +738,7 @@ required P4 integration work. See [the codec guide](dali-input-contract.md).
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, output codec/service/MQTT base properties and common input codec implemented | Input discovery/state/events/configuration, color representations and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, output codec/service/MQTT base properties, common input codec and named input metadata implemented | Input discovery/state/events/configuration, color representations and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

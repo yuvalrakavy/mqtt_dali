@@ -212,6 +212,7 @@ impl Consumer {
         let mut last = 1;
         let mut safe_intent_migration: BTreeSet<_> = self.devices.keys().cloned().collect();
         for batch in &ledger.batches {
+            let prior_parents = input_ancestors(&active)?;
             if batch.revision <= last || batch.revision > revision || batch.transitions.is_empty() {
                 return Err("invalid history order".into());
             }
@@ -247,6 +248,7 @@ impl Consumer {
                         }
                         if batch.revision > self.revision
                             && (from.members != to.members
+                                || from.instance_type != to.instance_type
                                 || (from.target == to.target && from.location == to.location))
                         {
                             safe_intent_migration.remove(&departures[&from.target]);
@@ -275,6 +277,11 @@ impl Consumer {
                 }
             }
             validate_active(&active)?;
+            for (child, parent) in input_ancestors(&active)? {
+                if prior_parents.get(&child).is_some_and(|old| old != &parent) {
+                    return Err("input child outlived its parent lifetime".into());
+                }
+            }
         }
         verify_current(document, &active)?;
         // Commit consumer changes only after the complete document validates.
@@ -367,7 +374,10 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
         let target = Target::parse(&record.target).map_err(|e| e.to_string())?;
         let name = target.bus().ok_or("no bus ancestor in history")?;
         let index = match record.location {
-            Location::Output { bus, .. } | Location::Group { bus, .. } => bus,
+            Location::Output { bus, .. }
+            | Location::Group { bus, .. }
+            | Location::Input { bus, .. }
+            | Location::InputInstance { bus, .. } => bus,
         };
         if ancestors
             .insert(index, name.to_owned())
@@ -384,16 +394,40 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
                     && short_address < 64
                     && target.namespace() == Some(Namespace::Outputs)
                     && record.members.is_empty()
+                    && target.instance().is_none()
+                    && record.instance_type.is_none()
             }
             Location::Group { bus, group_address } => {
                 bus < 4
                     && group_address < 16
                     && target.namespace() == Some(Namespace::Groups)
                     && record.members.iter().all(|m| outputs.get(m) == Some(&bus))
+                    && target.instance().is_none()
+                    && record.instance_type.is_none()
+            }
+            Location::Input { bus, short_address } => {
+                bus < 4
+                    && short_address < 64
+                    && target.namespace() == Some(Namespace::Inputs)
+                    && target.instance().is_none()
+                    && record.members.is_empty()
+                    && record.instance_type.is_none()
+            }
+            Location::InputInstance {
+                bus,
+                short_address,
+                instance,
+            } => {
+                bus < 4
+                    && short_address < 64
+                    && instance < 32
+                    && target.namespace() == Some(Namespace::Inputs)
+                    && target.instance().is_some()
+                    && record.members.is_empty()
+                    && record.instance_type.is_some()
             }
         };
         if !valid
-            || target.instance().is_some()
             || record.binding_revision == 0
             || !places.insert(record.location)
             || !origins.insert(origin)
@@ -402,7 +436,38 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
             return Err("invalid active identity projection".into());
         }
     }
+    input_ancestors(active)?;
     Ok(())
+}
+
+fn input_ancestors(
+    active: &BTreeMap<String, (Origin, Projection)>,
+) -> Result<BTreeMap<Origin, Origin>, String> {
+    let parents: BTreeMap<_, _> = active
+        .values()
+        .filter_map(|(origin, p)| match p.location {
+            Location::Input { bus, short_address } => Some(((bus, short_address), (origin, p))),
+            _ => None,
+        })
+        .collect();
+    let mut result = BTreeMap::new();
+    for (origin, child) in active.values() {
+        if let Location::InputInstance {
+            bus, short_address, ..
+        } = child.location
+        {
+            let (parent_origin, parent) = parents
+                .get(&(bus, short_address))
+                .ok_or("orphan input child")?;
+            let target = Target::parse(&child.target).map_err(|e| e.to_string())?;
+            let parent_target = Target::parse(&parent.target).map_err(|e| e.to_string())?;
+            if target.name() != parent_target.name() {
+                return Err("input child has another module name".into());
+            }
+            result.insert(origin.clone(), (*parent_origin).clone());
+        }
+    }
+    Ok(result)
 }
 fn verify_current(
     document: &Value,
@@ -506,6 +571,63 @@ fn verify_current(
                     members.sort();
                     if members != record.members {
                         return Err("effective group members disagree with history".into());
+                    }
+                }
+            }
+        }
+        if let Some(inputs) = bus.get("inputs") {
+            for input in inputs.as_array().ok_or("invalid input array")? {
+                valid_description(input)?;
+                let module_name = input["name"].as_str().ok_or("no input name")?;
+                let address =
+                    u8::try_from(input["short_address"].as_u64().ok_or("no input address")?)
+                        .map_err(|_| "input address too large")?;
+                let target = Target::item(name, Namespace::Inputs, module_name)
+                    .map_err(|e| e.to_string())?
+                    .to_string();
+                let (_, record) = active.get(&target).ok_or("input not in history")?;
+                if input["target"].as_str() != Some(&target)
+                    || !seen.insert(target)
+                    || record.location
+                        != (Location::Input {
+                            bus: index,
+                            short_address: address,
+                        })
+                    || input["binding_revision"].as_u64() != Some(record.binding_revision)
+                {
+                    return Err("input mapping disagrees with history".into());
+                }
+                for instance in input["instances"].as_array().ok_or("no instance array")? {
+                    valid_description(instance)?;
+                    let target = Target::input_instance(
+                        name,
+                        module_name,
+                        instance["name"].as_str().ok_or("no instance name")?,
+                    )
+                    .map_err(|e| e.to_string())?
+                    .to_string();
+                    let number =
+                        u8::try_from(instance["number"].as_u64().ok_or("no instance number")?)
+                            .map_err(|_| "instance number too large")?;
+                    let kind = u8::try_from(
+                        instance["instance_type"]
+                            .as_u64()
+                            .ok_or("no instance type")?,
+                    )
+                    .map_err(|_| "instance type too large")?;
+                    let (_, record) = active.get(&target).ok_or("instance not in history")?;
+                    if instance["target"].as_str() != Some(&target)
+                        || !seen.insert(target)
+                        || record.location
+                            != (Location::InputInstance {
+                                bus: index,
+                                short_address: address,
+                                instance: number,
+                            })
+                        || record.instance_type != Some(kind)
+                        || instance["binding_revision"].as_u64() != Some(record.binding_revision)
+                    {
+                        return Err("instance mapping disagrees with history".into());
                     }
                 }
             }

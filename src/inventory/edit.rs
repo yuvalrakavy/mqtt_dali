@@ -49,7 +49,8 @@ pub(super) fn change(model: &Model, expected: u64, edits: &[Edit]) -> Result<Mod
             Some(before)
                 if before.target == projection.target
                     && before.location == projection.location
-                    && before.members == projection.members =>
+                    && before.members == projection.members
+                    && before.instance_type == projection.instance_type =>
             {
                 before.binding_revision
             }
@@ -108,6 +109,70 @@ fn apply(
     edit: &Edit,
 ) -> Result<(), String> {
     match edit {
+        Edit::RenameInput {
+            bus: index,
+            address,
+            name,
+        } => {
+            bus(inventory, *index)?
+                .inputs
+                .iter_mut()
+                .find(|i| i.short_address == *address)
+                .ok_or("unknown input")?
+                .name = name.clone();
+        }
+        Edit::RenameInputInstance {
+            bus: index,
+            address,
+            instance,
+            name,
+        } => {
+            bus(inventory, *index)?
+                .inputs
+                .iter_mut()
+                .find(|i| i.short_address == *address)
+                .ok_or("unknown input")?
+                .instances
+                .iter_mut()
+                .find(|i| i.number == *instance)
+                .ok_or("unknown input instance")?
+                .name = name.clone();
+        }
+        Edit::AddInput { bus: index, input } => {
+            let bus = bus(inventory, *index)?;
+            if bus
+                .inputs
+                .iter()
+                .any(|i| i.short_address == input.short_address)
+            {
+                return Err("input address already reserved".into());
+            }
+            bus.inputs.push(input.clone());
+            fresh_input(origins, *index, input, revision);
+        }
+        Edit::ReplaceInput { bus: index, input } => {
+            let old = bus(inventory, *index)?
+                .inputs
+                .iter_mut()
+                .find(|i| i.short_address == input.short_address)
+                .ok_or("unknown replacement input")?;
+            retire_input(origins, *index, old);
+            *old = input.clone();
+            fresh_input(origins, *index, input, revision);
+        }
+        Edit::RemoveInput {
+            bus: index,
+            address,
+        } => {
+            let bus = bus(inventory, *index)?;
+            let at = bus
+                .inputs
+                .iter()
+                .position(|i| i.short_address == *address)
+                .ok_or("unknown input")?;
+            let old = bus.inputs.remove(at);
+            retire_input(origins, *index, &old);
+        }
         Edit::Description { description } => inventory.description = description.clone(),
         Edit::RenameBus { bus: index, name } => bus(inventory, *index)?.name = name.clone(),
         Edit::RenameOutput {
@@ -293,4 +358,44 @@ fn apply(
         }
     }
     Ok(())
+}
+
+fn fresh_input(
+    origins: &mut BTreeMap<Location, Origin>,
+    bus: u8,
+    input: &crate::config::Input,
+    revision: u64,
+) {
+    fresh(
+        origins,
+        Location::Input {
+            bus,
+            short_address: input.short_address,
+        },
+        revision,
+    );
+    for instance in &input.instances {
+        fresh(
+            origins,
+            Location::InputInstance {
+                bus,
+                short_address: input.short_address,
+                instance: instance.number,
+            },
+            revision,
+        );
+    }
+}
+fn retire_input(origins: &mut BTreeMap<Location, Origin>, bus: u8, input: &crate::config::Input) {
+    origins.remove(&Location::Input {
+        bus,
+        short_address: input.short_address,
+    });
+    for instance in &input.instances {
+        origins.remove(&Location::InputInstance {
+            bus,
+            short_address: input.short_address,
+            instance: instance.number,
+        });
+    }
 }

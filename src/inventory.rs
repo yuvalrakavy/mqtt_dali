@@ -18,8 +18,23 @@ pub struct Origin {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Location {
-    Output { bus: u8, short_address: u8 },
-    Group { bus: u8, group_address: u8 },
+    Output {
+        bus: u8,
+        short_address: u8,
+    },
+    Group {
+        bus: u8,
+        group_address: u8,
+    },
+    Input {
+        bus: u8,
+        short_address: u8,
+    },
+    InputInstance {
+        bus: u8,
+        short_address: u8,
+        instance: u8,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -30,6 +45,8 @@ pub struct Projection {
     pub location: Location,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub members: Vec<Origin>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instance_type: Option<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -53,6 +70,29 @@ pub struct Ledger {
 
 #[derive(Debug, Clone)]
 pub enum Edit {
+    RenameInput {
+        bus: u8,
+        address: u8,
+        name: String,
+    },
+    RenameInputInstance {
+        bus: u8,
+        address: u8,
+        instance: u8,
+        name: String,
+    },
+    AddInput {
+        bus: u8,
+        input: crate::config::Input,
+    },
+    RemoveInput {
+        bus: u8,
+        address: u8,
+    },
+    ReplaceInput {
+        bus: u8,
+        input: crate::config::Input,
+    },
     RenameOutput {
         bus: u8,
         address: u8,
@@ -180,6 +220,24 @@ fn state_bytes(
             item["target"] = projection.target.clone().into();
             item["binding_revision"] = projection.binding_revision.into();
         }
+        for (index, input) in bus.inputs.iter().enumerate() {
+            let projection = by_location[&Location::Input {
+                bus: bus.bus,
+                short_address: input.short_address,
+            }];
+            let item = &mut snapshot["buses"][bus_index]["inputs"][index];
+            item["target"] = projection.target.clone().into();
+            item["binding_revision"] = projection.binding_revision.into();
+            for (j, instance) in input.instances.iter().enumerate() {
+                let projection = by_location[&Location::InputInstance {
+                    bus: bus.bus,
+                    short_address: input.short_address,
+                    instance: instance.number,
+                }];
+                item["instances"][j]["target"] = projection.target.clone().into();
+                item["instances"][j]["binding_revision"] = projection.binding_revision.into();
+            }
+        }
     }
     let bytes = serde_json::to_vec(&serde_json::json!({"Inventory": snapshot}))
         .map_err(|e| e.to_string())?;
@@ -192,5 +250,7 @@ fn state_bytes(
     Ok(bytes)
 }
 
+#[cfg(test)]
+mod input_tests;
 #[cfg(test)]
 mod tests;

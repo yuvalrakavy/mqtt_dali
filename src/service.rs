@@ -68,14 +68,48 @@ mod build_info {
 /// Public metadata changes. Physical changes require verified commissioning jobs.
 #[derive(Debug, Clone)]
 pub enum MetadataEdit {
-    RenameOutput { bus: u8, address: u8, name: String },
-    RenameGroup { bus: u8, address: u8, name: String },
-    RenameBus { bus: u8, name: String },
+    RenameInput {
+        bus: u8,
+        address: u8,
+        name: String,
+    },
+    RenameInputInstance {
+        bus: u8,
+        address: u8,
+        instance: u8,
+        name: String,
+    },
+    RenameOutput {
+        bus: u8,
+        address: u8,
+        name: String,
+    },
+    RenameGroup {
+        bus: u8,
+        address: u8,
+        name: String,
+    },
+    RenameBus {
+        bus: u8,
+        name: String,
+    },
     Description(Option<String>),
 }
 impl MetadataEdit {
     fn into_edit(self) -> Edit {
         match self {
+            Self::RenameInput { bus, address, name } => Edit::RenameInput { bus, address, name },
+            Self::RenameInputInstance {
+                bus,
+                address,
+                instance,
+                name,
+            } => Edit::RenameInputInstance {
+                bus,
+                address,
+                instance,
+                name,
+            },
             Self::RenameOutput { bus, address, name } => Edit::RenameOutput { bus, address, name },
             Self::RenameGroup { bus, address, name } => Edit::RenameGroup { bus, address, name },
             Self::RenameBus { bus, name } => Edit::RenameBus { bus, name },

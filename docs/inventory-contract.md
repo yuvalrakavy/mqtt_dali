@@ -6,6 +6,15 @@ targets use the canonical codec in `src/targets.rs`, for example
 `Bus1.Outputs.Kitchen` and `Bus1.Groups.Downstairs`. Literal dots/percent signs and
 non-ASCII bytes are escaped; names are never silently normalized.
 
+Inputs occupy a separate address space: `Bus1.Inputs.WallPanel` contains named
+instances such as `Bus1.Inputs.WallPanel.Instances.EntranceKey`. A bus's optional
+`inputs` array contains modules with `short_address`, `name`, optional
+`description` and `instances`; each instance has `number`, `name`, optional
+`description` and native numeric `instance_type`. Module addresses are 0..63;
+instance numbers are 0..31. Unknown types remain metadata. The same short address
+may identify an output and an input independently. Missing inputs in an older
+v2 file or v1 import means an empty array; an explicit null array is invalid.
+
 The pure `inventory::Model` validates configuration and produces the complete
 State payload destined for `DALI/State/<controller>/__inventory`. The property
 `Inventory` contains wire schema 1, epoch/revision, controller/buses/items, and
@@ -24,6 +33,15 @@ that mapping's version. Replacing a fixture creates another lifetime, even with
 identical name/address text. Groups rotate when their effective member lifetimes
 change, including replacement at an unchanged numeric address. An output merely
 renamed/readdressed within its lifetime leaves group meaning intact.
+
+Input module rename preserves its lifetime and those of its instances, rotating
+all affected targets/generations together. Renaming one instance rotates only
+that mapping. Module replacement/removal retires all descendants; identical text
+and addresses cannot preserve the replaced buttons' lifetimes. Every historical
+batch must have a complete, consistent module/instance hierarchy. A continuing
+instance must retain the same parent lifetime across a batch. Instance type is
+part of its projection, so a type change cannot keep the old generation or carry
+old binding intent as though it were merely a rename.
 
 The ledger starts with the epoch baseline and retains every atomic transition
 batch. Before/after edges prove continuity, creation and removal. Consumers replay
@@ -60,8 +78,11 @@ Device State/events will carry generation tags, and consumers must accept only
 the generation in their current complete inventory. Retired State uses BridgeKit
 contextual retirement/removal; each consumer owns cleanup of its own retained
 Desired/Config. The adopted runtime enforces original request contexts and
-retires old work/cache entries. Physical output/input State remains a later
-capability slice; metadata service success does not establish HAT connectivity.
+retires old work/cache entries. Base individual output State is implemented
+(see [MQTT outputs](mqtt-outputs.md)); physical input State/actions remain a later
+integration slice. Input metadata can be renamed with the existing MQTT `rename`
+command or service API. Input Desired remains unsupported; saved metadata does
+not establish HAT connectivity.
 
 Limits are deliberate: config at most 4 MiB; the complete serialized Inventory
 State (including its wrapper) at most 512 KiB; each encoded target at most 4096
@@ -109,6 +130,6 @@ and queued retired commands remain refused.
 Close has a caller deadline. A false result means filesystem ownership may still
 be held; the managed runtime must take its incomplete-stop path. A true result
 means the file owner ended even if client handles remain. These are library
-contracts; v2 daemon/hardware/web integration is still pending. The operator-owned
+contracts; authenticated web integration is still pending. The operator-owned
 directory and ordinary local Unix filesystem are assumed; physical power-loss
 behavior is not tested.

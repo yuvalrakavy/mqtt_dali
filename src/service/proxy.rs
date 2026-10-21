@@ -377,6 +377,23 @@ fn parse(snapshot: &Snapshot, target: Option<&str>, call: &CommandCall) -> Resul
                 .find(|p| p.target == target)
                 .ok_or_else(|| OpError::Rejected("unknown item".into()))?;
             let edit = match projection.location {
+                crate::inventory::Location::Input { bus, short_address } => {
+                    MetadataEdit::RenameInput {
+                        bus,
+                        address: short_address,
+                        name: params.name,
+                    }
+                }
+                crate::inventory::Location::InputInstance {
+                    bus,
+                    short_address,
+                    instance,
+                } => MetadataEdit::RenameInputInstance {
+                    bus,
+                    address: short_address,
+                    instance,
+                    name: params.name,
+                },
                 crate::inventory::Location::Output { bus, short_address } => {
                     MetadataEdit::RenameOutput {
                         bus,

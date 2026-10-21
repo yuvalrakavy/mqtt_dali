@@ -28,6 +28,205 @@ fn renamed(model: &Model, address: u8, name: &str) -> Model {
         .unwrap()
 }
 
+fn input_model() -> Model {
+    let mut inventory = model().inventory().clone();
+    inventory.buses[0].inputs = serde_json::from_value(json!([
+        {"short_address":0,"name":"Panel","instances":[
+            {"number":0,"name":"Key","instance_type":1}]}]))
+    .unwrap();
+    Model::new(inventory).unwrap()
+}
+
+#[test]
+fn input_consumer_preserves_rename_identity_and_retires_same_text_replacement() {
+    let first = input_model();
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    let old = "Bus1.Inputs.Panel.Instances.Key";
+    let id = consumer.by_target(old).unwrap().id;
+    consumer.set_intent(old, json!({"Binding":"Entrance"}));
+    let renamed = first
+        .edit(
+            1,
+            &[Edit::RenameInput {
+                bus: 0,
+                address: 0,
+                name: "Wall".into(),
+            }],
+        )
+        .unwrap();
+    consumer.accept(&renamed.state_bytes().unwrap()).unwrap();
+    let target = "Bus1.Inputs.Wall.Instances.Key";
+    let child = consumer.by_target(target).unwrap();
+    assert_eq!(child.id, id, "module rename replaced child identity");
+    assert_eq!(child.intent, Some(json!({"Binding":"Entrance"})));
+    assert!(!consumer.accepts_state(target, "0123456789abcdef0123456789abcdef.1"));
+    assert!(consumer.accepts_state(target, "0123456789abcdef0123456789abcdef.2"));
+    let replacement = renamed
+        .edit(
+            2,
+            &[Edit::ReplaceInput {
+                bus: 0,
+                input: renamed.inventory().buses[0].inputs[0].clone(),
+            }],
+        )
+        .unwrap();
+    consumer
+        .accept(&replacement.state_bytes().unwrap())
+        .unwrap();
+    assert_ne!(
+        consumer.by_target(target).unwrap().id,
+        id,
+        "same-text input replacement retained old child identity"
+    );
+    assert_eq!(consumer.by_target(target).unwrap().intent, None);
+}
+
+#[test]
+fn input_consumer_rejects_partial_parent_rename_or_replacement_before_mutation() {
+    let first = input_model();
+    let renamed = first
+        .edit(
+            1,
+            &[Edit::RenameInput {
+                bus: 0,
+                address: 0,
+                name: "Wall".into(),
+            }],
+        )
+        .unwrap();
+    let replacement = first
+        .edit(
+            1,
+            &[Edit::ReplaceInput {
+                bus: 0,
+                input: first.inventory().buses[0].inputs[0].clone(),
+            }],
+        )
+        .unwrap();
+    for (next, reason) in [
+        (renamed, "split input parent rename"),
+        (replacement, "parent-only replacement"),
+    ] {
+        let mut value: Value = serde_json::from_slice(&next.state_bytes().unwrap()).unwrap();
+        value["Inventory"]["identity_ledger"]["batches"][0]["transitions"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|edge| {
+                edge["from"]["target"] == "Bus1.Inputs.Panel"
+                    || edge["to"]["target"] == "Bus1.Inputs.Panel"
+                    || edge["to"]["target"] == "Bus1.Inputs.Wall"
+            });
+        if reason == "parent-only replacement" {
+            // Make the final current document agree with the surviving child;
+            // only the cross-batch parent-lifetime rule can reject this history.
+            value["Inventory"]["buses"][0]["inputs"][0]["instances"][0]["binding_revision"] =
+                json!(1);
+        }
+        let mut consumer = Consumer::default();
+        consumer.accept(&first.state_bytes().unwrap()).unwrap();
+        let id = consumer
+            .by_target("Bus1.Inputs.Panel.Instances.Key")
+            .unwrap()
+            .id;
+        assert!(
+            consumer
+                .accept(&serde_json::to_vec(&value).unwrap())
+                .is_err(),
+            "consumer accepted {reason}"
+        );
+        assert_eq!(consumer.revision, 1);
+        assert_eq!(
+            consumer
+                .by_target("Bus1.Inputs.Panel.Instances.Key")
+                .unwrap()
+                .id,
+            id
+        );
+    }
+    let renamed = first
+        .edit(
+            1,
+            &[Edit::RenameInput {
+                bus: 0,
+                address: 0,
+                name: "Wall".into(),
+            }],
+        )
+        .unwrap();
+    let mut value: Value = serde_json::from_slice(&renamed.state_bytes().unwrap()).unwrap();
+    let transitions = value["Inventory"]["identity_ledger"]["batches"][0]["transitions"]
+        .as_array_mut()
+        .unwrap();
+    let child_index = transitions
+        .iter()
+        .position(|e| e["from"]["target"] == "Bus1.Inputs.Panel.Instances.Key")
+        .unwrap();
+    let mut child = transitions.remove(child_index);
+    child["to"]["binding_revision"] = json!(3);
+    value["Inventory"]["identity_ledger"]["batches"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"revision":3,"transitions":[child]}));
+    value["Inventory"]["revision"] = json!(3);
+    value["Inventory"]["buses"][0]["inputs"][0]["instances"][0]["binding_revision"] = json!(3);
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    assert!(
+        consumer
+            .accept(&serde_json::to_vec(&value).unwrap())
+            .is_err(),
+        "consumer accepted an impossible intermediate input hierarchy"
+    );
+    assert_eq!(consumer.revision, 1);
+}
+
+#[test]
+fn input_consumer_does_not_carry_binding_intent_through_rename_with_type_change() {
+    let first = input_model();
+    let renamed = first
+        .edit(
+            1,
+            &[Edit::RenameInputInstance {
+                bus: 0,
+                address: 0,
+                instance: 0,
+                name: "Sensor".into(),
+            }],
+        )
+        .unwrap();
+    let mut inventory = renamed.inventory().clone();
+    inventory.buses[0].inputs[0].instances[0].instance_type = 3;
+    for edge in &mut inventory.identity_ledger.as_mut().unwrap().batches[0].transitions {
+        edge.to.as_mut().unwrap().instance_type = Some(3);
+    }
+    let changed = Model::new(inventory).unwrap();
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    consumer.set_intent(
+        "Bus1.Inputs.Panel.Instances.Key",
+        json!({"Binding":"Button"}),
+    );
+    consumer.accept(&changed.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer
+            .by_target("Bus1.Inputs.Panel.Instances.Sensor")
+            .unwrap()
+            .intent,
+        None,
+        "type change carried old button binding intent"
+    );
+    let mut malformed: Value = serde_json::from_slice(&changed.state_bytes().unwrap()).unwrap();
+    malformed["Inventory"]["buses"][0]["inputs"][0]["instances"][0]["instance_type"] = json!(1);
+    let mut fresh = Consumer::default();
+    assert!(
+        fresh
+            .accept(&serde_json::to_vec(&malformed).unwrap())
+            .is_err(),
+        "consumer ignored instance type disagreement"
+    );
+}
+
 #[test]
 fn state_before_inventory_is_buffered_without_creating_a_device_or_intent() {
     let mut consumer = Consumer::default();
