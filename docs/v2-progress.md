@@ -189,13 +189,38 @@ inventory/request-generation fencing, the DALI service and canonical v2 daemon.
 The managed-service design is grounded in current BridgeKit's run/start split;
 it retains the single shared logging/signals/watchdog policy.
 
+## P3b — managed process service implemented in BridgeKit
+
+Shared checkout: `Projects/tracing-init-dali-v2`, branch
+`feat/dali-managed-services`, commit `a3db09e` (local, unpublished).
+`ProcessService`, `ServiceContext` and managed run/start APIs keep process-owned
+resources independent of MQTT/device link lifetimes. Readiness validates the
+proxy once; an independent heartbeat watcher closes admission after service
+death. Startup cancellation retains cleanup, and all component teardown shares
+one absolute deadline. Success confirms future, local-task and runtime-resource
+destruction; blocked helpers/destructors cannot claim a clean exit.
+
+Verified in the shared checkout: **160 kit tests** and **174 conformance tests**
+passed, strict all-target Clippy for both crates passed, and the armv7 Linux musl
+library compile check passed. Conformance used explicit `RUST_LOG=info`; the
+inherited `warn` filter hid INFO in two existing log assertions. Six negative
+controls detected their declared removed protections, and the restored full kit
+suite passed. Design and fresh core reviews approved after readiness/admission,
+runtime-teardown and absolute-deadline fixes. Reviews are source-only, same model
+family; physical hardware remains unverified.
+
+The bridge has not adopted this dependency yet. Portable dependency pinning is
+required before daemon integration is final. Inventory reconciliation and stale
+request fencing are the next P3 contract boundary. The shared spec and its
+verification record are mirrored in `superpowers/specs/2026-10-21-dali-v2-p3b-services.md`.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
-| P3 BridgeKit/service | Target codec implemented; integration pending | Managed lifecycle and inventory/retired-request contract; canonical v2 daemon |
+| P3 BridgeKit/service | Target codec and shared managed lifecycle implemented; integration pending | Inventory/retired-request contract and canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
