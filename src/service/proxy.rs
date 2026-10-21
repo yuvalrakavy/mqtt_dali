@@ -1,10 +1,18 @@
 use super::*;
 use mqtt_bridge_kit::*;
+use std::time::Duration;
+
+mod state;
 
 pub struct DaliProxy {
     pub(super) handle: ServiceHandle,
     pub(super) initial: TargetGenerations,
     pub(super) reporter: Option<Reporter>,
+    pub(super) read_cursor: usize,
+    #[cfg(test)]
+    pub(super) read_pause: Option<std::sync::Arc<super::tests::Pause>>,
+    #[cfg(test)]
+    pub(super) snapshot_pause: Option<std::sync::Arc<super::tests::Pause>>,
 }
 impl DeviceDriver for DaliProxy {
     fn info(&self) -> DriverInfo {
@@ -13,6 +21,11 @@ impl DeviceDriver for DaliProxy {
                 .into_iter()
                 .map(|name| CommandSpec::new(name, CommandClass::WithReply))
                 .collect(),
+            timing: Timing {
+                operation: Duration::from_secs(20),
+                poll: Some(Duration::from_secs(30)),
+                ..Timing::default()
+            },
             ..DriverInfo::default()
         }
     }
@@ -29,6 +42,14 @@ impl DeviceDriver for DaliProxy {
             return Err(OpError::Unsupported("inventory is read-only".into()));
         }
         match kind {
+            RequestKind::Apply(values) => {
+                state::intent(values)?;
+                let target =
+                    target.ok_or_else(|| OpError::Rejected("output target required".into()))?;
+                let snapshot = self.snapshot()?;
+                Self::output_route(&snapshot, target, context, true)?;
+                Ok(())
+            }
             RequestKind::Command(call) => {
                 let snapshot = self
                     .handle
@@ -37,9 +58,7 @@ impl DeviceDriver for DaliProxy {
                 let change = parse(&snapshot, target, call)?;
                 routing::admit(&snapshot, &change, context).map_err(op_error)
             }
-            _ => Err(OpError::Unsupported(
-                "hardware properties and target configuration pending".into(),
-            )),
+            _ => Err(OpError::Unsupported("target configuration pending".into())),
         }
     }
     async fn connect(&mut self, ctx: &mut LinkContext) -> Result<(), LinkError> {
@@ -57,6 +76,10 @@ impl DeviceDriver for DaliProxy {
             .await
             .map_err(LinkError::new)?;
         self.reporter = Some(ctx.report.clone());
+        let helper = state::Watcher::new(self.handle.state.clone(), ctx.report.clone());
+        #[cfg(test)]
+        let helper = helper.with_pause(self.snapshot_pause.clone());
+        ctx.spawn(helper.run());
         Ok(())
     }
     async fn disconnect(&mut self) {
@@ -69,28 +92,47 @@ impl DeviceDriver for DaliProxy {
         &mut self,
         scope: Scope,
     ) -> Result<Vec<ContextualState>, OpError> {
-        if matches!(&scope,Scope::Target(target) if target!="__inventory") {
-            return Err(OpError::Unsupported("hardware readback pending".into()));
-        }
-        let snapshot = self
-            .handle
-            .snapshot()
-            .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
-        if matches!(snapshot.phase, Phase::Stopping | Phase::Closed) {
-            return Err(OpError::Link(LinkError::new("service stopped")));
-        }
-        let context = RequestContext::new(routing::generations(&snapshot.model).instance)
-            .map_err(OpError::Unusable)?;
-        let values =
-            serde_json::from_slice(&snapshot.model.state_bytes().map_err(OpError::Unusable)?)
-                .map_err(|e| OpError::Unusable(e.to_string()))?;
-        Ok(vec![ContextualState::new(
-            TargetState::new("__inventory", values),
-            context,
-        )])
+        self.read_scope(scope, &RequestContext::default().with_traceparent(None))
+            .await
+    }
+    async fn read_state_with_request_context(
+        &mut self,
+        scope: Scope,
+        context: &RequestContext,
+    ) -> Result<Vec<ContextualState>, OpError> {
+        self.read_scope(scope, context).await
     }
     async fn apply(&mut self, _target: &str, _values: &PropertyMap) -> Result<(), OpError> {
-        Err(OpError::Unsupported("hardware properties pending".into()))
+        Err(OpError::Rejected(
+            "original request context required".into(),
+        ))
+    }
+    async fn apply_with_context(
+        &mut self,
+        target: &str,
+        values: &PropertyMap,
+        context: &RequestContext,
+    ) -> Result<(), OpError> {
+        let intent = state::intent(values)?;
+        Self::output_route(&self.snapshot()?, target, context, true)?;
+        let deadline = Instant::now() + Duration::from_secs(2);
+        let observed = self
+            .handle
+            .apply_output(target, intent, context.clone(), deadline)
+            .await
+            .map_err(op_error)?;
+        if Instant::now() >= deadline {
+            return Err(OpError::Rejected(
+                "write completion exceeded its original deadline; inspect state before retrying"
+                    .into(),
+            ));
+        }
+        let state = state::accepted(&self.snapshot()?, target, &observed)?;
+        self.reporter
+            .as_ref()
+            .ok_or_else(|| OpError::Link(LinkError::new("proxy is disconnected")))?
+            .state_with_context(target, state.state.values, false, &state.context);
+        Ok(())
     }
     async fn execute(
         &mut self,
@@ -132,8 +174,173 @@ impl DeviceDriver for DaliProxy {
     }
 }
 
+impl DaliProxy {
+    fn output_route(
+        snapshot: &Snapshot,
+        target: &str,
+        cause: &RequestContext,
+        writing: bool,
+    ) -> Result<output::Route, OpError> {
+        if snapshot.model.projections().iter().any(|value| {
+            value.target == target
+                && !matches!(value.location, crate::inventory::Location::Output { .. })
+        }) {
+            return Err(OpError::Unsupported(
+                "individual output required; group execution pending".into(),
+            ));
+        }
+        output::resolve(snapshot, target, cause, writing).map_err(op_error)
+    }
+    fn snapshot(&self) -> Result<Snapshot, OpError> {
+        let snapshot = self
+            .handle
+            .snapshot()
+            .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
+        if matches!(snapshot.phase, Phase::Stopping | Phase::Closed) {
+            return Err(OpError::Link(LinkError::new("service stopped")));
+        }
+        Ok(snapshot)
+    }
+    fn inventory(snapshot: &Snapshot, cause: &RequestContext) -> Result<ContextualState, OpError> {
+        let token = routing::generations(&snapshot.model).instance;
+        if cause.generation().is_some_and(|value| value != token) {
+            return Err(OpError::Rejected("retired controller generation".into()));
+        }
+        let context = RequestContext::new(token)
+            .map_err(OpError::Unusable)?
+            .with_traceparent(cause.traceparent());
+        let values =
+            serde_json::from_slice(&snapshot.model.state_bytes().map_err(OpError::Unusable)?)
+                .map_err(|error| OpError::Unusable(error.to_string()))?;
+        Ok(ContextualState::new(
+            TargetState::new("__inventory", values),
+            context,
+        ))
+    }
+    async fn read_scope(
+        &mut self,
+        scope: Scope,
+        cause: &RequestContext,
+    ) -> Result<Vec<ContextualState>, OpError> {
+        match scope {
+            Scope::Any => Ok(vec![Self::inventory(&self.snapshot()?, cause)?]),
+            Scope::Target(target) if target == "__inventory" => {
+                Ok(vec![Self::inventory(&self.snapshot()?, cause)?])
+            }
+            Scope::Target(target) => {
+                let deadline = Instant::now() + Duration::from_secs(2);
+                let observed = self
+                    .read_observation(&target, cause.clone(), deadline)
+                    .await?;
+                if Instant::now() >= deadline {
+                    return Err(OpError::Rejected(
+                        "read completion exceeded its original deadline".into(),
+                    ));
+                }
+                Ok(vec![state::accepted(
+                    &self.snapshot()?,
+                    &target,
+                    &observed,
+                )?])
+            }
+            Scope::All => self.read_all(cause).await,
+        }
+    }
+    async fn read_observation(
+        &self,
+        target: &str,
+        cause: RequestContext,
+        deadline: Instant,
+    ) -> Result<output::Observation, OpError> {
+        Self::output_route(&self.snapshot()?, target, &cause, false)?;
+        let observed = self
+            .handle
+            .read_output(target, cause, deadline)
+            .await
+            .map_err(op_error)?;
+        #[cfg(test)]
+        if let Some(pause) = &self.read_pause {
+            pause.point().await;
+        }
+        Ok(observed)
+    }
+    async fn read_all(&mut self, cause: &RequestContext) -> Result<Vec<ContextualState>, OpError> {
+        let snapshot = self.snapshot()?;
+        let inventory = Self::inventory(&snapshot, cause)?;
+        let table = routing::generations(&snapshot.model);
+        let targets: Vec<String> = snapshot.model.projections().into_iter()
+            .filter(|value| matches!(value.location, crate::inventory::Location::Output { bus, .. }
+                if snapshot.model.inventory().buses.iter().any(|value| value.bus == bus && value.enabled)))
+            .map(|value| value.target).collect();
+        if targets.is_empty() {
+            let mut states = vec![inventory];
+            states.extend(state::projections(&snapshot));
+            return Ok(states);
+        }
+        if !matches!(snapshot.hardware, Hardware::Ready { .. }) {
+            return Err(OpError::Rejected(
+                "UART is not ready; inventory remains available".into(),
+            ));
+        }
+        let start = self.read_cursor % targets.len();
+        let deadline = Instant::now() + Duration::from_secs(15);
+        let mut observed = Vec::new();
+        let mut failed = 0;
+        for offset in 0..targets.len() {
+            if Instant::now() >= deadline {
+                failed += targets.len() - offset;
+                break;
+            }
+            let index = (start + offset) % targets.len();
+            // Persist before the first await: runtime cancellation/reconnect
+            // must not keep restarting at the same fixture.
+            self.read_cursor = (index + 1) % targets.len();
+            let target = &targets[index];
+            let context = RequestContext::new(table.targets[target].clone())
+                .map_err(OpError::Unusable)?
+                .with_traceparent(cause.traceparent());
+            let until = deadline.min(Instant::now() + Duration::from_secs(2));
+            match self.read_observation(target, context, until).await {
+                Ok(value) => observed.push((target.clone(), value)),
+                Err(_) => failed += 1,
+            }
+        }
+        let latest = self.snapshot()?;
+        if latest.model.inventory().revision != snapshot.model.inventory().revision
+            || latest.model.inventory().inventory_epoch
+                != snapshot.model.inventory().inventory_epoch
+            || Instant::now() >= deadline
+        {
+            return Err(OpError::Rejected(
+                "complete readback changed or exceeded its original deadline".into(),
+            ));
+        }
+        let mut states = vec![inventory];
+        let mut projected: std::collections::BTreeMap<_, _> = state::projections(&latest)
+            .into_iter()
+            .map(|value| (value.state.target.clone(), value))
+            .collect();
+        for (target, value) in observed {
+            match state::accept_projected(&latest, &target, &value, projected.remove(&target)) {
+                Ok(state) => states.push(state),
+                Err(_) => failed += 1,
+            }
+        }
+        if failed != 0 {
+            return Err(OpError::Rejected(format!(
+                "readback incomplete for {failed} output(s); inspect current state"
+            )));
+        }
+        states.extend(projected.into_values());
+        Ok(states)
+    }
+}
+
 fn op_error(error: ServiceError) -> OpError {
-    OpError::Rejected(error.to_string())
+    match error {
+        ServiceError::Closed => OpError::Link(LinkError::new("service stopped")),
+        error => OpError::Rejected(error.to_string()),
+    }
 }
 
 #[derive(serde::Deserialize)]
@@ -217,3 +424,6 @@ fn parse(snapshot: &Snapshot, target: Option<&str>, call: &CommandCall) -> Resul
         edit: edit.1,
     })
 }
+
+#[cfg(test)]
+mod tests;

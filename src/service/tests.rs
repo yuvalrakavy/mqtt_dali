@@ -1,10 +1,25 @@
 use super::*;
 use crate::{config::Inventory, inventory::Location};
 use serde_json::json;
-fn model() -> Model {
+
+#[derive(Default)]
+pub(super) struct Pause {
+    pub(super) armed: std::sync::atomic::AtomicBool,
+    pub(super) entered: tokio::sync::Notify,
+    pub(super) release: tokio::sync::Notify,
+}
+impl Pause {
+    pub(super) async fn point(&self) {
+        if self.armed.swap(false, std::sync::atomic::Ordering::AcqRel) {
+            self.entered.notify_one();
+            self.release.notified().await;
+        }
+    }
+}
+pub(super) fn model() -> Model {
     Model::new(serde_json::from_value::<Inventory>(json!({"schema_version":2,"revision":1,"inventory_epoch":"0123456789abcdef0123456789abcdef","name":"Controller","buses":[{"bus":0,"name":"Bus1","enabled":true,"outputs":[{"short_address":0,"name":"Light1"}],"groups":[{"group_address":0,"name":"All","members":[0]}]}]})).unwrap()).unwrap()
 }
-fn snapshot(model: Model, phase: Phase) -> Snapshot {
+pub(super) fn snapshot(model: Model, phase: Phase) -> Snapshot {
     Snapshot {
         model: Arc::new(model),
         phase,
@@ -137,7 +152,7 @@ impl Fixture {
         });
         fs::write(&self.paths.current, serde_json::to_vec(&inventory).unwrap()).unwrap();
     }
-    fn disk(&self) -> Inventory {
+    pub(super) fn disk(&self) -> Inventory {
         serde_json::from_slice(&fs::read(&self.paths.current).unwrap()).unwrap()
     }
 }

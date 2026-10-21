@@ -5,13 +5,13 @@ use std::ffi::CStr;
 use std::os::fd::{FromRawFd, OwnedFd};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-struct Pty {
-    peer: Serial,
+pub(in crate::service) struct Pty {
+    pub(in crate::service) peer: Serial,
     _slave: OwnedFd,
-    path: PathBuf,
+    pub(in crate::service) path: PathBuf,
 }
 impl Pty {
-    fn new() -> Self {
+    pub(in crate::service) fn new() -> Self {
         let (mut master, mut slave) = (-1, -1);
         let mut name = [0 as libc::c_char; 1024];
         assert_eq!(

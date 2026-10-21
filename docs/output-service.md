@@ -1,8 +1,9 @@
 # Single-output service API
 
 This guide is for bridge contributors and embedders. The shared service can read
-and control a saved individual DALI output through its UART owner. MQTT physical
-properties and the browser UI are not enabled yet. Groups, color and addressing
+and control a saved individual DALI output through its UART owner. The same paths
+serve [MQTT base output properties](mqtt-outputs.md). The browser UI is pending.
+Groups, color and addressing
 have separate execution contracts; this API does not reinterpret a group as an
 individual address.
 

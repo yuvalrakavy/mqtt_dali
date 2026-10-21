@@ -8,7 +8,7 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 |---|---|---|
 | v1 configuration import | Library and canonical process tests; v1 bytes preserved; v2 precedence and reimport | Persisted Store-object migration in P8 |
 | ATX I4 UART | Typed frames, continuous monitoring, measured quiet recovery, bounded request/helper progress under input traffic, managed health and real PTY/process crash-restart tests; known partial-write poison survives in-process reopen | Physical timing/firmware transcripts; j/t completion policies; no persistent inference of partial writes across process death |
-| Base output model | Independent emulator levels/MASK, off/steps/max/min, DTRs, groups/scenes and selected queries/configuration; validated base-output codec and individual-output service reads/writes with real PTY/emulator evidence | MQTT integration, group execution, settings/fault extensions and timed fades |
+| Base output model | Independent emulator levels/MASK, off/steps/max/min, DTRs, groups/scenes and selected queries/configuration; validated base-output codec, service and MQTT PowerState/Brightness with actual readback and real PTY/emulator evidence | Group execution, settings/fault extensions and timed fades |
 | Addressing model | INITIALISE modes/expiry, seeded randomization, search/compare/program/withdraw, duplicate address responses | P5 bridge jobs and commissioning UI |
 | DALI-2 event transport | Async L records remain public during transactions; local injection | P4 Parts 301–304 decoding, discovery, state and configuration |
 | DT7 switching | Pending | P4 model/driver |
@@ -19,7 +19,7 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 | Data Parts 251–253 | Pending | P4 luminaire/energy/diagnostics with units/status |
 | DT1 emergency | Pending | P4 status/configuration/test operations |
 | Group/scene operator workflows | Pending | P5 verification, repair, assignment, recall/copy/clear |
-| BridgeKit MQTT | Canonical daemon, managed inventory service, fenced targets, metadata commands, independent consumer and ephemeral-broker tests | Physical capability paths; local shared dependency commit must be published for portable clones |
+| BridgeKit MQTT | Canonical daemon, managed inventory service, fenced targets, metadata commands, base output properties, original trace and independent consumer/ephemeral-broker tests | Remaining capability paths; local shared dependency commit must be published for portable clones |
 | Protected web UI | Approved design; implementation pending | P6/P7 service/authentication/browser tests |
 | Store device/preset integration | Approved design; implementation pending | P8 schema and persisted migration |
 

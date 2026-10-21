@@ -1,0 +1,260 @@
+{
+ "rows": {
+  "aggregate_read_queues_without_ready_uart": {
+   "last_real": {
+    "at": "2026-10-21T23:10:39Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:824b54f51ac693ba",
+     "row": "a47477eb1f0dc2cd",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.8,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "canceled_first_fixture_does_not_advance_cursor": {
+   "last_real": {
+    "at": "2026-10-21T23:11:20Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:824b54f51ac693ba",
+     "row": "f15bcef566667df4",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.2,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "disabled_buses_are_physically_queried": {
+   "last_real": {
+    "at": "2026-10-21T23:10:45Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:824b54f51ac693ba",
+     "row": "65b75bac6bd28973",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.0,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "disconnect_erases_aggregate_progress": {
+   "last_real": {
+    "at": "2026-10-21T23:10:52Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:4698320aa468b65d",
+     "row": "c85b39fcd8587eef",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.4,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "earlier_aggregate_samples_skip_final_validation": {
+   "last_real": {
+    "at": "2026-10-21T23:11:14Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:824b54f51ac693ba",
+     "row": "aeb56b15e5e5640f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.1,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "helper_local_cache_hides_a_physical_return": {
+   "last_real": {
+    "at": "2026-10-21T23:11:43Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:df7d656318f7065b",
+     "row": "0cd8deeae4bf157a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.6,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "invalid_power_is_treated_as_false": {
+   "last_real": {
+    "at": "2026-10-21T23:10:31Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:0c908c69bde4cc63",
+     "row": "5748d00eed016ca8",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.3,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "mask_is_mistaken_for_usable_mqtt_availability": {
+   "last_real": {
+    "at": "2026-10-21T23:10:17Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6a9d826ba938e7ea",
+     "row": "cf81fd3e1ef2390d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.3,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "per_fixture_deadline_extends_aggregate_ceiling": {
+   "last_real": {
+    "at": "2026-10-21T23:10:58Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:824b54f51ac693ba",
+     "row": "335917eac91abf49",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.0,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "physical_read_loses_its_original_trace": {
+   "last_real": {
+    "at": "2026-10-21T23:11:26Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6eb1fc92db3d1a11",
+     "row": "18c69bcfcc45df75",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.3,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "physical_write_loses_its_original_trace": {
+   "last_real": {
+    "at": "2026-10-21T23:11:32Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:dc390e50cb24d894",
+     "row": "40c38c19b3651e82",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.0,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "retired_samples_are_accepted_at_mqtt_completion": {
+   "last_real": {
+    "at": "2026-10-21T23:11:06Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e942a3982a6a00a5",
+     "row": "a0c9d96e07e91787",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.2,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "unchanged_clamped_readback_is_not_reported_before_ack": {
+   "last_real": {
+    "at": "2026-10-21T23:10:08Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:dc390e50cb24d894",
+     "row": "caf33ca089f792d5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.5,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "unknown_atomic_properties_are_ignored": {
+   "last_real": {
+    "at": "2026-10-21T23:10:24Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:0c908c69bde4cc63",
+     "row": "970edda4add07916",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.4,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  },
+  "unsolicited_stale_state_inherits_a_request_cause": {
+   "last_real": {
+    "at": "2026-10-21T23:11:50Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6a9d826ba938e7ea",
+     "row": "57a124677f8fe9f3",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.2,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

@@ -5,8 +5,8 @@ durable configuration, runtime routing, optional UART health and individual-outp
 library operations. The canonical
 `mqtt_dali` executable now runs it through BridgeKit; `mqtt_dali_v2` is an alias.
 `--check-config` remains an explicit offline operation. See
-[running the development daemon](running-v2.md). Web handlers and MQTT fixture
-properties are not available yet; embedders can use the
+[running the development daemon](running-v2.md). MQTT base fixture properties
+use [the output wire contract](mqtt-outputs.md). Web handlers are pending; embedders can use the
 [single-output service API](output-service.md).
 
 `DaliService::new(paths, instance)` returns a resource-free service and a
@@ -68,8 +68,8 @@ Caller cancellation reaches reader reset authorization directly, even if the
 actor has not been polled. Its event loop also checks the original deadline
 before each select so ready input cannot starve expiry. Cancellation/expiry leaves
 recovery required. Managed startup applies that
-policy automatically. The MQTT surface still exposes metadata and UART health;
-the output-service API adds individual physical reads/writes through the same
+policy automatically. The MQTT surface exposes metadata, UART health and base
+output properties. The output-service API provides physical reads/writes through the same
 admission and actual teardown path.
 
 Queued transaction requests take priority over idle input dispatch; command
@@ -133,8 +133,9 @@ of generation admission. Local OTLP tests verify exported worker/actor operation
 spans, rather than only an ingress span.
 
 `__inventory` is read-only and returns the complete observed saved inventory.
-Physical property writes, reads and unsupported operations return explicit
-Unsupported errors in this slice. Saved inventory does not prove physical state.
+Individual PowerState/Brightness writes and reads use the owned physical service.
+Groups, color and other unsupported properties return explicit Unsupported errors
+in this slice. Saved inventory does not prove physical state.
 Consumers can be any MQTT implementation; no Store service is required. Follow
 the [inventory contract](inventory-contract.md), especially replay buffering and
 consumer-owned intent continuity.

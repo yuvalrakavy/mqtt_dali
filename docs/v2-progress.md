@@ -627,6 +627,45 @@ compile checks pass with the new pin. Physical MQTT property execution is next.
 The revision remains local and unpublished. The bridge-development skill and
 shared README/tutorial describe the new method; no Store code changed.
 
+## P4b4 — MQTT base output properties
+
+Individual saved outputs now expose PowerState/Brightness through BridgeKit's
+Desired/State interface. Actual level/status readback supplies the result, including
+fixture clamping. State has explicit Available/Quality; retained last-known scalar
+values are unusable while Available=false. MASK and missing fixtures never become
+invented off values. Missing fixtures do not block healthy output control.
+
+Physical publication stays on the SDK worker. Driver completions revalidate the
+latest service snapshot after their final await; a LinkContext-owned helper reads
+latest snapshots and lets the SDK coalesce reports. Source generation, UART/bus
+evidence, original cause and explicit unsolicited trace absence remain separate.
+Even unchanged post-write readback is reported before acknowledgement, so the
+runtime's inferred intent cannot replace observed conflict/reconnect evidence.
+
+Aggregate polling uses a persistent cursor, 15 s total ceiling and 2 s per target.
+Cursor advancement precedes the cancellable await and survives disconnect. Final
+validation covers early samples after the last fixture await. Disabled buses skip
+I/O; polling without a ready UART rejects before taking physical admission, keeping
+metadata configuration accessible.
+
+Fifteen new regressions exercise the real managed runtime, independent emulator or
+literal PTY HAT, and isolated FakeBroker. They include delayed read/outage ordering,
+A-to-B-to-A publication, incomplete aggregate reads, cancellation and reconnect,
+actual clamped readback, full-map rejection, missing devices, generation admission
+and original request trace with no OTel dependency. The helper-cache and no-UART
+admission bugs were reproduced before their fixes. Removing the direct unchanged
+readback report also fails the real reconnect/conflict oracle as intended.
+
+The initial complete gate passed **297 native tests**, strict scoped Clippy,
+Pi library/all four binary compilation and whitespace checks. All **15 new
+guard-removal controls** and **8 affected existing metadata/trace controls**
+failed for their intended behavioral assertions. After restoration, all **297
+native tests**, strict scoped Clippy, Pi library/all four binary compilation,
+formatting, whitespace and doctests (none defined) pass. Sequential source reviews
+are in progress.
+See [the MQTT output guide](mqtt-outputs.md) and the
+[slice spec](superpowers/specs/2026-10-22-dali-v2-p4b-mqtt-outputs.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -634,7 +673,7 @@ shared README/tutorial describe the new method; no Store code changed.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, typed output codec and individual output service implemented | MQTT output driver paths, color representations, DALI-2 inputs and explicit capability support |
+| P4 capabilities | Quiet recovery, typed output codec, individual output service and MQTT base properties implemented | Color representations, DALI-2 inputs and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

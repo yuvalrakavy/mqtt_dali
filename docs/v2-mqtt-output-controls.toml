@@ -1,0 +1,159 @@
+# Run sequentially. Each command must fail at its behavioral assertion.
+
+[[control]]
+name = "unchanged_clamped_readback_is_not_reported_before_ack"
+file = "src/service/proxy.rs"
+anchor = '''        self.reporter
+            .as_ref()
+            .ok_or_else(|| OpError::Link(LinkError::new("proxy is disconnected")))?
+            .state_with_context(target, state.state.values, false, &state.context);'''
+replacement = "        let _ = state;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(unchanged_clamped_readback_precedes_ack_and_remains_the_reconnect_basis)"]
+expect_text = "unchanged actual readback was replaced by inferred intent before ack"
+
+[[control]]
+name = "mask_is_mistaken_for_usable_mqtt_availability"
+file = "src/service/proxy/state.rs"
+anchor = '''("Available".into(), Value::Bool(controls.is_some())),'''
+replacement = '''("Available".into(), Value::Bool(observation.is_some_and(|value| value.available()))),'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(answered_mask_is_not_current_mqtt_availability_or_invented_power)"]
+expect_text = "answered MASK became usable MQTT availability"
+
+[[control]]
+name = "unknown_atomic_properties_are_ignored"
+file = "src/service/proxy/state.rs"
+anchor = '''.find(|name| !matches!(name.as_str(), "PowerState" | "Brightness"))'''
+replacement = '''.find(|_| false)'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mqtt_output_intent_rejects_the_whole_invalid_map)"]
+expect_text = "invalid output map was partially accepted"
+
+[[control]]
+name = "invalid_power_is_treated_as_false"
+file = "src/service/proxy/state.rs"
+anchor = '''value
+                .as_bool()
+                .ok_or_else(|| OpError::Rejected("PowerState must be a JSON bool".into()))'''
+replacement = '''Ok::<_, OpError>(value.as_bool().unwrap_or(false))'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mqtt_output_intent_rejects_the_whole_invalid_map)"]
+expect_text = "invalid output map was partially accepted"
+
+[[control]]
+name = "aggregate_read_queues_without_ready_uart"
+file = "src/service/proxy.rs"
+anchor = '''if !matches!(snapshot.hardware, Hardware::Ready { .. }) {'''
+replacement = '''if false {'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(all_refresh_without_ready_uart_never_takes_physical_admission)"]
+expect_text = "All refresh queued physical work despite unavailable UART"
+
+[[control]]
+name = "disabled_buses_are_physically_queried"
+file = "src/service/proxy.rs"
+anchor = '''value.bus == bus && value.enabled'''
+replacement = '''value.bus == bus'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(disabled_bus_inventory_remains_readable_without_physical_admission)"]
+expect_text = "disabled bus queued physical work"
+
+[[control]]
+name = "disconnect_erases_aggregate_progress"
+file = "src/service/proxy.rs"
+anchor = '''    async fn disconnect(&mut self) {
+        self.reporter = None;'''
+replacement = '''    async fn disconnect(&mut self) {
+        self.read_cursor = 0;
+        self.reporter = None;'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(cancellation_during_the_first_all_read_keeps_cursor_progress_across_disconnect)"]
+expect_text = "disconnect erased All-read cursor progress"
+
+[[control]]
+name = "per_fixture_deadline_extends_aggregate_ceiling"
+file = "src/service/proxy.rs"
+anchor = '''let until = deadline.min(Instant::now() + Duration::from_secs(2));'''
+replacement = '''let until = Instant::now() + Duration::from_secs(2);'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(all_read_clips_each_fixture_to_the_original_aggregate_ceiling)"]
+expect_text = "next fixture received a fresh window beyond the aggregate deadline"
+
+[[control]]
+name = "retired_samples_are_accepted_at_mqtt_completion"
+file = "src/service/proxy/state.rs"
+anchor = '''if !lifecycle(snapshot, observation.bus)
+        || observation.quality == output::Quality::Stale
+        || snapshot.outputs.get(target) != Some(observation)'''
+replacement = '''if false'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_held_mqtt_read_cannot_overwrite_an_already_published_bus_outage)"]
+expect_text = "held read accepted retired physical evidence after MQTT marked the output unavailable"
+
+[[control]]
+name = "earlier_aggregate_samples_skip_final_validation"
+file = "src/service/proxy.rs"
+anchor = '''state::accept_projected(&latest, &target, &value, projected.remove(&target))'''
+replacement = '''projected.remove(&target).ok_or_else(|| OpError::Rejected("missing target".into()))'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(all_read_revalidates_earlier_samples_after_its_final_fixture_await)"]
+expect_text = "All read accepted a retired early sample after later fixture I/O"
+
+[[control]]
+name = "canceled_first_fixture_does_not_advance_cursor"
+file = "src/service/proxy.rs"
+anchor = '''            self.read_cursor = (index + 1) % targets.len();'''
+replacement = '''            if offset > 0 { self.read_cursor = (index + 1) % targets.len(); }'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(cancellation_during_the_first_all_read_keeps_cursor_progress_across_disconnect)"]
+expect_text = "canceled first fixture stranded the All-read cursor"
+
+[[control]]
+name = "physical_read_loses_its_original_trace"
+file = "src/service/proxy.rs"
+anchor = '''.read_output(target, cause, deadline)'''
+replacement = '''.read_output(target, cause.with_traceparent(None), deadline)'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mqtt_output_keeps_original_read_write_trace_and_clears_unsolicited_cause)"]
+expect_text = "physical refresh lost original trace across the service queue without OTel"
+
+[[control]]
+name = "physical_write_loses_its_original_trace"
+file = "src/service/proxy.rs"
+anchor = '''.apply_output(target, intent, context.clone(), deadline)'''
+replacement = '''.apply_output(target, intent, context.clone().with_traceparent(None), deadline)'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mqtt_output_keeps_original_read_write_trace_and_clears_unsolicited_cause)"]
+expect_text = "physical write readback lost original trace across the service queue without OTel"
+
+[[control]]
+name = "helper_local_cache_hides_a_physical_return"
+file = "src/service/proxy/state.rs"
+anchor = '''    pub(super) async fn run(mut self) {
+        loop {
+            let snapshot = self.snapshots.borrow_and_update().clone();
+            if let Some(snapshot) = snapshot {
+                for state in projections(&snapshot) {'''
+replacement = '''    pub(super) async fn run(mut self) {
+        let mut previous = std::collections::BTreeMap::new();
+        loop {
+            let snapshot = self.snapshots.borrow_and_update().clone();
+            if let Some(snapshot) = snapshot {
+                for state in projections(&snapshot) {
+                    if previous.get(&state.state.target) == Some(&state.state.values) {
+                        continue;
+                    }
+                    previous.insert(state.state.target.clone(), state.state.values.clone());'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(snapshot_helper_cannot_skip_a_return_to_its_previous_value_after_driver_readback)"]
+expect_text = "helper's private projection cache hid a newer physical return to its previous value"
+
+[[control]]
+name = "unsolicited_stale_state_inherits_a_request_cause"
+file = "src/service/proxy/state.rs"
+anchor = '''match observation.filter(|_| quality != "stale")'''
+replacement = '''match observation'''
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mqtt_output_keeps_original_read_write_trace_and_clears_unsolicited_cause)"]
+expect_text = "unsolicited bus invalidation inherited an earlier request cause"

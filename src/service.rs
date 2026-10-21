@@ -117,6 +117,10 @@ pub struct DaliService {
     activation_hook: Option<ActivationHook>,
     #[cfg(test)]
     output_acceptance_hook: Option<OutputAcceptanceHook>,
+    #[cfg(test)]
+    proxy_read_pause: Option<Arc<tests::Pause>>,
+    #[cfg(test)]
+    proxy_snapshot_pause: Option<Arc<tests::Pause>>,
 }
 #[cfg(test)]
 type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations) + Send + Sync>;
@@ -188,6 +192,10 @@ impl DaliService {
                 activation_hook: None,
                 #[cfg(test)]
                 output_acceptance_hook: None,
+                #[cfg(test)]
+                proxy_read_pause: None,
+                #[cfg(test)]
+                proxy_snapshot_pause: None,
             },
             handle,
         )

@@ -2,8 +2,9 @@
 
 `dali::gear` provides validated Part 102 addresses, control levels, basic write
 frames and query replies. It is a pure library: constructing a frame does not
-send it, verify a fixture or change configuration. MQTT fixture control remains
-the next integration slice. The emulator retains its independent codec/model.
+send it, verify a fixture or change configuration. The
+[output service](output-service.md) and [MQTT adapter](mqtt-outputs.md) execute
+base intents and readbacks. The emulator retains its independent codec/model.
 
 ## Addresses and writes
 
@@ -51,7 +52,7 @@ producing one frame:
 
 Off does not use the configured fade time; direct arc-power changes do. This
 codec keeps no last-brightness cache. Logical HA equipment owns its separate
-RestoreOnPower/PowerOnBrightness policy. The future JSON adapter must reject
+RestoreOnPower/PowerOnBrightness policy. The MQTT JSON adapter rejects
 unknown properties and incorrect types before calling this typed API.
 
 ## Queries and observations
@@ -72,10 +73,10 @@ Status retains the raw byte and eight named flags, including gear/lamp failures,
 lamp power, limit error, fade running, reset, missing address and power failure.
 The fade flag is true while running. Status 255 is a bitmap, not a level MASK.
 
-Future execution must resolve original generations, serialize actual owned jobs,
-validate response counts, reject stale observations after session loss and publish
+The service resolves original generations, serializes actual owned jobs, validates
+response counts, rejects stale observations after session loss and publishes
 readback. An ATX N after a write is transport completion, not fixture confirmation.
-This module does not implement those service responsibilities or DTR/color/input
+This pure module does not implement those service responsibilities or DTR/color/input
 commands. See [capability status](support-matrix.md) and [progress](v2-progress.md).
 
 The protocol cross-check is

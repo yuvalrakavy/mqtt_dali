@@ -212,6 +212,11 @@ impl ProcessService for DaliService {
             handle: self.handle.clone(),
             initial: table.clone(),
             reporter: None,
+            read_cursor: 0,
+            #[cfg(test)]
+            read_pause: self.proxy_read_pause.clone(),
+            #[cfg(test)]
+            snapshot_pause: self.proxy_snapshot_pause.clone(),
         }) {
             // WAIT: v2-store-close
             store.close(Instant::now() + Duration::from_secs(1)).await;

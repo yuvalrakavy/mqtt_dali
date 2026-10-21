@@ -19,7 +19,7 @@
   },
   "committed_inventory_discards_command_trace": {
    "last_real": {
-    "at": "2026-10-21T21:36:58Z",
+    "at": "2026-10-21T23:12:53Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -29,25 +29,25 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.1,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 8.0,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
     "verdict": "RED"
    }
   },
   "metadata_actor_discards_command_trace": {
    "last_real": {
-    "at": "2026-10-21T21:36:52Z",
+    "at": "2026-10-21T23:12:45Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:681eddc8351e6243",
+     "guard": "item:d8301eef81e8e1c4",
      "row": "8495ba63327491b1",
      "test": null
     },
     "path": "command",
-    "secs": 6.2,
-    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
+    "secs": 7.3,
+    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
     "verdict": "RED"
    }
   },

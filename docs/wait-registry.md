@@ -30,6 +30,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 |---|---|---|---|
 | `v2-service-request` | bounded | capacity-one service operation reply | Nonwaiting permit and bounded channel admission; the caller supplies an absolute deadline. On expiry report an uncertain result and drop the reply receiver. Keep routing frozen if saving began; physical jobs retain service admission until their backend request settles or actual transport teardown completes under its fixed cleanup ceiling. |
 | `v2-service-attach` | bounded | inventory actor installing its first runtime Reporter | At most 2 s, independently of MQTT and UART. On expiry fail proxy connect; reconnect attachment is idempotent and cannot reopen uncertain routing. |
+| `v2-mqtt-observations` | acyclic | the managed service's snapshot watch | The service never waits for this subscriber or Reporter publication. The helper owns data only and runs on the device worker; clone the latest snapshot before synchronous projection, then await its next change. Link teardown cancels the owned helper; terminal service state or sender loss ends it and marks the link lost. |
 | `v2-service-start` | bounded | durable ConfigStore startup or managed cancellation | ConfigStore has a 5 s startup deadline and the select also wakes on parent cancellation. On expiry startup fails; the managed runtime includes any unfinished blocking owner in actual teardown. |
 | `v2-service-save` | bounded | serialized ConfigStore edit/recovery, caller cancellation or managed stop | The original request deadline bounds ConfigStore; caller/parent cancellation drops its request future. On expiry or lost outcome freeze service routing until explicit recognized recovery and successful runtime activation. |
 | `v2-service-loop` | acyclic | bounded service requests or managed cancellation | The actor owns routing and performs no waits on its callers. Idle can wait indefinitely; managed cancellation independently wakes it, closes admission and begins locally bounded cleanup under the parent's forced-cancellation ceiling. |
@@ -105,7 +106,7 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output
 ```
 
 ## Waiters (generated)
@@ -194,6 +195,7 @@ v2-hat-health src/service/hat.rs query_health
 v2-hat-loop src/service/hat.rs Hat::changed
 v2-hat-loop src/service/hat.rs dormant
 v2-hat-setup src/service/hat.rs Hat::advance
+v2-mqtt-observations src/service/proxy/state.rs Watcher::run
 v2-service-attach src/service.rs ServiceHandle::attach
 v2-service-loop src/service/owner.rs <DaliService as ProcessService>::run
 v2-service-request src/service.rs ServiceHandle::submit

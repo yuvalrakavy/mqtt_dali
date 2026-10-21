@@ -931,4 +931,4 @@ async fn dormant<T>() -> T {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

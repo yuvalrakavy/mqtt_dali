@@ -136,6 +136,16 @@ For v2 see `src/daemon.rs`, `src/service.rs`, `src/service/owner.rs`,
 the process, signals, logging, MQTT session and watchdog. The service owns
 configuration and optional UART health independently of broker availability.
 
+Base individual output properties use `docs/mqtt-outputs.md`: strict PowerState /
+normalized Brightness Desired values, actual readback and Available/Quality State.
+The driver and LinkContext-owned snapshot helper publish physical values only on
+the SDK worker. Revalidate the latest service snapshot after the final await and
+report actual post-write values before success, even unchanged clamped values.
+Only the SDK owns publication coalescing; a helper-local skip cache can hide a
+physical return after a newer driver report. Aggregate reads retain cursor progress
+before each await, skip disabled buses and reject absent UART before admission.
+The regression controls are `docs/v2-mqtt-output-controls.toml`.
+
 ## Architecture (legacy)
 
 ### Module Dependency Flow
