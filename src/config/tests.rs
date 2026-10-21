@@ -472,3 +472,38 @@ fn a_fifo_swapped_after_metadata_check_does_not_block_or_get_read() {
         .recv_timeout(Duration::from_secs(2))
         .expect("FIFO replacement must not block"));
 }
+#[test]
+fn target_and_complete_snapshot_preflight_run_before_creating_the_v2_import() {
+    for aggregate in [false, true] {
+        let fixture = Fixture::new();
+        let mut value = legacy();
+        if aggregate {
+            value["buses"][0]["channels"] = (0..64).map(|address| json!({
+                "short_address": address, "description": format!("Light{address}{}", "x".repeat(1000))
+            })).collect();
+            value["buses"][0]["groups"] = (0..16).map(|address| json!({
+                "group_address": address, "description": format!("Group{address}"), "members": (0..64).collect::<Vec<_>>()
+            })).collect();
+        } else {
+            value["buses"][0]["channels"][0]["description"] = "💡".repeat(1000).into();
+        }
+        let original = fixture.legacy(&value);
+        let error = match fixture.load() {
+            Err(error) => error.to_string(),
+            Ok(_) => panic!("unpublishable v1 inventory created a v2 file"),
+        };
+        assert!(
+            error.contains(if aggregate {
+                "complete inventory State"
+            } else {
+                "outputs[0].name"
+            }),
+            "wrong preflight failure: {error}"
+        );
+        assert!(
+            !fixture.paths.current.exists(),
+            "preflight failure published a v2 file"
+        );
+        assert_eq!(fs::read(&fixture.paths.legacy).unwrap(), original);
+    }
+}

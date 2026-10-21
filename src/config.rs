@@ -20,6 +20,18 @@ pub struct Inventory {
     pub schema_version: u32,
     pub revision: u64,
     pub inventory_epoch: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub revision_high_water: Option<u64>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub identity_ledger: Option<crate::inventory::Ledger>,
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -183,6 +195,8 @@ impl Inventory {
             schema_version: SCHEMA_VERSION,
             revision: 1,
             inventory_epoch: format!("{:032x}", rand::random::<u128>()),
+            revision_high_water: None,
+            identity_ledger: None,
             name,
             description: None,
             buses: Vec::new(),
@@ -308,7 +322,17 @@ fn validate_controller_name(name: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
+fn deserialize_present<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Option<T>, D::Error> {
+    T::deserialize(deserializer).map(Some)
+}
+
 fn validate(inventory: &Inventory) -> Result<(), String> {
+    crate::inventory::Model::new(inventory.clone()).map(|_| ())
+}
+
+pub(crate) fn validate_structure(inventory: &Inventory) -> Result<(), String> {
     if inventory.schema_version != SCHEMA_VERSION {
         return Err(format!(
             "unsupported schema_version {}; expected {SCHEMA_VERSION}",
@@ -317,6 +341,12 @@ fn validate(inventory: &Inventory) -> Result<(), String> {
     }
     if inventory.revision == 0 {
         return Err("revision must be positive".into());
+    }
+    if inventory
+        .revision_high_water
+        .is_some_and(|high| high < inventory.revision)
+    {
+        return Err("revision_high_water is below current revision".into());
     }
     if inventory.inventory_epoch.len() != 32
         || !inventory

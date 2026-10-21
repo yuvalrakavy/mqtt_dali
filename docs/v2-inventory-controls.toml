@@ -1,0 +1,53 @@
+[[control]]
+name = "identical_text_hides_a_replacement_lifetime"
+file = "src/inventory/edit.rs"
+anchor = "inventory == model.inventory && origins == original_origins"
+replacement = "inventory == model.inventory"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(replacement_at_the_same_address_and_name_rotates_dependent_groups_and_is_a_new_lifetime)"]
+expect_text = "unchanged numeric membership hid a replacement fixture"
+
+[[control]]
+name = "historical_source_is_not_compared_to_the_predecessor"
+file = "src/inventory/ledger.rs"
+anchor = "records.get(&from.target).map(|r| &r.projection) != Some(from)"
+replacement = "false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(a_present_incomplete_ledger_and_impossible_group_dependency_never_fall_back_to_baseline)"]
+expect_text = "inconsistent historical source was accepted"
+
+[[control]]
+name = "complete_snapshot_has_no_size_bound"
+file = "src/inventory.rs"
+anchor = "if bytes.len() > MAX_STATE_BYTES {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(the_snapshot_limit_is_inclusive_and_target_errors_include_path_and_encoded_size)"]
+expect_text = "oversized inventory state accepted"
+
+[[control]]
+name = "a_reserved_revision_is_reused"
+file = "src/inventory/edit.rs"
+anchor = ".revision_high_water\n        .unwrap_or(model.inventory.revision)"
+replacement = ".revision"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(atomic_name_swaps_and_description_gaps_validate_without_losing_edges_or_reusing_reserved_revisions)"]
+expect_text = "a reserved revision was reused"
+
+[[control]]
+name = "migration_skips_inventory_publication_preflight"
+file = "src/config.rs"
+anchor = "crate::inventory::Model::new(inventory.clone()).map(|_| ())"
+replacement = "validate_structure(inventory)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(target_and_complete_snapshot_preflight_run_before_creating_the_v2_import)"]
+expect_text = "unpublishable v1 inventory created a v2 file"
+
+[[control]]
+name = "consumer_accepts_observations_from_a_retired_generation"
+file = "tests/support/inventory_consumer.rs"
+anchor = "generation == format!(\"{}.{}\", self.epoch, device.record.binding_revision)"
+replacement = "true"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(an_offline_consumer_preserves_binding_ids_through_renames_but_never_moves_intent_to_a_replacement)"]
+expect_text = "assertion failed: !consumer.accepts_state"

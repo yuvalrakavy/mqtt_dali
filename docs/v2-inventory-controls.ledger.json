@@ -1,0 +1,107 @@
+{
+ "rows": {
+  "a_reserved_revision_is_reused": {
+   "last_real": {
+    "at": "2026-10-21T17:39:50Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:908d4843b9d9bf2e",
+     "row": "6ee166bf06b44912",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.3,
+    "sha": "b855ad01db30aeeeb9f3ac0468fabbb1a140a2b5",
+    "verdict": "RED"
+   }
+  },
+  "complete_snapshot_has_no_size_bound": {
+   "last_real": {
+    "at": "2026-10-21T17:39:48Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7e5028c74200b298",
+     "row": "0575d234125c0a95",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.5,
+    "sha": "b855ad01db30aeeeb9f3ac0468fabbb1a140a2b5",
+    "verdict": "RED"
+   }
+  },
+  "consumer_accepts_observations_from_a_retired_generation": {
+   "last_real": {
+    "at": "2026-10-21T17:39:55Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3dd0203e39fac9a3",
+     "row": "08ed147c458aa849",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.7,
+    "sha": "b855ad01db30aeeeb9f3ac0468fabbb1a140a2b5",
+    "verdict": "RED"
+   }
+  },
+  "historical_source_is_not_compared_to_the_predecessor": {
+   "last_real": {
+    "at": "2026-10-21T17:39:46Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:d8b72fe004541dd0",
+     "row": "80230648c5cfbc87",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.7,
+    "sha": "b855ad01db30aeeeb9f3ac0468fabbb1a140a2b5",
+    "verdict": "RED"
+   }
+  },
+  "identical_text_hides_a_replacement_lifetime": {
+   "last_real": {
+    "at": "2026-10-21T17:39:43Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:908d4843b9d9bf2e",
+     "row": "ed6189b8496b8a60",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.2,
+    "sha": "b855ad01db30aeeeb9f3ac0468fabbb1a140a2b5",
+    "verdict": "RED"
+   }
+  },
+  "migration_skips_inventory_publication_preflight": {
+   "last_real": {
+    "at": "2026-10-21T17:39:53Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:aa0a115b21238164",
+     "row": "c1591d083b9d3060",
+     "test": null
+    },
+    "path": "command",
+    "secs": 2.2,
+    "sha": "b855ad01db30aeeeb9f3ac0468fabbb1a140a2b5",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

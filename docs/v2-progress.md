@@ -214,13 +214,41 @@ required before daemon integration is final. Inventory reconciliation and stale
 request fencing are the next P3 contract boundary. The shared spec and its
 verification record are mirrored in `superpowers/specs/2026-10-21-dali-v2-p3b-services.md`.
 
+## P3c1a — pure inventory/reconciliation layer implemented
+
+`inventory::Model` validates complete schema-1 wire snapshots, initializes the
+legacy schema-2 baseline, replays immutable named history and proposes atomic
+edits. It distinguishes continuity from replacement, preserves semantic group
+membership through address moves, and rotates dependent group fences on address
+reuse. Revisions allocate above the private high-water value. Present null or
+incomplete ledgers fail validation. Imports preflight canonical targets and the
+whole snapshot before creating v2, with exact document/encoded-target bounds.
+
+A separate consumer algorithm and literal wire fixture verify offline rename
+chains, rename-back, swaps, removal/reuse, preserved device record ids, intent
+continuity, old-generation observation rejection and atomic rejection of invalid
+or partial documents. These are independent-consumer contract tests, not actual
+Store migration/binding tests. The latter remain P8.
+
+Verified: **164 full native tests passed**, six declared negative controls caught
+their removed guards, and the armv7 library/v2/emulator compile check passed.
+Scoped strict Clippy is part of the checkpoint gate. New behaviors were observed
+failing first, including identical-text replacement and rename-back intent
+continuity. Two sequential design reviews cleared this slice after uncertain
+save, transition-chain and runtime-bypass refinements. Fresh source review is
+pending. Guidance and current limitations are in `inventory-contract.md`.
+
+This remains a pure proposal/snapshot API: durable single-writer reservation and
+uncertain-save recovery are next. Generation-context enforcement and runtime
+state retirement ordering require the P3c2 gate before mutable daemon integration.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
-| P3 BridgeKit/service | Target codec and shared managed lifecycle implemented; integration pending | Inventory/retired-request contract and canonical v2 daemon |
+| P3 BridgeKit/service | Codec, managed lifecycle and pure inventory contract implemented | Durable inventory writer, fenced runtime context and canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
