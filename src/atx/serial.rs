@@ -1,5 +1,6 @@
 //! Nonblocking Unix UART/PTY adapter; configuration runs off runtime workers.
 
+use super::stream::{Drain, DrainRead};
 use std::fs::OpenOptions;
 use std::io;
 use std::os::fd::{AsRawFd, OwnedFd};
@@ -136,6 +137,36 @@ impl AsyncRead for Serial {
                 Ok(Err(error)) => return Poll::Ready(Err(error)),
                 Err(_) => continue,
             }
+        }
+    }
+}
+
+impl DrainRead for Serial {
+    fn poll_drain(
+        self: Pin<&mut Self>,
+        context: &mut Context<'_>,
+        buffer: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<Drain>> {
+        let output = buffer.initialize_unfilled();
+        let count = unsafe {
+            libc::read(
+                self.descriptor.get_ref().as_raw_fd(),
+                output.as_mut_ptr().cast(),
+                output.len(),
+            )
+        };
+        if count >= 0 {
+            buffer.advance(count as usize);
+            return Poll::Ready(Ok(Drain::Data));
+        }
+        let error = io::Error::last_os_error();
+        match error.kind() {
+            io::ErrorKind::WouldBlock => Poll::Ready(Ok(Drain::Empty)),
+            io::ErrorKind::Interrupted => {
+                context.waker().wake_by_ref();
+                Poll::Pending
+            }
+            _ => Poll::Ready(Err(error)),
         }
     }
 }

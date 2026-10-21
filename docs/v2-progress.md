@@ -80,19 +80,51 @@ Review learning: resource ownership must be tested after close while public
 handles remain alive. Tests also distinguish canceling a queued write from
 canceling a potentially partial write, since only the latter poisons admission.
 
-The `write` receipt means only bytes accepted by the kernel. **No correlated
-transaction dispatcher exists yet**, and P1 is not complete. Its next slice needs
-the receive-order fence, cancellation/timeout tombstones, explicit firmware
-completion policy for j/t, and interference handling specified in the P1 contract.
-The design review established that an interference tombstone cannot be cleared by
-an arbitrary terminal frame. L input events must also be distinguished from
-24-bit commands before they can trigger interference handling.
+The raw `write` receipt means only bytes accepted by the kernel. P1b supplies the
+exclusive transaction owner above it.
+
+## P1b — transaction dispatcher implemented
+
+`Transactions` privately owns the monitor and a continuously running dispatcher.
+Capacity-one admission covers queued and active work. The same reader fences old
+buffered/partial lines; framing and the first accepted-write sequence boundary
+share the split-stream lock. Explicit drain emptiness is distinct from retry
+Pending. Async input events, other-bus replies and echoes cannot complete a query.
+L bit 16 distinguishes commands from input events.
+
+Fully written canceled/timed-out exchanges retain their remaining terminal count.
+Corruption, lag, interference or a potentially partial write requires a later boot;
+an arbitrary reply or version message cannot reopen admission. Initialization is
+explicit. Unverified j/t completion is refused; verified/emulated repeat profiles
+can declare one or two terminals. Close resolves an active caller and releases
+the stream. No transaction result reports physical state confirmation.
+
+Verified on 2026-10-21:
+
+- Full native nextest suite: **118 passed**, including 46 ATX cases and all
+  migration/legacy regressions. Production Serial plus Transactions exchanges
+  actual bytes through a local PTY with interleaved input and other-bus traffic.
+- Strict scoped Clippy passed; Pi library/v2 compile check passed; diff whitespace
+  and Rust formatting checked. The wait registry passes after its required tags,
+  local-method declaration and explicit expiry outcomes were completed.
+- Six new negative controls all failed for their expected assertions: retry/empty
+  confusion, incomplete-line boundary, caller and actor expiry, lost late slot,
+  and unverified repeats. See `v2-transaction-controls.toml` and recorded ledger.
+- Sequential design review restored a dedicated actor to keep idle events drained.
+  Fresh code review found drain/first-write and ready-result deadline races; fixes
+  and focused regressions were reviewed again and approved. Cross-family review
+  remains unavailable. Physical HAT firmware behavior remains unverified.
+
+Review learning: generic AsyncRead Pending may mean retry/cooperative yield rather
+than an empty buffer. Correlation requires a stronger explicit drain contract.
+Deadline tests must separately exercise actor completion and a caller resuming
+after a ready result, since either check can hide a missing guard in the other.
 
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
-| P1 UART | Substrate verified; dispatcher pending | Receive-order fence, transaction state machine, firmware completion policy and late-reply tests |
+| P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Pending | Independent hardware model through actual serial framing |
 | P3 BridgeKit/service | Pending | Runtime lifecycle and inventory/retired-request contract; canonical v2 daemon |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |

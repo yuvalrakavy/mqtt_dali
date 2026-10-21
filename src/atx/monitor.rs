@@ -1,16 +1,22 @@
 //! Continuous HAT monitoring. Writes report bytes accepted, never DALI ACKs.
+use super::stream::{Drain, DrainRead};
 use super::wire::{Command, DecodeError, Framer, Packet};
+use std::future::poll_fn;
+use std::pin::Pin;
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
     Arc,
 };
+use std::task::Poll;
 use std::time::Duration;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, WriteHalf};
-use tokio::sync::{broadcast, watch, Mutex};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf, WriteHalf};
+use tokio::sync::{broadcast, mpsc, oneshot, watch, Mutex};
 use tokio::task::AbortHandle;
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum TransportError {
+    #[error("ATX receive fence is busy")]
+    Busy,
     #[error("ATX link is closed")]
     Closed,
     #[error("a potentially partial ATX write requires reinitialization")]
@@ -53,11 +59,21 @@ pub enum LinkStatus {
     Closed,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ReceiveFence {
+    pub minimum_sequence: u64,
+}
+
 struct State {
     alive: AtomicBool,
     poisoned: AtomicBool,
     events: broadcast::Sender<Event>,
     stop: watch::Sender<bool>,
+    sequence: AtomicU64,
+    minimum: AtomicU64,
+    draining: AtomicBool,
+    deadline: watch::Sender<Option<std::time::Instant>>,
+    marker: watch::Sender<Option<Arc<AtomicU64>>>,
 }
 
 struct Inner<W> {
@@ -65,6 +81,7 @@ struct Inner<W> {
     state: Arc<State>,
     reader: AbortHandle,
     stopped: watch::Receiver<bool>,
+    fences: mpsc::Sender<oneshot::Sender<Result<ReceiveFence, TransportError>>>,
 }
 
 impl<W> Drop for Inner<W> {
@@ -75,7 +92,7 @@ impl<W> Drop for Inner<W> {
 }
 
 pub struct Monitor<S> {
-    inner: Arc<Inner<WriteHalf<S>>>,
+    inner: Arc<Inner<WriteHalf<ReadMode<S>>>>,
 }
 
 impl<S> Clone for Monitor<S> {
@@ -107,35 +124,79 @@ impl Drop for ReadLife {
 struct WriteLife {
     state: Arc<State>,
     completed: bool,
+    started: Arc<AtomicU64>,
 }
 
 impl Drop for WriteLife {
     fn drop(&mut self) {
-        if !self.completed {
+        self.state.marker.send_replace(None);
+        if !self.completed && self.started.load(Ordering::Acquire) != u64::MAX {
             self.state.poisoned.store(true, Ordering::Release);
             let _ = self.state.events.send(Event::WriteIndeterminate);
         }
     }
 }
 
-impl<S: AsyncRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
+impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
+    pub(crate) async fn fence(&self, within: Duration) -> Result<ReceiveFence, TransportError> {
+        if self.status() == LinkStatus::Closed {
+            return Err(TransportError::Closed);
+        }
+        let (send, receive) = oneshot::channel();
+        self.inner
+            .fences
+            .try_send(send)
+            .map_err(|error| match error {
+                mpsc::error::TrySendError::Full(_) => TransportError::Busy,
+                mpsc::error::TrySendError::Closed(_) => TransportError::Closed,
+            })?;
+        // WAIT: atx-receive-fence
+        tokio::time::timeout(within, receive)
+            .await
+            .map_err(|_| TransportError::Deadline)?
+            .map_err(|_| TransportError::Closed)?
+    }
+
+    pub(crate) fn receive_sequence(&self) -> u64 {
+        self.inner.state.sequence.load(Ordering::Acquire)
+    }
+
+    pub(crate) fn rearm_after_boot(&self) {
+        // Only the transaction owner may call this after its trusted boot fence.
+        self.inner.state.poisoned.store(false, Ordering::Release);
+    }
     pub fn start(stream: S) -> (Self, broadcast::Receiver<Event>) {
         let (events, receive) = broadcast::channel(128);
         let (stopped, stopped_rx) = watch::channel(false);
         let (stop, _) = watch::channel(false);
+        let (deadline, _) = watch::channel(None);
+        let (marker, _) = watch::channel(None);
+        let (fences, fence_requests) = mpsc::channel(1);
         let state = Arc::new(State {
             alive: AtomicBool::new(true),
             poisoned: AtomicBool::new(false),
             events,
             stop,
+            sequence: AtomicU64::new(0),
+            minimum: AtomicU64::new(1),
+            draining: AtomicBool::new(false),
+            deadline,
+            marker,
         });
-        let (reader, writer) = tokio::io::split(stream);
+        // Framing runs inside the same split-stream lock as the first write
+        // poll: an observed partial line cannot race the write watermark.
+        let (reader, writer) = tokio::io::split(ReadMode {
+            stream,
+            state: Arc::clone(&state),
+            framer: Framer::default(),
+            sequence: 0,
+        });
         let life = ReadLife {
             state: Arc::clone(&state),
             stopped,
             reason: CloseReason::WorkerStopped,
         };
-        let task = tokio::spawn(read_loop(reader, life));
+        let task = tokio::spawn(read_loop(reader, life, fence_requests));
         let reader = task.abort_handle();
         drop(task); // Lifetime is held by Inner; its final drop aborts the reader.
         (
@@ -145,6 +206,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
                     state,
                     reader,
                     stopped: stopped_rx,
+                    fences,
                 }),
             },
             receive,
@@ -158,6 +220,16 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
         &self,
         command: &Command,
         within: Duration,
+    ) -> Result<WriteReceipt, TransportError> {
+        self.write_correlated(command, within, Arc::new(AtomicU64::new(u64::MAX)))
+            .await
+    }
+
+    pub(crate) async fn write_correlated(
+        &self,
+        command: &Command,
+        within: Duration,
+        started: Arc<AtomicU64>,
     ) -> Result<WriteReceipt, TransportError> {
         let bytes = command.encode()?;
         let deadline = tokio::time::Instant::now()
@@ -179,8 +251,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
         let mut life = WriteLife {
             state: Arc::clone(&self.inner.state),
             completed: false,
+            started: Arc::clone(&started),
         };
         let writer = writer.as_mut().ok_or(TransportError::Closed)?;
+        self.inner.state.marker.send_replace(Some(started));
         let mut stop = self.inner.state.stop.subscribe();
         // WAIT: atx-write
         let written = tokio::select! {
@@ -258,24 +332,178 @@ async fn line_deadline(deadline: Option<std::time::Instant>) {
     }
 }
 
-async fn read_loop<R: AsyncRead + Unpin>(mut reader: R, mut life: ReadLife) {
+struct ReadMode<S> {
+    stream: S,
+    state: Arc<State>,
+    framer: Framer,
+    sequence: u64,
+}
+
+impl<S> ReadMode<S> {
+    fn process(&mut self, bytes: &[u8]) {
+        let packets = self
+            .framer
+            .feed(bytes, tokio::time::Instant::now().into_std());
+        self.state.minimum.store(
+            self.sequence
+                + packets.len() as u64
+                + if self.framer.has_incomplete_line() {
+                    2
+                } else {
+                    1
+                },
+            Ordering::Release,
+        );
+        self.state.deadline.send_replace(self.framer.deadline());
+        publish(&self.state, &mut self.sequence, packets);
+    }
+}
+
+impl<S: DrainRead + Unpin> AsyncRead for ReadMode<S> {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        context: &mut std::task::Context<'_>,
+        buffer: &mut ReadBuf<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        self.process(&[]);
+        let before = buffer.filled().len();
+        let result = if self.state.draining.load(Ordering::Acquire) {
+            match Pin::new(&mut self.stream).poll_drain(context, buffer) {
+                Poll::Ready(Ok(Drain::Data)) => Poll::Ready(Ok(())),
+                Poll::Ready(Ok(Drain::Empty)) => {
+                    Poll::Ready(Err(std::io::ErrorKind::WouldBlock.into()))
+                }
+                Poll::Ready(Err(error)) => Poll::Ready(Err(error)),
+                Poll::Pending => Poll::Pending,
+            }
+        } else {
+            Pin::new(&mut self.stream).poll_read(context, buffer)
+        };
+        if matches!(result, Poll::Ready(Ok(()))) {
+            self.process(&buffer.filled()[before..]);
+        }
+        result
+    }
+}
+
+impl<S: AsyncWrite + Unpin> AsyncWrite for ReadMode<S> {
+    fn poll_write(
+        mut self: Pin<&mut Self>,
+        context: &mut std::task::Context<'_>,
+        bytes: &[u8],
+    ) -> Poll<std::io::Result<usize>> {
+        let minimum = self.state.minimum.load(Ordering::Acquire);
+        let result = Pin::new(&mut self.stream).poll_write(context, bytes);
+        if matches!(result, Poll::Ready(Ok(count)) if count > 0)
+            || matches!(result, Poll::Ready(Err(_)))
+        {
+            if let Some(marker) = self.state.marker.borrow().clone() {
+                let _ =
+                    marker.compare_exchange(u64::MAX, minimum, Ordering::AcqRel, Ordering::Acquire);
+            }
+        }
+        result
+    }
+    fn poll_flush(
+        mut self: Pin<&mut Self>,
+        context: &mut std::task::Context<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        Pin::new(&mut self.stream).poll_flush(context)
+    }
+    fn poll_shutdown(
+        mut self: Pin<&mut Self>,
+        context: &mut std::task::Context<'_>,
+    ) -> Poll<std::io::Result<()>> {
+        Pin::new(&mut self.stream).poll_shutdown(context)
+    }
+}
+
+fn publish(state: &State, sequence: &mut u64, packets: Vec<Result<Packet, DecodeError>>) {
+    for packet in packets {
+        *sequence += 1;
+        state.sequence.store(*sequence, Ordering::Release);
+        let _ = state.events.send(Event::Packet {
+            sequence: *sequence,
+            packet,
+        });
+    }
+}
+
+/// Retry/yield remains Pending. Only explicit would-block completes the drain.
+async fn read_available<R: AsyncRead + Unpin>(
+    reader: &mut R,
+    bytes: &mut [u8],
+) -> std::io::Result<Option<usize>> {
+    // WAIT: atx-receive-fence
+    poll_fn(|context| {
+        let mut buffer = tokio::io::ReadBuf::new(bytes);
+        match Pin::new(&mut *reader).poll_read(context, &mut buffer) {
+            Poll::Ready(Ok(())) => Poll::Ready(Ok(Some(buffer.filled().len()))),
+            Poll::Ready(Err(error)) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                Poll::Ready(Ok(None))
+            }
+            Poll::Ready(Err(error)) => Poll::Ready(Err(error)),
+            Poll::Pending => Poll::Pending,
+        }
+    })
+    .await
+}
+
+async fn receive_fence<R: AsyncRead + Unpin>(
+    reader: &mut R,
+    life: &mut ReadLife,
+) -> Result<ReceiveFence, TransportError> {
     let mut bytes = [0; 512];
-    let mut framer = Framer::default();
-    let mut sequence = 0;
+    for _ in 0..8 {
+        match read_available(reader, &mut bytes).await {
+            Ok(None) => {
+                return Ok(ReceiveFence {
+                    minimum_sequence: life.state.minimum.load(Ordering::Acquire),
+                });
+            }
+            Ok(Some(0)) => {
+                life.reason = CloseReason::Eof;
+                return Err(TransportError::Closed);
+            }
+            Ok(Some(_)) => {}
+            Err(error) => {
+                life.reason = CloseReason::Io(error.to_string());
+                return Err(TransportError::Closed);
+            }
+        }
+    }
+    Err(TransportError::Busy)
+}
+
+async fn read_loop<R: AsyncRead + Unpin>(
+    mut reader: R,
+    mut life: ReadLife,
+    mut fences: mpsc::Receiver<oneshot::Sender<Result<ReceiveFence, TransportError>>>,
+) {
+    let mut bytes = [0; 512];
     loop {
+        let deadline = *life.state.deadline.borrow();
         // WAIT: atx-reader
-        let packets = tokio::select! {
+        tokio::select! {
+            request = fences.recv() => {
+                let Some(request) = request else { return; };
+                life.state.draining.store(true, Ordering::Release);
+                // WAIT: atx-receive-fence
+                let result = tokio::time::timeout(Duration::from_millis(100), receive_fence(&mut reader, &mut life)).await.unwrap_or(Err(TransportError::Busy));
+                life.state.draining.store(false, Ordering::Release);
+                let closed = matches!(result, Err(TransportError::Closed));
+                let _ = request.send(result);
+                if closed { return; }
+                continue;
+            },
             read = reader.read(&mut bytes) => match read {
                 Ok(0) => { life.reason = CloseReason::Eof; return; },
-                Ok(count) => framer.feed(&bytes[..count], tokio::time::Instant::now().into_std()),
+                Ok(_) => {},
                 Err(error) => { life.reason = CloseReason::Io(error.to_string()); return; },
             },
-            _ = line_deadline(framer.deadline()) => framer.expire(tokio::time::Instant::now().into_std()).into_iter().map(Err).collect(),
+            _ = line_deadline(deadline) => {},
         };
-        for packet in packets {
-            sequence += 1;
-            let _ = life.state.events.send(Event::Packet { sequence, packet });
-        }
+        tokio::task::yield_now().await;
     }
 }
 

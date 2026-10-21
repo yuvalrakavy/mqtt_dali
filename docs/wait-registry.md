@@ -28,9 +28,16 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `atx-receive-fence` | bounded | same-reader receive drain and its oneshot result | Caller deadline bounds the oneshot; on expiry return Deadline. Reader drain separately stops after 4096 bytes or 100 ms with Busy. Explicit nonblocking Empty ends draining; retry Pending remains pending under the 100 ms bound. Close aborts the reader and drops the sender. |
+| `atx-transaction-result` | bounded | capacity-one actor response | One total caller deadline covers fence, write and response. On expiry return Deadline and retain an unconsumed terminal slot; never admit another request until that slot retires or a later boot clears uncertainty. A ready response is rejected if the caller resumes after expiry. |
+| `atx-transaction-close` | bounded | monitor resource release and actor completion | At most 1 s. Stop wakes the active or idle actor; monitor close aborts its reader. On expiry return Deadline without joining an unresponsive task. |
+| `atx-transaction-stop` | acyclic | stop flag | The flag is written by close/final-handle drop, which never waits for this helper alone. All active-operation uses race their deadline; idle use races dispatch events. |
+| `atx-transaction-dispatch` | acyclic | bounded request queue, monitor events or stop | One actor continuously drains events without waiting for consumers. Idle needs no timeout; close sets stop and bounds completion. Requests retain one permit for queued plus active work; admission never waits. |
+| `atx-transaction-write` | bounded | correlated write, monitor events, caller cancellation or stop | Total request deadline bounds the select and is checked before each iteration. On expiry return Deadline. Events stay live during writing; boot/error cancels the write. Potentially accepted partial writes require a later boot before admission can reopen. |
+| `atx-transaction-response` | bounded | monitor terminal, caller cancellation or stop | Same total request deadline, checked before accepting a complete result. On expiry return Deadline and retain the remaining terminal count; ordering loss requires a later boot. No receiver or subscriber is awaited. |
 | `atx-reader` | acyclic | nonblocking UART/PTY reads or a partial-line timer | The one reader never waits for a writer or subscriber: it broadcasts without awaiting. Empty input may wait indefinitely, but nothing joins that read unbounded. Close and final-handle drop abort it; partial lines expire within 1 s and recover at a newline. A read error/EOF closes admission and publishes a terminal event. |
 | `atx-write-lock` | bounded | serialized access to the UART writer | Total caller-supplied deadline includes lock and write. On expiry before acquiring the lock, return Deadline without poisoning an unwritten command. The holder waits only on nonblocking I/O under its own deadline, never on a receiver or this lock. |
-| `atx-write` | bounded | nonblocking UART write, cancellation/EOF/close, and caller deadline | The write is raced with stop and the caller's total deadline. On expiry, I/O failure or caller cancellation after starting, a drop guard poisons further admission and emits WriteIndeterminate. Stop cancels a potentially partial write. The stop helper waits only for the reader/closer, both independent; it is itself raced against the write deadline. |
+| `atx-write` | bounded | nonblocking UART write, cancellation/EOF/close, and caller deadline | The write is raced with stop and the caller's total deadline. On expiry, I/O failure or cancellation after possible byte acceptance, a drop guard poisons admission and emits WriteIndeterminate. A Pending write that accepted no bytes stays usable. Stop cancels a potentially partial write. The stop helper waits only for the independent reader/closer and is raced against the write deadline. |
 | `atx-close` | bounded | confirmation that the aborted async reader dropped its resources | At most 500 ms. On expiry return Deadline; the reader remains aborted. Close sets the stop flag first, canceling an in-progress writer, then aborts the reader. Reader teardown publishes Closed and marks completion, without awaiting any caller. |
 | `atx-serial-open` | bounded | a detached thread opening/configuring a serial path | At most 2 s. On expiry the receiver is dropped, so a late returned owned fd is closed rather than used to create a reader. No join is performed on the worker. Process-wide worker budgeting and startup supervision belong to P3. |
 | `v2-config-check` | bounded | the check command's filesystem worker, through `recv_timeout` | At most 3 s. The worker's handle is detached before waiting; on expiry, `main` returns a failure without joining a filesystem operation. `stalled_configuration_worker_does_not_hold_process_exit` holds an actual FIFO read in the worker and full unread output pipes while the child exits. The library loader is synchronous; daemon integration must supply its own bounded worker. |
@@ -66,7 +73,7 @@ blocking-methods = read_byte, shutdown_timeout
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence
 ```
 
 ## Waiters (generated)
@@ -75,10 +82,20 @@ local-methods = set_light_brightness_async, set_group_brightness_async, run_sess
 atx-close src/atx/monitor.rs Monitor::close
 atx-reader src/atx/monitor.rs line_deadline
 atx-reader src/atx/monitor.rs read_loop
+atx-receive-fence src/atx/monitor.rs Monitor::fence
+atx-receive-fence src/atx/monitor.rs read_available
+atx-receive-fence src/atx/monitor.rs read_loop
 atx-serial-open src/atx/serial.rs Serial::open
-atx-write src/atx/monitor.rs Monitor::write
+atx-transaction-close src/atx/transactions/engine.rs Transactions::close
+atx-transaction-dispatch src/atx/transactions/engine.rs Actor::run
+atx-transaction-response src/atx/transactions/engine.rs Actor::await_response
+atx-transaction-result src/atx/transactions/engine.rs Transactions::submit
+atx-transaction-stop src/atx/transactions/engine.rs stop_requested
+atx-transaction-write src/atx/transactions/engine.rs Actor::request
+atx-transaction-write src/atx/transactions/engine.rs Actor::write
+atx-write src/atx/monitor.rs Monitor::write_correlated
 atx-write src/atx/monitor.rs stopped
-atx-write-lock src/atx/monitor.rs Monitor::write
+atx-write-lock src/atx/monitor.rs Monitor::write_correlated
 dali-config-save src/mqtt.rs ConfigSaver::save_config
 dali-config-writer src/mqtt.rs <Release as Drop>::drop
 dali-config-writer src/mqtt.rs ConfigSaver::save_config

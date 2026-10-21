@@ -1,0 +1,55 @@
+# Isolated negative controls for P1b correlation and admission protections.
+
+[[control]]
+name = "drain_retry_is_mistaken_for_empty"
+file = "src/atx/monitor.rs"
+anchor = "Poll::Ready(Err(error)) => Poll::Ready(Err(error)),\n            Poll::Pending => Poll::Pending,"
+replacement = "Poll::Ready(Err(error)) => Poll::Ready(Err(error)),\n            Poll::Pending => Poll::Ready(Ok(None)),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(retry_pending_is_not_evidence_of_an_empty_receive_buffer)"]
+expect_text = "a retry/yield let an old terminal cross the fence"
+
+[[control]]
+name = "first_write_ignores_an_incomplete_line"
+file = "src/atx/monitor.rs"
+anchor = "let minimum = self.state.minimum.load(Ordering::Acquire);"
+replacement = "let minimum = self.state.sequence.load(Ordering::Acquire) + 1;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(the_first_accepted_write_excludes_a_partial_line_observed_after_the_fence)"]
+expect_text = "observed partial line was omitted from first-write boundary"
+
+[[control]]
+name = "caller_accepts_a_ready_result_after_expiry"
+file = "src/atx/transactions/engine.rs"
+anchor = "if Instant::now() >= deadline {\n            return Err(TransactionError::Deadline);\n        }\n        result"
+replacement = "result"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_caller_resuming_after_expiry_cannot_accept_an_already_ready_success)"]
+expect_text = "ready oneshot bypassed the caller's deadline"
+
+[[control]]
+name = "actor_accepts_completion_after_expiry"
+file = "src/atx/transactions/engine.rs"
+anchor = "if Instant::now() >= request.deadline {\n                return Err(TransactionError::Deadline);\n            }\n            if pending.remaining == 0 {"
+replacement = "if pending.remaining == 0 {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(actor_cannot_complete_an_expired_request_even_with_all_terminals_consumed)"]
+expect_text = "actor accepted completion after its total deadline"
+
+[[control]]
+name = "timeout_discards_the_late_terminal_slot"
+file = "src/atx/transactions/engine.rs"
+anchor = "Mode::Late(pending)\n                };"
+replacement = "Mode::Ready\n                };"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_timed_out_exchange_keeps_its_slot_until_the_late_terminal_is_consumed)"]
+expect_text = "expected WaitingLateReply"
+
+[[control]]
+name = "unverified_repeat_mode_is_allowed"
+file = "src/atx/transactions/engine.rs"
+anchor = "RepeatPolicy::Unverified => Err(TransactionError::UnsupportedMode),"
+replacement = "RepeatPolicy::Unverified => Ok(1),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(busy_admission_and_unverified_modes_never_add_a_write)"]
+expect_text = "UnsupportedMode"

@@ -370,6 +370,15 @@ async fn reader_panic_is_visible_and_closes_write_admission() {
         task::{Context, Poll},
     };
     struct PanicStream;
+    impl crate::atx::stream::DrainRead for PanicStream {
+        fn poll_drain(
+            self: Pin<&mut Self>,
+            _: &mut Context<'_>,
+            _: &mut tokio::io::ReadBuf<'_>,
+        ) -> Poll<io::Result<crate::atx::stream::Drain>> {
+            panic!("injected drain panic");
+        }
+    }
     impl tokio::io::AsyncRead for PanicStream {
         fn poll_read(
             self: Pin<&mut Self>,
@@ -406,4 +415,220 @@ async fn reader_panic_is_visible_and_closes_write_admission() {
             .await,
         Err(TransportError::Closed)
     );
+}
+
+#[tokio::test]
+async fn receive_fence_drains_preloaded_terminals_before_acknowledging_the_boundary() {
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let (monitor, mut events) = Monitor::start(stream);
+    hat.write_all(b"JEE\n").await.unwrap();
+    let fence = monitor.fence(Duration::from_secs(1)).await.unwrap();
+    assert_eq!(
+        fence.minimum_sequence, 2,
+        "preloaded terminal crossed receive fence"
+    );
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet { sequence: 1, .. }
+    ));
+    monitor.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn receive_fence_excludes_an_old_partial_line_but_not_the_next_complete_line() {
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let (monitor, mut events) = Monitor::start(stream);
+    hat.write_all(b"J0").await.unwrap();
+    let fence = monitor.fence(Duration::from_secs(1)).await.unwrap();
+    assert_eq!(fence.minimum_sequence, 2);
+    hat.write_all(b"1\nN\n").await.unwrap();
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet {
+            sequence: 1,
+            packet: Ok(Packet {
+                kind: Kind::Dali(DaliFrame::Bits8(1)),
+                ..
+            })
+        }
+    ));
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet {
+            sequence: 2,
+            packet: Ok(Packet {
+                kind: Kind::NoResponse,
+                ..
+            })
+        }
+    ));
+    monitor.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn receive_fence_does_not_exclude_an_extra_packet_for_a_line_already_discarded() {
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let (monitor, mut events) = Monitor::start(stream);
+    hat.write_all(&[b'X'; 100]).await.unwrap();
+    let fence = monitor.fence(Duration::from_secs(1)).await.unwrap();
+    assert_eq!(fence.minimum_sequence, 2);
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet {
+            sequence: 1,
+            packet: Err(DecodeError::LineTooLong)
+        }
+    ));
+    hat.write_all(b"\nN\n").await.unwrap();
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet {
+            sequence: 2,
+            packet: Ok(Packet {
+                kind: Kind::NoResponse,
+                ..
+            })
+        }
+    ));
+    monitor.close().await.unwrap();
+}
+
+struct RetryDrain {
+    bytes: &'static [u8],
+    retries: usize,
+}
+impl tokio::io::AsyncRead for RetryDrain {
+    fn poll_read(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+        _: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::task::Poll::Pending
+    }
+}
+impl tokio::io::AsyncWrite for RetryDrain {
+    fn poll_write(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+        bytes: &[u8],
+    ) -> std::task::Poll<std::io::Result<usize>> {
+        std::task::Poll::Ready(Ok(bytes.len()))
+    }
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::task::Poll::Ready(Ok(()))
+    }
+    fn poll_shutdown(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        std::task::Poll::Ready(Ok(()))
+    }
+}
+impl crate::atx::stream::DrainRead for RetryDrain {
+    fn poll_drain(
+        mut self: std::pin::Pin<&mut Self>,
+        context: &mut std::task::Context<'_>,
+        buffer: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<crate::atx::stream::Drain>> {
+        if self.retries > 0 {
+            self.retries -= 1;
+            context.waker().wake_by_ref();
+            return std::task::Poll::Pending;
+        }
+        if self.bytes.is_empty() {
+            return std::task::Poll::Ready(Ok(crate::atx::stream::Drain::Empty));
+        }
+        let count = buffer.remaining().min(self.bytes.len());
+        buffer.put_slice(&self.bytes[..count]);
+        self.bytes = &self.bytes[count..];
+        std::task::Poll::Ready(Ok(crate::atx::stream::Drain::Data))
+    }
+}
+
+#[tokio::test]
+async fn retry_pending_is_not_evidence_of_an_empty_receive_buffer() {
+    let (monitor, mut events) = Monitor::start(RetryDrain {
+        bytes: b"JEE\n",
+        retries: 1,
+    });
+    let fence = monitor.fence(Duration::from_secs(1)).await.unwrap();
+    assert_eq!(
+        fence.minimum_sequence, 2,
+        "a retry/yield let an old terminal cross the fence"
+    );
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet { sequence: 1, .. }
+    ));
+    monitor.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn an_endless_drain_retry_has_its_own_bound_and_can_be_closed() {
+    let (monitor, _) = Monitor::start(RetryDrain {
+        bytes: b"JEE\n",
+        retries: usize::MAX,
+    });
+    assert_eq!(
+        monitor.fence(Duration::from_secs(1)).await,
+        Err(TransportError::Busy)
+    );
+    monitor.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn the_first_accepted_write_excludes_a_partial_line_observed_after_the_fence() {
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let (monitor, mut events) = Monitor::start(stream);
+    assert_eq!(
+        monitor
+            .fence(Duration::from_secs(1))
+            .await
+            .unwrap()
+            .minimum_sequence,
+        1
+    );
+    let lock = monitor.inner.writer.lock().await;
+    let marker = Arc::new(AtomicU64::new(u64::MAX));
+    let writer = monitor.clone();
+    let stamp = Arc::clone(&marker);
+    let write = tokio::spawn(async move {
+        writer
+            .write_correlated(&Command::Version, Duration::from_secs(1), stamp)
+            .await
+    });
+    hat.write_all(b"J0").await.unwrap();
+    assert_eq!(
+        monitor
+            .fence(Duration::from_secs(1))
+            .await
+            .unwrap()
+            .minimum_sequence,
+        2
+    );
+    assert_eq!(
+        marker.load(Ordering::Acquire),
+        u64::MAX,
+        "write boundary was stamped while still waiting for preflight"
+    );
+    drop(lock);
+    write.await.unwrap().unwrap();
+    assert_eq!(
+        marker.load(Ordering::Acquire),
+        2,
+        "observed partial line was omitted from first-write boundary"
+    );
+    hat.write_all(b"1\nJ06\n").await.unwrap();
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet { sequence: 1, .. }
+    ));
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet { sequence: 2, .. }
+    ));
+    monitor.close().await.unwrap();
 }

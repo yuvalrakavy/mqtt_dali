@@ -31,9 +31,15 @@ runner restores each mutation. Avoid simultaneous builds or edits while it runs.
 
 The v2 library's `atx` modules provide typed line framing, continuous monitoring
 and a common raw Unix UART/PTY adapter. `Monitor::write` reports bytes accepted
-only; it does not correlate HAT replies or confirm device state. Transaction
-matching remains the next P1 slice. Subscribe before checking `status()` so a
-terminal link is not missed; any broadcast Lagged invalidates inferred state.
+only; it does not correlate HAT replies or confirm device state. `Transactions`
+privately owns the monitor and serializes/correlates commands while draining idle
+events. Initialize explicitly. Timeout/cancellation retains outstanding terminals;
+ordering loss or a possibly partial write requires a later boot. Unverified j/t
+completion is refused. Subscribe before checking `status()` so a terminal link is
+not missed; any broadcast Lagged invalidates inferred state. Custom transports
+must implement the explicit nonblocking `DrainRead` contract; generic Pending
+does not establish emptiness. Transaction negative controls are recorded in
+`docs/v2-transaction-controls.toml`.
 `docs/v2-uart-controls.toml` contains the substrate safety controls. All automated
 PTY tests are local and never open `/dev/serial0` or contact a real DALI bus.
 

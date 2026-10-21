@@ -94,3 +94,64 @@ async fn non_tty_files_and_missing_serial_paths_fail_without_creating_files() {
     assert!(Serial::open(&path).await.is_err());
     assert!(!path.exists());
 }
+
+#[tokio::test]
+async fn transaction_dispatcher_separates_pty_input_events_from_query_completion() {
+    use crate::atx::transactions::{BusReply, RepeatPolicy, Response, Transactions};
+    let (master, _slave, path) = pty();
+    let mut hat = Serial::from_owned_fd(master).unwrap();
+    let (link, mut events) =
+        Transactions::start(Serial::open(path).await.unwrap(), RepeatPolicy::Unverified);
+    let clone = link.clone();
+    let init = tokio::spawn(async move { clone.initialize(Duration::from_secs(2)).await });
+    let mut bytes = [0; 2];
+    tokio::time::timeout(Duration::from_secs(2), hat.read_exact(&mut bytes))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(&bytes, b"v\n");
+    hat.write_all(b"V013204\r\n").await.unwrap();
+    assert_eq!(init.await.unwrap().unwrap().firmware, "32");
+    let clone = link.clone();
+    let query = tokio::spawn(async move {
+        clone
+            .execute(
+                Command::Send {
+                    bus: 2,
+                    frame: DaliFrame::Bits16(0x0790),
+                    repeat: false,
+                },
+                Duration::from_secs(2),
+            )
+            .await
+    });
+    let mut bytes = [0; 7];
+    tokio::time::timeout(Duration::from_secs(2), hat.read_exact(&mut bytes))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(&bytes, b"2h0790\n");
+    hat.write_all(b"2L020401\n1J11\n2J42\n").await.unwrap();
+    assert_eq!(
+        query.await.unwrap().unwrap(),
+        Response::Dali(vec![BusReply::Value(0x42)])
+    );
+    let mut input_seen = false;
+    while let Ok(event) = events.try_recv() {
+        input_seen |= matches!(
+            event,
+            Event::Packet {
+                packet: Ok(Packet {
+                    bus: 2,
+                    kind: Kind::Dali(DaliFrame::Bits24(0x020401))
+                }),
+                ..
+            }
+        );
+    }
+    assert!(
+        input_seen,
+        "PTY input event was consumed as a query acknowledgement"
+    );
+    link.close().await.unwrap();
+}

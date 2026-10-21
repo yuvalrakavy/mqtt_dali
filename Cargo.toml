@@ -40,6 +40,7 @@ rppal = "0.22.1"
 built = { version= "0.8.0", features = ["chrono"] }
 
 [dev-dependencies]
+tokio = { version = "1.41.1", features = ["test-util"] }
 # The fleet's test tools, from the same repository as tracing-init (one revision for all three).
 wait-lint = { git="http://github.com/yuvalrakavy/tracing-init.git" }
 mqtt-test-broker = { git="http://github.com/yuvalrakavy/tracing-init.git" }

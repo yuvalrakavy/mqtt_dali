@@ -2,4 +2,6 @@
 
 pub mod monitor;
 pub mod serial;
+pub mod stream;
+pub mod transactions;
 pub mod wire;

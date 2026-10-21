@@ -232,6 +232,10 @@ impl Framer {
     pub fn deadline(&self) -> Option<Instant> {
         self.started.map(|start| start + LINE_DEADLINE)
     }
+
+    pub(crate) fn has_incomplete_line(&self) -> bool {
+        self.started.is_some()
+    }
 }
 
 #[cfg(test)]
