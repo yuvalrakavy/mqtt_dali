@@ -1,13 +1,13 @@
 # v2 capability status
 
-This is development status during P3, not a release or certification statement.
+This is development status during P4, not a release or certification statement.
 The canonical v2 executable runs BridgeKit with metadata and UART health. No v2 physical HAT
 or fixture behavior has been validated. The v1 maintenance binary is separate.
 
 | Capability | Local implementation/evidence | Remaining work |
 |---|---|---|
 | v1 configuration import | Library and canonical process tests; v1 bytes preserved; v2 precedence and reimport | Persisted Store-object migration in P8 |
-| ATX I4 UART | Typed frames, continuous monitoring, transaction matching, managed daemon health/recovery and real PTY/emulator tests | Physical firmware transcripts; j/t hardware completion policies; durable crash/reset boundary before fixture Send |
+| ATX I4 UART | Typed frames, continuous monitoring, measured quiet recovery, managed health and real PTY/process crash-restart tests; known partial-write poison survives in-process reopen | Physical timing/firmware transcripts; j/t completion policies; no persistent inference of partial writes across process death |
 | Base output model | Independent levels/MASK, off/steps/max/min, DTRs, groups/scenes, selected queries/configuration | P4 driver paths, faults and timed fades |
 | Addressing model | INITIALISE modes/expiry, seeded randomization, search/compare/program/withdraw, duplicate address responses | P5 bridge jobs and commissioning UI |
 | DALI-2 event transport | Async L records remain public during transactions; local injection | P4 Parts 301–304 decoding, discovery, state and configuration |

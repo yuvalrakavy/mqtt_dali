@@ -24,8 +24,9 @@ that a fixture is present or that a hardware command succeeded.
 The v2 file takes precedence. If it is absent, startup imports the v1 file into a
 separate private v2 file, or initializes an empty controller if neither exists.
 Invalid v2 fails startup. v1 bytes remain untouched. Stop the daemon before
-deleting v2 to force reimport; preserve backups and ensure the matching private
-sidecar files stay with their v2 configuration. Only one process may own that
+deleting v2 to force reimport. Its identity and revision ledger live inside the
+v2 JSON. The adjacent `.lock` file provides lifetime ownership; do not remove it
+while a process is using the configuration. Only one process may own that
 configuration. Offline validation/import uses:
 
 ```sh
@@ -41,8 +42,24 @@ BridgeKit owns signal handling, tracing-init, MQTT reconnects and bounded stop.
 SIGINT/SIGTERM requests shutdown. An owner that cannot actually finish produces
 a failed/incomplete stop; a supervisor may restart it. UART and metadata ownership
 continue through broker outages. UART health uses only Version/bus-status queries
-and the conservative unverified repeat policy. It cannot yet safely expose fixture
-writes after an ambiguous process crash.
+and the conservative unverified repeat policy. Fixture commands remain pending
+the capability phase.
+
+Startup and reconnects wait for **250 ms of actual UART silence** before sending
+initialization queries. Change this with `--uart-quiet-ms 1..5000`. Every raw
+received byte restarts the timer, including partial lines; complete input events
+continue through the reader. An unresolved fully written command or receive
+corruption uses the same recovery, followed by fresh initialization. Acquisition
+has a total budget of the selected interval plus 5 s; continuous traffic causes
+a bounded failure and paced retry. No persistent UART journal or first-start
+HAT reboot is required.
+
+A known interrupted/partial UART write still requires a fresh HAT Boot: receive
+silence cannot establish the state of its command parser. That evidence survives
+an in-process port reopen, including poison discovered during teardown. It is
+not inferred across process death. Quiet recovery is the selected operational
+policy, not a documented maximum execution delay or a transaction identifier;
+the ATX same-bus reply ambiguity and physical I4 validation remain explicit limits.
 
 Select logging with `--log-config`; `RUST_LOG` controls filtering, and
 `LOG_DESTINATION` overrides destinations. The repository logging.toml contains

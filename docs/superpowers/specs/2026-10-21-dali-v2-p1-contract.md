@@ -1,5 +1,11 @@
 # P1 UART transport contract
 
+Recovery amendment, 2026-10-22: the owner's
+[quiet-period policy](2026-10-22-dali-v2-quiet-recovery.md) supersedes general
+Boot-only recovery below. Complete-write/receive uncertainty can be retired by
+explicit measured quiet recovery, followed by initialization. Known partial
+write poison remains Boot-only. No persistent UART journal is used.
+
 Implements the already approved transport architecture, independently of the
 legacy `dali_atx` path. The v2 library owns the new modules; P3 connects them to
 the canonical daemon. P2 will exercise the same serial path through a PTY.

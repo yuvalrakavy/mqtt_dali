@@ -1,5 +1,6 @@
 use super::{BusReply, RepeatPolicy, Response, SessionState, TransactionError};
-use crate::atx::monitor::{Event, Monitor};
+use crate::atx::joined;
+use crate::atx::monitor::{Event, Monitor, RecoveryCancellation};
 use crate::atx::stream::DrainRead;
 use crate::atx::wire::{Command, DaliFrame, Kind, Packet, Version};
 use std::sync::{
@@ -12,9 +13,25 @@ use tokio::sync::{broadcast, mpsc, oneshot, watch, OwnedSemaphorePermit, Semapho
 use tokio::task::AbortHandle;
 use tokio::time::{timeout_at, Instant};
 
+#[derive(Clone)]
+enum Operation {
+    Command {
+        command: Command,
+        initializing: bool,
+    },
+    Resynchronize {
+        quiet: Duration,
+    },
+}
+struct CancelRecovery(Arc<RecoveryCancellation>);
+impl Drop for CancelRecovery {
+    fn drop(&mut self) {
+        self.0.cancel();
+    }
+}
 struct Request {
-    command: Command,
-    initializing: bool,
+    cancellation: Arc<RecoveryCancellation>,
+    operation: Operation,
     deadline: Instant,
     reply: oneshot::Sender<Result<Response, TransactionError>>,
     permit: OwnedSemaphorePermit,
@@ -25,7 +42,8 @@ struct Shared<S> {
     permit: Arc<Semaphore>,
     status: watch::Receiver<SessionState>,
     stop: watch::Sender<bool>,
-    completed: watch::Receiver<bool>,
+    completed: joined::Completion<Result<(), TransactionError>>,
+    shutdown: watch::Sender<Option<Instant>>,
     worker: AbortHandle,
     repeat: RepeatPolicy,
 }
@@ -49,12 +67,10 @@ impl<S> Clone for Transactions<S> {
 }
 struct Life {
     status: watch::Sender<SessionState>,
-    completed: watch::Sender<bool>,
 }
 impl Drop for Life {
     fn drop(&mut self) {
         self.status.send_replace(SessionState::Closed);
-        self.completed.send_replace(true);
     }
 }
 struct Pending {
@@ -80,6 +96,7 @@ struct Actor<S> {
     stop: watch::Receiver<bool>,
     life: Life,
     repeat: RepeatPolicy,
+    shutdown: watch::Receiver<Option<Instant>>,
 }
 
 impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
@@ -89,7 +106,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
         let (send, receive) = mpsc::channel(1);
         let (status_send, status) = watch::channel(SessionState::Uninitialized);
         let (stop, stop_receive) = watch::channel(false);
-        let (complete, completed) = watch::channel(false);
+        let (shutdown, shutdown_receive) = watch::channel(None);
         let actor = Actor {
             monitor: monitor.clone(),
             events,
@@ -98,13 +115,19 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
             stop: stop_receive,
             life: Life {
                 status: status_send,
-                completed: complete,
             },
             repeat,
+            shutdown: shutdown_receive,
         };
-        let task = tokio::spawn(actor.run());
-        let worker = task.abort_handle();
-        drop(task);
+        let failed_monitor = monitor.clone();
+        let failed_shutdown = shutdown.subscribe();
+        let (worker, completed) =
+            joined::start_with_failure_cleanup(actor.run(), move || async move {
+                let deadline = failed_shutdown
+                    .borrow()
+                    .unwrap_or_else(|| Instant::now() + Duration::from_millis(500));
+                let _ = failed_monitor.force_until(deadline).await;
+            });
         (
             Self {
                 shared: Arc::new(Shared {
@@ -114,6 +137,7 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
                     status,
                     stop,
                     completed,
+                    shutdown,
                     worker,
                     repeat,
                 }),
@@ -163,6 +187,27 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
             _ => Err(TransactionError::StreamLoss),
         }
     }
+    pub async fn resynchronize(
+        &self,
+        quiet: Duration,
+        within: Duration,
+    ) -> Result<(), TransactionError> {
+        if quiet.is_zero() {
+            return Err(TransactionError::Deadline);
+        }
+        match self
+            .enqueue(Operation::Resynchronize { quiet }, within)
+            .await?
+        {
+            Response::Synchronized => Ok(()),
+            _ => Err(TransactionError::StreamLoss),
+        }
+    }
+    /// Authoritative even after Closed; used only after actual teardown when
+    /// transferring known partial-write poison across an in-process reopen.
+    pub(crate) fn write_is_poisoned(&self) -> bool {
+        self.shared.monitor.write_is_poisoned()
+    }
     pub async fn execute(
         &self,
         command: Command,
@@ -176,23 +221,51 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
         initializing: bool,
         within: Duration,
     ) -> Result<Response, TransactionError> {
-        let deadline = Instant::now()
-            .checked_add(within)
-            .ok_or(TransactionError::Deadline)?;
         command
             .encode()
             .map_err(crate::atx::monitor::TransportError::from)?;
         terminal_count(&command, self.shared.repeat)?;
+        self.enqueue(
+            Operation::Command {
+                command,
+                initializing,
+            },
+            within,
+        )
+        .await
+    }
+    async fn enqueue(
+        &self,
+        operation: Operation,
+        within: Duration,
+    ) -> Result<Response, TransactionError> {
+        if *self.shared.stop.borrow() {
+            return Err(TransactionError::Closed);
+        }
+        let deadline = Instant::now()
+            .checked_add(within)
+            .ok_or(TransactionError::Deadline)?;
         let permit = Arc::clone(&self.shared.permit)
             .try_acquire_owned()
             .map_err(|_| TransactionError::Busy)?;
-        admission(self.status(), initializing)?;
+        match &operation {
+            Operation::Command { initializing, .. } => admission(self.status(), *initializing)?,
+            Operation::Resynchronize { .. } => match self.status() {
+                SessionState::Closed => return Err(TransactionError::Closed),
+                SessionState::Writing
+                | SessionState::Awaiting { .. }
+                | SessionState::Resynchronizing => return Err(TransactionError::Busy),
+                _ => {}
+            },
+        }
         let (send, receive) = oneshot::channel();
+        let cancellation = Arc::new(RecoveryCancellation::default());
+        let _cancel = CancelRecovery(cancellation.clone());
         self.shared
             .requests
             .try_send(Request {
-                command,
-                initializing,
+                cancellation,
+                operation,
                 deadline,
                 reply: send,
                 permit,
@@ -212,21 +285,41 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
         result
     }
     pub async fn close(&self) -> Result<(), TransactionError> {
+        self.close_until(Instant::now() + Duration::from_secs(1))
+            .await
+    }
+    pub(crate) async fn close_until(&self, deadline: Instant) -> Result<(), TransactionError> {
+        self.shared.shutdown.send_if_modified(|request| {
+            if request.is_some() {
+                return false;
+            }
+            *request = Some(deadline);
+            true
+        });
+        self.shared.permit.close();
         self.shared.stop.send_replace(true);
         let mut completed = self.shared.completed.clone();
         // WAIT: atx-transaction-close
-        tokio::time::timeout(Duration::from_secs(1), async {
-            self.shared.monitor.close().await?;
-            while !*completed.borrow_and_update() {
+        let result = timeout_at(deadline, async {
+            while completed.borrow_and_update().is_none() {
                 completed
                     .changed()
                     .await
                     .map_err(|_| TransactionError::Closed)?;
             }
-            Ok(())
+            completed
+                .borrow()
+                .as_ref()
+                .cloned()
+                .ok_or(TransactionError::Closed)?
+                .map_err(|_| TransactionError::StreamLoss)?
         })
         .await
-        .map_err(|_| TransactionError::Deadline)?
+        .map_err(|_| TransactionError::Deadline)?;
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        result
     }
 }
 
@@ -280,13 +373,30 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
     fn reset(&mut self, after: u64) {
         self.mode = Mode::Reset { after };
     }
-    async fn run(mut self) {
+    async fn run(mut self) -> Result<(), TransactionError> {
+        self.drive().await;
+        self.requests.close();
+        while let Ok(request) = self.requests.try_recv() {
+            let _ = request.reply.send(Err(TransactionError::Closed));
+        }
+        let deadline = self
+            .shutdown
+            .borrow()
+            .unwrap_or_else(|| Instant::now() + Duration::from_millis(500));
+        self.monitor.force_until(deadline).await?;
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        Ok(())
+    }
+    async fn drive(&mut self) {
         loop {
             if *self.stop.borrow() {
                 return;
             }
             // WAIT: atx-transaction-dispatch
             tokio::select! {
+                biased;
                 _ = stop_requested(&mut self.stop) => return,
                 event = self.events.recv() => { self.idle_event(event); self.publish_mode(); },
                 request = self.requests.recv() => {
@@ -427,12 +537,110 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
         Err(TransactionError::Busy)
     }
     async fn request(&mut self, request: &mut Request) -> Result<Response, TransactionError> {
-        if request.reply.is_closed() {
+        if request.reply.is_closed() || request.cancellation.is_canceled() {
             return Err(TransactionError::Canceled);
         }
+        match request.operation.clone() {
+            Operation::Command {
+                command,
+                initializing,
+            } => self.command(request, command, initializing).await,
+            Operation::Resynchronize { quiet } => {
+                self.reset(self.monitor.receive_sequence() + 1);
+                let result = self.recover(request, quiet).await;
+                if result.is_err() && !matches!(self.mode, Mode::Closed) {
+                    self.reset(self.monitor.receive_sequence() + 1);
+                }
+                result
+            }
+        }
+    }
+    async fn recover(
+        &mut self,
+        request: &mut Request,
+        quiet: Duration,
+    ) -> Result<Response, TransactionError> {
+        let monitor = self.monitor.clone();
+        loop {
+            if monitor.write_is_poisoned() {
+                return Err(crate::atx::monitor::TransportError::IndeterminateWrite.into());
+            }
+            self.life.status.send_replace(SessionState::Resynchronizing);
+            // WAIT: atx-quiet
+            let recovery =
+                monitor.quiet_fence_using(quiet, request.deadline, request.cancellation.clone());
+            tokio::pin!(recovery);
+            let fence = loop {
+                // A ready event branch can starve lower-priority timer polling,
+                // including at cooperative budget exhaustion. Enforce the total
+                // deadline independently of the caller's oneshot timeout.
+                if Instant::now() >= request.deadline {
+                    return Err(TransactionError::Deadline);
+                }
+                // WAIT: atx-quiet
+                tokio::select! {
+                    biased;
+                    _ = stop_requested(&mut self.stop) => { self.mode = Mode::Closed; return Err(TransactionError::Closed); },
+                    _ = request.reply.closed() => return Err(TransactionError::Canceled),
+                    event = self.events.recv() => {
+                        self.idle_event(event);
+                        if matches!(self.mode, Mode::Closed) { return Err(TransactionError::Closed); }
+                        if monitor.write_is_poisoned() { return Err(crate::atx::monitor::TransportError::IndeterminateWrite.into()); }
+                        self.life.status.send_replace(SessionState::Resynchronizing);
+                    },
+                    fence = &mut recovery => break fence?,
+                }
+            };
+            // Account for all queued old evidence through the sealed sequence.
+            // Any newer raw activity starts another interval under this same
+            // request deadline; closure and write poison cannot be retired.
+            if self.try_complete_recovery(request, &fence)? {
+                return Ok(Response::Synchronized);
+            }
+        }
+    }
+    fn try_complete_recovery(
+        &mut self,
+        request: &Request,
+        fence: &crate::atx::monitor::RecoveryFence,
+    ) -> Result<bool, TransactionError> {
+        self.drain(request.deadline)?;
+        if matches!(self.mode, Mode::Closed)
+            || self.monitor.status() == crate::atx::monitor::LinkStatus::Closed
+        {
+            return Err(TransactionError::Closed);
+        }
+        if self.monitor.write_is_poisoned() {
+            return Err(crate::atx::monitor::TransportError::IndeterminateWrite.into());
+        }
+        if self.monitor.activity_generation() != fence.activity_generation {
+            return Ok(false);
+        }
+        if self.monitor.receive_sequence() < fence.sequence {
+            return Err(TransactionError::StreamLoss);
+        }
+        if *self.stop.borrow() {
+            self.mode = Mode::Closed;
+            return Err(TransactionError::Closed);
+        }
+        if request.reply.is_closed() || request.cancellation.is_canceled() {
+            return Err(TransactionError::Canceled);
+        }
+        if Instant::now() >= request.deadline {
+            return Err(TransactionError::Deadline);
+        }
+        self.mode = Mode::Uninitialized;
+        Ok(true)
+    }
+    async fn command(
+        &mut self,
+        request: &mut Request,
+        command: Command,
+        initializing: bool,
+    ) -> Result<Response, TransactionError> {
         self.drain(request.deadline)?;
         self.publish_mode();
-        admission(*self.life.status.borrow(), request.initializing)?;
+        admission(*self.life.status.borrow(), initializing)?;
         if Instant::now() >= request.deadline {
             return Err(TransactionError::Deadline);
         }
@@ -442,15 +650,15 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
             .await?;
         self.drain(request.deadline)?;
         self.publish_mode();
-        admission(*self.life.status.borrow(), request.initializing)?;
+        admission(*self.life.status.borrow(), initializing)?;
         if request.reply.is_closed() {
             return Err(TransactionError::Canceled);
         }
         let mut pending = Pending {
-            command: request.command.clone(),
-            initializing: request.initializing,
+            command: command.clone(),
+            initializing,
             minimum: fence.minimum_sequence,
-            remaining: terminal_count(&request.command, self.repeat)?,
+            remaining: terminal_count(&command, self.repeat)?,
             replies: Vec::new(),
             result: None,
         };
@@ -496,9 +704,10 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
         started: Arc<AtomicU64>,
     ) -> Result<(), TransactionError> {
         let monitor = self.monitor.clone();
+        let command = pending.command.clone();
         // WAIT: atx-transaction-write
         let write = monitor.write_correlated(
-            &request.command,
+            &command,
             request.deadline.saturating_duration_since(Instant::now()),
             Arc::clone(&started),
         );
@@ -512,8 +721,8 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
             // WAIT: atx-transaction-write
             tokio::select! {
                 biased;
-                event = self.events.recv() => self.active_event(event, pending)?,
                 _ = stop_requested(&mut self.stop) => { self.mode = Mode::Closed; return Err(TransactionError::Closed); },
+                event = self.events.recv() => self.active_event(event, pending)?,
                 _ = request.reply.closed() => return Err(TransactionError::Canceled),
                 _ = tokio::time::sleep_until(request.deadline) => return Err(TransactionError::Deadline),
                 written = &mut write => {
@@ -542,8 +751,8 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Actor<S> {
             // WAIT: atx-transaction-response
             tokio::select! {
                 biased;
-                event = self.events.recv() => self.active_event(event, pending)?,
                 _ = stop_requested(&mut self.stop) => { self.mode = Mode::Closed; return Err(TransactionError::Closed); },
+                event = self.events.recv() => self.active_event(event, pending)?,
                 _ = request.reply.closed() => return Err(TransactionError::Canceled),
                 _ = tokio::time::sleep_until(request.deadline) => return Err(TransactionError::Deadline),
             }
@@ -596,6 +805,241 @@ fn response(command: &Command, packet: &Packet) -> Option<Response> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{future::Future, task::Poll};
+
+    #[tokio::test(start_paused = true)]
+    async fn recovery_deadline_survives_a_ready_event_backlog_without_caller_polling() {
+        let (stream, _hat) = tokio::io::duplex(128);
+        let (monitor, _) = Monitor::start(stream);
+        let (flood, events) = broadcast::channel(1024);
+        let (_send, requests) = mpsc::channel(1);
+        let (_stop, stop) = watch::channel(false);
+        let (_shutdown, shutdown) = watch::channel(None);
+        let (status, _status_rx) = watch::channel(SessionState::ResetRequired);
+        let mut actor = Actor {
+            monitor,
+            events,
+            mode: Mode::Reset { after: 0 },
+            requests,
+            stop,
+            life: Life { status },
+            repeat: RepeatPolicy::Unverified,
+            shutdown,
+        };
+        // Keep the caller's receive channel alive throughout: its timeout/drop
+        // cannot rescue a starved actor-side acquisition deadline.
+        let (reply, _receive) = oneshot::channel();
+        let mut request = Request {
+            cancellation: Arc::new(RecoveryCancellation::default()),
+            operation: Operation::Resynchronize {
+                quiet: Duration::from_millis(10),
+            },
+            deadline: Instant::now() + Duration::from_millis(20),
+            reply,
+            permit: Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap(),
+        };
+        let (entered, waiting) = oneshot::channel();
+        let worker = tokio::spawn(async move {
+            let mut entered = Some(entered);
+            let result = {
+                let recovery = actor.request(&mut request);
+                tokio::pin!(recovery);
+                // Refill before every poll so a biased event branch remains
+                // ready, including across Tokio cooperative budget exhaustion.
+                tokio::time::timeout(
+                    Duration::from_millis(100),
+                    std::future::poll_fn(|cx| {
+                        for _ in 0..256 {
+                            flood
+                                .send(Event::Packet {
+                                    sequence: 1,
+                                    packet: Ok(Packet {
+                                        bus: 0,
+                                        kind: Kind::Dali(DaliFrame::Bits24(0x020401)),
+                                    }),
+                                })
+                                .unwrap();
+                        }
+                        let result = recovery.as_mut().poll(cx);
+                        if let Some(entered) = entered.take() {
+                            let _ = entered.send(());
+                        }
+                        result
+                    }),
+                )
+                .await
+            };
+            assert_eq!(
+                result,
+                Ok(Err(TransactionError::Deadline)),
+                "ready event backlog starved the actor recovery deadline"
+            );
+            assert!(matches!(actor.mode, Mode::Reset { .. }));
+            actor.monitor.close().await.unwrap();
+        });
+        waiting.await.unwrap();
+        tokio::time::advance(Duration::from_millis(200)).await;
+        worker.await.unwrap();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn caller_cancellation_reaches_reader_without_actor_polling() {
+        use crate::atx::test_support::HeldDrain;
+        use std::sync::atomic::AtomicBool;
+        use tokio::io::AsyncWriteExt;
+        let (stream, mut hat) = tokio::io::duplex(1024);
+        let held = Arc::new(AtomicBool::new(false));
+        let (entered, waiting) = oneshot::channel();
+        let (monitor, events) = Monitor::start(HeldDrain {
+            stream,
+            held: held.clone(),
+            entered: Some(entered),
+        });
+        let mut public = monitor.subscribe();
+        hat.write_all(b"L0204").await.unwrap();
+        monitor.fence(Duration::from_secs(1)).await.unwrap();
+        let (send, requests) = mpsc::channel(1);
+        let (stop, stop_rx) = watch::channel(false);
+        let (status, status_rx) = watch::channel(SessionState::ResetRequired);
+        let (shutdown, shutdown_rx) = watch::channel(None);
+        let (_completion, completed) = watch::channel(None);
+        let dummy = tokio::spawn(std::future::pending::<()>());
+        let link = Transactions {
+            shared: Arc::new(Shared {
+                monitor: monitor.clone(),
+                requests: send,
+                permit: Arc::new(Semaphore::new(1)),
+                status: status_rx,
+                stop,
+                completed,
+                shutdown,
+                worker: dummy.abort_handle(),
+                repeat: RepeatPolicy::Unverified,
+            }),
+        };
+        let mut actor = Actor {
+            monitor: monitor.clone(),
+            events,
+            mode: Mode::Reset { after: 0 },
+            requests,
+            stop: stop_rx,
+            life: Life { status },
+            repeat: RepeatPolicy::Unverified,
+            shutdown: shutdown_rx,
+        };
+        let mut caller =
+            Box::pin(link.resynchronize(Duration::from_millis(20), Duration::from_secs(1)));
+        assert!(
+            std::future::poll_fn(|cx| Poll::Ready(caller.as_mut().poll(cx)))
+                .await
+                .is_pending()
+        );
+        let mut request = actor.requests.try_recv().unwrap();
+        held.store(true, Ordering::Release);
+        let mut recovery = Box::pin(actor.recover(&mut request, Duration::from_millis(20)));
+        assert!(
+            std::future::poll_fn(|cx| Poll::Ready(recovery.as_mut().poll(cx)))
+                .await
+                .is_pending()
+        );
+        tokio::time::advance(Duration::from_millis(20)).await;
+        assert!(
+            std::future::poll_fn(|cx| Poll::Ready(recovery.as_mut().poll(cx)))
+                .await
+                .is_pending()
+        );
+        waiting.await.unwrap();
+        drop(caller);
+        // The actor future remains alive but is deliberately NOT polled until
+        // the reader finishes the old fence and parses the suffix.
+        held.store(false, Ordering::Release);
+        monitor.fence(Duration::from_secs(1)).await.unwrap();
+        hat.write_all(b"01\n").await.unwrap();
+        let event = tokio::time::timeout(Duration::from_millis(50), public.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(
+            matches!(
+                event,
+                Event::Packet {
+                    packet: Ok(Packet {
+                        kind: Kind::Dali(DaliFrame::Bits24(0x020401)),
+                        ..
+                    }),
+                    ..
+                }
+            ),
+            "canceled caller discarded framing before actor observed cancellation"
+        );
+        assert_eq!(recovery.await, Err(TransactionError::Canceled));
+        monitor.close().await.unwrap();
+        drop(link);
+        assert!(dummy.await.unwrap_err().is_cancelled());
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn recovery_cannot_commit_a_reader_proof_after_new_activity() {
+        use tokio::io::AsyncWriteExt;
+        let (stream, mut hat) = tokio::io::duplex(1024);
+        let (monitor, events) = Monitor::start(stream);
+        let proof = monitor
+            .quiet_fence(
+                Duration::from_millis(20),
+                Instant::now() + Duration::from_secs(1),
+            )
+            .await
+            .unwrap();
+        // This is newer than the returned reader boundary, before actor commit.
+        hat.write_all(b"L020401\n").await.unwrap();
+        monitor.fence(Duration::from_secs(1)).await.unwrap();
+        let (_send, requests) = mpsc::channel(1);
+        let (_stop, stop) = watch::channel(false);
+        let (_shutdown, shutdown) = watch::channel(None);
+        let (status, _status_rx) = watch::channel(SessionState::Resynchronizing);
+        let mut actor = Actor {
+            monitor,
+            events,
+            mode: Mode::Reset { after: 0 },
+            requests,
+            stop,
+            life: Life { status },
+            repeat: RepeatPolicy::Unverified,
+            shutdown,
+        };
+        let (reply, _receive) = oneshot::channel();
+        let mut request = Request {
+            cancellation: Arc::new(RecoveryCancellation::default()),
+            operation: Operation::Resynchronize {
+                quiet: Duration::from_millis(20),
+            },
+            deadline: Instant::now() + Duration::from_secs(1),
+            reply,
+            permit: Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap(),
+        };
+        assert!(
+            !actor.try_complete_recovery(&request, &proof).unwrap(),
+            "stale proof permitted initialization without another quiet interval"
+        );
+        assert!(matches!(actor.mode, Mode::Reset { .. }));
+        let fresh = actor
+            .monitor
+            .quiet_fence(Duration::from_millis(20), request.deadline)
+            .await
+            .unwrap();
+        request.cancellation.cancel();
+        assert!(!request.reply.is_closed());
+        assert_eq!(
+            actor.try_complete_recovery(&request, &fresh),
+            Err(TransactionError::Canceled),
+            "actor committed recovery despite caller cancellation flag"
+        );
+        assert!(matches!(actor.mode, Mode::Reset { .. }));
+        request.cancellation = Arc::new(RecoveryCancellation::default());
+        assert!(actor.try_complete_recovery(&request, &fresh).unwrap());
+        assert!(matches!(actor.mode, Mode::Uninitialized));
+        actor.monitor.close().await.unwrap();
+    }
 
     #[tokio::test(start_paused = true)]
     async fn actor_cannot_complete_an_expired_request_even_with_all_terminals_consumed() {
@@ -604,21 +1048,25 @@ mod tests {
         let (_send, requests) = mpsc::channel(1);
         let (_stop, stop) = watch::channel(false);
         let (status, _status_rx) = watch::channel(SessionState::Ready);
-        let (completed, _completed_rx) = watch::channel(false);
+        let (_shutdown, shutdown) = watch::channel(None);
         let mut actor = Actor {
             monitor,
             events,
             mode: Mode::Ready,
             requests,
             stop,
-            life: Life { status, completed },
+            life: Life { status },
             repeat: RepeatPolicy::Unverified,
+            shutdown,
         };
         let (reply, _receive) = oneshot::channel();
         let permit = Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap();
         let mut request = Request {
-            command: Command::Version,
-            initializing: true,
+            cancellation: Arc::new(RecoveryCancellation::default()),
+            operation: Operation::Command {
+                command: Command::Version,
+                initializing: true,
+            },
             deadline: Instant::now(),
             reply,
             permit,

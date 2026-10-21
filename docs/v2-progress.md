@@ -365,6 +365,9 @@ live Logmon delivery, hardware validation and release/deployment remain pending.
 
 ## P3c3b — managed UART health implemented
 
+Historical checkpoint: the general Boot-only recovery prerequisite below is
+superseded by the owner's measured quiet-period decision in P4a.
+
 The optional `with_uart` builder starts one Serial/Transactions owner inside the
 managed service runtime. Version and enabled-bus status queries use one original
 setup deadline; metadata remains available during initialization, MQTT/HAT loss
@@ -453,8 +456,66 @@ all mutations. No physical behavior or Pi linking is implied by compilation.
 See `running-v2.md` and `service-development.md`. The dependency commit is local;
 portable upstream clones still require publication. HTTP/capabilities, Store
 migration, physical I4/Pi runtime and live Logmon validation remain pending.
-Fixture Send is still disabled until P4 preserves process-crash transport evidence.
+Fixture Send is still disabled pending the P4 capability engine. The earlier
+crash-evidence prerequisite is superseded by the owner's P4a recovery policy.
 Available source reviewers are same family; no cross-family independence is claimed.
+
+## P4a — measured quiet recovery implemented and verified locally
+
+The owner chose measured UART silence instead of the proposed persistent
+clean/dirty journal. No journal, state directory or first-start reboot requirement
+was implemented. One continuous Tokio AsyncFd reader still processes raw
+19200/8N1 input and publishes complete records during recovery. The new
+`--uart-quiet-ms` option accepts 1..5000, default 250, before opening resources.
+Every nonempty read restarts quiet acquisition, including partial/malformed
+records; its total budget is the interval plus the existing setup allowance.
+
+Exclusive actor recovery uses a guarded reader reset with original deadline,
+cancellation identity and expected raw activity, then checks the sealed boundary
+before entering Uninitialized. It retires complete-write timeouts/receive loss;
+V/D initialization is still explicit. Known partial-write poison remains
+Boot-only and is captured after actual teardown before a port reopen. Real joins
+and lifecycle-owned panic cleanup release descriptors even with retained handles
+or canceled close callers. Journal-only clean receipts/history were removed.
+
+Behavioral RED→GREEN tests cover the timer, raw input, complete-write/corruption
+recovery, automatic startup/reconnect, invalid CLI values and teardown bugs.
+Controlled reader/actor tests cover canceled/expired reset, new activity after
+proof, input visibility and partial poison. A canonical process test feeds input
+before launch through inventory readiness, measures the configured interval,
+kills an unanswered process and restarts with an old version buffered, without
+Boot. The partial-write EOF test delivers owner closure before actor cancellation
+and proves post-join poison survives into Boot-only reopening.
+
+Two sequential design reviews approved the replacement. First full source review
+approved production behavior and requested removing an independent-MQTT timing
+race from the subprocess test; the feeder now starts before process launch.
+Final source review additionally required caller cancellation to reach the reader
+without actor polling. A shared synchronous authorization guard and final actor
+check now enforce it; deterministic regressions were observed RED before each
+fix. A final stress probe exposed starvation of the quiet timer by ready event
+traffic. The actor now checks its deadline before each select, independently of
+caller polling; that regression was also observed RED before the fix. Both
+reviewers approved the corrected source. Reviews use the same model family.
+
+Verified on 2026-10-22:
+
+- Full native nextest: **246 passed**, including legacy and canonical process
+  regressions. Strict scoped Clippy and Raspberry Pi library/all four binary
+  compile checks passed. The feature-gated blocked-logging SIGTERM test passed;
+  doctests passed (none defined). The wait registry passes.
+- **16 new recovery negative controls** all failed for their intended behavioral
+  assertions. The 25 existing UART, transaction, UART-service and daemon controls
+  also behaved as declared. The affected transaction controls were rerun after
+  the final deadline guard. Tables and ledgers preserve the actual evidence.
+- Source formatting and whitespace passed. The full restored native suite passed
+  all **246 tests** after the guard-removal mutations.
+
+Physical I4 timing, Pi runtime, live Logmon and upstream publication remain P9.
+
+Review learning: a cancellation flag must reach the resource owner directly,
+actual task joins must precede resource-release claims, and a biased event loop
+must check its total deadline independently of lower-priority timer polling.
 
 ## Remaining phases
 

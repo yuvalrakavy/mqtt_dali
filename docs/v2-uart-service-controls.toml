@@ -39,8 +39,8 @@ expect_text = "buffered pre-open boot cleared the reopen latch"
 [[control]]
 name = "failed_boundary_retry_loses_timer"
 file = "src/service/hat.rs"
-anchor = "self.session.is_none() || self.needs_boundary || self.can_query()"
-replacement = "self.session.is_none() || self.can_query()"
+anchor = "|| self.needs_boundary\n"
+replacement = ""
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(failed_boundary_retries_on_a_quiet_transport_without_new_events)"]
 expect_text = "failed receive boundary had no timer to retry on a quiet transport"

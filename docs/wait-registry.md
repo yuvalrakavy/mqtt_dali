@@ -51,18 +51,23 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `emulator-supervise` | acyclic | signals, emulator lifecycle or local control server completion | Lifecycle is published without waiting for this receiver. Signals are independent. Shutdown sets stop, aborts endpoint clients and bounds emulator close to 1 s; runtime shutdown is capped at 500 ms. |
 | `emulator-output` | bounded | best-effort raw-descriptor startup/diagnostic writer | At most 200 ms; on expiry detach and continue/exit. The writer duplicates the descriptor and bypasses Rust stdio locks, so an unread output pipe cannot hold process exit. |
 | `atx-receive-fence` | bounded | same-reader receive drain and its oneshot result | Caller deadline bounds the oneshot; on expiry return Deadline. Reader drain separately stops after 4096 bytes or 100 ms with Busy. Explicit nonblocking Empty ends draining; retry Pending remains pending under the 100 ms bound. Close aborts the reader and drops the sender. |
-| `atx-transaction-result` | bounded | capacity-one actor response | One total caller deadline covers fence, write and response. On expiry return Deadline and retain an unconsumed terminal slot; never admit another request until that slot retires or a later boot clears uncertainty. A ready response is rejected if the caller resumes after expiry. |
-| `atx-transaction-close` | bounded | monitor resource release and actor completion | At most 1 s. Stop wakes the active or idle actor; monitor close aborts its reader. On expiry return Deadline without joining an unresponsive task. |
+| `atx-transaction-result` | bounded | capacity-one actor response | One total caller deadline covers fence, write and response, or explicit quiet recovery. On expiry return Deadline and retain unresolved ordering until its terminal, qualified quiet recovery, or accepted Boot. A ready response is rejected if the caller resumes after expiry. |
+| `atx-reset-guard` | acyclic | synchronous reader reset-slot mutex | Only clones, installs or removes an Arc. No await, I/O, stream lock or cancellation lock is acquired while this mutex is held. The split reader may snapshot it but drops it before any other work. |
+| `atx-recovery-cancel` | acyclic | synchronous caller cancellation / reader authorization mutex | Caller Drop and actor checks only set/read a bool. Reader takes it under the split-stream lock and holds it through synchronous framing reset; no await or I/O occurs while held, and no other holder acquires the stream lock. No holder waits on an actor or caller. |
+| `atx-quiet` | bounded | raw-byte activity, guarded same-reader fence, actor events or cancellation | One original caller deadline bounds the measured interval and all retries/fences. Managed acquisition supplies quiet interval plus setup allowance. Raw input restarts the timer without discarding complete events. On expiry or cancellation recovery remains required. Guarded framing reset checks identity, cancellation, activity and deadline under the split-stream lock at Empty. New activity after reader proof requires another interval; write poison/EOF never become successful recovery. |
+| `atx-transaction-close` | bounded | actual actor join after monitor resource release | Public close supplies 1 s; managed close supplies the original absolute owner deadline. Stop closes admission and wakes the active or idle actor, which force-closes the monitor within the same deadline. On expiry return Deadline, retaining the real join in a lifecycle-owned supervisor. Cancellation of a waiter cannot cancel teardown. |
+| `atx-owner-join` | acyclic | actual monitor/transaction task JoinHandle | Inner tasks never wait on their join supervisor, and no supervisor references its caller. Reader join owns only the handle and result sender; transaction join additionally retains bounded failure cleanup until it runs or is discarded. Captured cleanup ownership is dropped before completion publication. Callers wait under their original close deadline; a canceled waiter cannot lose the join. |
+| `atx-owner-failure-cleanup` | bounded | resource release after actual actor JoinError | Transaction supervisor force-closes its captured monitor under the first shutdown request's original absolute deadline, or 500 ms if the actor failed before any shutdown request. No-op reader cleanup is immediate. Cleanup ownership is dropped before publishing failure; panic cleanup does not depend on any close waiter remaining alive. On expiry the result remains failure, never quiescence. |
 | `atx-transaction-stop` | acyclic | stop flag | The flag is written by close/final-handle drop, which never waits for this helper alone. All active-operation uses race their deadline; idle use races dispatch events. |
 | `atx-transaction-dispatch` | acyclic | bounded request queue, monitor events or stop | One actor continuously drains events without waiting for consumers. Idle needs no timeout; close sets stop and bounds completion. Requests retain one permit for queued plus active work; admission never waits. |
 | `atx-transaction-write` | bounded | correlated write, monitor events, caller cancellation or stop | Total request deadline bounds the select and is checked before each iteration. On expiry return Deadline. Events stay live during writing; boot/error cancels the write. Potentially accepted partial writes require a later boot before admission can reopen. |
-| `atx-transaction-response` | bounded | monitor terminal, caller cancellation or stop | Same total request deadline, checked before accepting a complete result. On expiry return Deadline and retain the remaining terminal count; ordering loss requires a later boot. No receiver or subscriber is awaited. |
+| `atx-transaction-response` | bounded | monitor terminal, caller cancellation or stop | Same total request deadline, checked before accepting a complete result. On expiry return Deadline and retain the remaining terminal count until retirement or explicit recovery. Partial-write poison requires a later accepted Boot. No receiver or subscriber is awaited. |
 | `atx-reader` | acyclic | nonblocking UART/PTY reads or a partial-line timer | The one reader never waits for a writer or subscriber: it broadcasts without awaiting. Empty input may wait indefinitely, but nothing joins that read unbounded. Close and final-handle drop abort it; partial lines expire within 1 s and recover at a newline. A read error/EOF closes admission and publishes a terminal event. |
 | `atx-write-lock` | bounded | serialized access to the UART writer | Total caller-supplied deadline includes lock and write. On expiry before acquiring the lock, return Deadline without poisoning an unwritten command. The holder waits only on nonblocking I/O under its own deadline, never on a receiver or this lock. |
 | `atx-write` | bounded | nonblocking UART write, cancellation/EOF/close, and caller deadline | The write is raced with stop and the caller's total deadline. On expiry, I/O failure or cancellation after possible byte acceptance, a drop guard poisons admission and emits WriteIndeterminate. A Pending write that accepted no bytes stays usable. Stop cancels a potentially partial write. The stop helper waits only for the independent reader/closer and is raced against the write deadline. |
-| `atx-close` | bounded | confirmation that the aborted async reader dropped its resources | At most 500 ms. On expiry return Deadline; the reader remains aborted. Close sets the stop flag first, canceling an in-progress writer, then aborts the reader. Reader teardown publishes Closed and marks completion, without awaiting any caller. |
+| `atx-close` | bounded | writer release and actual reader JoinHandle completion | Public force-close supplies 500 ms; managed force-close uses the original owner deadline. Close stops write admission, cancels active writers, drops the writer and aborts the reader. A lifecycle supervisor publishes completion only after the actual reader joins. On expiry return Deadline without claiming resource release. |
 | `atx-serial-open` | bounded | runtime-owned blocking task opening/configuring a serial path | At most 2 s. On expiry a late owned fd is dropped; the managed HAT owner never retries that timeout. Actual runtime teardown includes the blocked worker and cannot report a clean stop while it remains alive. |
-| `v2-hat-loop` | acyclic | owned UART helper, independent monitor/status stream or paced retry/poll timer | The parent actor selects managed cancellation independently. No branch waits on the parent; canceled selects retain the stored join handle and session. Poison waits for an eligible late reply or Boot rather than a guessed timeout. |
+| `v2-hat-loop` | acyclic | owned UART helper, independent monitor/status stream or paced retry/poll timer | The parent actor selects managed cancellation independently. No branch waits on the parent; canceled selects retain the stored join handle and session. Complete-write/receive uncertainty schedules bounded measured quiet recovery; known partial-write poison waits for Boot and survives actual close/reopen. |
 | `v2-hat-setup` | bounded | version and enabled-bus status sequence on the existing transaction owner | One original 5 s setup deadline spans the sequence. On expiry retain the session's Late/reset state; metadata stays available and no new probe bypasses that state. |
 | `v2-hat-health` | bounded | a local HAT bus-status snapshot query | Uses the remaining original setup deadline. On expiry retain the same transaction owner and poison state. The proactive D snapshot is not a causal acknowledgement or fixture capability claim. |
 | `v2-hat-close` | bounded | helper abort/join and actual UART close, alongside configuration cleanup | Both resource owners share one absolute local 1.5 s deadline inside managed cooperative stop. On expiry report incomplete cleanup; parent cancellation/runtime destruction includes remaining work, including a blocked opener. |
@@ -99,25 +104,36 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command
 ```
 
 ## Waiters (generated)
 
 ```wait-lint-waiters
-atx-close src/atx/monitor.rs Monitor::close
+atx-close src/atx/monitor.rs Monitor::force_until
+atx-owner-failure-cleanup src/atx/joined.rs start_with_failure_cleanup
+atx-owner-join src/atx/joined.rs start_with_failure_cleanup
+atx-quiet src/atx/monitor/recovery.rs Monitor::quiet_fence_using
+atx-quiet src/atx/transactions/engine.rs Actor::recover
+atx-reader src/atx/monitor.rs Monitor::start
 atx-reader src/atx/monitor.rs line_deadline
 atx-reader src/atx/monitor.rs read_loop
-atx-receive-fence src/atx/monitor.rs Monitor::fence
+atx-receive-fence src/atx/monitor.rs Monitor::fence_until
 atx-receive-fence src/atx/monitor.rs read_available
 atx-receive-fence src/atx/monitor.rs read_loop
+atx-recovery-cancel src/atx/monitor/recovery.rs RecoveryCancellation::cancel
+atx-recovery-cancel src/atx/monitor/recovery.rs RecoveryCancellation::is_canceled
+atx-recovery-cancel src/atx/monitor/recovery.rs Reset::authorize
+atx-reset-guard src/atx/monitor.rs <ReadMode as AsyncRead>::poll_read
+atx-reset-guard src/atx/monitor.rs read_loop
+atx-reset-guard src/atx/monitor.rs receive_fence
 atx-serial-open src/atx/serial.rs Serial::open_using
-atx-transaction-close src/atx/transactions/engine.rs Transactions::close
-atx-transaction-dispatch src/atx/transactions/engine.rs Actor::run
+atx-transaction-close src/atx/transactions/engine.rs Transactions::close_until
+atx-transaction-dispatch src/atx/transactions/engine.rs Actor::drive
 atx-transaction-response src/atx/transactions/engine.rs Actor::await_response
-atx-transaction-result src/atx/transactions/engine.rs Transactions::submit
+atx-transaction-result src/atx/transactions/engine.rs Transactions::enqueue
 atx-transaction-stop src/atx/transactions/engine.rs stop_requested
-atx-transaction-write src/atx/transactions/engine.rs Actor::request
+atx-transaction-write src/atx/transactions/engine.rs Actor::command
 atx-transaction-write src/atx/transactions/engine.rs Actor::write
 atx-write src/atx/monitor.rs Monitor::write_correlated
 atx-write src/atx/monitor.rs stopped

@@ -1,5 +1,10 @@
 # P1b transaction implementation boundary
 
+Recovery amendment, 2026-10-22: follow the owner's
+[quiet-period policy](2026-10-22-dali-v2-quiet-recovery.md) for explicit
+resynchronization and managed startup/reopen. It replaces the general Boot-only
+prerequisite below while preserving the known partial-write poison exception.
+
 Refines the approved P1 transport contract after the P1a substrate review.
 
 `Transactions::start(stream)` exclusively owns a private `Monitor` and one

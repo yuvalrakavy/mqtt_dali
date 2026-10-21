@@ -145,6 +145,31 @@ async fn offline_mode_name_is_a_literal_daemon_option_value() {
 }
 
 #[tokio::test]
+async fn uart_quiet_option_rejects_invalid_intervals_before_starting_resources() {
+    let broker = FakeBroker::start().await;
+    for value in ["0", "5001", "invalid", "-1", "0.5"] {
+        let fixture = Fixture::new();
+        let mut command = fixture.command(&broker);
+        command
+            .args(["--uart-quiet-ms", value])
+            .stderr(Stdio::piped());
+        let output = timeout(Duration::from_secs(4), command.output())
+            .await
+            .expect("invalid quiet interval started resources instead of failing preflight")
+            .unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(
+            String::from_utf8_lossy(&output.stderr)
+                .contains("--uart-quiet-ms must be an integer between 1 and 5000"),
+            "invalid interval did not reach the explicit preflight validator"
+        );
+        assert!(!fixture.0.join("dali.v2.json").exists());
+        assert!(!fixture.0.join("logs").exists());
+        assert_eq!(fs::read(fixture.0.join("dali.json")).unwrap(), LEGACY);
+    }
+}
+
+#[tokio::test]
 async fn canonical_daemon_imports_v1_and_serves_bridgekit_inventory_without_legacy_topics() {
     let fixture = Fixture::new();
     let broker = FakeBroker::start().await;
@@ -521,6 +546,78 @@ async fn uart_line(peer: &mut mqtt_dali::atx::serial::Serial) -> Vec<u8> {
     })
     .await
     .expect("daemon UART health query was missing")
+}
+
+#[tokio::test]
+async fn configured_uart_quiet_recovers_a_killed_process_without_boot() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let fixture = Fixture::new();
+    let mut pty = Pty::new();
+    for restart in [false, true] {
+        // Separate ephemeral brokers ensure inventory is from this process.
+        let broker = FakeBroker::start().await;
+        if restart {
+            // An old complete reply buffered while the bridge was stopped.
+            pty.peer.write_all(b"V991104\n").await.unwrap();
+        }
+        let mut command = fixture.command(&broker);
+        command.args([
+            "--uart",
+            pty.path.to_str().unwrap(),
+            "--uart-quiet-ms",
+            "600",
+        ]);
+        let (first_frame, feeding) = tokio::sync::oneshot::channel();
+        let (stop_feeding, mut stopped) = tokio::sync::watch::channel(false);
+        let feeder = async {
+            let mut first_frame = Some(first_frame);
+            loop {
+                pty.peer.write_all(b"L020401\n").await.unwrap();
+                if let Some(first_frame) = first_frame.take() {
+                    let _ = first_frame.send(());
+                }
+                tokio::select! {
+                    biased;
+                    _ = stopped.changed() => break,
+                    _ = tokio::time::sleep(Duration::from_millis(50)) => {},
+                }
+            }
+        };
+        let launch = async {
+            feeding.await.unwrap();
+            let child = command.spawn().unwrap();
+            inventory(&broker).await;
+            stop_feeding.send_replace(true);
+            child
+        };
+        let ((), mut child) = tokio::join!(feeder, launch);
+        // Start before sending: the concurrent reader can process input before
+        // the write future returns, but never before this measurement starts.
+        let last_input = Instant::now();
+        pty.peer.write_all(b"L020402\n").await.unwrap();
+        assert_eq!(uart_line(&mut pty.peer).await, b"v\n");
+        assert!(
+            last_input.elapsed() >= Duration::from_millis(600),
+            "daemon did not use the configured quiet interval after input"
+        );
+        if !restart {
+            // End during an unanswered full write; no cleanup or Boot is sent.
+            child.start_kill().unwrap();
+            assert!(!exit(&mut child).await.success());
+            continue;
+        }
+        assert!(
+            timeout(Duration::from_millis(100), pty.peer.read_u8())
+                .await
+                .is_err(),
+            "buffered old version completed the new initialization"
+        );
+        pty.peer.write_all(b"V013204\n").await.unwrap();
+        assert_eq!(uart_line(&mut pty.peer).await, b"d\n");
+        pty.peer.write_all(b"D24\n").await.unwrap();
+        assert!(stop(&mut child).await.success());
+    }
+    assert_eq!(fs::read(fixture.0.join("dali.json")).unwrap(), LEGACY);
 }
 #[tokio::test]
 async fn broker_outage_does_not_hold_uart_startup_and_inventory_arrives_after_reconnect() {

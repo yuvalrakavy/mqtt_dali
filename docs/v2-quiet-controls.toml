@@ -1,0 +1,145 @@
+# Isolated guard-removal controls for the owner-approved quiet recovery policy.
+
+[[control]]
+name = "quiet_timer_is_skipped"
+file = "src/atx/monitor/recovery.rs"
+anchor = ".checked_add(quiet)"
+replacement = ".checked_add(Duration::ZERO)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(quiet_fence_measures_silence_and_restarts_on_partial_raw_input)"]
+expect_text = "quiet fence completed before the interval"
+
+[[control]]
+name = "raw_activity_is_not_tracked"
+file = "src/atx/monitor.rs"
+anchor = "if !bytes.is_empty() {"
+replacement = "if false && !bytes.is_empty() {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(quiet_fence_measures_silence_and_restarts_on_partial_raw_input)"]
+expect_text = "raw partial bytes failed to restart quiet interval"
+
+[[control]]
+name = "canceled_reset_is_still_authorized"
+file = "src/atx/monitor/recovery.rs"
+anchor = ".compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire)"
+replacement = ".compare_exchange(9, 1, Ordering::AcqRel, Ordering::Acquire)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_delayed_canceled_or_expired_quiet_reset_cannot_discard_later_framing)"]
+expect_text = "old canceled/expired request discarded framing"
+
+[[control]]
+name = "new_activity_reset_guard_is_removed"
+file = "src/atx/monitor/recovery.rs"
+anchor = "&& activity.generation == self.generation"
+replacement = ""
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(new_bytes_during_a_quiet_fence_invalidate_its_reset_candidate)"]
+expect_text = "stale quiet candidate"
+
+[[control]]
+name = "actor_accepts_stale_quiet_proof"
+file = "src/atx/transactions/engine.rs"
+anchor = "if self.monitor.activity_generation() != fence.activity_generation {\n            return Ok(false);\n        }"
+replacement = ""
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(recovery_cannot_commit_a_reader_proof_after_new_activity)"]
+expect_text = "stale proof permitted initialization without another quiet interval"
+
+[[control]]
+name = "failed_recovery_reopens_admission"
+file = "src/atx/transactions/engine.rs"
+anchor = "if result.is_err() && !matches!(self.mode, Mode::Closed) {\n                    self.reset(self.monitor.receive_sequence() + 1);\n                }"
+replacement = "if result.is_err() && !matches!(self.mode, Mode::Closed) { self.mode = Mode::Ready; }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(canceled_quiet_recovery_keeps_admission_closed_until_another_recovery)"]
+expect_text = "expected ResetRequired"
+
+[[control]]
+name = "startup_quiet_is_skipped"
+file = "src/service/hat.rs"
+anchor = "self.needs_quiet = !self.requires_boot;"
+replacement = "self.needs_quiet = false;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(uart_owner_measures_a_quiet_interval_before_first_initialization_without_boot)"]
+expect_text = "initial UART drain did not measure the quiet interval"
+
+[[control]]
+name = "configured_quiet_is_ignored"
+file = "src/service.rs"
+anchor = ".quiet = quiet;"
+replacement = ".quiet = std::time::Duration::from_millis(250);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "v2_process", "-E", "test(configured_uart_quiet_recovers_a_killed_process_without_boot)"]
+expect_text = "daemon did not use the configured quiet interval after input"
+
+[[control]]
+name = "quiet_interval_range_is_not_validated"
+file = "src/daemon.rs"
+anchor = ".filter(|value| (1..=5000).contains(value))"
+replacement = ".filter(|_| true)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "v2_process", "-E", "test(uart_quiet_option_rejects_invalid_intervals_before_starting_resources)"]
+expect_text = "invalid quiet interval started resources instead of failing preflight"
+
+[[control]]
+name = "poison_discovered_during_close_is_lost"
+file = "src/service/hat.rs"
+anchor = "self.requires_boot |= poisoned;"
+replacement = "let _ = poisoned;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(eof_during_partial_write_retains_poison_discovered_during_teardown)"]
+expect_text = "poison discovered after EOF was lost at the close handoff"
+
+[[control]]
+name = "actor_panic_cleanup_is_not_owned"
+file = "src/atx/transactions/engine.rs"
+anchor = "let _ = failed_monitor.force_until(deadline).await;"
+replacement = "let _ = deadline; drop(failed_monitor);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(actor_panic_releases_transport_without_a_shutdown_waiter)"]
+expect_text = "actor panic retained the actual transport"
+
+[[control]]
+name = "close_waiter_owns_resource_cleanup"
+file = "src/atx/transactions/engine.rs"
+anchor = "self.monitor.force_until(deadline).await?;"
+replacement = "let _ = deadline;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(canceled_shutdown_waiter_does_not_cancel_actual_resource_teardown)"]
+expect_text = "canceled close waiter stranded the stream"
+
+[[control]]
+name = "completion_precedes_actual_join"
+file = "src/atx/joined.rs"
+anchor = "// WAIT: atx-owner-join\n        let result = task.await"
+replacement = "send.send_replace(Some(Err(Failure { canceled: true })));\n        // WAIT: atx-owner-join\n        let result = task.await"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(join_completion_waits_for_canceled_future_destructors)"]
+expect_text = "task was declared joined while its owned resource was still dropping"
+
+[[control]]
+name = "caller_cancellation_does_not_reach_reader"
+file = "src/atx/monitor/recovery.rs"
+anchor = "let authorized = !*canceled"
+replacement = "let authorized = true"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(caller_cancellation_reaches_reader_without_actor_polling)"]
+expect_text = "canceled caller discarded framing before actor observed cancellation"
+
+[[control]]
+name = "actor_ignores_caller_flag_at_recovery_commit"
+file = "src/atx/transactions/engine.rs"
+anchor = "if request.reply.is_closed() || request.cancellation.is_canceled() {\n            return Err(TransactionError::Canceled);\n        }\n        if Instant::now() >= request.deadline {"
+replacement = "if request.reply.is_closed() {\n            return Err(TransactionError::Canceled);\n        }\n        if Instant::now() >= request.deadline {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(recovery_cannot_commit_a_reader_proof_after_new_activity)"]
+expect_text = "actor committed recovery despite caller cancellation flag"
+
+[[control]]
+name = "ready_event_backlog_starves_recovery_deadline"
+file = "src/atx/transactions/engine.rs"
+anchor = "if Instant::now() >= request.deadline {\n                    return Err(TransactionError::Deadline);\n                }\n                // WAIT: atx-quiet"
+replacement = "// WAIT: atx-quiet"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(recovery_deadline_survives_a_ready_event_backlog_without_caller_polling)"]
+expect_text = "ready event backlog starved the actor recovery deadline"

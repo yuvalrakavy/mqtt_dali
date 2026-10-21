@@ -13,8 +13,9 @@ the complete named identity ledger. This metadata target is not a fixture.
 The literal [rename fixture](../tests/fixtures/inventory-v1-rename.json) is the
 wire example. The managed `service::DaliService` now publishes it through the
 pinned BridgeKit runtime; real FakeBroker integration tests consume that output.
-The command-line v2 binary remains check-only while UART/daemon integration is
-completed. See [service development](service-development.md).
+The canonical `mqtt_dali` executable runs the managed v2 service;
+`--check-config` remains an explicit offline operation. See
+[service development](service-development.md).
 
 Each item has a `binding_revision`. The opaque request generation is
 `<inventory_epoch>.<binding_revision>`; it versions the mapping, not the device's

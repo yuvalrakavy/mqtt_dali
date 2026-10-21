@@ -27,29 +27,46 @@ responsibility even if a filesystem worker is blocked.
 ## Optional UART health
 
 Call `service.with_uart(path, RepeatPolicy::Unverified)` before managed startup.
-The builder opens nothing. The managed service owns one Serial/Transactions
+Optionally follow it with
+`with_uart_quiet_period(Duration::from_millis(250))?`; the builder validates a
+1 ms..5 s interval and requires UART to be enabled first. The builders open
+nothing. The managed service owns one Serial/Transactions
 session and sends only HAT Version and enabled-bus Status queries. Hardware
-snapshots distinguish Connecting, Initializing, Ready (raw version strings and
+snapshots distinguish Connecting, Resynchronizing, Initializing, Ready (raw version strings and
 bus observations), unavailable retry, waiting for a late reply, ResetRequired
 and Closed. Bus power loss remains a bus fact, rather than disconnecting a
 responding HAT. Raw input frames are drained but do not yet produce input actions.
 
-A timed-out transaction keeps its owner; a delayed eligible terminal can retire
-it. ResetRequired waits for a Boot accepted by the transaction actor. Transport
-loss retains a reset latch across reopening: the reopened port monitors until
-Boot arrives beyond a receive boundary that excludes already-readable complete
-and partial records. ATX provides no physical reset timestamp; this boundary
-does not exclude data delayed upstream. Version never overrides uncertain
-ordering. A serial-open timeout is terminal for this UART owner, avoiding an
+A timed-out complete write keeps its owner; a delayed eligible terminal can
+retire it, or measured quiet recovery retires its unresolved receive ordering.
+Startup/reopen and receive corruption also acquire a quiet boundary before
+fresh initialization. The default is 250 ms, with an acquisition budget of the
+interval plus the setup allowance (5 s by default), followed by a separate V/D
+setup job. Continuous raw-byte activity restarts the timer while complete events
+remain observable; failed acquisition retries on the existing paced timer.
+Version itself never overrides uncertain ordering.
+
+Known partial-write poison requires an actor-accepted Boot beyond the existing
+receive boundary. The owner preserves authoritative poison sampled after actual
+helper/actor teardown across an in-process reopen; public Closed/status events
+alone are insufficient. Quiet cannot clear the HAT's partial command parser.
+There is no persistent UART journal. Quiet recovery is an operational policy,
+not a hardware latency guarantee or perfect same-bus response attribution.
+A serial-open timeout is terminal for this UART owner, avoiding an
 accumulation of blocked openers; restart after resolving the underlying problem.
 
 Helpers remain owned through cancellation and their completed panic results are
 inspected before recovery. Hardware and disk cleanup share an absolute 1.5 s
 local budget; the managed runtime's shared stop ceiling and actual destruction
 remain authoritative. Retained frontend handles keep snapshots, not descriptors.
-Before P4 enables fixture Send commands, daemon integration must preserve
-unresolved transport ambiguity across process crashes/startup too. The current
-health-only surface does not claim that mutating-command guarantee.
+Low-level `Transactions::resynchronize(quiet, within)` owns exclusive admission,
+keeps input events live, and requires a new explicit initialize after success.
+Caller cancellation reaches reader reset authorization directly, even if the
+actor has not been polled. Its event loop also checks the original deadline
+before each select so ready input cannot starve expiry. Cancellation/expiry leaves
+recovery required. Managed startup applies that
+policy automatically. The current surface still exposes only UART health;
+fixture capabilities arrive in P4.
 
 ## Read and edit
 
@@ -117,7 +134,8 @@ an independent consumer, cancellations, sync/CAS failures, original deadlines,
 controller identity, outage independence, notification lag and blocked-owner
 shutdown, late/reset/reopen boundaries, helper panic handling and blocked-opener
 incomplete stop. The declared guard-removal controls are in
-`v2-service-controls.toml` and `v2-uart-service-controls.toml`, with runner results beside them. The complete native
+`v2-service-controls.toml`, `v2-uart-service-controls.toml` and
+`v2-quiet-controls.toml`, with runner results beside them. The complete native
 suite also covers the existing migration/UART/emulator and legacy regressions.
 Pi checks compile the library/v2/emulator for armv7; physical I4 behavior, live
 Logmon delivery and Pi runtime still require later verification.

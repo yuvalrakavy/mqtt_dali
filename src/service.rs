@@ -31,6 +31,7 @@ pub enum Hardware {
     Closed,
     Connecting,
     Initializing,
+    Resynchronizing,
     Ready {
         version: crate::atx::wire::Version,
         buses: Vec<BusHealth>,
@@ -144,6 +145,18 @@ impl DaliService {
     ) -> Self {
         self.uart = Some(hat::Settings::new(path.into(), repeat));
         self
+    }
+    /// Select measured quiet recovery after enabling UART. Does not open it.
+    pub fn with_uart_quiet_period(mut self, quiet: std::time::Duration) -> Result<Self, String> {
+        if quiet < std::time::Duration::from_millis(1) || quiet > std::time::Duration::from_secs(5)
+        {
+            return Err("UART quiet period must be between 1 ms and 5 s".into());
+        }
+        self.uart
+            .as_mut()
+            .ok_or("enable UART before configuring its quiet period")?
+            .quiet = quiet;
+        Ok(self)
     }
     pub fn new(paths: ConfigPaths, instance: String) -> (Self, ServiceHandle) {
         let (send, receive) = mpsc::channel(4);

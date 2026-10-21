@@ -36,7 +36,12 @@ and a common raw Unix UART/PTY adapter. `Monitor::write` reports bytes accepted
 only; it does not correlate HAT replies or confirm device state. `Transactions`
 privately owns the monitor and serializes/correlates commands while draining idle
 events. Initialize explicitly. Timeout/cancellation retains outstanding terminals;
-ordering loss or a possibly partial write requires a later boot. Unverified j/t
+explicit measured `resynchronize` can retire complete-write/receive uncertainty
+and requires fresh initialization. The managed owner applies it on startup and
+recovery (default 250 ms; `--uart-quiet-ms 1..5000`). Known partial writes still
+require a later accepted Boot, including poison discovered during close/reopen.
+There is no persistent UART journal; see the quiet-recovery spec and running guide.
+Unverified j/t
 completion is refused. Subscribe before checking `status()` so a terminal link is
 not missed; any broadcast Lagged invalidates inferred state. Custom transports
 must implement the explicit nonblocking `DrainRead` contract; generic Pending

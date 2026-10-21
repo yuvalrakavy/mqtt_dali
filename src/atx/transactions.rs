@@ -18,6 +18,7 @@ pub enum SessionState {
     Uninitialized,
     Ready,
     Writing,
+    Resynchronizing,
     Awaiting { remaining: u8 },
     WaitingLateReply { remaining: u8 },
     ResetRequired,
@@ -34,8 +35,13 @@ pub enum BusReply {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Response {
+    /// A measured host-side quiet boundary; requires explicit initialization.
+    Synchronized,
     Version(Version),
-    Status { status: u8, channels: u8 },
+    Status {
+        status: u8,
+        channels: u8,
+    },
     Dali(Vec<BusReply>),
 }
 

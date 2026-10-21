@@ -2,41 +2,41 @@
  "rows": {
   "actor_accepts_completion_after_expiry": {
    "last_real": {
-    "at": "2026-10-21T16:18:04Z",
+    "at": "2026-10-21T21:41:55Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:432d77705e279f01",
+     "guard": "item:153ced3fffa42e21",
      "row": "931d789f6c4e10da",
      "test": null
     },
     "path": "command",
-    "secs": 2.2,
-    "sha": "84707cd1bbf3a6f6550ca1cc480f083c12ee166d",
+    "secs": 5.7,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "caller_accepts_a_ready_result_after_expiry": {
    "last_real": {
-    "at": "2026-10-21T16:18:02Z",
+    "at": "2026-10-21T21:41:49Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:6ba98a270eec7755",
-     "row": "52ff8673fe868791",
+     "guard": "item:02e1a4659c5da8cc",
+     "row": "6e3d9676ab5c42f0",
      "test": null
     },
     "path": "command",
-    "secs": 2.3,
-    "sha": "84707cd1bbf3a6f6550ca1cc480f083c12ee166d",
+    "secs": 6.0,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "drain_retry_is_mistaken_for_empty": {
    "last_real": {
-    "at": "2026-10-21T16:17:58Z",
+    "at": "2026-10-21T21:41:37Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,14 +46,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 2.2,
-    "sha": "84707cd1bbf3a6f6550ca1cc480f083c12ee166d",
+    "secs": 5.6,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "first_write_ignores_an_incomplete_line": {
    "last_real": {
-    "at": "2026-10-21T16:18:00Z",
+    "at": "2026-10-21T21:41:43Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -63,31 +63,31 @@
      "test": null
     },
     "path": "command",
-    "secs": 2.1,
-    "sha": "84707cd1bbf3a6f6550ca1cc480f083c12ee166d",
+    "secs": 5.4,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "timeout_discards_the_late_terminal_slot": {
    "last_real": {
-    "at": "2026-10-21T16:18:07Z",
+    "at": "2026-10-21T21:42:01Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:fc0de57e2a688aeb",
+     "guard": "item:8f4bb224d2da014e",
      "row": "da9d6f9b1b60969e",
      "test": null
     },
     "path": "command",
-    "secs": 3.1,
-    "sha": "84707cd1bbf3a6f6550ca1cc480f083c12ee166d",
+    "secs": 6.7,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "unverified_repeat_mode_is_allowed": {
    "last_real": {
-    "at": "2026-10-21T16:18:10Z",
+    "at": "2026-10-21T21:42:08Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,8 +97,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 3.1,
-    "sha": "84707cd1bbf3a6f6550ca1cc480f083c12ee166d",
+    "secs": 6.4,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   }

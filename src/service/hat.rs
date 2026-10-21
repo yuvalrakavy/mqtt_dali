@@ -16,6 +16,7 @@ use tokio::{
 pub(super) struct Settings {
     path: PathBuf,
     repeat: RepeatPolicy,
+    pub(super) quiet: Duration,
     pub(super) timing: Timing,
     #[cfg(test)]
     pub(super) open_hook: Option<crate::atx::serial::OpenHook>,
@@ -31,6 +32,7 @@ impl Settings {
         Self {
             path,
             repeat,
+            quiet: Duration::from_millis(250),
             timing: Timing {
                 setup: Duration::from_secs(5),
                 poll: Duration::from_secs(5),
@@ -47,6 +49,7 @@ struct Job(JoinHandle<Done>, JobKind);
 enum JobKind {
     Open,
     Boundary,
+    Recover,
     Query,
     Close,
 }
@@ -60,7 +63,8 @@ enum Done {
     Setup(Result<(Version, Vec<BusHealth>), TransactionError>),
     Poll(Result<Vec<BusHealth>, TransactionError>),
     Boundary(Result<u64, TransactionError>),
-    Close(Result<(), TransactionError>),
+    Recover(Result<(), TransactionError>),
+    Close(Result<(), TransactionError>, bool),
 }
 struct Session {
     link: Transactions<Serial>,
@@ -79,6 +83,8 @@ pub(super) struct Hat {
     next: Instant,
     terminal: bool,
     reset: bool,
+    requires_boot: bool,
+    needs_quiet: bool,
     needs_boundary: bool,
     boundary: Option<u64>,
     boot: Option<u64>,
@@ -109,6 +115,8 @@ impl Hat {
             next: Instant::now(),
             terminal: false,
             reset: false,
+            requires_boot: false,
+            needs_quiet: false,
             needs_boundary: false,
             boundary: None,
             boot: None,
@@ -141,6 +149,9 @@ impl Hat {
         let Some(session) = &self.session else {
             return Hardware::Connecting;
         };
+        if self.needs_quiet || session.link.status() == SessionState::Resynchronizing {
+            return Hardware::Resynchronizing;
+        }
         match session.link.status() {
             SessionState::WaitingLateReply { remaining } => {
                 Hardware::WaitingLateReply { remaining }
@@ -175,7 +186,10 @@ impl Hat {
         let wake = {
             let closing = self.closing;
             let timer = self.job.is_none()
-                && (self.session.is_none() || self.needs_boundary || self.can_query());
+                && (self.session.is_none()
+                    || self.needs_boundary
+                    || self.needs_quiet
+                    || self.can_query());
             let job = &mut self.job;
             let (events, status) = match self.session.as_mut() {
                 Some(s) => (Some(&mut s.events), Some(&mut s.status)),
@@ -238,6 +252,7 @@ impl Hat {
     fn can_query(&self) -> bool {
         !self.closing
             && !self.reset
+            && !self.needs_quiet
             && self.session.as_ref().is_some_and(|s| {
                 matches!(
                     s.link.status(),
@@ -254,7 +269,8 @@ impl Hat {
             self.spawn(JobKind::Close, async move {
                 // WAIT: v2-hat-close
                 let result = link.close().await;
-                Done::Close(result)
+                let poisoned = link.write_is_poisoned();
+                Done::Close(result, poisoned)
             });
             return Ok(());
         }
@@ -276,6 +292,11 @@ impl Hat {
             return Ok(());
         }
         let link = self.session.as_ref().unwrap().link.clone();
+        self.requires_boot |= link.write_is_poisoned();
+        if self.requires_boot {
+            self.reset = true;
+            self.needs_quiet = false;
+        }
         if self.needs_boundary {
             if Instant::now() < self.next {
                 return Ok(());
@@ -285,13 +306,15 @@ impl Hat {
             });
             return Ok(());
         }
-        if self.reset {
+        if self.reset && self.requires_boot {
             if self
                 .boot
                 .is_some_and(|sequence| self.boundary.is_none_or(|min| sequence >= min))
                 && link.status() == SessionState::Uninitialized
             {
                 self.reset = false;
+                self.requires_boot = false;
+                self.needs_quiet = true;
                 self.boot = None;
                 self.boundary = None;
                 self.version = None;
@@ -301,13 +324,35 @@ impl Hat {
                 return Ok(());
             }
         }
+        if self.needs_quiet && !self.requires_boot {
+            if Instant::now() < self.next {
+                return Ok(());
+            }
+            let settings = self.settings.as_ref().unwrap();
+            let quiet = settings.quiet;
+            let within = settings.timing.setup + quiet;
+            self.spawn(JobKind::Recover, async move {
+                Done::Recover(link.resynchronize(quiet, within).await)
+            });
+            return Ok(());
+        }
         match link.status() {
             SessionState::ResetRequired => {
                 self.reset = true;
+                if !self.requires_boot && !self.needs_quiet {
+                    self.needs_quiet = true;
+                    self.next = Instant::now() + self.settings.as_ref().unwrap().timing.retry;
+                }
                 self.version = None;
                 self.observations.clear();
             }
-            SessionState::WaitingLateReply { .. }
+            SessionState::WaitingLateReply { .. } => {
+                if !self.needs_quiet {
+                    self.needs_quiet = true;
+                    self.next = Instant::now() + self.settings.as_ref().unwrap().timing.retry;
+                }
+            }
+            SessionState::Resynchronizing
             | SessionState::Writing
             | SessionState::Awaiting { .. } => {}
             // Let the biased public event branch consume transport evidence
@@ -353,7 +398,8 @@ impl Hat {
                     events,
                     status,
                 });
-                self.needs_boundary = self.reset;
+                self.needs_boundary = self.requires_boot;
+                self.needs_quiet = !self.requires_boot;
                 self.boundary = None;
                 self.boot = None;
                 self.next = Instant::now();
@@ -376,6 +422,22 @@ impl Hat {
                 self.error = error.to_string();
                 self.next = Instant::now() + retry;
             }
+            Done::Recover(Ok(())) => {
+                self.reset = false;
+                self.needs_quiet = false;
+                self.version = None;
+                self.observations.clear();
+                self.next = Instant::now();
+            }
+            Done::Recover(Err(error)) => {
+                if error == TransactionError::Closed && !self.closing {
+                    return Err("HAT recovery owner unexpectedly closed".into());
+                }
+                self.error = error.to_string();
+                self.reset = true;
+                self.needs_quiet = true;
+                self.next = Instant::now() + retry;
+            }
             Done::Setup(Err(error)) | Done::Poll(Err(error)) => {
                 if error == TransactionError::Closed && !self.closing {
                     return Err("HAT request owner unexpectedly closed".into());
@@ -385,9 +447,11 @@ impl Hat {
                 self.observations.clear();
                 self.next = Instant::now() + retry;
             }
-            Done::Close(result) => {
+            Done::Close(result, poisoned) => {
                 result.map_err(|error| format!("HAT close incomplete: {error}"))?;
+                self.requires_boot |= poisoned;
                 self.session = None;
+                self.needs_quiet = false;
                 self.closing = false;
                 self.next = Instant::now() + retry;
             }
@@ -397,7 +461,7 @@ impl Hat {
     fn event(&mut self, event: Result<Event, broadcast::error::RecvError>) -> Result<(), String> {
         match event {
             Ok(Event::Closed(CloseReason::Eof | CloseReason::Io(_))) => {
-                self.error = "serial transport lost; fresh boot required after reopen".into();
+                self.error = "serial transport lost; resynchronizing after reopen".into();
                 self.reset = true;
                 self.version = None;
                 self.observations.clear();
@@ -487,10 +551,10 @@ impl Hat {
             }
         }
         if let Some(session) = self.session.as_ref() {
-            // WAIT: v2-hat-close
-            timeout_at(deadline, session.link.close())
+            session
+                .link
+                .close_until(deadline)
                 .await
-                .map_err(|_| "HAT shutdown deadline")?
                 .map_err(|error| format!("HAT shutdown: {error}"))?;
         }
         self.session = None;

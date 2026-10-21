@@ -2,24 +2,24 @@
  "rows": {
   "canonical_executable_never_starts_managed_runtime": {
    "last_real": {
-    "at": "2026-10-21T20:33:49Z",
+    "at": "2026-10-21T21:36:39Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:f6d688d40e729abc",
+     "guard": "item:2ac634e4be53a813",
      "row": "720e630d8104cd1b",
      "test": null
     },
     "path": "command",
-    "secs": 9.2,
-    "sha": "7ef11d7ae8379e666ff5c607bfa63b8f4d424b97",
+    "secs": 9.4,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "committed_inventory_discards_command_trace": {
    "last_real": {
-    "at": "2026-10-21T20:34:05Z",
+    "at": "2026-10-21T21:36:58Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -29,14 +29,14 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.8,
-    "sha": "7ef11d7ae8379e666ff5c607bfa63b8f4d424b97",
+    "secs": 6.1,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "metadata_actor_discards_command_trace": {
    "last_real": {
-    "at": "2026-10-21T20:34:00Z",
+    "at": "2026-10-21T21:36:52Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,42 +46,42 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.8,
-    "sha": "7ef11d7ae8379e666ff5c607bfa63b8f4d424b97",
+    "secs": 6.2,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "offline_mode_detector_consumes_option_values": {
    "last_real": {
-    "at": "2026-10-21T20:33:40Z",
+    "at": "2026-10-21T21:36:29Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:f6d688d40e729abc",
+     "guard": "item:2ac634e4be53a813",
      "row": "c6ec52394156bae6",
      "test": null
     },
     "path": "command",
-    "secs": 7.8,
-    "sha": "7ef11d7ae8379e666ff5c607bfa63b8f4d424b97",
+    "secs": 8.9,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   },
   "retained_version_reports_legacy_version": {
    "last_real": {
-    "at": "2026-10-21T20:33:55Z",
+    "at": "2026-10-21T21:36:46Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:f6d688d40e729abc",
+     "guard": "item:2ac634e4be53a813",
      "row": "95c159c2a572fa76",
      "test": null
     },
     "path": "command",
-    "secs": 6.1,
-    "sha": "7ef11d7ae8379e666ff5c607bfa63b8f4d424b97",
+    "secs": 6.9,
+    "sha": "b988daabfadeb8635fda33385861156ca42c40d1",
     "verdict": "RED"
    }
   }

@@ -1,4 +1,5 @@
 //! Continuous HAT monitoring. Writes report bytes accepted, never DALI ACKs.
+use super::joined;
 use super::stream::{Drain, DrainRead};
 use super::wire::{Command, DecodeError, Framer, Packet};
 use std::future::poll_fn;
@@ -12,6 +13,10 @@ use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf, WriteHalf};
 use tokio::sync::{broadcast, mpsc, oneshot, watch, Mutex};
 use tokio::task::AbortHandle;
+
+mod recovery;
+pub(crate) use recovery::RecoveryCancellation;
+use recovery::{Activity, FenceRequest, Reset};
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum TransportError {
@@ -62,6 +67,15 @@ pub enum LinkStatus {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ReceiveFence {
     pub minimum_sequence: u64,
+    sequence: u64,
+    activity_generation: u64,
+    reset: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct RecoveryFence {
+    pub sequence: u64,
+    pub activity_generation: u64,
 }
 
 struct State {
@@ -74,14 +88,16 @@ struct State {
     draining: AtomicBool,
     deadline: watch::Sender<Option<std::time::Instant>>,
     marker: watch::Sender<Option<Arc<AtomicU64>>>,
+    activity: watch::Sender<Activity>,
+    reset: std::sync::Mutex<Option<Arc<Reset>>>,
 }
 
 struct Inner<W> {
     writer: Mutex<Option<W>>,
     state: Arc<State>,
     reader: AbortHandle,
-    stopped: watch::Receiver<bool>,
-    fences: mpsc::Sender<oneshot::Sender<Result<ReceiveFence, TransportError>>>,
+    stopped: joined::Completion<()>,
+    fences: mpsc::Sender<FenceRequest>,
 }
 
 impl<W> Drop for Inner<W> {
@@ -105,7 +121,6 @@ impl<S> Clone for Monitor<S> {
 
 struct ReadLife {
     state: Arc<State>,
-    stopped: watch::Sender<bool>,
     reason: CloseReason,
 }
 
@@ -117,7 +132,6 @@ impl Drop for ReadLife {
         }
         self.state.stop.send_replace(true);
         let _ = self.state.events.send(Event::Closed(self.reason.clone()));
-        self.stopped.send_replace(true);
     }
 }
 
@@ -139,19 +153,36 @@ impl Drop for WriteLife {
 
 impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
     pub(crate) async fn fence(&self, within: Duration) -> Result<ReceiveFence, TransportError> {
+        let deadline = tokio::time::Instant::now()
+            .checked_add(within)
+            .ok_or(TransportError::Deadline)?;
+        self.fence_until(deadline, None).await
+    }
+    async fn fence_until(
+        &self,
+        deadline: tokio::time::Instant,
+        reset: Option<Arc<Reset>>,
+    ) -> Result<ReceiveFence, TransportError> {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(TransportError::Deadline);
+        }
         if self.status() == LinkStatus::Closed {
             return Err(TransportError::Closed);
         }
         let (send, receive) = oneshot::channel();
         self.inner
             .fences
-            .try_send(send)
+            .try_send(FenceRequest {
+                deadline,
+                reset,
+                reply: send,
+            })
             .map_err(|error| match error {
                 mpsc::error::TrySendError::Full(_) => TransportError::Busy,
                 mpsc::error::TrySendError::Closed(_) => TransportError::Closed,
             })?;
         // WAIT: atx-receive-fence
-        tokio::time::timeout(within, receive)
+        tokio::time::timeout_at(deadline, receive)
             .await
             .map_err(|_| TransportError::Deadline)?
             .map_err(|_| TransportError::Closed)?
@@ -167,7 +198,6 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
     }
     pub fn start(stream: S) -> (Self, broadcast::Receiver<Event>) {
         let (events, receive) = broadcast::channel(128);
-        let (stopped, stopped_rx) = watch::channel(false);
         let (stop, _) = watch::channel(false);
         let (deadline, _) = watch::channel(None);
         let (marker, _) = watch::channel(None);
@@ -182,6 +212,12 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
             draining: AtomicBool::new(false),
             deadline,
             marker,
+            activity: watch::channel(Activity {
+                generation: 0,
+                at: tokio::time::Instant::now(),
+            })
+            .0,
+            reset: std::sync::Mutex::new(None),
         });
         // Framing runs inside the same split-stream lock as the first write
         // poll: an observed partial line cannot race the write watermark.
@@ -193,12 +229,10 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
         });
         let life = ReadLife {
             state: Arc::clone(&state),
-            stopped,
             reason: CloseReason::WorkerStopped,
         };
-        let task = tokio::spawn(read_loop(reader, life, fence_requests));
-        let reader = task.abort_handle();
-        drop(task); // Lifetime is held by Inner; its final drop aborts the reader.
+        // WAIT: atx-reader
+        let (reader, stopped_rx) = joined::start(read_loop(reader, life, fence_requests));
         (
             Self {
                 inner: Arc::new(Inner {
@@ -292,20 +326,36 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Monitor<S> {
     }
 
     pub async fn close(&self) -> Result<(), TransportError> {
+        self.force_until(tokio::time::Instant::now() + Duration::from_millis(500))
+            .await
+    }
+
+    pub(crate) async fn force_until(
+        &self,
+        deadline: tokio::time::Instant,
+    ) -> Result<(), TransportError> {
         self.inner.state.alive.store(false, Ordering::Release);
         self.inner.state.stop.send_replace(true);
         self.inner.reader.abort();
         let mut stopped = self.inner.stopped.clone();
         // WAIT: atx-close
-        tokio::time::timeout(Duration::from_millis(500), async {
+        tokio::time::timeout_at(deadline, async {
             let mut writer = self.inner.writer.lock().await;
             writer.take();
             drop(writer);
-            while !*stopped.borrow_and_update() {
+            while stopped.borrow_and_update().is_none() {
                 stopped
                     .changed()
                     .await
                     .map_err(|_| TransportError::Closed)?;
+            }
+            if stopped.borrow().as_ref().is_some_and(|result| {
+                result
+                    .as_ref()
+                    .err()
+                    .is_some_and(|failure| !failure.canceled)
+            }) {
+                return Err(TransportError::Closed);
             }
             Ok(())
         })
@@ -341,6 +391,15 @@ struct ReadMode<S> {
 
 impl<S> ReadMode<S> {
     fn process(&mut self, bytes: &[u8]) {
+        if !bytes.is_empty() {
+            self.state.activity.send_modify(|activity| {
+                activity.generation = activity
+                    .generation
+                    .checked_add(1)
+                    .expect("ATX receive generation exhausted");
+                activity.at = tokio::time::Instant::now();
+            });
+        }
         let packets = self
             .framer
             .feed(bytes, tokio::time::Instant::now().into_std());
@@ -371,6 +430,19 @@ impl<S: DrainRead + Unpin> AsyncRead for ReadMode<S> {
             match Pin::new(&mut self.stream).poll_drain(context, buffer) {
                 Poll::Ready(Ok(Drain::Data)) => Poll::Ready(Ok(())),
                 Poll::Ready(Ok(Drain::Empty)) => {
+                    // WAIT: atx-reset-guard
+                    let reset = self.state.reset.lock().unwrap().clone();
+                    if let Some(reset) = reset {
+                        let activity = *self.state.activity.borrow();
+                        if self.state.alive.load(Ordering::Acquire)
+                            && !self.state.poisoned.load(Ordering::Acquire)
+                        {
+                            if let Some(_authorization) = reset.authorize(activity) {
+                                self.framer = Framer::default();
+                                self.process(&[]);
+                            }
+                        }
+                    }
                     Poll::Ready(Err(std::io::ErrorKind::WouldBlock.into()))
                 }
                 Poll::Ready(Err(error)) => Poll::Ready(Err(error)),
@@ -457,8 +529,19 @@ async fn receive_fence<R: AsyncRead + Unpin>(
     for _ in 0..8 {
         match read_available(reader, &mut bytes).await {
             Ok(None) => {
+                // WAIT: atx-reset-guard
+                let reset = life
+                    .state
+                    .reset
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .is_some_and(|reset| reset.applied());
                 return Ok(ReceiveFence {
                     minimum_sequence: life.state.minimum.load(Ordering::Acquire),
+                    sequence: life.state.sequence.load(Ordering::Acquire),
+                    activity_generation: life.state.activity.borrow().generation,
+                    reset,
                 });
             }
             Ok(Some(0)) => {
@@ -478,7 +561,7 @@ async fn receive_fence<R: AsyncRead + Unpin>(
 async fn read_loop<R: AsyncRead + Unpin>(
     mut reader: R,
     mut life: ReadLife,
-    mut fences: mpsc::Receiver<oneshot::Sender<Result<ReceiveFence, TransportError>>>,
+    mut fences: mpsc::Receiver<FenceRequest>,
 ) {
     let mut bytes = [0; 512];
     loop {
@@ -487,12 +570,18 @@ async fn read_loop<R: AsyncRead + Unpin>(
         tokio::select! {
             request = fences.recv() => {
                 let Some(request) = request else { return; };
+                if request.reply.is_closed() { continue; }
+                // WAIT: atx-reset-guard
+                *life.state.reset.lock().unwrap() = request.reset;
                 life.state.draining.store(true, Ordering::Release);
+                let drain_deadline = request.deadline.min(tokio::time::Instant::now() + Duration::from_millis(100));
                 // WAIT: atx-receive-fence
-                let result = tokio::time::timeout(Duration::from_millis(100), receive_fence(&mut reader, &mut life)).await.unwrap_or(Err(TransportError::Busy));
+                let result = tokio::time::timeout_at(drain_deadline, receive_fence(&mut reader, &mut life)).await.unwrap_or(Err(TransportError::Busy));
                 life.state.draining.store(false, Ordering::Release);
+                // WAIT: atx-reset-guard
+                life.state.reset.lock().unwrap().take();
                 let closed = matches!(result, Err(TransportError::Closed));
-                let _ = request.send(result);
+                let _ = request.reply.send(result);
                 if closed { return; }
                 continue;
             },

@@ -15,6 +15,142 @@ fn query() -> Command {
 }
 
 #[tokio::test]
+async fn quiet_recovery_retires_a_complete_write_timeout_without_boot() {
+    let (link, mut hat, mut events) = fixture(RepeatPolicy::Unverified).await;
+    let exchange = request(&link, query(), Duration::from_millis(20));
+    assert_eq!(line(&mut hat).await, b"h0190\n");
+    assert_eq!(exchange.await.unwrap(), Err(TransactionError::Deadline));
+    state(&link, SessionState::WaitingLateReply { remaining: 1 }).await;
+    hat.write_all(b"L020401\nJEE").await.unwrap();
+    link.resynchronize(Duration::from_millis(20), Duration::from_secs(1))
+        .await
+        .unwrap();
+    state(&link, SessionState::Uninitialized).await;
+    let mut input_seen = false;
+    while let Ok(event) = events.try_recv() {
+        if matches!(
+            event,
+            Event::Packet {
+                packet: Ok(crate::atx::wire::Packet {
+                    kind: crate::atx::wire::Kind::Dali(DaliFrame::Bits24(0x020401)),
+                    ..
+                }),
+                ..
+            }
+        ) {
+            input_seen = true;
+        }
+    }
+    assert!(input_seen, "recovery swallowed public input traffic");
+    assert_eq!(
+        link.execute(query(), Duration::from_secs(1)).await,
+        Err(TransactionError::NeedsInitialization)
+    );
+    initialize(&link, &mut hat).await;
+    let exchange = request(&link, query(), Duration::from_secs(1));
+    assert_eq!(line(&mut hat).await, b"h0190\n");
+    hat.write_all(b"J06\n").await.unwrap();
+    assert_eq!(
+        exchange.await.unwrap().unwrap(),
+        Response::Dali(vec![BusReply::Value(6)])
+    );
+    link.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn quiet_recovery_retires_receive_corruption_without_boot() {
+    let (link, mut hat, _) = fixture(RepeatPolicy::Unverified).await;
+    hat.write_all(b"malformed\n").await.unwrap();
+    state(&link, SessionState::ResetRequired).await;
+    link.resynchronize(Duration::from_millis(20), Duration::from_secs(1))
+        .await
+        .unwrap();
+    state(&link, SessionState::Uninitialized).await;
+    initialize(&link, &mut hat).await;
+    link.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn canceled_quiet_recovery_keeps_admission_closed_until_another_recovery() {
+    let (link, mut hat, _) = fixture(RepeatPolicy::Unverified).await;
+    let owner = link.clone();
+    let recovering = tokio::spawn(async move {
+        owner
+            .resynchronize(Duration::from_millis(250), Duration::from_secs(1))
+            .await
+    });
+    state(&link, SessionState::Resynchronizing).await;
+    assert_eq!(
+        link.execute(query(), Duration::from_secs(1)).await,
+        Err(TransactionError::Busy)
+    );
+    assert_eq!(
+        link.resynchronize(Duration::from_millis(20), Duration::from_secs(1))
+            .await,
+        Err(TransactionError::Busy)
+    );
+    recovering.abort();
+    assert!(recovering.await.unwrap_err().is_cancelled());
+    state(&link, SessionState::ResetRequired).await;
+    assert_eq!(
+        link.initialize(Duration::from_secs(1)).await,
+        Err(TransactionError::Desynchronized)
+    );
+    link.resynchronize(Duration::from_millis(20), Duration::from_secs(1))
+        .await
+        .unwrap();
+    initialize(&link, &mut hat).await;
+    link.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn expired_quiet_recovery_keeps_initialization_and_sends_closed() {
+    let (link, _hat, _) = fixture(RepeatPolicy::Unverified).await;
+    assert_eq!(
+        link.resynchronize(Duration::from_millis(250), Duration::from_millis(20))
+            .await,
+        Err(TransactionError::Deadline)
+    );
+    state(&link, SessionState::ResetRequired).await;
+    assert_eq!(
+        link.initialize(Duration::from_secs(1)).await,
+        Err(TransactionError::Desynchronized)
+    );
+    assert_eq!(
+        link.execute(query(), Duration::from_secs(1)).await,
+        Err(TransactionError::Desynchronized)
+    );
+    link.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn quiet_recovery_cannot_clear_known_partial_write_poison_even_after_close() {
+    let (stream, mut hat) = tokio::io::duplex(1);
+    let (link, _) = Transactions::start(stream, RepeatPolicy::Unverified);
+    initialize(&link, &mut hat).await;
+    let exchange = request(&link, query(), Duration::from_millis(20));
+    assert_eq!(hat.read_u8().await.unwrap(), b'h');
+    assert!(exchange.await.unwrap().is_err());
+    state(&link, SessionState::ResetRequired).await;
+    assert!(matches!(
+        link.resynchronize(Duration::from_millis(20), Duration::from_secs(1))
+            .await,
+        Err(TransactionError::Transport(
+            crate::atx::monitor::TransportError::IndeterminateWrite
+        ))
+    ));
+    assert_eq!(
+        link.initialize(Duration::from_secs(1)).await,
+        Err(TransactionError::Desynchronized)
+    );
+    link.close().await.unwrap();
+    assert!(
+        link.write_is_poisoned(),
+        "Closed status masked authoritative write-poison evidence"
+    );
+}
+
+#[tokio::test]
 async fn verified_repeat_profiles_consume_their_declared_terminal_count() {
     for (policy, wire, replies) in [
         (
@@ -538,4 +674,99 @@ async fn a_caller_resuming_after_expiry_cannot_accept_an_already_ready_success()
         "ready oneshot bypassed the caller's deadline"
     );
     link.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn canceled_shutdown_waiter_does_not_cancel_actual_resource_teardown() {
+    use std::{future::Future, task::Poll};
+    let (link, mut hat, _) = fixture(RepeatPolicy::Unverified).await;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+    {
+        let mut close = std::pin::pin!(link.close_until(deadline));
+        std::future::poll_fn(|context| {
+            assert!(close.as_mut().poll(context).is_pending());
+            Poll::Ready(())
+        })
+        .await;
+    }
+    let mut byte = [0];
+    assert_eq!(
+        timeout(Duration::from_secs(1), hat.read(&mut byte))
+            .await
+            .expect("canceled close waiter stranded the stream")
+            .unwrap(),
+        0,
+        "canceled close waiter stranded the stream"
+    );
+    link.close_until(deadline).await.unwrap();
+    assert_eq!(
+        link.execute(query(), Duration::from_secs(1)).await,
+        Err(TransactionError::Closed)
+    );
+}
+
+#[tokio::test]
+async fn actor_panic_releases_transport_without_a_shutdown_waiter() {
+    use std::{
+        future::Future,
+        io,
+        pin::Pin,
+        task::{Context, Poll},
+    };
+    struct PanicDrain(DuplexStream);
+    impl tokio::io::AsyncRead for PanicDrain {
+        fn poll_read(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            bytes: &mut tokio::io::ReadBuf<'_>,
+        ) -> Poll<io::Result<()>> {
+            Pin::new(&mut self.0).poll_read(cx, bytes)
+        }
+    }
+    impl crate::atx::stream::DrainRead for PanicDrain {
+        fn poll_drain(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            bytes: &mut tokio::io::ReadBuf<'_>,
+        ) -> Poll<io::Result<crate::atx::stream::Drain>> {
+            crate::atx::stream::DrainRead::poll_drain(Pin::new(&mut self.0), cx, bytes)
+        }
+    }
+    impl tokio::io::AsyncWrite for PanicDrain {
+        fn poll_write(
+            self: Pin<&mut Self>,
+            _: &mut Context<'_>,
+            _: &[u8],
+        ) -> Poll<io::Result<usize>> {
+            panic!("injected transaction write panic");
+        }
+        fn poll_flush(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<io::Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+        fn poll_shutdown(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<io::Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+    }
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let (link, _) = Transactions::start(PanicDrain(stream), RepeatPolicy::Unverified);
+    let retained = link.clone();
+    // Poll an initialization into the actor queue without giving the actor CPU.
+    let mut initialize = std::pin::pin!(link.initialize(Duration::from_secs(1)));
+    std::future::poll_fn(|cx| {
+        assert!(initialize.as_mut().poll(cx).is_pending());
+        Poll::Ready(())
+    })
+    .await;
+    // The actor panics in its owned write; the close waiter has never owned
+    // this cleanup. Keeping the frontend alive must not retain the descriptor.
+    assert!(initialize.await.is_err());
+    let mut byte = [0];
+    assert_eq!(
+        timeout(Duration::from_millis(200), hat.read(&mut byte))
+            .await
+            .expect("actor panic retained the actual transport")
+            .unwrap(),
+        0
+    );
+    assert_eq!(retained.status(), SessionState::Closed);
 }

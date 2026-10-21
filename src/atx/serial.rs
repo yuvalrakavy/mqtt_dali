@@ -14,6 +14,14 @@ use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 pub struct Serial {
     descriptor: AsyncFd<OwnedFd>,
+    #[cfg(test)]
+    write_limit: Option<WriteLimit>,
+}
+
+#[cfg(test)]
+struct WriteLimit {
+    remaining: usize,
+    blocked: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
 impl Serial {
@@ -53,6 +61,8 @@ impl Serial {
         }
         Ok(Self {
             descriptor: AsyncFd::new(descriptor)?,
+            #[cfg(test)]
+            write_limit: None,
         })
     }
 
@@ -78,7 +88,23 @@ impl Serial {
         configure(&descriptor)?;
         Ok(Self {
             descriptor: AsyncFd::new(descriptor)?,
+            #[cfg(test)]
+            write_limit: None,
         })
+    }
+
+    /// Deterministic PTY backpressure after an actual accepted prefix. Unit
+    /// builds only: no environment knob or production transport behavior.
+    #[cfg(test)]
+    pub(crate) fn limit_writes(
+        &mut self,
+        prefix: usize,
+        blocked: tokio::sync::oneshot::Sender<()>,
+    ) {
+        self.write_limit = Some(WriteLimit {
+            remaining: prefix,
+            blocked: Some(blocked),
+        });
     }
 }
 
@@ -208,9 +234,21 @@ impl AsyncWrite for Serial {
         context: &mut Context<'_>,
         bytes: &[u8],
     ) -> Poll<io::Result<usize>> {
+        let this = self.get_mut();
+        #[cfg(test)]
+        let bytes = match this.write_limit.as_mut() {
+            Some(limit) if limit.remaining == 0 => {
+                if let Some(blocked) = limit.blocked.take() {
+                    let _ = blocked.send(());
+                }
+                return Poll::Pending;
+            }
+            Some(limit) => &bytes[..bytes.len().min(limit.remaining)],
+            None => bytes,
+        };
         loop {
-            let mut ready = ready!(self.descriptor.poll_write_ready(context))?;
-            match ready.try_io(|descriptor| {
+            let mut ready = ready!(this.descriptor.poll_write_ready(context))?;
+            let result = ready.try_io(|descriptor| {
                 let count = unsafe {
                     libc::write(
                         descriptor.get_ref().as_raw_fd(),
@@ -223,12 +261,20 @@ impl AsyncWrite for Serial {
                 } else {
                     Ok(count as usize)
                 }
-            }) {
+            });
+            drop(ready);
+            match result {
                 Ok(Err(error)) if error.kind() == io::ErrorKind::Interrupted => {
                     context.waker().wake_by_ref();
                     return Poll::Pending;
                 }
-                Ok(result) => return Poll::Ready(result),
+                Ok(result) => {
+                    #[cfg(test)]
+                    if let (Ok(count), Some(limit)) = (&result, this.write_limit.as_mut()) {
+                        limit.remaining = limit.remaining.saturating_sub(*count);
+                    }
+                    return Poll::Ready(result);
+                }
                 Err(_) => continue,
             }
         }

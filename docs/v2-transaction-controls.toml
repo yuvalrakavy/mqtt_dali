@@ -21,12 +21,11 @@ expect_text = "observed partial line was omitted from first-write boundary"
 [[control]]
 name = "caller_accepts_a_ready_result_after_expiry"
 file = "src/atx/transactions/engine.rs"
-anchor = "if Instant::now() >= deadline {\n            return Err(TransactionError::Deadline);\n        }\n        result"
-replacement = "result"
+anchor = "let result = timeout_at(deadline, receive)\n            .await\n            .map_err(|_| TransactionError::Deadline)?\n            .map_err(|_| TransactionError::Closed)?;\n        if Instant::now() >= deadline {\n            return Err(TransactionError::Deadline);\n        }\n        result"
+replacement = "let result = timeout_at(deadline, receive)\n            .await\n            .map_err(|_| TransactionError::Deadline)?\n            .map_err(|_| TransactionError::Closed)?;\n        result"
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(a_caller_resuming_after_expiry_cannot_accept_an_already_ready_success)"]
 expect_text = "ready oneshot bypassed the caller's deadline"
-
 [[control]]
 name = "actor_accepts_completion_after_expiry"
 file = "src/atx/transactions/engine.rs"

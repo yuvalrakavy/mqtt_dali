@@ -1,5 +1,6 @@
 use super::super::wire::{DaliFrame, Kind};
 use super::*;
+use crate::atx::test_support::HeldDrain;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::time::{timeout, Duration};
 
@@ -8,6 +9,242 @@ async fn next(events: &mut broadcast::Receiver<Event>) -> Event {
         .await
         .expect("continuous HAT reader stopped delivering events")
         .unwrap()
+}
+
+#[tokio::test(start_paused = true)]
+async fn quiet_fence_measures_silence_and_restarts_on_partial_raw_input() {
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let (monitor, _) = Monitor::start(stream);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+    let mut recovery = std::pin::pin!(monitor.quiet_fence(Duration::from_millis(250), deadline));
+    for _ in 0..2 {
+        tokio::select! {
+            biased;
+            result = &mut recovery => panic!("quiet fence completed before the interval: {result:?}"),
+            _ = tokio::task::yield_now() => {},
+        }
+    }
+    tokio::time::advance(Duration::from_millis(200)).await;
+    hat.write_all(b"L0204").await.unwrap();
+    monitor.fence(Duration::from_secs(1)).await.unwrap();
+    tokio::time::advance(Duration::from_millis(249)).await;
+    tokio::select! {
+        biased;
+        result = &mut recovery => panic!("raw partial bytes failed to restart quiet interval: {result:?}"),
+        _ = tokio::task::yield_now() => {},
+    }
+    tokio::time::advance(Duration::from_millis(1)).await;
+    recovery.await.unwrap();
+    // Recovery resets only the old incomplete host framing. A subsequent
+    // complete event must parse, rather than joining the abandoned prefix.
+    let mut events = monitor.subscribe();
+    hat.write_all(b"L020401\n").await.unwrap();
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet {
+            packet: Ok(Packet {
+                kind: Kind::Dali(DaliFrame::Bits24(0x020401)),
+                ..
+            }),
+            ..
+        }
+    ));
+    monitor.close().await.unwrap();
+}
+
+#[tokio::test(start_paused = true)]
+async fn quiet_fence_keeps_complete_input_events_visible() {
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let (monitor, mut events) = Monitor::start(stream);
+    hat.write_all(b"L020401\n").await.unwrap();
+    let until = tokio::time::Instant::now() + Duration::from_secs(1);
+    let fence = monitor
+        .quiet_fence(Duration::from_millis(250), until)
+        .await
+        .unwrap();
+    assert_eq!(fence.sequence, 1);
+    assert!(fence.activity_generation > 0);
+    assert!(matches!(
+        next(&mut events).await,
+        Event::Packet {
+            packet: Ok(Packet {
+                kind: Kind::Dali(DaliFrame::Bits24(0x020401)),
+                ..
+            }),
+            ..
+        }
+    ));
+    monitor.close().await.unwrap();
+}
+
+#[tokio::test(start_paused = true)]
+async fn quiet_fence_expires_under_continuous_input_without_hiding_events() {
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let (monitor, mut events) = Monitor::start(stream);
+    let owner = monitor.clone();
+    let recovery = tokio::spawn(async move {
+        owner
+            .quiet_fence(
+                Duration::from_millis(100),
+                tokio::time::Instant::now() + Duration::from_millis(200),
+            )
+            .await
+    });
+    tokio::task::yield_now().await;
+    for _ in 0..4 {
+        hat.write_all(b"L020401\n").await.unwrap();
+        assert!(matches!(
+            next(&mut events).await,
+            Event::Packet { packet: Ok(_), .. }
+        ));
+        tokio::time::advance(Duration::from_millis(50)).await;
+    }
+    assert!(matches!(
+        recovery.await.unwrap(),
+        Err(TransportError::Deadline)
+    ));
+    monitor.close().await.unwrap();
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_delayed_canceled_or_expired_quiet_reset_cannot_discard_later_framing() {
+    for expire in [false, true] {
+        let (stream, mut hat) = tokio::io::duplex(1024);
+        let held = Arc::new(AtomicBool::new(false));
+        let (entered, waiting) = oneshot::channel();
+        let (monitor, mut events) = Monitor::start(HeldDrain {
+            stream,
+            held: held.clone(),
+            entered: Some(entered),
+        });
+        hat.write_all(b"L0204").await.unwrap();
+        monitor.fence(Duration::from_secs(1)).await.unwrap();
+        held.store(true, Ordering::Release);
+        let owner = monitor.clone();
+        let recovering = tokio::spawn(async move {
+            owner
+                .quiet_fence(
+                    Duration::from_millis(20),
+                    tokio::time::Instant::now() + Duration::from_millis(80),
+                )
+                .await
+        });
+        waiting.await.unwrap();
+        if expire {
+            tokio::time::advance(Duration::from_millis(80)).await;
+            assert!(matches!(
+                recovering.await.unwrap(),
+                Err(TransportError::Deadline)
+            ));
+        } else {
+            recovering.abort();
+            assert!(recovering.await.unwrap_err().is_cancelled());
+        }
+        held.store(false, Ordering::Release);
+        // This queues after the held request and confirms its reader execution
+        // has completed before the later suffix is supplied.
+        monitor.fence(Duration::from_secs(1)).await.unwrap();
+        hat.write_all(b"01\n").await.unwrap();
+        assert!(
+            matches!(
+                next(&mut events).await,
+                Event::Packet {
+                    packet: Ok(Packet {
+                        kind: Kind::Dali(DaliFrame::Bits24(0x020401)),
+                        ..
+                    }),
+                    ..
+                }
+            ),
+            "old canceled/expired request discarded framing"
+        );
+        monitor.close().await.unwrap();
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn new_bytes_during_a_quiet_fence_invalidate_its_reset_candidate() {
+    let (stream, mut hat) = tokio::io::duplex(1024);
+    let held = Arc::new(AtomicBool::new(true));
+    let (entered, waiting) = oneshot::channel();
+    let (monitor, mut events) = Monitor::start(HeldDrain {
+        stream,
+        held: held.clone(),
+        entered: Some(entered),
+    });
+    let owner = monitor.clone();
+    let recovering = tokio::spawn(async move {
+        owner
+            .quiet_fence(
+                Duration::from_millis(20),
+                tokio::time::Instant::now() + Duration::from_secs(1),
+            )
+            .await
+    });
+    waiting.await.unwrap();
+    hat.write_all(b"L0204").await.unwrap();
+    held.store(false, Ordering::Release);
+    monitor.fence(Duration::from_secs(1)).await.unwrap();
+    assert!(monitor.activity_generation() > 0);
+    assert!(
+        !recovering.is_finished(),
+        "stale quiet candidate accepted new raw activity"
+    );
+    hat.write_all(b"01\n").await.unwrap();
+    assert!(
+        matches!(
+            next(&mut events).await,
+            Event::Packet {
+                packet: Ok(Packet {
+                    kind: Kind::Dali(DaliFrame::Bits24(0x020401)),
+                    ..
+                }),
+                ..
+            }
+        ),
+        "stale quiet candidate discarded the new partial record"
+    );
+    recovering.await.unwrap().unwrap();
+    monitor.close().await.unwrap();
+}
+
+#[tokio::test(start_paused = true)]
+async fn quiet_fence_reports_eof_and_never_rearms_partial_write_poison() {
+    let (stream, mut hat) = tokio::io::duplex(1);
+    let (monitor, _) = Monitor::start(stream);
+    assert!(monitor
+        .write(&Command::Version, Duration::from_millis(20))
+        .await
+        .is_err());
+    assert!(monitor.write_is_poisoned());
+    let result = monitor
+        .quiet_fence(
+            Duration::from_millis(250),
+            tokio::time::Instant::now() + Duration::from_secs(1),
+        )
+        .await;
+    assert!(matches!(result, Err(TransportError::IndeterminateWrite)));
+    assert!(monitor.write_is_poisoned());
+    // Consume the accepted prefix; closure must wake quiet acquisition instead
+    // of requiring its full interval or inventing a framing reset.
+    assert_eq!(hat.read_u8().await.unwrap(), b'v');
+    monitor.close().await.unwrap();
+    let (stream, hat) = tokio::io::duplex(1024);
+    let (monitor, _) = Monitor::start(stream);
+    let mut quiet = std::pin::pin!(monitor.quiet_fence(
+        Duration::from_secs(5),
+        tokio::time::Instant::now() + Duration::from_secs(6)
+    ));
+    tokio::select! { biased; result=&mut quiet=>panic!("unexpected quiet completion: {result:?}"), _=tokio::task::yield_now()=>{} }
+    let started = tokio::time::Instant::now();
+    drop(hat);
+    assert!(matches!(quiet.await, Err(TransportError::Closed)));
+    assert_eq!(
+        started,
+        tokio::time::Instant::now(),
+        "EOF waited for the quiet timer"
+    );
+    monitor.close().await.unwrap();
 }
 
 #[tokio::test]

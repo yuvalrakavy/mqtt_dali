@@ -27,6 +27,10 @@ pub fn run() -> ExitCode {
             "uart",
             "UART/PTY path (default /dev/serial0; none disables hardware)",
         ),
+        (
+            "uart-quiet-ms",
+            "quiet recovery interval, 1..5000 ms (default 250)",
+        ),
     ]
     .into_iter()
     .map(|(key, help)| (key.into(), help.into()))
@@ -53,7 +57,7 @@ pub fn run() -> ExitCode {
                 return Err(Problem::Usage(format!("--{option} must not be empty")));
             }
         }
-        Ok(())
+        uart_quiet(settings.options.get("uart-quiet-ms").map(String::as_str)).map(|_| ())
     });
     if let Err(problem) = parsed {
         let usage=format!("{}\nOffline: --check-config [--config <file>] [--legacy-config <file>] [--name <controller>]\n",config::usage("mqtt_dali","DALI",&declared));
@@ -91,9 +95,26 @@ pub fn run() -> ExitCode {
     let uart = bridge.value("uart").unwrap_or("/dev/serial0");
     if uart != "none" {
         service = service.with_uart(uart, RepeatPolicy::Unverified);
+        service = service
+            .with_uart_quiet_period(
+                uart_quiet(bridge.value("uart-quiet-ms")).expect("validated quiet interval"),
+            )
+            .expect("validated interval and enabled UART");
     }
     // WAIT: v2-daemon-run
     bridge.run_managed(service)
+}
+
+fn uart_quiet(value: Option<&str>) -> Result<std::time::Duration, Problem> {
+    value
+        .unwrap_or("250")
+        .parse::<u64>()
+        .ok()
+        .filter(|value| (1..=5000).contains(value))
+        .map(std::time::Duration::from_millis)
+        .ok_or_else(|| {
+            Problem::Usage("--uart-quiet-ms must be an integer between 1 and 5000".into())
+        })
 }
 
 fn offline_check(arguments: &[std::ffi::OsString]) -> bool {

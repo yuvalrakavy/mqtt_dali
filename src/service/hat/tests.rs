@@ -70,12 +70,31 @@ async fn drive(hat: &mut Hat, predicate: impl Fn(&Hardware) -> bool) {
 }
 fn settings(path: PathBuf) -> Settings {
     let mut settings = Settings::new(path, RepeatPolicy::Unverified);
+    settings.quiet = Duration::from_millis(20);
     settings.timing = Timing {
         setup: Duration::from_millis(80),
         poll: Duration::from_secs(60),
         retry: Duration::from_millis(20),
     };
     settings
+}
+
+#[tokio::test]
+async fn uart_owner_measures_a_quiet_interval_before_first_initialization_without_boot() {
+    let mut pty = Pty::new();
+    let mut config = settings(pty.path.clone());
+    config.quiet = Duration::from_millis(250);
+    let started = Instant::now();
+    let mut hat = Hat::new(Some(config), vec![0]);
+    drive(&mut hat, |h| matches!(h, Hardware::Initializing)).await;
+    assert_eq!(line(&mut pty.peer).await, b"v\n");
+    assert!(
+        started.elapsed() >= Duration::from_millis(250),
+        "initial UART drain did not measure the quiet interval"
+    );
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -128,18 +147,25 @@ async fn healthy_uart_remains_independent_of_broker_and_metadata_updates_preserv
 }
 
 #[tokio::test]
-async fn late_version_keeps_the_same_owner_and_blocks_queries_until_retired() {
+async fn late_version_recovers_the_same_owner_after_a_quiet_interval_without_boot() {
     let mut pty = Pty::new();
     let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
     drive(&mut hat, |h| matches!(h, Hardware::Initializing)).await;
     assert_eq!(line(&mut pty.peer).await, b"v\n");
-    drive(&mut hat, |h| matches!(h, Hardware::WaitingLateReply { .. })).await;
-    for _ in 0..3 {
-        tokio::select! {_=hat.changed()=>{},_=tokio::time::sleep(Duration::from_millis(10))=>{}}
-    }
-    quiet(&mut pty.peer).await;
-    pty.peer.write_all(b"V013204\n").await.unwrap();
+    drive(&mut hat, |h| {
+        matches!(
+            h,
+            Hardware::WaitingLateReply { .. } | Hardware::Resynchronizing
+        )
+    })
+    .await;
+    let original = hat.session.as_ref().unwrap().link.clone();
     drive(&mut hat, |h| matches!(h, Hardware::Initializing)).await;
+    assert_ne!(
+        original.status(),
+        SessionState::Closed,
+        "late reply recovery discarded the owned descriptor"
+    );
     assert_eq!(line(&mut pty.peer).await, b"v\n");
     pty.peer.write_all(b"V013204\n").await.unwrap();
     // The local test must continue polling the lifecycle while answering UART.
@@ -153,29 +179,19 @@ async fn late_version_keeps_the_same_owner_and_blocks_queries_until_retired() {
 }
 
 #[tokio::test]
-async fn reset_required_waits_for_actor_accepted_boot_without_reopening() {
+async fn receive_corruption_recovers_after_quiet_without_boot_or_reopening() {
     let mut pty = Pty::new();
     let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
     drive(&mut hat, |h| matches!(h, Hardware::Initializing)).await;
     assert_eq!(line(&mut pty.peer).await, b"v\n");
     pty.peer.write_all(b"invalid\n").await.unwrap();
-    drive(&mut hat, |h| matches!(h, Hardware::ResetRequired)).await;
+    drive(&mut hat, |h| {
+        matches!(h, Hardware::ResetRequired | Hardware::Resynchronizing)
+    })
+    .await;
     let original = hat.session.as_ref().unwrap().link.clone();
-    assert_eq!(
-        original
-            .fresh_boot_boundary(Duration::from_millis(50))
-            .await,
-        Err(TransactionError::Desynchronized),
-        "receive boundary admitted a poisoned session"
-    );
-    // Status observations and a late V do not prove a reset.
+    // These remain observations while the measured quiet boundary is acquired.
     pty.peer.write_all(b"D24\nV013204\n").await.unwrap();
-    for _ in 0..5 {
-        tokio::select! {_=hat.changed()=>{},_=tokio::time::sleep(Duration::from_millis(10))=>{}}
-    }
-    assert_eq!(original.status(), SessionState::ResetRequired);
-    quiet(&mut pty.peer).await;
-    pty.peer.write_all(b"B013204\n").await.unwrap();
     drive(&mut hat, |h| matches!(h, Hardware::Initializing)).await;
     assert_ne!(
         original.status(),
@@ -198,6 +214,7 @@ async fn reopen_boundary_excludes_complete_and_partial_buffered_boot_records() {
             .unwrap();
         let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
         hat.reset = true;
+        hat.requires_boot = true;
         tokio::time::timeout(Duration::from_secs(2), async {
             while hat.boundary.is_none() && hat.reset {
                 hat.changed().await.unwrap();
@@ -335,7 +352,7 @@ async fn blocked_open_is_terminal_and_prevents_a_false_clean_managed_stop() {
 }
 
 #[tokio::test]
-async fn actual_transport_loss_reopens_only_for_monitoring_until_fresh_boot() {
+async fn actual_transport_loss_reopens_and_measures_quiet_before_initialization() {
     let mut first = Pty::new();
     let mut second = Pty::new();
     let path = std::env::temp_dir().join(format!(
@@ -362,6 +379,79 @@ async fn actual_transport_loss_reopens_only_for_monitoring_until_fresh_boot() {
     std::fs::remove_file(&path).unwrap();
     std::os::unix::fs::symlink(&second.path, &path).unwrap();
     drop(first);
+    drive(&mut hat, |h| matches!(h, Hardware::Initializing)).await;
+    assert!(
+        !hat.reset,
+        "quiet recovery retained the general reopen latch"
+    );
+    assert_eq!(line(&mut second.peer).await, b"v\n");
+    hat.close(Instant::now() + Duration::from_secs(1))
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn eof_during_partial_write_retains_poison_discovered_during_teardown() {
+    let mut first = Pty::new();
+    let mut second = Pty::new();
+    let path = std::env::temp_dir().join(format!(
+        "dali-partial-reopen-{:032x}",
+        rand::random::<u128>()
+    ));
+    struct Link(PathBuf);
+    impl Drop for Link {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+    let _cleanup = Link(path.clone());
+    std::os::unix::fs::symlink(&first.path, &path).unwrap();
+    let mut serial = Serial::open(&first.path).await.unwrap();
+    let (blocked, waiting) = tokio::sync::oneshot::channel();
+    serial.limit_writes(1, blocked);
+    let (link, events) = Transactions::start(serial, RepeatPolicy::Unverified);
+    let original = link.clone();
+    let status = link.observe_status();
+    let mut config = settings(path.clone());
+    config.timing.setup = Duration::from_secs(2);
+    let mut hat = Hat::new(Some(config), vec![0]);
+    hat.session = Some(Session {
+        link,
+        events,
+        status,
+    });
+    hat.advance().unwrap();
+    tokio::time::timeout(Duration::from_secs(1), waiting)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(first.peer.read_u8().await.unwrap(), b'v');
+    assert!(
+        !original.write_is_poisoned(),
+        "write was already canceled before the EOF observation"
+    );
+    // Schedule the owner's EOF observation ahead of the actor's write-future
+    // cancellation, the valid ordering which public events alone cannot cover.
+    hat.event(Ok(Event::Closed(CloseReason::Eof))).unwrap();
+    std::fs::remove_file(&path).unwrap();
+    std::os::unix::fs::symlink(&second.path, &path).unwrap();
+    drop(first);
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while hat.session.is_some() {
+            hat.changed().await.unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(original.status(), SessionState::Closed);
+    assert!(
+        original.write_is_poisoned(),
+        "partial write did not produce authoritative poison during close"
+    );
+    assert!(
+        hat.requires_boot,
+        "poison discovered after EOF was lost at the close handoff"
+    );
     tokio::time::timeout(Duration::from_secs(2), async {
         while hat.boundary.is_none() {
             hat.changed().await.unwrap();
@@ -369,10 +459,7 @@ async fn actual_transport_loss_reopens_only_for_monitoring_until_fresh_boot() {
     })
     .await
     .unwrap();
-    assert!(
-        hat.reset,
-        "transport reopen cleared unresolved response ordering"
-    );
+    assert!(hat.reset && hat.requires_boot);
     quiet(&mut second.peer).await;
     second.peer.write_all(b"B013204\n").await.unwrap();
     drive(&mut hat, |h| matches!(h, Hardware::Initializing)).await;
@@ -401,6 +488,7 @@ fn an_earlier_query_snapshot_cannot_replace_a_later_proactive_bus_observation() 
         "old poll result replaced a newer proactive observation"
     );
     hat.reset = true;
+    hat.requires_boot = true;
     hat.needs_boundary = true;
     hat.finished(Done::Boundary(Err(TransactionError::Deadline)))
         .unwrap();
@@ -415,6 +503,7 @@ async fn failed_boundary_retries_on_a_quiet_transport_without_new_events() {
     let pty = Pty::new();
     let mut hat = Hat::new(Some(settings(pty.path)), vec![0]);
     hat.reset = true;
+    hat.requires_boot = true;
     tokio::time::timeout(Duration::from_secs(2), async {
         while hat.boundary.is_none() {
             hat.changed().await.unwrap();
@@ -590,6 +679,7 @@ async fn fresh_boot_keeps_a_completed_receive_boundary_instead_of_requiring_anot
         status,
     });
     hat.reset = true;
+    hat.requires_boot = true;
     hat.needs_boundary = true;
     // The no-write boundary completed before the new Boot became readable.
     hat.spawn(JobKind::Boundary, async { Done::Boundary(Ok(1)) });
