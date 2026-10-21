@@ -666,14 +666,15 @@ reviews approve the documented bounded-rejection contract with no additional
 material source finding. Reviews use the same model family. Implementation is
 committed as `5943268`, with the explicit outage limitation in `1dee55e`.
 
-Source review confirmed a broader remaining integration gap: the SDK abandons
+Source review confirmed an outage policy boundary: the SDK abandons
 Rejected state requests, so HAT recovery alone does not retry Desired consumed
 during an outage or before UART startup readiness. This slice explicitly uses
-target rejection to preserve metadata and healthy fixtures. The guide now states
-the limitation. The next required slice is target-scoped deferred state in the
-SDK and its DALI adoption, with causal outage/convergence tests; a proxy-owned
-queue or whole-controller Link outage would violate the existing ownership and
-availability boundaries.
+target rejection to preserve metadata and healthy fixtures. The owner explicitly
+accepted dropping commands during rare bus outages and stopped the proposed
+deferral work on 2026-10-22. No production deferral code was implemented; the
+exploratory test scaffolding was removed. The guide states the accepted behavior.
+Proceed with the requested switch/color capabilities. Assess likelihood, impact
+and simpler alternatives before expanding infrastructure for another edge case.
 See [the MQTT output guide](mqtt-outputs.md) and the
 [slice spec](superpowers/specs/2026-10-22-dali-v2-p4b-mqtt-outputs.md).
 

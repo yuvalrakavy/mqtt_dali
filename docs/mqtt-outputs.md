@@ -67,12 +67,12 @@ UART, background reads reject before taking physical admission; metadata remains
 accessible. Busy or expired operations can fail. A canceled frontend cannot undo
 a command already sent: inspect observed state before retrying an uncertain write.
 
-Current development limitation: a Desired request consumed while a fixture's bus
+Outage behavior: a Desired request consumed while a fixture's bus
 or UART is unavailable is rejected. HAT/bus recovery alone does not retry it,
 including retained Desired consumed before startup readiness. A later broker
-reconnect may replay retained property intent. Target-scoped deferred state is
-the next integration slice; automatic hardware-outage convergence is not yet
-implemented. Metadata and healthy fixtures remain accessible during that outage.
+reconnect may replay retained property intent. Dropping commands received during
+such rare outages is an accepted policy. Metadata and healthy fixtures remain
+accessible during that outage.
 
 These paths are tested with isolated brokers and independent PTY fixtures. Physical
 I4 firmware and fixture validation remain pending; see the
