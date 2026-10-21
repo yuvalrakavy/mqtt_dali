@@ -8,12 +8,11 @@
 # (ERROR = code fix warranted; WARN = zero-at-idle, every WARN carries kind).
 
 [logging]
-# The bridge always initializes logging; this chooses where it goes. "+g+o"
-# ADDS GELF and OpenTelemetry to what the command line asks for (--console:
-# the console; --log: a file, logs/dali.<date>.log). A destination the command
-# line switches on stays on whatever this says. "+f" here would add the file
-# without --log. Without --console or --log, a LOG_DESTINATION in the
-# environment replaces this line; with either, LOG_DESTINATION is ignored.
+# BridgeKit always initializes tracing-init. "+g+o" adds GELF/OTel to its
+# built-in file/GELF destinations. --log-config selects an explicit file;
+# LOG_DESTINATION overrides destination selection. v2 uses RUST_LOG rather
+# than the legacy --console/--log/--filter flags. Destinations are lossy so
+# a stalled sink cannot hold the service. See docs/running-v2.md.
 destination = "+g+o"
 # Telemetry must never prevent the bridge from starting: a destination that
 # fails to initialize (e.g. unresolvable GELF host) is skipped with a stderr
@@ -28,7 +27,7 @@ address = "yuvals-mac-studio.villarakavy.local:12201"
 
 [logging.otel]
 # logmon-broker OTLP ingest — exports spans. Required for distributed traces:
-# the MQTT v5 traceparent propagation only lights up when the "o" destination
-# installs the OpenTelemetry layer.
+# continuing exported operation spans needs the "o" OpenTelemetry layer.
+# Valid incoming MQTT traceparent metadata is preserved even without it.
 endpoint = "http://yuvals-mac-studio.villarakavy.local:4318"
 transport = "http"

@@ -667,7 +667,7 @@ checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 [[package]]
 name = "lock-order"
 version = "0.1.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=259d963fd448ea2512e36a00e2f22850af0bc1f7#259d963fd448ea2512e36a00e2f22850af0bc1f7"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6#96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6"
 dependencies = [
  "libc",
  "tokio",
@@ -726,7 +726,7 @@ dependencies = [
 [[package]]
 name = "mqtt-bridge-kit"
 version = "0.1.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=259d963fd448ea2512e36a00e2f22850af0bc1f7#259d963fd448ea2512e36a00e2f22850af0bc1f7"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6#96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6"
 dependencies = [
  "bytes",
  "lock-order",
@@ -740,7 +740,7 @@ dependencies = [
 [[package]]
 name = "mqtt-test-broker"
 version = "0.1.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=259d963fd448ea2512e36a00e2f22850af0bc1f7#259d963fd448ea2512e36a00e2f22850af0bc1f7"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6#96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6"
 dependencies = [
  "bytes",
  "rumqttc",
@@ -750,7 +750,7 @@ dependencies = [
 
 [[package]]
 name = "mqtt_dali"
-version = "0.1.2"
+version = "2.0.0-dev.0"
 dependencies = [
  "built",
  "error-stack",
@@ -1698,7 +1698,7 @@ dependencies = [
 [[package]]
 name = "tracing-init"
 version = "0.2.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=259d963fd448ea2512e36a00e2f22850af0bc1f7#259d963fd448ea2512e36a00e2f22850af0bc1f7"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6#96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6"
 dependencies = [
  "bitflags",
  "futures-util",
@@ -1828,7 +1828,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 [[package]]
 name = "wait-lint"
 version = "0.1.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=259d963fd448ea2512e36a00e2f22850af0bc1f7#259d963fd448ea2512e36a00e2f22850af0bc1f7"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6#96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6"
 dependencies = [
  "proc-macro2",
  "syn",

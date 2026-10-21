@@ -33,6 +33,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `v2-service-start` | bounded | durable ConfigStore startup or managed cancellation | ConfigStore has a 5 s startup deadline and the select also wakes on parent cancellation. On expiry startup fails; the managed runtime includes any unfinished blocking owner in actual teardown. |
 | `v2-service-save` | bounded | serialized ConfigStore edit/recovery, caller cancellation or managed stop | The original request deadline bounds ConfigStore; caller/parent cancellation drops its request future. On expiry or lost outcome freeze service routing until explicit recognized recovery and successful runtime activation. |
 | `v2-service-loop` | acyclic | bounded service requests or managed cancellation | The actor owns routing and performs no waits on its callers. Idle can wait indefinitely; managed cancellation independently wakes it, closes admission and begins locally bounded cleanup under the parent's forced-cancellation ceiling. |
+| `v2-daemon-run` | acyclic | shared BridgeKit managed process lifetime | Main drives only the shared runtime; stop signals are installed before logging/resources and every startup/cleanup path uses its shared deadlines. Runtime teardown includes the UART/config owners and reports incomplete work rather than claiming a clean exit. |
 | `v2-store-open` | bounded | configuration ownership/import/durability worker | Caller supplies an absolute deadline; on expiry return startup failure and cancel admission. The runtime-owned blocking worker retains its lock until it really ends, so managed-service teardown cannot report success while it remains alive. |
 | `v2-store-request` | bounded | one serialized filesystem operation result | Nonwaiting single-slot admission; caller supplies an absolute deadline. On expiry report Uncertain, retain the slot and lock, and freeze mutations/routing until the worker ends and explicit bounded recovery confirms a recognized durable document. Canceled queued work is skipped. |
 | `v2-store-close` | bounded | configuration worker completion after stop | Caller supplies an absolute deadline; on expiry return false, requiring the managed service/process incomplete-stop path. True is published only after file ownership is dropped, even with retained public clients. |
@@ -93,7 +94,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 wait-methods = publish, publish_with_properties, subscribe, unsubscribe, disconnect, poll
 # The HAT protocol's one read from the UART (`hat_line::ByteSource`): a synchronous wait on the
 # device. tokio's `Runtime::shutdown_timeout`: a synchronous wait for the runtime's threads.
-blocking-methods = read_byte, shutdown_timeout
+blocking-methods = read_byte, shutdown_timeout, run_managed
 # Dependency calls whose .await waits on nothing in this process.
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
@@ -125,15 +126,15 @@ dali-config-save src/mqtt.rs ConfigSaver::save_config
 dali-config-writer src/mqtt.rs <Release as Drop>::drop
 dali-config-writer src/mqtt.rs ConfigSaver::save_config
 dali-config-writer src/mqtt.rs write_config
-dali-run src/main.rs main
-dali-runtime-shutdown src/main.rs main
+dali-run src/legacy_main.rs main
+dali-runtime-shutdown src/legacy_main.rs main
 dali-session-thread src/mqtt.rs spawn
 dali-shutdown src/shutdown.rs supervise
-dali-signal src/main.rs run
+dali-signal src/legacy_main.rs run
 dali-signal src/shutdown.rs StopSignals::recv
 dali-signal src/shutdown.rs never
 dali-signal src/shutdown.rs next
-dali-startup src/main.rs run
+dali-startup src/legacy_main.rs run
 dali-stop src/mqtt.rs stopped
 dali-supervise src/shutdown.rs supervise
 dali-uart-idle src/hat_line.rs wait_for_idle
@@ -166,8 +167,9 @@ mqtt-pump-queue src/mqtt.rs MqttDali::run_session
 mqtt-reconnect-delay src/mqtt.rs MqttDali::run
 mqtt-request src/mqtt.rs MqttDali::run_session
 mqtt-request src/mqtt.rs publish_with_trace
-v2-config-check src/bin/mqtt_dali_v2.rs main
-v2-config-output src/bin/mqtt_dali_v2.rs output
+v2-config-check src/config_check.rs run
+v2-config-output src/config_check.rs output
+v2-daemon-run src/daemon.rs run
 v2-hat-close src/service/hat.rs Hat::advance
 v2-hat-close src/service/hat.rs Hat::close
 v2-hat-close src/service/owner.rs <DaliService as ProcessService>::run

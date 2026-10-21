@@ -1,0 +1,46 @@
+[[control]]
+name = "offline_mode_detector_consumes_option_values"
+file = "src/daemon.rs"
+anchor = "if offline_check(&arguments) {"
+replacement = "if arguments.iter().any(|argument| argument == \"--check-config\") {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "v2_process", "-E", "test(offline_mode_name_is_a_literal_daemon_option_value)"]
+expect_text = "mode flag inside option value redirected daemon"
+
+[[control]]
+name = "canonical_executable_never_starts_managed_runtime"
+file = "src/daemon.rs"
+anchor = "bridge.run_managed(service)"
+replacement = "drop(service); ExitCode::SUCCESS"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "v2_process", "-E", "test(canonical_daemon_imports_v1_and_serves_bridgekit_inventory_without_legacy_topics)"]
+expect_text = "canonical executable did not enter the v2 BridgeKit inventory runtime"
+
+[[control]]
+name = "retained_version_reports_legacy_version"
+file = "src/daemon.rs"
+anchor = ".app_name(\"mqtt_dali\").version(&version)"
+replacement = ".app_name(\"mqtt_dali\").version(\"mqtt_dali 0.1.2\")"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "v2_process", "-E", "test(canonical_daemon_imports_v1_and_serves_bridgekit_inventory_without_legacy_topics)"]
+expect_text = "retained Version did not identify v2 executable/build"
+
+[[control]]
+name = "metadata_actor_discards_command_trace"
+file = "src/service/owner.rs"
+anchor = '''let span = request
+                        .context
+                        .operation_span(&owner.model.inventory().name, "inventory_change");'''
+replacement = "let span = tracing::Span::none();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "v2_process", "-E", "test(canonical_daemon_propagates_command_traceparent_to_reply_and_local_otlp_collector)"]
+expect_text = "metadata actor lost the incoming command trace across its queue"
+
+[[control]]
+name = "committed_inventory_discards_command_trace"
+file = "src/service/owner.rs"
+anchor = ".with_traceparent(cause.and_then(RequestContext::traceparent))"
+replacement = ".with_traceparent({ let _ = cause; None })"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "v2_process", "-E", "test(canonical_daemon_propagates_command_traceparent_to_reply_and_local_otlp_collector)"]
+expect_text = "committed Inventory lost the original command trace"

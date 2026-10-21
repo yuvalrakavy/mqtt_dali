@@ -30,7 +30,7 @@ expect_text = "a publication replaced the concurrent winner"
 
 [[control]]
 name = "output_wait_is_unbounded"
-file = "src/bin/mqtt_dali_v2.rs"
+file = "src/config_check.rs"
 anchor = "receive.recv_timeout(Duration::from_millis(200))"
 replacement = "receive.recv()"
 target = "command"
@@ -39,7 +39,7 @@ expect_text = "v2 config process did not exit in time"
 
 [[control]]
 name = "filesystem_worker_is_joined_at_exit"
-file = "src/bin/mqtt_dali_v2.rs"
+file = "src/config_check.rs"
 anchor = "Ok(worker) => drop(worker), // Do not join a filesystem worker at process exit."
 replacement = "Ok(worker) => { let _ = worker.join(); },"
 target = "command"

@@ -2,6 +2,7 @@ use super::*;
 use crate::config_store::{ConfigStore, Outcome, Phase as DiskPhase};
 use mqtt_bridge_kit::{ProcessService, Reporter, ServiceContext};
 use std::time::Duration;
+use tracing::Instrument;
 
 struct Owner {
     store: ConfigStore,
@@ -43,7 +44,7 @@ impl DaliService {
     }
 }
 impl Owner {
-    fn publish_inventory(&self) {
+    fn publish_inventory(&self, cause: Option<&RequestContext>) {
         let values = serde_json::from_slice::<mqtt_bridge_kit::PropertyMap>(
             &self.model.state_bytes().expect("preflighted model"),
         )
@@ -55,7 +56,9 @@ impl Owner {
                 "__inventory",
                 values,
                 false,
-                &RequestContext::new(self.table.instance.clone()).expect("validated generation"),
+                &RequestContext::new(self.table.instance.clone())
+                    .expect("validated generation")
+                    .with_traceparent(cause.and_then(RequestContext::traceparent)),
             );
     }
     fn activate(
@@ -63,6 +66,7 @@ impl Owner {
         service: &DaliService,
         candidate: Arc<Model>,
         completion: Option<&mqtt_bridge_kit::CommandCompletion>,
+        cause: &RequestContext,
     ) -> Result<Snapshot, ServiceError> {
         let next = routing::generations(&candidate);
         let reporter = self
@@ -90,7 +94,7 @@ impl Owner {
         self.table = next;
         self.model = candidate;
         self.pending = None;
-        self.publish_inventory();
+        self.publish_inventory(Some(cause));
         Ok(service.update_snapshot(self.model.clone(), Phase::Ready))
     }
     async fn change(
@@ -109,7 +113,12 @@ impl Owner {
         )?;
         if matches!(request.change, Change::Recover) {
             if let Some(candidate) = self.pending.clone() {
-                return self.activate(service, candidate, request.completion.as_ref());
+                return self.activate(
+                    service,
+                    candidate,
+                    request.completion.as_ref(),
+                    &request.context,
+                );
             }
         }
         service.update_snapshot(self.model.clone(), Phase::Writing);
@@ -138,7 +147,12 @@ impl Owner {
                 }
                 // Recovery may report changed:false for a different mapping.
                 // Activate the entire confirmed model, never that flag.
-                self.activate(service, disk.model, request.completion.as_ref())
+                self.activate(
+                    service,
+                    disk.model,
+                    request.completion.as_ref(),
+                    &request.context,
+                )
             }
             Outcome::NotCommitted(reason) => {
                 let disk = self.store.snapshot();
@@ -235,13 +249,19 @@ impl ProcessService for DaliService {
                 Message::Attach(reporter, reply) => {
                     if owner.reporter.is_none() {
                         owner.reporter = Some(reporter);
-                        owner.publish_inventory();
+                        owner.publish_inventory(None);
                         self.update_snapshot(owner.model.clone(), Phase::Ready);
                     }
                     let _ = reply.send(Ok(()));
                 }
                 Message::Change(mut request) => {
-                    let result = owner.change(&self, &mut request, &mut context).await;
+                    let span = request
+                        .context
+                        .operation_span(&owner.model.inventory().name, "inventory_change");
+                    let result = owner
+                        .change(&self, &mut request, &mut context)
+                        .instrument(span)
+                        .await;
                     let _ = request.reply.send(result);
                 }
             }

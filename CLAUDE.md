@@ -10,10 +10,12 @@ mqtt_dali is a Rust service that bridges MQTT and DALI (Digital Addressable Ligh
 
 The `feat/dali-v2` worktree is developing the approved migration in phases. Current
 scope, verification and remaining work are recorded in `docs/v2-progress.md`.
-The default binary remains the legacy daemon until P3 promotes BridgeKit. The new
-`mqtt_dali_v2` binary currently supports only `--check-config`: it imports v1 into
-the separate `dali.v2.json` if absent, or validates existing v2, without MQTT/HAT
-or terminal setup. It must not fall through into the legacy runtime. For example:
+The default `mqtt_dali` now runs the managed v2 service through BridgeKit;
+`mqtt_dali_v2` is an alias. Both accept explicit `--check-config` to import v1
+into separate `dali.v2.json` if absent, or validate existing v2 without MQTT/HAT
+or terminal setup. See `docs/running-v2.md`. The relocated `mqtt_dali_v1` is
+only a regression harness; operational v1 builds use the maintained v1 tag/branch.
+For example:
 
 ```bash
 cargo run --target aarch64-apple-darwin --bin mqtt_dali_v2 -- --check-config
@@ -64,7 +66,10 @@ cargo build --target aarch64-apple-darwin   # Apple Silicon
 cargo build --target x86_64-apple-darwin    # Intel Mac
 ```
 
-The DALI hardware driver (`dali_atx`, via `rppal`) is Linux-only, so off the Pi the bridge runs
+The remaining driver/process notes in this section describe the legacy regression
+harness. v2 uses the portable raw Unix UART/PTY adapter and shared BridgeKit runtime.
+
+The legacy DALI hardware driver (`dali_atx`, via `rppal`) is Linux-only, so off the Pi the harness runs
 with `--emulation` only; check the Pi build with `cargo check` (the default target). The HAT's
 serial protocol (`hat_line`) sits behind a `ByteSource` trait, so its loops are tested on the Mac
 against fake byte sources. Tests run on the Mac against the emulator and an in-process fake broker
@@ -108,27 +113,36 @@ cargo fmt
 Run with emulation mode (no DALI hardware needed):
 
 ```bash
-cargo run -- --emulation <mqtt_broker_address>
+cargo run --bin mqtt_dali_v1 -- --emulation <mqtt_broker_address>
 ```
 
 Run in setup mode (interactive TUI for configuration):
 
 ```bash
-cargo run -- --setup <mqtt_broker_address>
+cargo run --bin mqtt_dali_v1 -- --setup <mqtt_broker_address>
 ```
 
-## Architecture
+## Legacy regression harness reference
+
+The old runtime/CLI, modules and MQTT topics described below belong to
+`src/legacy_main.rs` / `mqtt_dali_v1`. They are not the canonical v2 interface.
+For v2 see `src/daemon.rs`, `src/service.rs`, `src/service/owner.rs`,
+`docs/service-development.md` and `docs/inventory-contract.md`. BridgeKit owns
+the process, signals, logging, MQTT session and watchdog. The service owns
+configuration and optional UART health independently of broker availability.
+
+## Architecture (legacy)
 
 ### Module Dependency Flow
 
 ```
-main.rs → mqtt.rs → dali_manager.rs → dali_atx.rs (hardware)
+legacy_main.rs → mqtt.rs → dali_manager.rs → dali_atx.rs (hardware)
                                      → dali_emulator.rs (testing)
 ```
 
 ### Key Modules
 
-- **main.rs** — Entry point, CLI parsing (`rustop`), logging init, controller instantiation
+- **legacy_main.rs** — Legacy harness entry point, CLI parsing (`rustop`), logging init, controller instantiation
 - **mqtt.rs** (`MqttDali`) — MQTT client lifecycle, command dispatch, topic pub/sub, reconnection logic
 - **dali_manager.rs** (`DaliManager`, `DaliBusIterator`) — Core DALI protocol: bus discovery (24-bit binary search), group management, address programming, brightness control
 - **dali_atx.rs** (`DaliAtx`) — UART communication to DALI HAT hardware via `/dev/serial0`
@@ -160,7 +174,9 @@ Uses `error-stack` for contextual error chains with `thiserror`-derived `Command
 
 JSON files (default: `dali.json`) with hierarchy: `DaliConfig` → `BusConfig[]` → `Channel[]` + `Group[]`. Config is created interactively if the file doesn't exist.
 
-## Deployment
+## Deployment (legacy)
+
+v2 deployment/release remains pending; use `docs/running-v2.md` for isolated development.
 
 Cross-compiled binary is deployed to Raspberry Pi via `install_to_pi` (Fish script) and installed as a systemd service (`dali.service`). The `install_on_pi.sh` script handles on-device setup.
 
@@ -173,7 +189,10 @@ Cross-compiled binary is deployed to Raspberry Pi via `install_to_pi` (Fish scri
 - **tracing** + **tracing-init** (git dep, `otel` + default features) — structured logging
 - **serde** / **serde_json** — serialization
 
-## Logging
+## Logging (legacy harness)
+
+Canonical v2 uses BridgeKit logging and `RUST_LOG`; see `docs/running-v2.md`.
+The legacy flags and default filter below apply to the regression harness.
 
 Log levels and `kind` fields follow the fleet policy at
 `~/Documents/Projects/Store/docs/guides/logging-policy.md`:

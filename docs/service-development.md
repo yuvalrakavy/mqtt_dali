@@ -2,8 +2,10 @@
 
 This guide is for bridge contributors and embedders. The service library owns
 durable configuration, runtime routing and optional UART health. The canonical
-v2 daemon is the next slice. `mqtt_dali_v2` currently remains a configuration
-check command. Web handlers and hardware capabilities are not available yet.
+`mqtt_dali` executable now runs it through BridgeKit; `mqtt_dali_v2` is an alias.
+`--check-config` remains an explicit offline operation. See
+[running the development daemon](running-v2.md). Web handlers and fixture
+capabilities are not available yet.
 
 `DaliService::new(paths, instance)` returns a resource-free service and a
 `ServiceHandle`. Start it with a fixed Bridge's `start_managed`/`run_managed`.
@@ -91,6 +93,13 @@ it to its owner. A successful durable change returns one reply containing
 does not reuse the retired token for hardware work. All other queued old work
 retires. HTTP/embedded handle edits use ordinary runtime retirement without that
 capability.
+
+Optional MQTT v5 `traceparent` follows each command through BridgeKit's worker
+and the metadata actor. Inventory publication uses the committed generation
+with the original trace; the success reply keeps the original request generation,
+correlation and cause. The shared runtime validates trace metadata independently
+of generation admission. Local OTLP tests verify exported worker/actor operation
+spans, rather than only an ingress span.
 
 `__inventory` is read-only and returns the complete observed saved inventory.
 Physical property writes, reads and unsupported operations return explicit

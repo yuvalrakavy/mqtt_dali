@@ -41,6 +41,17 @@ impl Hooks {
             return callback(step);
         }
         let _ = step;
+        #[cfg(debug_assertions)]
+        {
+            let variable = match step {
+                Step::StartupBeforeLoad => Some("MQTT_DALI_V2_TEST_CONFIG_GATE"),
+                Step::AfterRename(Stage::Mapping) => Some("MQTT_DALI_V2_TEST_SAVE_GATE"),
+                _ => None,
+            };
+            if let Some(path) = variable.and_then(std::env::var_os) {
+                let _ = fs::read(path);
+            }
+        }
         Ok(())
     }
 }

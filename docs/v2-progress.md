@@ -404,13 +404,65 @@ source passed the full gate. No physical I4, live broker/Logmon or Pi runtime is
 implied. The UART slice remains a library integration; canonical daemon startup
 is next.
 
+## P3c3c — canonical daemon and original request traces
+
+The canonical `mqtt_dali` and `mqtt_dali_v2` alias now start the managed v2
+service through BridgeKit. Explicit `--check-config` preserves the isolated
+offline operation. The former main is byte-preserved apart from its test-helper
+path in `mqtt_dali_v1`, a regression harness; deployed legacy fixes remain on
+the separate v1 maintenance branch/tag. Package/retained Version reports
+2.0.0-dev.0 and actual UTC build time. No install scripts or live services changed.
+
+The common CLI parser preflights options and renders usage through bounded
+output, then valid arguments pass unchanged to BridgeKit. The standalone offline
+flag is recognized only in flag position; even a controller named --check-config
+works with split or inline option values. Saved identity is checked before UART.
+First startup migrates v1, restart uses v2, and deletion of v2 reimports with a
+new inventory epoch while preserving v1 bytes.
+
+Real canonical process tests cover MQTT metadata replies, clean/incomplete stop,
+held logging/config/save startup, actual broker-outage-independent UART health,
+full unread output pipes, idle CPU and private local OTLP export. The shared
+trace defect exposed by that test was corrected in reviewed local tracing-init
+commit `96a03bcb9f932d8d49d479a38cc95f9ad9e08ff6`, consistently pinned across all
+shared dependencies. Validated owned causes cross queue boundaries independently
+of generation authority; coalesced callers retain their own traces. The DALI
+actor exports an operation span, and committed Inventory uses the new generation
+with the original cause. The exact success reply retains original generation,
+correlation and trace. Actual decoded OTLP JSON proves worker and actor spans
+under the incoming trace at INFO, rather than an ingress-only match.
+
+Shared restored verification passed 211 kit tests, 174 existing conformance
+tests, strict all-target Clippy in both crates, rustdoc and armv7 compilation.
+Eight shared controls failed at their intended assertions; README/tutorial,
+runtime design and canonical bridge skill were synchronized. Two sequential
+source reviews approved after reproduced attribution gaps were fixed. An
+existing proving-read test race was corrected with an actual connected barrier.
+
+Daemon source review approved after fixing an Inventory-publication wait, a CLI
+mode/value ambiguity and a displaced Markdown separator. The new daemon controls,
+changed recovery control and relocated legacy/migration controls are recorded
+beside their ledgers. Final restored daemon verification passed **225 native
+tests**, scoped strict Clippy, armv7 library/canonical/alias/emulator/legacy-harness
+compilation, changed Rust formatting, wait registry and diff checks. The explicit
+test-feature logging-start case also passed. All **60** controls in this batch
+failed at their intended assertions: five daemon, one changed recovery, five
+relocated migration and 49 relocated legacy cases. Restored source passed after
+all mutations. No physical behavior or Pi linking is implied by compilation.
+
+See `running-v2.md` and `service-development.md`. The dependency commit is local;
+portable upstream clones still require publication. HTTP/capabilities, Store
+migration, physical I4/Pi runtime and live Logmon validation remain pending.
+Fixture Send is still disabled until P4 preserves process-crash transport evidence.
+Available source reviewers are same family; no cross-family independence is claimed.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
-| P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, generation fencing, managed service/proxy and UART health implemented | Canonical v2 daemon; local shared dependency publication before portable clones/releases |
+| P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Pending | Outputs, color representations, DALI-2 inputs, explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |

@@ -1,0 +1,57 @@
+# Running the v2 development daemon
+
+This is an unfinished development version. Its current executable serves saved
+inventory and metadata edits through BridgeKit and checks ATX I4 UART health.
+Fixture control, commissioning and the web interface arrive in later phases.
+
+Start one controller with an MQTT broker and its own writable config directory:
+
+```sh
+mqtt_dali --instance Controller --broker 127.0.0.1:1883 \
+  --config /var/lib/mqtt_dali/dali.v2.json \
+  --legacy-config /var/lib/mqtt_dali/dali.json \
+  --uart /dev/serial0 --log-config /etc/mqtt_dali/logging.toml
+```
+
+The saved controller name must match `--instance`. To develop without hardware,
+use `--uart none`, or supply the private PTY from `dali_hat_emulator`. The broker
+can have any MQTT consumer. Retained `DALI/State/<controller>/__inventory`
+contains the saved inventory; `DALI/Version/<controller>` reports version and UTC
+build time. See [metadata commands](service-development.md#mqtt-metadata-commands)
+and the [inventory contract](inventory-contract.md). Saved mappings do not prove
+that a fixture is present or that a hardware command succeeded.
+
+The v2 file takes precedence. If it is absent, startup imports the v1 file into a
+separate private v2 file, or initializes an empty controller if neither exists.
+Invalid v2 fails startup. v1 bytes remain untouched. Stop the daemon before
+deleting v2 to force reimport; preserve backups and ensure the matching private
+sidecar files stay with their v2 configuration. Only one process may own that
+configuration. Offline validation/import uses:
+
+```sh
+mqtt_dali --check-config --name Controller \
+  --config ./dali.v2.json --legacy-config ./dali.json
+```
+
+`mqtt_dali_v2` calls the same entry point. `mqtt_dali_v1` in this source tree is
+an automated legacy regression harness. Use the v1 maintenance branch/tag for
+the deployed legacy bridge and its original CLI/MQTT contract.
+
+BridgeKit owns signal handling, tracing-init, MQTT reconnects and bounded stop.
+SIGINT/SIGTERM requests shutdown. An owner that cannot actually finish produces
+a failed/incomplete stop; a supervisor may restart it. UART and metadata ownership
+continue through broker outages. UART health uses only Version/bus-status queries
+and the conservative unverified repeat policy. It cannot yet safely expose fixture
+writes after an ambiguous process crash.
+
+Select logging with `--log-config`; `RUST_LOG` controls filtering, and
+`LOG_DESTINATION` overrides destinations. The repository logging.toml contains
+site-specific GELF/OTLP addresses: configure them for your installation. Logging
+destinations are lossy and startup skips unavailable destinations. Optional MQTT
+v5 traceparent metadata follows requests through worker and metadata queues.
+Tests use only isolated loopback brokers, PTYs and a local OTLP collector;
+they do not establish live Logmon delivery or physical I4 compatibility.
+
+The shared dependency commit is currently local to the development branch.
+Publish it and complete release validation before promising a reproducible fresh
+clone or deploying v2. No install/deployment scripts are switched by this slice.

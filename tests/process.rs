@@ -151,7 +151,7 @@ impl Bridge {
         } else {
             dir.clone()
         };
-        let bridge = env!("CARGO_BIN_EXE_mqtt_dali");
+        let bridge = env!("CARGO_BIN_EXE_mqtt_dali_v1");
         let args = [
             "--emulation",
             "--config",
