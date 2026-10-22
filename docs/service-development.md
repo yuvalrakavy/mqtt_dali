@@ -189,6 +189,7 @@ response topic and correlation data when awaiting the result.
 
 | Command | JSON fields in addition to `command` | Generation |
 |---|---|---|
+| `blink` / `stop_blink` | Individual output `target`; no other fields | Current output token |
 | `configure_bus` | `bus` (0..3), `name`, `enabled` (bool), `expected_revision` | Current controller token |
 | `remove_from_list` | Output/input-module `target`, `expected_revision` | Current selected item token |
 | `rename` | `target`, `name`, `expected_revision` | Current output/group token |

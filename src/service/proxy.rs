@@ -19,6 +19,8 @@ impl DeviceDriver for DaliProxy {
     fn info(&self) -> DriverInfo {
         DriverInfo {
             commands: [
+                "blink",
+                "stop_blink",
                 "create_group",
                 "assign_group",
                 "adopt_groups",
@@ -200,6 +202,21 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::Identify(stop) = change {
+            let result = self
+                .handle
+                .identify_output(
+                    target.ok_or_else(|| OpError::Rejected("output target required".into()))?,
+                    stop,
+                    context.clone(),
+                    Instant::now() + Duration::from_secs(4),
+                )
+                .await
+                .map_err(op_error)?;
+            return serde_json::to_value(result)
+                .map(Some)
+                .map_err(|e| OpError::Unusable(e.to_string()));
+        }
         if let Operation::Groups(groups::Action::Read, _) = change {
             let result = self
                 .handle
@@ -220,6 +237,9 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::Identify(_) => {
+                unreachable!("identification dispatched before metadata completion")
+            }
             Operation::Groups(action, expected) => {
                 let result = self
                     .handle
@@ -571,6 +591,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    Identify(bool),
     Groups(groups::Action, Option<u64>),
     Assignment(Assignment, discovery::Space),
     Metadata(Change),
@@ -584,6 +605,11 @@ impl Operation {
         context: &RequestContext,
     ) -> Result<(), ServiceError> {
         match self {
+            Self::Identify(_) => identification::admit(
+                snapshot,
+                target.ok_or_else(|| ServiceError::Rejected("output target required".into()))?,
+                context,
+            ),
             Self::Groups(action, expected) => groups::resolve(
                 snapshot,
                 target.ok_or_else(|| ServiceError::Rejected("output target required".into()))?,
@@ -619,6 +645,7 @@ impl Operation {
     }
     fn budget(&self) -> Duration {
         Duration::from_secs(match self {
+            Self::Identify(_) => 4,
             Self::Metadata(_) | Self::Groups(groups::Action::Read, _) => 2,
             Self::Discovery(_) => 10,
             Self::Groups(_, _) | Self::Assignment(_, _) => 18,
@@ -747,6 +774,15 @@ pub(crate) fn projected_states(snapshot: &Snapshot) -> Vec<Value> {
         .map(projected_state)
         .collect()
 }
+pub(super) fn accept_output(
+    snapshot: &Snapshot,
+    target: &str,
+    observed: &output::Observation,
+) -> Result<(), ServiceError> {
+    state::accepted(snapshot, target, observed)
+        .map(|_| ())
+        .map_err(|e| ServiceError::Rejected(e.to_string()))
+}
 impl PreparedCommand {
     pub(crate) fn new(
         snapshot: &Snapshot,
@@ -833,6 +869,18 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::Identify(stop) => value(
+                handle
+                    .identify_output(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("output target required".into())
+                        })?,
+                        stop,
+                        context,
+                        deadline,
+                    )
+                    .await?,
+            ),
             Operation::Metadata(change) => {
                 let snapshot = handle.submit(change, context, deadline, None).await?;
                 Ok(serde_json::json!({"revision":snapshot.model.inventory().revision}))
@@ -912,6 +960,14 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if matches!(call.command.as_str(), "blink" | "stop_blink") {
+        if target.is_none() || !call.params.is_empty() {
+            return Err(OpError::Rejected(
+                "identification needs an output target and no parameters".into(),
+            ));
+        }
+        return Ok(Operation::Identify(call.command == "stop_blink"));
+    }
     if matches!(
         call.command.as_str(),
         "read_groups" | "assign_group" | "adopt_groups" | "repair_groups"

@@ -49,6 +49,12 @@ impl DaliService {
             ),
             model,
             phase,
+            identification: self
+                .handle
+                .identification
+                .borrow()
+                .as_ref()
+                .map(|claim| claim.status.clone()),
             hardware: self
                 .handle
                 .snapshot()
@@ -509,6 +515,8 @@ impl ProcessService for DaliService {
             .collect();
         let mut hat = hat::Hat::new(self.uart.take(), buses);
         let mut failure = None;
+        let mut identification =
+            identification::Manager::new(self.handle.clone(), self.identification.clone());
         loop {
             // Sync before polling any public frame after durable activation.
             hat.sync_model(&owner.model);
@@ -519,6 +527,13 @@ impl ProcessService for DaliService {
                 result=crate::web::server::changed(&mut web)=> {
                     failure=Some(result.err().unwrap_or_else(||"web server ended unexpectedly".into()));
                     break;
+                },
+                _=identification.changed()=> {
+                    let mut snapshot=self.handle.snapshot().expect("service started");
+                    snapshot.identification=identification.status();
+                    self.state.send_replace(Some(snapshot.clone()));
+                    let _=self.handle.updates.send(snapshot);
+                    None
                 },
                 message=self.receive.recv()=>match message {Some(message)=>Some(message),None=>break},
                 result=hat.changed()=>{
@@ -631,6 +646,7 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::Identify(request) => identification.command(request),
                 Message::Groups(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
                         groups::finish(request, Err(ServiceError::Expired));
@@ -702,6 +718,13 @@ impl ProcessService for DaliService {
                 Message::Output(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
                         let _ = request.reply.send(Err(ServiceError::Expired));
+                    } else if request.intent.is_some()
+                        && !request.identification
+                        && identification::blocks(&self.handle, &request.target)
+                    {
+                        let _ = request.reply.send(Err(ServiceError::Rejected(
+                            "stop identification before controlling this fixture".into(),
+                        )));
                     } else {
                         let snapshot = self.handle.snapshot().expect("service started");
                         match output::resolve(
@@ -747,6 +770,7 @@ impl ProcessService for DaliService {
                 }
             }
         }
+        drop(identification);
         self.handle.permit.close();
         if let Some(web) = &web {
             web.begin_stop();
@@ -755,6 +779,9 @@ impl ProcessService for DaliService {
         self.update_snapshot(owner.model.clone(), Phase::Stopping);
         while let Ok(message) = self.receive.try_recv() {
             match message {
+                Message::Identify(request) => {
+                    let _ = request.reply.send(Err(ServiceError::Closed));
+                }
                 Message::Groups(request) => groups::finish(request, Err(ServiceError::Closed)),
                 Message::Commission(request) => {
                     commissioning::finish(request, Err(ServiceError::Closed))

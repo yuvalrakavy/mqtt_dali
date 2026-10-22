@@ -1,0 +1,108 @@
+[[control]]
+name = "identification_forgets_prior_level"
+file = "src/service/identification.rs"
+anchor = "captured=Some((level,sample.stamp));"
+replacement = "captured=Some((Level::new(0).unwrap(),sample.stamp));"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_blinks_real_fixture)"]
+expect_text = "Stop failed to restore captured actual level"
+
+[[control]]
+name = "identification_never_recalls_maximum"
+file = "src/service/identification.rs"
+anchor = "Some(Intent::new(Some(on),None).unwrap())"
+replacement = "Some(Intent::new(Some(false),None).unwrap())"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_blinks_real_fixture)"]
+expect_text = "Blink did not recall actual maximum"
+
+[[control]]
+name = "identification_permits_foreground_write"
+file = "src/service/identification.rs"
+anchor = "claim.as_ref().filter(|c| c.status.active())"
+replacement = "claim.as_ref().filter(|_| false)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_refuses_foreground_write)"]
+expect_text = "foreground intent can be overwritten by identification restoration"
+
+[[control]]
+name = "identification_metadata_returns_busy_during_pulse"
+file = "src/service/identification.rs"
+anchor = ".is_some_and(|c| c.status.active())"
+replacement = ".is_some_and(|_| false)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_metadata_waiter)"]
+expect_text = "identification made inline rename Busy instead of waiting for its pulse"
+
+[[control]]
+name = "identification_follows_replaced_origin"
+file = "src/service/identification.rs"
+anchor = "if snapshot.model.origin(claim.location) != Some(&claim.origin) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_origin_follows)"]
+expect_text = "identification followed replacement at reused physical address"
+
+[[control]]
+name = "identification_discards_original_physical_epoch"
+file = "src/service/physical.rs"
+anchor = "Self::Output(q, _) => q.required_stamp,"
+replacement = "Self::Output(_, _) => None,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_continuation_rejects_original_stamp)"]
+expect_text = "identification queued a write under a refreshed physical epoch"
+
+[[control]]
+name = "identification_session_never_expires"
+file = "src/service/identification.rs"
+anchor = "const SESSION: Duration = Duration::from_secs(120);"
+replacement = "const SESSION: Duration = Duration::from_secs(3600);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_expires_after_two_minutes)"]
+expect_text = "identification exceeded two minutes instead of restoring captured level"
+
+[[control]]
+name = "identification_restoration_echoes_intent"
+file = "src/service/identification.rs"
+anchor = "actual_level: level.map(Level::raw),"
+replacement = "actual_level: Some(73),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_expires_after_two_minutes)"]
+expect_text = "restoration echoed captured intent instead of actual readback"
+
+[[control]]
+name = "identification_accepts_unstable_capture"
+file = "src/service/identification.rs"
+anchor = "        let Some(LevelValue::Known(level))=sample.level() else {return Err(ServiceError::Rejected(\"identification needs a known actual level\".into()))};\n        if sample.quality!=output::Quality::Current || !matches!(sample.status,Some(QueryReply::Value(QueryValue::Status(s))) if !s.fade_running()) {\n            return Err(ServiceError::Rejected(\"identification needs stable current output evidence\".into()))\n        }\n"
+replacement = "        let level=Level::new(73).unwrap();\n"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_capture_refuses_mask)"]
+expect_text = "unknown or fading identification capture mutated the fixture"
+
+[[control]]
+name = "identification_skips_final_snapshot_acceptance"
+file = "src/service/proxy.rs"
+anchor = "    state::accepted(snapshot, target, observed)\n        .map(|_| ())"
+replacement = "    Ok::<(), mqtt_bridge_kit::OpError>(())\n        .map(|_| ())"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_ready_capture)"]
+expect_text = "identification accepted stale ready capture before its first mutation"
+
+[[control]]
+name = "identification_error_leaves_active_status"
+file = "src/service/identification.rs"
+anchor = "    if result.is_err() {\n        claim.status.phase = Stage::Interrupted;"
+replacement = "    if false {\n        claim.status.phase = Stage::Interrupted;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_ready_restore)"]
+expect_text = "restore acceptance failure left identification permanently active"
+
+[[control]]
+name = "identification_omits_public_snapshot"
+file = "src/web/handlers.rs"
+anchor = "\"identification\":snapshot.identification"
+replacement = "\"identification\":null"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(web_identification_jobs_share)"]
+expect_text = "HTTP snapshot omitted live identification"
+

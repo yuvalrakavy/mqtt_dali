@@ -12,6 +12,7 @@ fn prepared() -> PreparedCommand {
     )
     .unwrap();
     let snapshot = Snapshot {
+        identification: None,
         model: Arc::new(model),
         phase: Phase::Ready,
         hardware: Hardware::NotStarted,

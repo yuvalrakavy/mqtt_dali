@@ -28,8 +28,12 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `v2-identification-permit` | bounded | shared physical semaphore | Fair admission under the original metadata deadline or two-second internal step/four-second start ceiling. On expiry refuse the request without renewing authority or deadline; parent stop drops the owned future. |
+| `v2-identification-request` | bounded | original typed-operation/control reply | Keeps its original absolute request deadline (at most four seconds; internal steps at most two). On expiry report uncertain/expired, drop the receiver and permit through existing physical cleanup; no automatic retry. |
+| `v2-identification-owner` | acyclic | one retained identification future or status watch | Future is polled beside the same owner message/HAT select, never awaited exclusively. Main context cancellation independently drops it before HAT cleanup; status watch contains one bounded claim. Idle manager retains no work. |
+| `v2-identification-dwell` | bounded | pulse dwell, metadata change or Stop | 750 ms dwell capped by the fixed two-minute session ceiling. On expiry advance one pulse or begin one bounded restoration; state/Stop wake independently. Parent cancellation drops the whole future. |
 | `web-jobs-book` | acyclic | bounded process-local result book | At most 32 records; synchronous list/admission/completion only. Admission takes a nonwaiting channel reservation; no await, service call or other mutex under this guard. Each sanitized result is at most 32 KiB. |
-| `web-jobs-loop` | acyclic | bounded command mailbox, owned service futures or stop | Parent stop independently ends the idle loop and synchronously drops all reply receivers/permits. At most four requests/futures retain their original 2/10/18-second service deadlines. No per-job task survives the Server task; unexpected loop end fails that owner. |
+| `web-jobs-loop` | acyclic | bounded command mailbox, owned service futures or stop | Parent stop independently ends the idle loop and synchronously drops all reply receivers/permits. At most four requests/futures retain their original 2/4/6/8/10/18-second service deadlines. No per-job task survives the Server task; unexpected loop end fails that owner. |
 | `web-job-request` | bounded | one prepared typed service operation | Keeps the captured absolute 2/4/6/8/10/18-second deadline through nonwaiting service admission and bounded reply. On expiry retain a safe failure/uncertain outcome; parent stop drops this future and its reply receiver. No deadline renewal or retry. |
 | `web-bind` | bounded | optional HTTP listener startup | Inside the original five-second service opening ceiling, before proxy readiness. On expiry reject and drop the listener; close the config owner on failure. No listener exists when web is disabled. |
 | `web-auth` | acyclic | bounded session/rate mutex | Holds at most 16 sessions and 10 attempt timestamps for synchronous checks/updates only. No await, Reporter call or service operation occurs under the guard; no other lock is taken. |
@@ -119,7 +123,7 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, assign_space, commission, search, program, groups, read_groups, change_groups, finished
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, assign_space, commission, search, program, groups, read_groups, change_groups, finished, identify_output, identification_output
 ```
 
 ## Waiters (generated)
@@ -210,6 +214,12 @@ v2-hat-loop src/service/hat.rs Hat::changed
 v2-hat-loop src/service/hat.rs dormant
 v2-hat-loop src/service/physical.rs Work::wait_for_receiver_close
 v2-hat-setup src/service/hat.rs Hat::advance
+v2-identification-dwell src/service/identification.rs run
+v2-identification-owner src/service/identification.rs Manager::changed
+v2-identification-permit src/service.rs ServiceHandle::submit
+v2-identification-permit src/service/identification.rs ServiceHandle::identification_output
+v2-identification-request src/service/identification.rs ServiceHandle::identification_output
+v2-identification-request src/service/identification.rs ServiceHandle::identify_output
 v2-input-events src/service/input.rs events
 v2-mqtt-observations src/service/proxy/state.rs Watcher::run
 v2-physical-operation src/service/hat.rs Hat::advance_physical

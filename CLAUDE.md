@@ -274,6 +274,16 @@ group references. Hardware addresses/levels/groups/events remain unchanged.
 Rediscovery creates fresh lifetimes, never resurrecting old intent. Controls:
 `docs/v2-removal-controls.toml`. Store logical-equipment handling remains P8 work.
 
+Output identification uses the service-owned Manager in `service/identification.rs`;
+see `docs/identification.md`. Never hold a permit across dwell or refresh public
+intent after rename. Private restoration requires continuing Origin/location and
+the captured physical stamp. Public writes to the active Origin refuse both at
+submission and owner admission. Metadata waits fairly only while identifying,
+within its original deadline. Restore reports actual readback, not captured intent
+or completed fade. Ordinary power may activate staged DT8 colour; no explicit
+colour/settings writes. Parent drop owns teardown; no crash/shutdown restoration
+guarantee or journal. Controls: `docs/v2-identification-controls.toml`.
+
 ## Architecture (legacy)
 
 ### Module Dependency Flow

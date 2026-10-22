@@ -215,6 +215,8 @@ fn queue_output(
     };
     hat.enqueue_output(
         output::Request {
+            identification: false,
+            required_stamp: None,
             target: "Bus1.Outputs.Light1".into(),
             intent: intent.map(output::WriteIntent::Base),
             include_colour: false,
@@ -226,6 +228,45 @@ fn queue_output(
         route,
     );
     (receive, admission)
+}
+
+#[tokio::test]
+async fn identification_continuation_rejects_original_stamp_after_bus_cycle_before_admission() {
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    let original = hat.stamp(0).unwrap();
+    hat.power_cycle_output_samples_for_test();
+    let admission = std::sync::Arc::new(tokio::sync::Semaphore::new(1));
+    let (reply, receive) = tokio::sync::oneshot::channel();
+    let route = output::Route {
+        controller: "Controller".into(),
+        bus: 0,
+        address: crate::dali::gear::ShortAddress::new(0).unwrap(),
+        context: context(1),
+    };
+    hat.enqueue_output(
+        output::Request {
+            target: "Bus1.Outputs.Light1".into(),
+            intent: Some(output::WriteIntent::Base(
+                crate::dali::gear::Intent::new(Some(true), None).unwrap(),
+            )),
+            include_colour: false,
+            identification: true,
+            required_stamp: Some(original),
+            context: context(1),
+            deadline: deadline(),
+            reply,
+            _permit: admission.clone().try_acquire_owned().unwrap(),
+        },
+        route,
+    );
+    assert!(
+        hat.physical.is_none(),
+        "identification queued a write under a refreshed physical epoch"
+    );
+    assert!(receive.await.unwrap().is_err());
+    assert_eq!(admission.available_permits(), 1);
+    hat.close(deadline()).await.unwrap();
 }
 async fn output_complete(hat: &mut Hat) {
     tokio::time::timeout(Duration::from_secs(2), async {

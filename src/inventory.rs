@@ -200,6 +200,12 @@ impl Model {
     pub fn projections(&self) -> Vec<Projection> {
         self.projections.clone()
     }
+    pub(crate) fn origin(&self, location: Location) -> Option<&Origin> {
+        self.records
+            .values()
+            .find(|record| record.projection.location == location)
+            .map(|record| &record.origin)
+    }
     pub fn state_bytes(&self) -> Result<Vec<u8>, String> {
         Ok(self.state.clone())
     }

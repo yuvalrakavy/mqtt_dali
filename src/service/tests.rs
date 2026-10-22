@@ -5,6 +5,7 @@ mod buses;
 mod commissioning;
 mod discovery;
 mod groups;
+mod identification;
 mod input;
 mod input_assignment;
 mod live_input;
@@ -36,6 +37,7 @@ pub(super) fn snapshot(model: Model, phase: Phase) -> Snapshot {
         outputs: Default::default(),
         inputs: Default::default(),
         input_listeners: Default::default(),
+        identification: None,
         version: env!("CARGO_PKG_VERSION"),
         build_utc: build_info::BUILT_TIME_UTC,
     }

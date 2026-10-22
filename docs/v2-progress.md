@@ -5,6 +5,50 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5g — output identification
+
+Blink/Stop uses one service-owned polled future and short existing basic output
+operations. Fresh stable prior-level capture, immediate maximum/off pulses,
+actual restoration, continuing Origin and original physical stamp protect the
+inline rename workflow. Metadata waits fairly within its original deadline;
+foreground writes to the identified Origin refuse at submission and owner.
+Snapshots expose bounded public status. Two-minute expiry restores once; parent
+teardown drops the future before HAT close without a new recovery policy.
+
+Both design gates approve (117 and about 55 seconds, same-family/source-only).
+The first corrected a real DT8 contract error: ordinary power commands can
+activate already-staged auto-enabled colour. Identification issues no explicit
+colour/settings commands; it does not promise unchanged staged/actual colour.
+Two initial PTY/MQTT tests fail behaviorally on missing Blink. Fourteen focused
+tests now pass, including real HTTP jobs, stable-level refusal, staged-Tc
+activation, rename/failure/no-op, fair permit admission, original stamp, identity
+replacement, paused-time expiry/cancellation and actual clamped restore results.
+The new literal peer initially lost its retained PTY slave through precise async
+capture; retaining the entire PTY inside its task fixes the test fixture.
+Final-awaiter review reproduced two additional behavioral failures: stale ready
+capture could begin mutation, and rejected restoration could leave active status.
+Reuse the existing pure snapshot acceptance after capture/pulse/restore and route
+restoration rejection through terminal cleanup. Both new regressions and all
+fourteen focused tests pass. Timer priority precedes status traffic in dwell.
+The first twelve-control run gives eleven intended REDs and one WRONG-REASON:
+removing capture preflight is caught by the physical-mutation assertion after
+post-write readback still refuses the command. Inspect the exact mutant output,
+correct its expected assertion text and rerun that row: intended RED (9 s). All
+**12 current controls** now have named RED evidence; historical diagnostics are
+retained. Logs: `/tmp/dali-identification-controls.log`,
+`/tmp/dali-identification-capture-mutant-output.log` and
+`/tmp/dali-identification-capture-control-final.log`.
+
+Restored acceptance passes **530/530 native tests** across 11 binaries (execution
+54 s, wall 102 s), Pi library/all four binaries, doctests (none), changed-file
+format, all 24 affected control plans, whitespace and wait validation (zero
+findings). Strict Clippy initially flags only `on=!on` spacing; correct it to
+`on = !on` without a behavior change and rerun the affected lint/format checks.
+Logs: `/tmp/dali-identification-acceptance` and
+`/tmp/dali-identification-lint-restored`. Frozen source reviews follow. See
+[operator guide](identification.md) and
+[slice design](superpowers/specs/2026-10-22-dali-v2-p5g-identification.md).
+
 ## P6c — actual scalar values and live input/job activity
 
 Extend HTTP jobs with individual apply_output/read_output/read_input, reusing the
@@ -1549,7 +1593,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal and per-fixture group membership implemented | Full reassign/restore, identification, browser/pattern group workflows and native scenes |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership and Blink/Stop identification implemented | Full reassign/restore, browser/pattern group workflows and native scenes |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Protected frontend integration and remaining P4/P5 actions |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

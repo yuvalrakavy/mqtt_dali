@@ -363,7 +363,7 @@ fn snapshot_value(snapshot: &Snapshot) -> Value {
             json!({"state":"ready","buses":buses.iter().map(|b|json!({"bus":b.bus,"status":b.status,"channels":b.channels})).collect::<Vec<_>>()})
         }
     };
-    json!({"identity":identity_value(snapshot),"phase":phase,"hardware":hardware,"inventory":serde_json::from_slice::<Value>(&snapshot.model.state_bytes().expect("validated model")).expect("validated JSON"),"states":crate::service::projected_states(snapshot)})
+    json!({"identity":identity_value(snapshot),"phase":phase,"hardware":hardware,"inventory":serde_json::from_slice::<Value>(&snapshot.model.state_bytes().expect("validated model")).expect("validated JSON"),"states":crate::service::projected_states(snapshot),"identification":snapshot.identification})
 }
 pub(super) const SNAPSHOT_BYTES: usize = 4 * 1024 * 1024;
 fn encoded_snapshot(state: &State) -> Option<String> {

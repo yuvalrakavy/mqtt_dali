@@ -141,6 +141,12 @@ cancellation semantics, including uncertainty after an interrupted save.
 
 ## Light controls and current input values
 
+`blink` and `stop_blink` also use individual output targets and empty params.
+They start/stop controller-owned identification with four-second request budgets.
+Snapshots include nullable `identification` status; successful rename starts
+restoration, whose completion is separate from durable rename success. See
+[Blink and Stop](identification.md) for the two-minute limit and DT8 behavior.
+
 Use the selected item's original generation and complete target for these jobs.
 They do not change inventory and take no expected_revision:
 

@@ -14,6 +14,7 @@ pub mod commissioning;
 pub mod discovery;
 pub mod groups;
 mod hat;
+pub mod identification;
 pub mod input;
 pub mod output;
 mod owner;
@@ -67,6 +68,7 @@ pub struct Snapshot {
     pub inputs: std::collections::BTreeMap<String, input::Observation>,
     /// Routes with an installed receive boundary, independently of device presence.
     pub input_listeners: std::collections::BTreeSet<String>,
+    pub identification: Option<identification::Status>,
     pub version: &'static str,
     pub build_utc: &'static str,
 }
@@ -192,11 +194,13 @@ pub struct ServiceHandle {
     updates: broadcast::Sender<Snapshot>,
     input_events: broadcast::Sender<input::Notice>,
     permit: Arc<Semaphore>,
+    identification: watch::Receiver<Option<identification::Claim>>,
     #[cfg(test)]
     input_event_pause: Arc<tests::Pause>,
 }
 /// Constructing this object opens no files, UART or network connections.
 pub struct DaliService {
+    identification: watch::Sender<Option<identification::Claim>>,
     paths: ConfigPaths,
     instance: String,
     receive: mpsc::Receiver<Message>,
@@ -220,6 +224,7 @@ type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations)
 #[cfg(test)]
 type OutputAcceptanceHook = Arc<dyn Fn(&mut hat::Hat) + Send + Sync>;
 enum Message {
+    Identify(identification::Request),
     Groups(groups::Request),
     Commission(commissioning::Request),
     Discovery(discovery::Request),
@@ -282,17 +287,20 @@ impl DaliService {
     pub fn new(paths: ConfigPaths, instance: String) -> (Self, ServiceHandle) {
         let (send, receive) = mpsc::channel(4);
         let (state, read) = watch::channel(None);
+        let (identification, identification_read) = watch::channel(None);
         let handle = ServiceHandle {
             send,
             state: read,
             updates: broadcast::channel(16).0,
             input_events: broadcast::channel(input::EVENT_CAPACITY).0,
             permit: Arc::new(Semaphore::new(1)),
+            identification: identification_read,
             #[cfg(test)]
             input_event_pause: Arc::default(),
         };
         (
             Self {
+                identification,
                 paths,
                 instance,
                 receive,
@@ -362,11 +370,18 @@ impl ServiceHandle {
         if self.permit.is_closed() {
             return Err(ServiceError::Closed);
         }
-        let _permit = self
-            .permit
-            .clone()
-            .try_acquire_owned()
-            .map_err(|_| ServiceError::Busy)?;
+        let _permit = if identification::active(self) {
+            // WAIT: v2-identification-permit
+            timeout_at(deadline, self.permit.clone().acquire_owned())
+                .await
+                .map_err(|_| ServiceError::Expired)?
+                .map_err(|_| ServiceError::Closed)?
+        } else {
+            self.permit
+                .clone()
+                .try_acquire_owned()
+                .map_err(|_| ServiceError::Busy)?
+        };
         let snapshot = self
             .snapshot()
             .ok_or(ServiceError::Rejected("service is starting".into()))?;

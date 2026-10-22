@@ -6,6 +6,7 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 
 | Capability | Local implementation/evidence | Remaining work |
 |---|---|---|
+| Output identification | Managed Blink/Stop, fresh prior-level capture, actual restoration, continuing rename and original physical-epoch guards; PTY/MQTT/HTTP and paused-time tests | Approved browser controls and physical firmware/fixture timing |
 | v1 configuration import | Library and canonical process tests; v1 bytes preserved; v2 precedence and reimport | Persisted Store-object migration in P8 |
 | ATX I4 UART | Typed frames, continuous monitoring, measured quiet recovery, bounded request/helper progress under input traffic, managed health and real PTY/process crash-restart tests; known partial-write poison survives in-process reopen | Physical timing/firmware transcripts; j/t completion policies; no persistent inference of partial writes across process death |
 | Optional HTTP | Password-required startup, cookie sessions, Origin/CSRF, protected inventory/status/actual scalar snapshots, fixed expiry/revocation; bounded configuration/commissioning and scalar read/apply jobs; fair native-input/job/snapshot SSE with loss/cutover checks; managed connection/future cleanup and private socket/process/emulator tests | Approved Preact screens and browser workflow acceptance; HTTPS proxy deployment not physically exercised |

@@ -22,6 +22,7 @@ impl Work {
     }
     pub fn required_stamp(&self) -> Option<output::Stamp> {
         match self {
+            Self::Output(q, _) => q.required_stamp,
             Self::Groups(
                 _,
                 groups::Route {

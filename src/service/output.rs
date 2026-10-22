@@ -108,6 +108,8 @@ pub(super) struct Request {
     pub target: String,
     pub intent: Option<WriteIntent>,
     pub include_colour: bool,
+    pub identification: bool,
+    pub required_stamp: Option<Stamp>,
     pub context: RequestContext,
     pub deadline: Instant,
     pub reply: oneshot::Sender<Result<Observation, ServiceError>>,
@@ -439,6 +441,11 @@ impl ServiceHandle {
         context: RequestContext,
         deadline: Instant,
     ) -> Result<Observation, ServiceError> {
+        if intent.is_some() && identification::blocks(self, target) {
+            return Err(ServiceError::Rejected(
+                "stop identification before controlling this fixture".into(),
+            ));
+        }
         if Instant::now() >= deadline {
             return Err(ServiceError::Expired);
         }
@@ -470,6 +477,8 @@ impl ServiceHandle {
                             && sample.colour.is_some()
                     }),
                 context,
+                identification: false,
+                required_stamp: None,
                 deadline,
                 reply,
                 _permit: permit,

@@ -5,6 +5,121 @@ use futures_util::StreamExt;
 use std::pin::Pin;
 
 const OUTPUT: &str = "PrivateBus.Outputs.PrivateLight";
+
+#[tokio::test]
+async fn web_identification_jobs_share_real_blink_stop_and_rename_restoration() {
+    let emulator=pty::spawn(serde_json::from_value(json!({"version":1,"buses":[{"number":0,"outputs":[{"id":"lamp","short_address":0,"level":91}]}]})).unwrap()).await.unwrap();
+    let fixture = Fixture::configured(|s| {
+        s.with_uart(
+            &emulator.path,
+            crate::atx::transactions::RepeatPolicy::Unverified,
+        )
+    })
+    .await;
+    hardware_ready(&fixture).await;
+    let (cookie, csrf) = fixture.login().await;
+    let before = control(&emulator.emulator, Control::Snapshot).await["buses"].clone();
+    let noop = run(
+        &fixture,
+        &cookie,
+        &csrf,
+        command(1, Some(OUTPUT), "stop_blink", json!({})),
+    )
+    .await;
+    assert_eq!(noop["phase"], "restored");
+    assert_eq!(
+        control(&emulator.emulator, Control::Snapshot).await["buses"],
+        before,
+        "no-op Stop changed physical state"
+    );
+    for (target, revision, params) in [
+        (None, 1, json!({})),
+        (Some("PrivateBus.Groups.All"), 1, json!({})),
+        (Some(OUTPUT), 1, json!({"extra":true})),
+        (Some(OUTPUT), 99, json!({})),
+    ] {
+        assert_ne!(
+            submit(
+                &fixture,
+                &cookie,
+                &csrf,
+                &command(revision, target, "blink", params)
+            )
+            .await
+            .status,
+            202,
+            "HTTP identification accepted malformed or retired authority"
+        );
+    }
+    let started = run(
+        &fixture,
+        &cookie,
+        &csrf,
+        command(1, Some(OUTPUT), "blink", json!({})),
+    )
+    .await;
+    assert_eq!(
+        started["phase"], "blinking",
+        "HTTP Blink bypassed managed identification"
+    );
+    let snapshot = fixture
+        .request("GET", "/api/snapshot", &[("Cookie", &cookie)], "")
+        .await
+        .json();
+    assert_eq!(
+        snapshot["identification"]["phase"], "blinking",
+        "HTTP snapshot omitted live identification"
+    );
+    assert_eq!(snapshot["identification"]["target"], OUTPUT);
+    assert_eq!(
+        control(&emulator.emulator, Control::Snapshot).await["buses"][0]["outputs"][0]["level"],
+        254
+    );
+    run(
+        &fixture,
+        &cookie,
+        &csrf,
+        command(
+            1,
+            Some(OUTPUT),
+            "rename",
+            json!({"expected_revision":1,"name":"Kitchen"}),
+        ),
+    )
+    .await;
+    timeout(Duration::from_secs(3), async {
+        loop {
+            if fixture.handle.snapshot().is_some_and(|s| {
+                s.identification
+                    .is_some_and(|i| i.phase == crate::service::identification::Stage::Restored)
+            }) {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(2)).await;
+        }
+    })
+    .await
+    .expect("HTTP rename did not restore identified fixture");
+    let snapshot = fixture
+        .request("GET", "/api/snapshot", &[("Cookie", &cookie)], "")
+        .await
+        .json();
+    assert_eq!(
+        snapshot["identification"]["target"],
+        "PrivateBus.Outputs.Kitchen"
+    );
+    assert_eq!(
+        snapshot["identification"]["generation"],
+        format!("{EPOCH}.2")
+    );
+    assert_eq!(snapshot["identification"]["actual_level"], 91);
+    assert_eq!(
+        control(&emulator.emulator, Control::Snapshot).await["buses"][0]["outputs"][0]["level"],
+        91
+    );
+    fixture.close().await;
+    emulator.emulator.close().await.unwrap();
+}
 async fn state(fixture: &Fixture, cookie: &str, target: &str) -> Value {
     let snapshot = fixture
         .request("GET", "/api/snapshot", &[("Cookie", cookie)], "")
@@ -708,6 +823,7 @@ fn web_observed_dense_valid_inventory_fits_the_measured_snapshot_budget() {
         })
         .count();
     let snapshot = crate::service::Snapshot {
+        identification: None,
         model: Arc::new(model),
         phase: Phase::Ready,
         hardware: crate::service::Hardware::NotStarted,
