@@ -42,7 +42,7 @@ export class SceneScope {
     const result=await this.ui.client.job(scene.generation,scene.item.target,command,{...structuredClone(data),fixture:row.item.target,expected_revision:this.revision});
     // The completion may arrive after a slot change or reconnect. Never use it
     // as permission for a subsequent row or merge it into public stream state.
-    if(!Number.isSafeInteger(result.revision)||result.revision<this.revision||result.revision>this.revision+1||result.target!==scene.item.target||result.target_generation!==scene.generation||result.fixture!==row.item.target||result.fixture_generation!==row.generation||result.bus!==this.bus||result.slot!==this.slot)throw new Error('Scene result changed. Inspect configuration before retrying.');
+    if(!Number.isSafeInteger(result.revision)||result.revision<this.revision||result.target!==scene.item.target||result.target_generation!==scene.generation||result.fixture!==row.item.target||result.fixture_generation!==row.generation||result.bus!==this.bus||result.slot!==this.slot)throw new Error('Scene result changed. Inspect configuration before retrying.');
     if(this.cancelled||this.ui.cancelled||this.ui.signingOut||this.epoch!==this.ui.client.views.epoch||!this.ui.client.views.ready)throw new Error('Operation stopped. Inspect saved settings before retrying.');
     await this.ui.changed(result.revision);this.revision=result.revision;this.fixture(row);
     if(result.outcome!=='verified'&&result.outcome!=='adopted')throw new Error('Saved settings are not confirmed in hardware. Inspect and repair explicitly.');return result;

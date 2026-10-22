@@ -125,6 +125,15 @@ argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene unco
 expect_text = "unconfirmed scene continued programming later rows"
 
 [[control]]
+name = "scene_batch_reserved_revision"
+file = "web/src/scene-controller.ts"
+anchor = "result.revision<this.revision||"
+replacement = "result.revision<this.revision||result.revision>this.revision+1||"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene batch accepts its own skipped", "web/src/scene-settings.test.ts"]
+expect_text = "valid consumed revision rejected after recovery"
+
+[[control]]
 name = "scene_summary_missing_result_fetch"
 file = "web/src/client.ts"
 anchor = "||(job.status==='succeeded'&&job.result==null)"

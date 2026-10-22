@@ -40,7 +40,7 @@ test('scene batch freezes reviewed values and advances only its own exact revisi
     return {target,target_generation:generation,fixture:params.fixture,fixture_generation:scene.generation,bus:0,slot:3,revision,outcome:'verified'};
   };
   await applyChanges(scope,changes,()=>{});assert.deepEqual(expected,[1,2],'scene batch reused/rebased expected revision');
-  ui.snapshot.inventory.revision=4;await assert.rejects(scope.mutate(scope.outputs[0],'set_scene_row',{setting:ignored()}),/changed/);assert.equal(expected.length,2,'external edit was silently rebased');ui.client.close();
+  ui.snapshot.inventory.revision=4;await assert.rejects(scope.mutate(scope.outputs[0],'set_scene_row',{setting:ignored()}),/changed/,'external edit was silently rebased');assert.equal(expected.length,2,'external edit was silently rebased');ui.client.close();
 });
 test('scene completion cannot authorize another row after reconnect or page cancellation',async()=>{
   for(const mode of ['epoch','cancel','external']){
@@ -70,4 +70,15 @@ test('scene unconfirmed save stops later writes and reviewed repair carries exac
   ui.client.job=async(generation,target,command,params:any)=>{calls++;assert.equal(command,'repair_scene_row');assert.deepEqual(params.reviewed,reviewed,'reviewed native evidence changed at submission');assert.equal(params.expected_revision,calls);ui.client.views.value={...ui.snapshot,inventory:{...ui.snapshot.inventory,revision:2}};return {target,target_generation:generation,fixture:params.fixture,fixture_generation:scene.generation,bus:0,slot:3,revision:2,outcome:'unconfirmed'};};
   await assert.rejects(applyChanges(scope,freezeChanges(scope.outputs.map(row=>({row,before:ignored(),after:ignored(),reviewed,command:'repair_scene_row'}))),()=>{}),/Saved settings are not confirmed/,'unconfirmed scene continued programming later rows');
   assert.equal(calls,1,'unconfirmed scene continued programming later rows');assert.equal(scope.revision,2,'durable scene revision was lost after unconfirmed programming');assert.equal(ui.snapshot.inventory.revision,2);ui.client.close();
+});
+
+test('scene batch accepts its own skipped reserved revision and then pins that exact revision',async()=>{
+  const {ui,scene}=fixture(),scope=new SceneScope(ui,0,3),expected:number[]=[];
+  ui.client.job=async(generation,target,_command,params:any)=>{
+    expected.push(params.expected_revision);const revision=expected.length===1?3:4;
+    ui.client.views.value={...ui.snapshot,inventory:{...ui.snapshot.inventory,revision}};
+    return {target,target_generation:generation,fixture:params.fixture,fixture_generation:scene.generation,bus:0,slot:3,revision,outcome:'verified'};
+  };
+  await assert.doesNotReject(applyChanges(scope,freezeChanges(scope.outputs.map(row=>({row,before:null,after:ignored(),command:'set_scene_row'}))),()=>{}),'valid consumed revision rejected after recovery');
+  assert.deepEqual(expected,[1,3],'scene batch failed to pin its own skipped revision');assert.equal(scope.revision,4);ui.client.close();
 });
