@@ -1957,7 +1957,7 @@ var et = class {
 		});
 		if (!Number.isSafeInteger(i.revision) || i.revision < this.revision || i.target !== r.item.target || i.target_generation !== r.generation || i.fixture !== e.item.target || i.fixture_generation !== e.generation || i.bus !== this.bus || i.slot !== this.slot) throw Error("Scene result changed. Inspect configuration before retrying.");
 		if (this.cancelled || this.ui.cancelled || this.ui.signingOut || this.epoch !== this.ui.client.views.epoch || !this.ui.client.views.ready) throw Error("Operation stopped. Inspect saved settings before retrying.");
-		if (await this.ui.changed(i.revision), this.revision = i.revision, this.fixture(e), i.outcome !== "verified" && i.outcome !== "adopted") throw Error("Saved settings are not confirmed in hardware. Inspect and repair explicitly.");
+		if (await this.ui.changed(i.revision), this.revision = i.revision, this.fixture(e), i.outcome === "adopted" && i.comparison !== "matching" || i.outcome !== "verified" && i.outcome !== "adopted") throw Error("Saved settings are not confirmed in hardware. Inspect and repair explicitly.");
 		return i;
 	}
 	async recall(e) {

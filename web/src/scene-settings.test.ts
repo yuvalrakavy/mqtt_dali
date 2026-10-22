@@ -82,3 +82,18 @@ test('scene batch accepts its own skipped reserved revision and then pins that e
   await assert.doesNotReject(applyChanges(scope,freezeChanges(scope.outputs.map(row=>({row,before:null,after:ignored(),command:'set_scene_row'}))),()=>{}),'valid consumed revision rejected after recovery');
   assert.deepEqual(expected,[1,3],'scene batch failed to pin its own skipped revision');assert.equal(scope.revision,4);ui.client.close();
 });
+
+test('adoption keeps its committed revision but stops when native comparison is unresolved',async()=>{
+  for(const comparison of ['unresolved','different','matching']){
+    const {ui,scene}=fixture(),scope=new SceneScope(ui,0,3);let calls=0;
+    ui.client.job=async(generation,target,_command,params:any)=>{
+      calls++;const revision=calls+1;ui.client.views.value={...ui.snapshot,inventory:{...ui.snapshot.inventory,revision}};
+      return {target,target_generation:generation,fixture:params.fixture,fixture_generation:scene.generation,bus:0,slot:3,revision,outcome:'adopted',comparison,stored:{stale:comparison==='unresolved',quality:comparison==='unresolved'?'stale':'complete'}};
+    };
+    const run=applyChanges(scope,freezeChanges(scope.outputs.map(row=>({row,before:null,after:ignored(),reviewed:{},command:'adopt_scene_row'}))),()=>{});
+    if(comparison==='matching'){await run;assert.equal(calls,2);}else{
+      await assert.rejects(run,/Saved settings are not confirmed/,'unresolved adoption claimed verification and continued');
+      assert.equal(calls,1,'unresolved adoption submitted another fixture');assert.equal(scope.revision,2,'unresolved adoption lost saved revision');assert.equal(ui.snapshot.inventory.revision,2);
+    }ui.client.close();
+  }
+});

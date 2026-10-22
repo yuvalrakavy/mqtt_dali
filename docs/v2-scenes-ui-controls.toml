@@ -134,6 +134,15 @@ argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene batc
 expect_text = "valid consumed revision rejected after recovery"
 
 [[control]]
+name = "scene_adoption_unresolved_success"
+file = "web/src/scene-controller.ts"
+anchor = "result.outcome==='adopted'&&result.comparison!=='matching'"
+replacement = "false"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=adoption keeps its committed revision", "web/src/scene-settings.test.ts"]
+expect_text = "unresolved adoption claimed verification and continued"
+
+[[control]]
 name = "scene_summary_missing_result_fetch"
 file = "web/src/client.ts"
 anchor = "||(job.status==='succeeded'&&job.result==null)"

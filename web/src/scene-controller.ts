@@ -45,6 +45,7 @@ export class SceneScope {
     if(!Number.isSafeInteger(result.revision)||result.revision<this.revision||result.target!==scene.item.target||result.target_generation!==scene.generation||result.fixture!==row.item.target||result.fixture_generation!==row.generation||result.bus!==this.bus||result.slot!==this.slot)throw new Error('Scene result changed. Inspect configuration before retrying.');
     if(this.cancelled||this.ui.cancelled||this.ui.signingOut||this.epoch!==this.ui.client.views.epoch||!this.ui.client.views.ready)throw new Error('Operation stopped. Inspect saved settings before retrying.');
     await this.ui.changed(result.revision);this.revision=result.revision;this.fixture(row);
+    if(result.outcome==='adopted'&&result.comparison!=='matching')throw new Error('Saved settings are not confirmed in hardware. Inspect and repair explicitly.');
     if(result.outcome!=='verified'&&result.outcome!=='adopted')throw new Error('Saved settings are not confirmed in hardware. Inspect and repair explicitly.');return result;
   }
   async recall(group?:number){
