@@ -152,6 +152,12 @@ physical return after a newer driver report. Aggregate reads retain cursor progr
 before each await, skip disabled buses and reject absent UART before admission.
 The regression controls are `docs/v2-mqtt-output-controls.toml`.
 
+`dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
+see `docs/dali-colour-contract.md`. Whole-plan DTR/enable ownership remains the
+future executor's responsibility. Never share the codec with emulator semantics,
+treat a high byte FF as full-word MASK, clear unrequested WAF channels, or infer
+RGB support from DT8 alone. No color execution/MQTT path is claimed yet.
+
 `dali::input` decodes standard Part 103 source schemes and native Part 301–304
 data, and builds individual read-query frames; see `docs/dali-input-contract.md`.
 The codec is pure. Saved Inputs/Instances use the existing named identity ledger

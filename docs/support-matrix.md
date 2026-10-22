@@ -12,7 +12,7 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 | Addressing model | INITIALISE modes/expiry, seeded randomization, search/compare/program/withdraw, duplicate address responses | P5 bridge jobs and commissioning UI |
 | DALI-2 inputs | Standard codec/query frames; named modules/instances and durable rename; native MQTT state/events during light transactions, raw sensor values and receive-boundary cutover, covered by independent UART and existing PTY emulator tests | Hardware discovery, full-value polling, event configuration, feedback, unresolved group/source routing and semantic emulator controls |
 | DT7 switching | Pending | P4 model/driver |
-| DT8 Tc/xy/RGBWAF | Pending | P4 limits, commands and color-aware scenes |
+| DT8 Tc/xy/RGBWAF | Pure typed values, complete command/query plans, raw feature/status decoding and independent literal protocol tests | Service capability discovery, limits/control modes/readback, independent emulator semantics, MQTT and color-aware scenes |
 | Split-address RGB/RGBW | Pending | P4 representation-specific components and bindings |
 | Input indication/feedback | Pending | P4 capability discovery and supported operations |
 | Identity/memory reads | Pending | P4 model/driver |

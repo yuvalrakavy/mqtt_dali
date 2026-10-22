@@ -786,6 +786,34 @@ unresolved group/source mapping and semantic emulator controls remain required.
 See [MQTT inputs](mqtt-inputs.md) and the
 [live-input spec](superpowers/specs/2026-10-22-dali-v2-p4c-live-inputs.md).
 
+## P4d1 — typed DT8 colour protocol
+
+The pure colour codec now validates temperature/mirek, fixed-point xy and
+normalized RGBWAF channels separately from power/master brightness. Complete
+short/group/broadcast write plans load the correct DTR bytes, enable DT8 before
+each extended command and ACTIVATE once. Unrequested channels remain MASK.
+Individual read plans distinguish byte/word selectors, refresh colour reporting
+and obtain low bytes only for word values. Raw bitmap FF, byte-value MASK and
+full-word MASK remain distinct; no response/collision fabricates colour data.
+Feature/status decoding preserves reserved counts and ambiguous active types.
+
+Both sequential source-grounded design reviews approved this boundary with no
+material finding. Seven focused tests pass, including all valid raw coordinate,
+temperature and channel conversion round trips, literal command/query sequences,
+transport failures and independent address spaces. Three command-plan tests
+failed behaviorally against the empty API plans before implementation; initial
+test-only type/ownership mistakes were corrected before that evidence was taken.
+All ten fault-injection controls failed at their intended assertions in 55 seconds.
+The restored gate passes **331 native tests**, strict scoped Clippy, Pi
+library/all four binary compilation, changed-file formatting, whitespace,
+wait registry and doctests (none defined). Sequential source reviews follow the
+frozen implementation commit. No emulator/SDK/Store/runtime path was changed.
+
+Service discovery, physical limits/mode handling, actual colour readback, MQTT
+representation properties, independent emulator semantics and colour scenes
+remain subsequent implementation work. See [colour protocol](dali-colour-contract.md)
+and the [slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-codec.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -793,7 +821,7 @@ See [MQTT inputs](mqtt-inputs.md) and the
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata and live native input State/events implemented | Input discovery/full-value polling/configuration/feedback, color representations and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events and pure DT8 colour codec implemented | Input discovery/full-value polling/configuration/feedback, color integration and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

@@ -1,0 +1,91 @@
+# DT8 protocol controls. No hardware, broker, or runtime changes.
+
+[[control]]
+name = "colour_word_dtr_byte_order_reversed"
+file = "src/dali/colour.rs"
+anchor = "let [low, high] = value.to_le_bytes();"
+replacement = "let [low, high] = value.to_be_bytes();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(tc_and_xy_plans)"]
+expect_text = "Tc DTR byte order or per-command DT8 enable changed"
+
+[[control]]
+name = "colour_write_extended_enable_missing"
+file = "src/dali/colour.rs"
+anchor = "frames.extend([0xc108, target.command(opcode)]);"
+replacement = "frames.extend([target.command(opcode)]);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(tc_and_xy_plans)"]
+expect_text = "Tc DTR byte order or per-command DT8 enable changed"
+
+[[control]]
+name = "rgb_clears_untouched_white_amber_free"
+file = "src/dali/colour.rs"
+anchor = "channel.map_or(255, Channel::raw)"
+replacement = "channel.map_or(0, Channel::raw)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(rgbwaf_plans)"]
+expect_text = "RGB write cleared unrequested WAF channels or changed control mode"
+
+[[control]]
+name = "xy_uses_full_scale_instead_of_fixed_point"
+file = "src/dali/colour.rs"
+anchor = "f64::from(self.0) / 65536.0"
+replacement = "f64::from(self.0) / 65535.0"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(colour_values_validate)"]
+expect_text = "assertion `left == right` failed"
+
+[[control]]
+name = "byte_colour_selector_reads_an_extra_byte"
+file = "src/dali/colour.rs"
+anchor = "| Self::RgbwafControl => Width::Byte,"
+replacement = "| Self::RgbwafControl => Width::Word,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(colour_queries_have)"]
+expect_text = "colour selector response width changed"
+
+[[control]]
+name = "colour_word_query_omits_low_byte"
+file = "src/dali/colour.rs"
+anchor = "if self.width() == Width::Word {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(colour_queries_have)"]
+expect_text = "colour value read order or low-byte query changed"
+
+[[control]]
+name = "word_high_ff_mistaken_for_full_mask"
+file = "src/dali/colour.rs"
+anchor = "65535 => WordValue::Mask,"
+replacement = "value if value & 0xff00 == 0xff00 => WordValue::Mask,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(colour_replies_preserve)"]
+expect_text = "high byte FF destroyed valid word data"
+
+[[control]]
+name = "missing_colour_reply_becomes_zero"
+file = "src/dali/colour.rs"
+anchor = "BusReply::NoResponse => Reply::NoResponse,"
+replacement = "BusReply::NoResponse => Reply::Value(0),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(colour_replies_preserve)"]
+expect_text = "failed query fabricated a byte"
+
+[[control]]
+name = "reserved_seven_channels_advertised_as_valid"
+file = "src/dali/colour.rs"
+anchor = "self.primary_count() <= 6 && self.rgbwaf_channels() <= 6"
+replacement = "self.primary_count() <= 7 && self.rgbwaf_channels() <= 7"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(colour_features_and_status)"]
+expect_text = "reserved seven-channel feature was advertised as valid"
+
+[[control]]
+name = "ambiguous_colour_type_guessed_as_rgb"
+file = "src/dali/colour.rs"
+anchor = "_ => None,"
+replacement = "_ => Some(ColourType::Rgbwaf),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(colour_features_and_status)"]
+expect_text = "ambiguous active colour type was guessed"

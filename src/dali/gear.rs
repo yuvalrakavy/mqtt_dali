@@ -67,7 +67,7 @@ impl Destination {
     pub fn set_level(self, level: Level) -> u16 {
         u16::from_be_bytes([self.address(), level.raw()])
     }
-    fn command(self, opcode: u8) -> u16 {
+    pub(crate) fn command(self, opcode: u8) -> u16 {
         u16::from_be_bytes([self.address() | 1, opcode])
     }
     /// Immediate OFF; unlike DAPC it does not use the configured fade time.
