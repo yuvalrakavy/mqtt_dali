@@ -82,6 +82,7 @@ struct Session {
 pub(super) struct Hat {
     settings: Option<Settings>,
     buses: Vec<u8>,
+    enabled_buses: std::collections::BTreeSet<u8>,
     session: Option<Session>,
     job: Option<Job>,
     discard_job: bool,
@@ -114,12 +115,14 @@ enum Wake {
 }
 impl Hat {
     pub(super) fn new(settings: Option<Settings>, mut buses: Vec<u8>) -> Self {
+        let enabled_buses = buses.iter().copied().collect();
         if buses.is_empty() {
             buses.push(0);
         }
         Self {
             settings,
             buses,
+            enabled_buses,
             session: None,
             job: None,
             discard_job: false,
@@ -990,7 +993,35 @@ impl Hat {
             .flatten()
         })
     }
-    pub(super) fn sync_inputs(&mut self, model: &crate::inventory::Model) {
+    pub(super) fn sync_model(&mut self, model: &crate::inventory::Model) {
+        let enabled: std::collections::BTreeSet<_> = model
+            .inventory()
+            .buses
+            .iter()
+            .filter(|bus| bus.enabled)
+            .map(|bus| bus.bus)
+            .collect();
+        if self.enabled_buses != enabled {
+            let affected: std::collections::BTreeSet<_> = self
+                .enabled_buses
+                .symmetric_difference(&enabled)
+                .copied()
+                .collect();
+            for bus in &affected {
+                self.bus_generations[usize::from(*bus)] =
+                    self.bus_generations[usize::from(*bus)].saturating_add(1);
+            }
+            self.observations.retain(|bus| !affected.contains(&bus.bus));
+            self.buses = enabled.iter().copied().collect();
+            if self.buses.is_empty() {
+                self.buses.push(0);
+            }
+            self.enabled_buses = enabled;
+            // Own the join/discard before the replacement poll; physical work
+            // cannot overlap metadata because its global permit is still held.
+            self.cancel_query();
+            self.next = Instant::now();
+        }
         if self.inputs.sync(model) {
             self.schedule_inputs();
         }

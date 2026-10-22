@@ -91,6 +91,10 @@ Eviction leaves state unknown and calls for a read, never an assumed off value.
 Button events must not enter this retained replay cache.
 
 Missing hardware stays in saved inventory. Only explicit removal retires it.
+Bus [setup](bus-setup.md) preserves saved children. Enable-only changes preserve
+their Origins and binding tokens; a bus rename preserves Origins while changing
+descendant targets/bindings. Disabled buses retain reservations but retire live
+cached values/listeners; re-enable does not restore old button actions or State.
 Addressed [discovery](discovery.md) creates default-named additions through this
 same ledger. `AddInputInstance` gives only the new child a fresh Origin; its
 continuing parent and siblings retain their identities and binding generations.

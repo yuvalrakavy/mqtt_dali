@@ -38,6 +38,67 @@ fn input_model() -> Model {
 }
 
 #[test]
+fn bus_setup_consumer_preserves_objects_across_disable_enable_and_bus_rename() {
+    let first = input_model();
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    let output = "Bus1.Outputs.Light1";
+    let child = "Bus1.Inputs.Panel.Instances.Key";
+    let output_id = consumer.by_target(output).unwrap().id;
+    let child_id = consumer.by_target(child).unwrap().id;
+    consumer.set_intent(output, json!({"Brightness":0.5}));
+    let disabled = first
+        .edit(
+            1,
+            &[Edit::ConfigureBus {
+                bus: 0,
+                name: "Bus1".into(),
+                enabled: false,
+            }],
+        )
+        .unwrap();
+    consumer.accept(&disabled.state_bytes().unwrap()).unwrap();
+    assert_eq!(consumer.by_target(output).unwrap().id, output_id);
+    assert_eq!(consumer.by_target(child).unwrap().id, child_id);
+    assert!(consumer.by_target(output).unwrap().intent.is_some());
+    assert!(consumer.accepts_state(output, "0123456789abcdef0123456789abcdef.1"));
+    let renamed = disabled
+        .edit(
+            2,
+            &[Edit::ConfigureBus {
+                bus: 0,
+                name: "Upper".into(),
+                enabled: true,
+            }],
+        )
+        .unwrap();
+    let reopened = Model::new(
+        serde_json::from_slice(&serde_json::to_vec(renamed.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    consumer.accept(&reopened.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.by_target("Upper.Outputs.Light1").unwrap().id,
+        output_id,
+        "bus rename replaced fixture identity"
+    );
+    assert_eq!(
+        consumer
+            .by_target("Upper.Inputs.Panel.Instances.Key")
+            .unwrap()
+            .id,
+        child_id
+    );
+    assert!(consumer.by_target(output).is_none());
+    assert!(consumer
+        .by_target("Upper.Outputs.Light1")
+        .unwrap()
+        .intent
+        .is_some());
+    assert!(!consumer.accepts_state("Upper.Outputs.Light1", "0123456789abcdef0123456789abcdef.1"));
+}
+
+#[test]
 fn commissioning_reservation_consumer_adds_unknown_item_without_replacing_existing_bindings() {
     let first = model();
     let mut consumer = Consumer::default();

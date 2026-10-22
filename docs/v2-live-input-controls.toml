@@ -57,7 +57,11 @@ expect_text = "missing expected live input State for Bus1.Inputs.Panel.Instances
 [[control]]
 name = "native_action_report_helper_is_missing"
 file = "src/service/proxy.rs"
-anchor = "ctx.spawn(super::input::events(input_events, ctx.report.clone()));"
+anchor = '''ctx.spawn(super::input::events(
+            self.handle.clone(),
+            input_events,
+            ctx.report.clone(),
+        ));'''
 replacement = "drop(input_events);"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_mqtt_actions_survive_a_pending_light_command_and_publish_truthful_state)"]

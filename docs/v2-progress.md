@@ -5,6 +5,62 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5c — first-install bus setup
+
+`configure_bus` / `MetadataEdit::ConfigureBus` upserts an explicitly named physical
+bus through the existing durable owner. New buses have no fabricated fixtures;
+updates preserve saved children, descriptions, memberships, color selections and
+Origins. Enable-only changes preserve child bindings, rename rotates descendant
+bindings, and identical setup is a no-op. Committed enabled buses update live HAT
+polling without restarting the process. Actual enabled membership is distinct from
+the internal bus-0 health fallback. Disabled caches/listeners are retired; native
+notices carry private receive stamps checked against the latest snapshot before
+SDK reporting, so disable/re-enable cannot revive old actions. Asynchronous bus
+health keeps its existing best-effort semantics, without a new freshness or UART
+recovery framework.
+
+Both sequential design gates approved after clarifying queued-event lifetimes and
+removing an unnecessary fresh-health promise. The first real MQTT regression
+failed with unknown command before production changes. Nine focused tests pass:
+empty-install bus creation and nonzero-bus discovery without restart, strict MQTT
+and service authority, model validation/no-op/preservation, queued press retirement
+and fresh release after re-enable, held/failed/uncertain saves, owned stale health
+helper cancellation and independent-consumer continuity through rename/reopen.
+The held-save test initially attempted recovery before its released filesystem
+worker finished; a bounded retry of the explicit worker-busy response fixes that
+test race. All eight original mutation controls and three affected recovery/
+completion/native-helper controls fail at their intended behavioral assertions.
+The first restored gate passes 436 tests, scoped strict Clippy, Pi library/all
+four binaries, doctests (none), changed-file rustfmt, wait registry and whitespace.
+Self-review then identified an overly strict event phase guard: a queued valid
+action must survive an unrelated save while the old model is still active.
+A new fail-first regression reproduces that loss; allowing Writing while retaining
+listener/stamp validation fixes it and preserves the disable/re-enable rejection.
+The ninth control also fails at its intended assertion. The next full run passed
+436/437 tests and exposed the other side of the held-save fixture race: Uncertain
+phase can be published just before its canceled owner releases the global permit.
+The test now retries that explicit Busy response under the same original bound,
+as well as the worker-busy response; the focused recovery test passes. Production
+strict Clippy, Pi compilation, doctests and formatting passed that run unchanged.
+The subsequent default-concurrency run passed all new bus tests but missed two
+unchanged CLI startup tests' 2 s deadlines. Both pass in isolation; the complete
+suite with four concurrent test processes passes **437/437** in 39.5 s. This
+supports test contention as an explanation, not a proven host-level diagnosis;
+no startup code or existing deadline changed. Logs are
+`/tmp/dali-bus-setup-restored-gate`, `/tmp/dali-bus-setup-final-gate`,
+`/tmp/dali-bus-setup-acceptance-gate` and
+`/tmp/dali-bus-setup-bounded-concurrency-gate`. All nine new controls and three
+affected controls are RED at their declared behavioral assertions; logs are
+`/tmp/dali-bus-setup-controls.log`, `/tmp/dali-bus-setup-writing-control.log`,
+`/tmp/dali-bus-setup-affected-controls.log` and
+`/tmp/dali-bus-setup-event-control.log`. The final explicit original-correlation
+assertions pass in all nine focused bus tests; changed-file format/whitespace
+also pass. Source gates follow before acceptance.
+
+See [bus setup guide](bus-setup.md),
+[design](superpowers/specs/2026-10-22-dali-v2-p5-bus-setup.md) and
+`v2-bus-setup-controls.toml`.
+
 ## P5b — one unaddressed output assignment
 
 `assign_next_output` searches only unaddressed outputs, skips saved/missing and

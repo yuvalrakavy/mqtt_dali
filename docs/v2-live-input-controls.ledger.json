@@ -87,18 +87,18 @@
   },
   "native_action_report_helper_is_missing": {
    "last_real": {
-    "at": "2026-10-22T00:00:18Z",
+    "at": "2026-10-22T06:15:14Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:fae563638018c92d",
-     "row": "96e089c428776c54",
+     "guard": "item:5dc14a8134489e58",
+     "row": "64eaffebc18680c5",
      "test": null
     },
     "path": "command",
-    "secs": 10.2,
-    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "secs": 21.6,
+    "sha": "fea28efce87833f283ea96122cc6dba830906cd8",
     "verdict": "RED"
    }
   },

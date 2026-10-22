@@ -495,6 +495,11 @@ pub(super) fn retained(
         .into_iter()
         .filter(|(target, observation)| {
             table.targets.get(target).map(String::as_str) == observation.context.generation()
+                && model
+                    .inventory()
+                    .buses
+                    .iter()
+                    .any(|bus| bus.bus == observation.bus && bus.enabled)
         })
         .collect()
 }

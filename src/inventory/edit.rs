@@ -110,6 +110,26 @@ fn apply(
     edit: &Edit,
 ) -> Result<(), String> {
     match edit {
+        Edit::ConfigureBus {
+            bus: index,
+            name,
+            enabled,
+        } => {
+            if let Some(bus) = inventory.buses.iter_mut().find(|b| b.bus == *index) {
+                bus.name = name.clone();
+                bus.enabled = *enabled;
+            } else {
+                inventory.buses.push(Bus {
+                    bus: *index,
+                    name: name.clone(),
+                    description: None,
+                    enabled: *enabled,
+                    outputs: Vec::new(),
+                    groups: Vec::new(),
+                    inputs: Vec::new(),
+                });
+            }
+        }
         Edit::OutputColorRepresentation {
             bus: index,
             address,

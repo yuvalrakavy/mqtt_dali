@@ -465,7 +465,7 @@ impl ProcessService for DaliService {
         let mut failure = None;
         loop {
             // Sync before polling any public frame after durable activation.
-            hat.sync_inputs(&owner.model);
+            hat.sync_model(&owner.model);
             // WAIT: v2-service-loop
             let message = tokio::select! {
                 biased;
@@ -484,7 +484,7 @@ impl ProcessService for DaliService {
                             Ok(commissioning::Advance::Done(report))=>commissioning::finish(commissioned.request,Ok(report)),
                             Err(error)=>commissioning::finish(commissioned.request,Err(error)),
                         }
-                        snapshot=self.handle.snapshot().expect("service started");hat.sync_inputs(&owner.model);
+                        snapshot=self.handle.snapshot().expect("service started");hat.sync_model(&owner.model);
                     }
                     if matches!(completion,Some(physical::Completion::Discovery(_))) {
                         let Some(physical::Completion::Discovery(mut discovered))=completion.take() else {unreachable!()};
@@ -493,7 +493,7 @@ impl ProcessService for DaliService {
                         drop(_permit);
                         let _=reply.send(result);
                         snapshot=self.handle.snapshot().expect("service started");
-                        hat.sync_inputs(&owner.model);
+                        hat.sync_model(&owner.model);
                     }
                     snapshot.hardware=hat.hardware();
                     snapshot.input_listeners=hat.input_listeners();
@@ -655,7 +655,17 @@ impl ProcessService for DaliService {
                         .change(&self, &mut request, &mut context)
                         .instrument(span)
                         .await;
-                    let _ = request.reply.send(result);
+                    // The reply includes the post-activation receive lifetime,
+                    // including recovery that adopts a previously durable model.
+                    hat.sync_model(&owner.model);
+                    let mut snapshot = self.handle.snapshot().expect("service started");
+                    snapshot.hardware = hat.hardware();
+                    hat.invalidate_outputs(&mut snapshot.outputs);
+                    snapshot.inputs = hat.input_observations();
+                    snapshot.input_listeners = hat.input_listeners();
+                    self.state.send_replace(Some(snapshot.clone()));
+                    let _ = self.handle.updates.send(snapshot.clone());
+                    let _ = request.reply.send(result.map(|_| snapshot));
                 }
             }
         }

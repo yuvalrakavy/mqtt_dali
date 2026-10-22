@@ -91,6 +91,7 @@ the paced retry, while an actual task failure remains fatal.
 snapshot. Notifications are not a replayable edit log.
 
 Public `MetadataEdit` operations select an output's public colour representation,
+configure a bus by physical index (create, rename or enable/disable),
 rename an output/group/input module/input instance/bus or update the
 controller description. Supply the expected current inventory revision, original
 item token (instance token for bus/description), and one absolute deadline.
@@ -132,6 +133,9 @@ adopted. A persistent runtime authority conflict requires restart.
 
 ## MQTT metadata commands
 
+`configure_bus` creates or updates a saved bus without a process restart; see
+[bus setup](bus-setup.md) for strict fields, lifetime and disabled-cache behavior.
+
 Addressed hardware discovery uses the same durable owner and original-command
 completion but queries hardware before adopting additions. See
 [addressed discovery](discovery.md) for the typed API, MQTT command, captured-probe
@@ -149,6 +153,7 @@ response topic and correlation data when awaiting the result.
 
 | Command | JSON fields in addition to `command` | Generation |
 |---|---|---|
+| `configure_bus` | `bus` (0..3), `name`, `enabled` (bool), `expected_revision` | Current controller token |
 | `rename` | `target`, `name`, `expected_revision` | Current output/group token |
 | `set_color_representation` | Individual output `target`, `color_representation` (`temperature`, `xy`, `rgbwaf` or null), `expected_revision` | Current output token |
 | `rename_bus` | `bus`, `name`, `expected_revision` | Controller token |

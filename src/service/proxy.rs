@@ -20,6 +20,7 @@ impl DeviceDriver for DaliProxy {
         DriverInfo {
             commands: [
                 "assign_next_output",
+                "configure_bus",
                 "discover_address",
                 "rename",
                 "rename_bus",
@@ -109,7 +110,11 @@ impl DeviceDriver for DaliProxy {
         #[cfg(test)]
         let helper = helper.with_pause(self.snapshot_pause.clone());
         ctx.spawn(helper.run());
-        ctx.spawn(super::input::events(input_events, ctx.report.clone()));
+        ctx.spawn(super::input::events(
+            self.handle.clone(),
+            input_events,
+            ctx.report.clone(),
+        ));
         Ok(())
     }
     async fn disconnect(&mut self) {
@@ -526,6 +531,14 @@ struct RenameBus {
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
+struct ConfigureBus {
+    expected_revision: u64,
+    bus: u8,
+    name: String,
+    enabled: bool,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Describe {
     expected_revision: u64,
     description: Option<String>,
@@ -673,6 +686,17 @@ fn parse_metadata(
                 }
             };
             (params.expected_revision, edit)
+        }
+        ("configure_bus", None) => {
+            let params: ConfigureBus = decode(call)?;
+            (
+                params.expected_revision,
+                MetadataEdit::ConfigureBus {
+                    bus: params.bus,
+                    name: params.name,
+                    enabled: params.enabled,
+                },
+            )
         }
         ("rename_bus", None) => {
             let params: RenameBus = decode(call)?;

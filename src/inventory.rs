@@ -72,6 +72,11 @@ pub struct Ledger {
 
 #[derive(Debug, Clone)]
 pub enum Edit {
+    ConfigureBus {
+        bus: u8,
+        name: String,
+        enabled: bool,
+    },
     OutputColorRepresentation {
         bus: u8,
         address: u8,

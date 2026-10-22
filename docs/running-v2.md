@@ -3,6 +3,7 @@
 This is an unfinished development version. Its current executable serves saved
 inventory and metadata edits through BridgeKit, checks ATX I4 UART health and
 supports [base and selected-family DT8 light control](mqtt-outputs.md) plus
+[live bus setup](bus-setup.md),
 [input State, current-value queries and native events](mqtt-inputs.md), plus
 [discovery of already addressed devices](discovery.md) and
 [one-at-a-time unaddressed output assignment](commissioning.md). Input addressing,
@@ -32,6 +33,8 @@ a measured hardware or explicit emulator profile.
 
 The v2 file takes precedence. If it is absent, startup imports the v1 file into a
 separate private v2 file, or initializes an empty controller if neither exists.
+For a new installation, configure its buses before starting fixture discovery;
+see [bus setup](bus-setup.md).
 Invalid v2 fails startup. v1 bytes remain untouched. Stop the daemon before
 deleting v2 to force reimport. Its identity and revision ledger live inside the
 v2 JSON. The adjacent `.lock` file provides lifetime ownership; do not remove it

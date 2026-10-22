@@ -75,6 +75,11 @@ mod build_info {
 /// Public metadata changes. Physical changes require verified commissioning jobs.
 #[derive(Debug, Clone)]
 pub enum MetadataEdit {
+    ConfigureBus {
+        bus: u8,
+        name: String,
+        enabled: bool,
+    },
     OutputColorRepresentation {
         bus: u8,
         address: u8,
@@ -110,6 +115,7 @@ pub enum MetadataEdit {
 impl MetadataEdit {
     fn into_edit(self) -> Edit {
         match self {
+            Self::ConfigureBus { bus, name, enabled } => Edit::ConfigureBus { bus, name, enabled },
             Self::OutputColorRepresentation {
                 bus,
                 address,
@@ -158,6 +164,8 @@ pub struct ServiceHandle {
     updates: broadcast::Sender<Snapshot>,
     input_events: broadcast::Sender<input::Notice>,
     permit: Arc<Semaphore>,
+    #[cfg(test)]
+    input_event_pause: Arc<tests::Pause>,
 }
 /// Constructing this object opens no files, UART or network connections.
 pub struct DaliService {
@@ -237,6 +245,8 @@ impl DaliService {
             updates: broadcast::channel(16).0,
             input_events: broadcast::channel(input::EVENT_CAPACITY).0,
             permit: Arc::new(Semaphore::new(1)),
+            #[cfg(test)]
+            input_event_pause: Arc::default(),
         };
         (
             Self {

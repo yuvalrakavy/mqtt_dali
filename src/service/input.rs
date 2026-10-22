@@ -33,8 +33,33 @@ pub struct Notice {
     pub instance_type: u8,
     pub frame: protocol::Event,
     pub payload: Payload,
+    // Private receive lifetime; unchanged item identity does not authorize replay
+    // across a bus disable/re-enable or transport receive boundary.
+    stamp: Stamp,
 }
 impl Notice {
+    fn current(&self, snapshot: &Snapshot) -> bool {
+        matches!(snapshot.phase, Phase::Ready | Phase::Writing)
+            && snapshot.input_listeners.contains(&self.target)
+            && routing::generations(&snapshot.model)
+                .targets
+                .get(&self.target)
+                .map(String::as_str)
+                == self.context.generation()
+            && snapshot
+                .inputs
+                .get(&self.target)
+                .is_some_and(|observation| {
+                    !observation.stale
+                        && observation.stamp == self.stamp
+                        && snapshot
+                            .model
+                            .inventory()
+                            .buses
+                            .iter()
+                            .any(|bus| bus.bus == observation.bus && bus.enabled)
+                })
+    }
     pub fn value(&self) -> Value {
         let mut value = json!({"kind":"dali_input","target":self.target,
             "instance_type":self.instance_type,"frame":self.frame.raw(),
@@ -271,6 +296,7 @@ impl Router {
             instance_type: kind,
             frame: event,
             payload,
+            stamp,
         });
     }
     pub fn invalidate(&mut self, ready: impl Fn(u8) -> Option<Stamp>) {
@@ -316,6 +342,11 @@ pub(super) fn retained(
     let table = routing::generations(model);
     observations.retain(|target, value| {
         table.targets.get(target).map(String::as_str) == value.context.generation()
+            && model
+                .inventory()
+                .buses
+                .iter()
+                .any(|bus| bus.bus == value.bus && bus.enabled)
     });
     observations
 }
@@ -331,6 +362,11 @@ pub(super) fn retained_listeners(
         .filter(|target| {
             after.targets.contains_key(*target)
                 && before.targets.get(*target) == after.targets.get(*target)
+                && model.projections().iter().any(|p| {
+                    p.target == target.as_str()
+                        && matches!(p.location, Location::InputInstance {bus,..}
+                        if model.inventory().buses.iter().any(|b| b.bus == bus && b.enabled))
+                })
         })
         .cloned()
         .collect()
@@ -508,13 +544,24 @@ fn project_query(values: &mut PropertyMap, kind: u8, observation: Option<&Observ
 }
 
 pub(super) async fn events(
+    handle: super::ServiceHandle,
     mut receive: tokio::sync::broadcast::Receiver<Notice>,
     report: mqtt_bridge_kit::Reporter,
 ) {
     loop {
         // WAIT: v2-input-events
         match receive.recv().await {
-            Ok(notice) => report.event_with_context(notice.value(), &notice.context),
+            Ok(notice) => {
+                #[cfg(test)]
+                // WAIT: v2-input-events
+                handle.input_event_pause.point().await;
+                if handle
+                    .snapshot()
+                    .is_some_and(|snapshot| notice.current(&snapshot))
+                {
+                    report.event_with_context(notice.value(), &notice.context);
+                }
+            }
             Err(tokio::sync::broadcast::error::RecvError::Lagged(dropped)) => {
                 tracing::warn!(
                     kind = "input_event_loss",

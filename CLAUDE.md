@@ -226,6 +226,16 @@ before starting. The independent emulator and literal peers test both counts;
 neither proves physical HAT behavior. Fault controls are in
 `docs/v2-commissioning-controls.toml`.
 
+`configure_bus` / `MetadataEdit::ConfigureBus` creates or updates a bus through the
+same durable owner. See `docs/bus-setup.md`. Preserve saved children/Origins;
+enable-only edits keep child tokens, while rename changes bindings. Sync the
+committed enabled set into HAT polling and input routes before replying. Track
+actual enabled membership separately from the internal bus-0 health fallback.
+Disable retires values/listeners; Notice's private receive stamp plus the event
+helper's latest-snapshot check prevents pre-disable actions after re-enable.
+Ordinary asynchronous bus health remains best effort; no new UART recovery or
+health freshness framework. Controls: `docs/v2-bus-setup-controls.toml`.
+
 ## Architecture (legacy)
 
 ### Module Dependency Flow

@@ -5,6 +5,54 @@ use std::ffi::CStr;
 use std::os::fd::{FromRawFd, OwnedFd};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[tokio::test]
+async fn bus_setup_sync_discards_owned_old_health_result_and_distinguishes_fallback_from_enabled() {
+    let pty = Pty::new();
+    let mut hat = Hat::new(Some(settings(pty.path.clone())), Vec::new());
+    assert_eq!(hat.buses, vec![0]);
+    assert!(hat.enabled_buses.is_empty());
+    hat.observations.push(BusHealth {
+        bus: 0,
+        status: 2,
+        channels: 4,
+    });
+    let finish = std::sync::Arc::new(tokio::sync::Notify::new());
+    let release = finish.clone();
+    hat.spawn(JobKind::Query, async move {
+        release.notified().await;
+        Done::Poll(Ok(vec![BusHealth {
+            bus: 0,
+            status: 2,
+            channels: 4,
+        }]))
+    });
+    hat.sync_model(&crate::service::tests::model());
+    assert_eq!(hat.buses, vec![0]);
+    assert_eq!(
+        hat.bus_generations[0], 1,
+        "bus-0 fallback hid a real enable transition"
+    );
+    assert!(hat.observations.is_empty());
+    assert!(
+        hat.job.is_some(),
+        "bus sync dropped ownership of an unjoined health helper"
+    );
+    finish.notify_one();
+    let result = (&mut hat.job.as_mut().unwrap().0).await;
+    hat.joined(result).unwrap();
+    assert!(
+        hat.observations.is_empty(),
+        "old health helper restored retired bus evidence"
+    );
+    assert!(hat.job.is_none());
+    let epoch = hat.bus_generations[0];
+    hat.sync_model(&crate::service::tests::model());
+    assert_eq!(
+        hat.bus_generations[0], epoch,
+        "unchanged bus configuration rotated its receive lifetime"
+    );
+}
+
 pub(in crate::service) struct Pty {
     pub(in crate::service) peer: Serial,
     _slave: OwnedFd,

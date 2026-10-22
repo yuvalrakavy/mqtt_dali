@@ -1,0 +1,80 @@
+[[control]]
+name = "bus_setup_drops_valid_action_during_unrelated_save"
+file = "src/service/input.rs"
+anchor = "        matches!(snapshot.phase, Phase::Ready | Phase::Writing)"
+replacement = "        snapshot.phase == Phase::Ready"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_queued_action_remains)"]
+expect_text = "unrelated metadata save dropped a valid queued button action"
+
+[[control]]
+name = "bus_setup_does_not_update_live_polling"
+file = "src/service/hat.rs"
+anchor = "if self.enabled_buses != enabled {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_mqtt_bootstraps)"]
+expect_text = "service did not reach expected phase"
+
+[[control]]
+name = "bus_setup_discards_saved_children"
+file = "src/inventory/edit.rs"
+anchor = "bus.name = name.clone();"
+replacement = "bus.outputs.clear(); bus.inputs.clear(); bus.groups.clear(); bus.name = name.clone();"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_model_preserves)"]
+expect_text = "bus setup discarded saved child metadata"
+
+[[control]]
+name = "bus_setup_rotates_continuing_child_binding"
+file = "src/inventory/edit.rs"
+anchor = "                before.binding_revision"
+replacement = "                revision"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_model_preserves)"]
+expect_text = "enable-only edit replaced child lifetime/binding"
+
+[[control]]
+name = "bus_setup_revives_queued_pre_disable_native_action"
+file = "src/service/input.rs"
+anchor = ".is_some_and(|snapshot| notice.current(&snapshot))"
+replacement = ".is_some_and(|_| true)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_disable_reenable)"]
+expect_text = "old button action survived bus disable/re-enable"
+
+[[control]]
+name = "bus_setup_keeps_disabled_output_cache"
+file = "src/service/output.rs"
+anchor = ".any(|bus| bus.bus == observation.bus && bus.enabled)"
+replacement = ".any(|bus| bus.bus == observation.bus)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_disable_reenable)"]
+expect_text = "disabled bus retained fixture values or listeners"
+
+[[control]]
+name = "bus_setup_accepts_retired_controller_authority"
+file = "src/service/routing.rs"
+anchor = "if context.generation() != Some(token.as_str()) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_strict_mqtt)"]
+expect_text = "retired controller authority configured a bus"
+
+[[control]]
+name = "bus_setup_loses_original_mqtt_completion"
+file = "src/service/owner.rs"
+anchor = "reporter.replace_generations_for_command(&self.table, next.clone(), completion)"
+replacement = "reporter.replace_generations(&self.table, next.clone())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_mqtt_bootstraps)"]
+expect_text = "fresh installation could not configure a bus"
+
+[[control]]
+name = "bus_setup_reuses_bus_zero_fallback_lifetime"
+file = "src/service/hat.rs"
+anchor = "if self.enabled_buses != enabled {"
+replacement = "if self.enabled_buses != enabled && self.buses != vec![0] {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_sync_discards)"]
+expect_text = "bus-0 fallback hid a real enable transition"
