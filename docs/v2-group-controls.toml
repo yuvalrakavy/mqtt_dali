@@ -1,0 +1,113 @@
+[[control]]
+name = "groups_assignment_overwrites_unselected_physical_bits"
+file = "src/service/groups.rs"
+anchor = "Action::Assign { group, member } => frames::Mask(mask).with(group, member).0,"
+replacement = "Action::Assign { .. } => desired,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_assignment_saves)"]
+expect_text = "assignment cleared unselected hardware group bits"
+
+[[control]]
+name = "groups_adoption_discards_other_fixture_memberships"
+file = "src/service/groups.rs"
+anchor = "members.retain(|a| *a != address);"
+replacement = "members.clear();"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_adoption_creates)"]
+expect_text = "adoption changed another fixture's memberships"
+
+[[control]]
+name = "groups_ff_is_incorrectly_treated_as_mask"
+file = "src/service/groups.rs"
+anchor = ".zip(self.high)"
+replacement = ".zip(self.high.filter(|v| *v != 255))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_read_headerless)"]
+expect_text = "FF membership bytes were treated as MASK"
+
+[[control]]
+name = "groups_unknown_repeat_profile_probes_before_refusal"
+file = "src/service/hat.rs"
+anchor = "if request.action.writes_hardware()"
+replacement = "if false && request.action.writes_hardware()"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_unknown_repeat_profile)"]
+expect_text = "unknown repeat policy admitted group programming"
+
+[[control]]
+name = "groups_skip_durable_desired_state"
+file = "src/service/owner/group_changes.rs"
+anchor = "if !edits.is_empty() {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_assignment_saves)"]
+expect_text = "group assignment did not durably save desired intent"
+
+[[control]]
+name = "groups_save_continuation_refreshes_physical_stamp"
+file = "src/service/physical.rs"
+anchor = ") => Some(*original_stamp),"
+replacement = ") => { let _ = original_stamp; None },"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_program_handoff_rejects_original_stamp)"]
+expect_text = "group continuation queued programming with retired physical stamp"
+
+[[control]]
+name = "groups_repair_ignores_changed_preprogram_mask"
+file = "src/service/groups.rs"
+anchor = "if mask != reviewed_mask {"
+replacement = "if false && mask != reviewed_mask {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_repair_requires_review)"]
+expect_text = "changed reviewed mask was reported verified"
+
+[[control]]
+name = "groups_mismatch_is_incorrectly_verified"
+file = "src/service/owner/group_changes.rs"
+anchor = "crate::dali::groups::Mask(mask).contains(group) == member"
+replacement = "{ let _ = (mask,group,member); true }"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_post_save_verification_failure)"]
+expect_text = "failed group verification was reported successful"
+
+[[control]]
+name = "groups_accept_unknown_assignment_fields"
+file = "src/service/proxy.rs"
+anchor = '''#[serde(deny_unknown_fields)]
+struct GroupAssignment {'''
+replacement = "struct GroupAssignment {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_strict_assignment_review)"]
+expect_text = "invalid group payload was accepted"
+
+[[control]]
+name = "groups_read_requires_mutation_completion_capability"
+file = "src/service/proxy.rs"
+anchor = '''                "read_groups",
+                CommandClass::Read,'''
+replacement = '''                "read_groups",
+                CommandClass::WithReply,'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_read_headerless)"]
+expect_text = "headerless group read required a mutation completion capability"
+
+[[control]]
+name = "groups_adoption_restamps_old_probe_after_save"
+file = "src/service/owner/group_changes.rs"
+anchor = "probe.stale |= !hat.evidence_current(route.bus, observation.stamp);"
+replacement = "probe.stale = false;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_adoption_confirmed_save)"]
+expect_text = "adoption presented pre-save bus evidence as current after epoch change"
+
+[[control]]
+name = "groups_correlated_setting_collision_resets_uart"
+file = "src/service/groups.rs"
+anchor = '''                        refusal = Some(ServiceError::Rejected(
+                            "group setting collided or returned data; inspect hardware".into(),
+                        ));
+                        return Ok(());'''
+replacement = "                        return Err(TransactionError::StreamLoss);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_partial_physical_repair_failure)"]
+expect_text = "correlated DALI setting collision unnecessarily reset the UART"

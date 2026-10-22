@@ -420,13 +420,16 @@ async fn invalid_atomic_maps_and_retired_tokens_never_partially_change_a_fixture
     let current =
         SendOptions::default().user_property("target-generation", context(1).generation().unwrap());
     let stale = SendOptions::default().user_property("target-generation", "retired.1");
-    for (payload, options) in [
+    for (index, (payload, options)) in [
         (r#"{"Brightness":0.25,"Other":1}"#, current.clone()),
         (r#"{"PowerState":false,"Brightness":0.25}"#, current.clone()),
         (r#"{"PowerState":null}"#, current),
         (r#"{"Brightness":0.25}"#, SendOptions::default()),
         (r#"{"Brightness":0.25}"#, stale),
-    ] {
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let before = broker.received_on("DALI/Error/Controller").len();
         assert!(broker.send_with(
             "DALI/Desired/Controller/Bus1.Outputs.Light1",
@@ -442,12 +445,27 @@ async fn invalid_atomic_maps_and_retired_tokens_never_partially_change_a_fixture
                 .await,
             "invalid complete request was accepted: {payload}"
         );
+        // Rejections report one Error per property. The first Error cannot
+        // synchronize this loop: later pending values coalesce by property.
+        // Finish each request before submitting the next invalid complete map.
+        assert!(
+            refresh(&broker, &format!("test/after-invalid-intent/{index}"))
+                .await
+                .get("error")
+                .is_none()
+        );
+        if index == 0 {
+            assert!(
+                broker
+                    .wait_until(Duration::from_secs(1), |b| b
+                        .received_on("DALI/Error/Controller")
+                        .len()
+                        >= before + 2)
+                    .await,
+                "two-property rejection did not expose both property errors"
+            );
+        }
     }
-    // A real refresh is the worker-order barrier after every invalid request.
-    assert!(refresh(&broker, "test/after-invalid-intents")
-        .await
-        .get("error")
-        .is_none());
     let physical = emulator
         .emulator
         .control(Control::Snapshot, Duration::from_secs(1))

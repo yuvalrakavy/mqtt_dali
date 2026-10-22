@@ -92,7 +92,7 @@ snapshot. Notifications are not a replayable edit log.
 
 Public `MetadataEdit` operations select an output's public colour representation,
 configure a bus by physical index (create, rename or enable/disable),
-remove a saved output/input module (including its instances),
+remove a saved output/input module (including its instances), create an empty named group,
 rename an output/group/input module/input instance/bus or update the
 controller description. Supply the expected current inventory revision, original
 item token (instance token for bus/description), and one absolute deadline.
@@ -103,7 +103,9 @@ Renaming a module rotates descendant mappings together; the original module
 token still applies if only a child was renamed earlier. See the
 [input inventory contract](inventory-contract.md). No public metadata call
 can claim a physical replacement, address assignment or group-member change.
-Those require verified commissioning jobs in a later slice.
+Group membership uses the owned [probe/save/program API](groups.md), with explicit
+hardware adoption distinct from reviewed full-mask repair. Address assignment
+uses the [commissioning API](commissioning.md).
 
 `Snapshot.inputs` contains typed observed input data; `input_listeners` contains
 routes with installed receive boundaries, not a device-presence claim.

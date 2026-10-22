@@ -4,6 +4,8 @@ use mqtt_bridge_kit::{ProcessService, Reporter, ServiceContext};
 use std::time::Duration;
 use tracing::Instrument;
 
+mod group_changes;
+
 struct Owner {
     store: ConfigStore,
     model: Arc<Model>,
@@ -477,6 +479,15 @@ impl ProcessService for DaliService {
                     snapshot.hardware=hat.hardware();
                     snapshot.input_listeners=hat.input_listeners();
                     let mut completion=hat.take_completed_physical();
+                    if matches!(completion,Some(physical::Completion::Groups(_))) {
+                        let Some(physical::Completion::Groups(mut grouped))=completion.take() else {unreachable!()};
+                        match owner.groups(&self,&mut grouped,&mut context,&hat).await {
+                            Ok(groups::Advance::Program(route))=>hat.enqueue_groups(grouped.request,route),
+                            Ok(groups::Advance::Done(report))=>groups::finish(grouped.request,Ok(report)),
+                            Err(error)=>groups::finish(grouped.request,Err(error)),
+                        }
+                        snapshot=self.handle.snapshot().expect("service started");hat.sync_model(&owner.model);
+                    }
                     if matches!(completion,Some(physical::Completion::Commission(_))) {
                         let Some(physical::Completion::Commission(mut commissioned))=completion.take() else {unreachable!()};
                         match owner.commission(&self,&mut commissioned,&mut context,&hat).await {
@@ -541,6 +552,7 @@ impl ProcessService for DaliService {
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion { match completion {
+                      physical::Completion::Groups(_)=>unreachable!("groups accepted before cache publication"),
                       physical::Completion::Commission(_)=>unreachable!("commissioning advanced before cache publication"),
                       physical::Completion::Discovery(_)=>unreachable!("discovery accepted before cache publication"),
                       physical::Completion::Output(completion)=>{
@@ -571,6 +583,23 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::Groups(request) => {
+                    if request.reply.is_closed() || Instant::now() >= request.deadline {
+                        groups::finish(request, Err(ServiceError::Expired));
+                    } else {
+                        let snapshot = self.handle.snapshot().expect("service started");
+                        match groups::resolve(
+                            &snapshot,
+                            &request.target,
+                            request.action,
+                            request.expected,
+                            &request.context,
+                        ) {
+                            Ok(route) => hat.enqueue_groups(request, route),
+                            Err(error) => groups::finish(request, Err(error)),
+                        }
+                    }
+                }
                 Message::Commission(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
                         commissioning::finish(request, Err(ServiceError::Expired));
@@ -674,6 +703,7 @@ impl ProcessService for DaliService {
         self.update_snapshot(owner.model.clone(), Phase::Stopping);
         while let Ok(message) = self.receive.try_recv() {
             match message {
+                Message::Groups(request) => groups::finish(request, Err(ServiceError::Closed)),
                 Message::Commission(request) => {
                     commissioning::finish(request, Err(ServiceError::Closed))
                 }

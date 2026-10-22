@@ -135,6 +135,15 @@ cargo run --bin mqtt_dali_v1 -- --setup <mqtt_broker_address>
 
 ## Legacy regression harness reference
 
+Managed v2 group membership uses `dali::groups`, `service::groups` and concrete
+`physical::Work::Groups`; see `docs/groups.md`. Ordinary assignment saves desired
+membership before programming only one bit. Adoption saves reviewed hardware
+membership without settings writes; repair explicitly enforces all saved bits.
+Keep original stamp/permit/completion through save/program. Complete FF/FF is
+mask FFFF; incomplete halves never make a full mask. `read_groups` is Read-class
+and must dispatch before requiring CommandCompletion. `create_group` is ordinary
+controller metadata. Behavioral controls: `docs/v2-group-controls.toml`.
+
 The old runtime/CLI, modules and MQTT topics described below belong to
 `src/legacy_main.rs` / `mqtt_dali_v1`. They are not the canonical v2 interface.
 For v2 see `src/daemon.rs`, `src/service.rs`, `src/service/owner.rs`,

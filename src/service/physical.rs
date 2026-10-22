@@ -1,9 +1,10 @@
-//! One concrete owner for input reads and output operations on the same HAT.
-use super::{commissioning, discovery, input::readback, output, ServiceError};
+//! One concrete owner for input reads, output operations and commissioning on the HAT.
+use super::{commissioning, discovery, groups, input::readback, output, ServiceError};
 use crate::atx::{serial::Serial, transactions::Transactions};
 use tokio::time::Instant;
 
 pub(super) enum Work {
+    Groups(groups::Request, groups::Route),
     Commission(commissioning::Request, commissioning::Route),
     Discovery(discovery::Request, discovery::Route),
     Output(output::Request, output::Route),
@@ -12,6 +13,7 @@ pub(super) enum Work {
 impl Work {
     pub fn bus(&self) -> u8 {
         match self {
+            Self::Groups(_, r) => r.bus,
             Self::Output(_, r) => r.bus,
             Self::Input(_, r) => r.bus,
             Self::Discovery(_, r) => r.bus,
@@ -20,6 +22,13 @@ impl Work {
     }
     pub fn required_stamp(&self) -> Option<output::Stamp> {
         match self {
+            Self::Groups(
+                _,
+                groups::Route {
+                    plan: groups::Plan::Program { original_stamp, .. },
+                    ..
+                },
+            ) => Some(*original_stamp),
             Self::Commission(
                 _,
                 commissioning::Route {
@@ -32,6 +41,7 @@ impl Work {
     }
     pub fn deadline(&self) -> Instant {
         match self {
+            Self::Groups(q, _) => q.deadline,
             Self::Output(q, _) => q.deadline,
             Self::Input(q, _) => q.deadline,
             Self::Discovery(q, _) => q.deadline,
@@ -40,6 +50,7 @@ impl Work {
     }
     pub fn is_closed(&self) -> bool {
         match self {
+            Self::Groups(q, _) => q.reply.is_closed(),
             Self::Output(q, _) => q.reply.is_closed(),
             Self::Input(q, _) => q.reply.is_closed(),
             Self::Discovery(q, _) => q.reply.is_closed(),
@@ -47,7 +58,8 @@ impl Work {
         }
     }
     pub fn mutating(&self) -> bool {
-        matches!(self, Self::Output(q,_) if q.intent.is_some())
+        matches!(self, Self::Groups(_,r) if matches!(r.plan,groups::Plan::Program{..}))
+            || matches!(self, Self::Output(q,_) if q.intent.is_some())
             || matches!(
                 self,
                 Self::Commission(
@@ -61,6 +73,7 @@ impl Work {
     }
     pub fn span(&self) -> tracing::Span {
         match self {
+            Self::Groups(_, r) => r.context.operation_span(&r.controller, "groups"),
             Self::Output(_, r) => r.context.operation_span(&r.controller, "output"),
             Self::Input(_, r) => r.context.operation_span(&r.controller, "input_read"),
             Self::Discovery(_, r) => r.context.operation_span(&r.controller, "discover_address"),
@@ -71,6 +84,10 @@ impl Work {
     }
     pub async fn wait_for_receiver_close(&mut self) {
         match self {
+            Self::Groups(q, _) => {
+                // WAIT: v2-hat-loop
+                q.reply.closed().await
+            }
             Self::Commission(q, _) => {
                 // WAIT: v2-hat-loop
                 q.reply.closed().await
@@ -96,6 +113,19 @@ impl Work {
     ) -> impl std::future::Future<Output = Outcome> + Send + 'static {
         // Capture values only: the owner retains requests, replies and permits.
         let run = match self {
+            Self::Groups(q, r) => Run::Groups(
+                r.clone(),
+                q.deadline.min(
+                    Instant::now()
+                        + std::time::Duration::from_secs(
+                            if matches!(r.plan, groups::Plan::Probe) {
+                                3
+                            } else {
+                                4
+                            },
+                        ),
+                ),
+            ),
             Self::Commission(q, r) => Run::Commission(
                 r.clone(),
                 q.deadline.min(
@@ -119,6 +149,14 @@ impl Work {
         };
         async move {
             match run {
+                Run::Groups(route, deadline) => {
+                    let value = groups::execute(link, route, stamp, deadline).await;
+                    Outcome {
+                        sample: Sample::Groups(value.observation),
+                        error: value.error,
+                        recovery: value.recovery,
+                    }
+                }
                 Run::Commission(route, deadline) => {
                     let value = commissioning::execute(link, route, stamp, deadline).await;
                     Outcome {
@@ -157,6 +195,14 @@ impl Work {
     }
     pub fn finish(self, sample: Option<Sample>, error: Option<ServiceError>) -> Completion {
         match (self, sample) {
+            (Self::Groups(request, _), sample) => Completion::Groups(groups::Completion {
+                request,
+                observation: sample.map(|s| match s {
+                    Sample::Groups(o) => o,
+                    _ => unreachable!("physical result kind"),
+                }),
+                error,
+            }),
             (Self::Commission(request, _), sample) => {
                 Completion::Commission(commissioning::Completion {
                     request,
@@ -198,12 +244,14 @@ impl Work {
     }
 }
 enum Run {
+    Groups(groups::Route, Instant),
     Commission(commissioning::Route, Instant),
     Discovery(discovery::Route, Instant),
     Output(output::Route, Option<output::WriteIntent>, bool, Instant),
     Input(readback::Route, Instant),
 }
 pub(super) enum Sample {
+    Groups(groups::Observation),
     Commission(commissioning::Observation),
     Discovery(discovery::Observation),
     Output(output::Observation),
@@ -212,6 +260,11 @@ pub(super) enum Sample {
 impl Sample {
     pub fn invalidate(&mut self, reason: &str) {
         match self {
+            Self::Groups(value) => {
+                if let Some(p) = &mut value.probe {
+                    p.stale = true;
+                }
+            }
             Self::Output(value) => value.invalidate(reason),
             Self::Input(value) => value.stale = true,
             Self::Discovery(value) => value.stale = true,
@@ -225,6 +278,7 @@ pub(super) struct Outcome {
     pub recovery: bool,
 }
 pub(super) enum Completion {
+    Groups(groups::Completion),
     Commission(commissioning::Completion),
     Discovery(discovery::Completion),
     Output(output::Completion),
@@ -233,6 +287,9 @@ pub(super) enum Completion {
 impl Completion {
     pub fn reject(self) {
         match self {
+            Self::Groups(q) => {
+                groups::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
+            }
             Self::Commission(q) => {
                 commissioning::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
             }

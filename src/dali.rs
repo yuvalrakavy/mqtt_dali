@@ -2,4 +2,5 @@
 pub mod colour;
 pub mod commissioning;
 pub mod gear;
+pub mod groups;
 pub mod input;

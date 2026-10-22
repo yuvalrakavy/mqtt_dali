@@ -33,8 +33,8 @@ It retires the selected lifetime, cached values, State/request authority and inp
 listeners. Queued actions for a removed input cannot become actions for a later
 device. Other fixture identities remain intact. Removing an output also removes
 its references from saved group memberships; affected groups retain identity but
-receive new binding tokens. Physical group membership remains unchanged until the
-future verification/fix workflow programs it.
+receive new binding tokens. Physical group membership remains unchanged until an
+explicit [group repair](groups.md) programs it.
 
 The physical fixture keeps its short address, level, groups, scenes and input-event
 configuration. It can still respond on the bus. [Discovery](discovery.md) can add

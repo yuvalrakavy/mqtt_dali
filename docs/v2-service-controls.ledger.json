@@ -36,7 +36,7 @@
   },
   "mqtt_edits_retire_their_own_final_reply": {
    "last_real": {
-    "at": "2026-10-22T06:14:46Z",
+    "at": "2026-10-22T07:01:57Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,8 +46,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 9.6,
-    "sha": "fea28efce87833f283ea96122cc6dba830906cd8",
+    "secs": 8.0,
+    "sha": "c9fc2b3442eeb11267fd81be60359f7723ae1b53",
     "verdict": "RED"
    }
   },
@@ -87,7 +87,7 @@
   },
   "recovery_skips_runtime_activation_for_changed_false": {
    "last_real": {
-    "at": "2026-10-22T06:32:33Z",
+    "at": "2026-10-22T07:01:49Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,8 +97,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.6,
-    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
+    "secs": 10.1,
+    "sha": "c9fc2b3442eeb11267fd81be60359f7723ae1b53",
     "verdict": "RED"
    }
   },

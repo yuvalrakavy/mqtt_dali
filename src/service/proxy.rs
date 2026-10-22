@@ -19,6 +19,10 @@ impl DeviceDriver for DaliProxy {
     fn info(&self) -> DriverInfo {
         DriverInfo {
             commands: [
+                "create_group",
+                "assign_group",
+                "adopt_groups",
+                "repair_groups",
                 "assign_next_output",
                 "configure_bus",
                 "discover_address",
@@ -31,6 +35,10 @@ impl DeviceDriver for DaliProxy {
             ]
             .into_iter()
             .map(|name| CommandSpec::new(name, CommandClass::WithReply))
+            .chain(std::iter::once(CommandSpec::new(
+                "read_groups",
+                CommandClass::Read,
+            )))
             .collect(),
             timing: Timing {
                 operation: Duration::from_secs(20),
@@ -68,6 +76,15 @@ impl DeviceDriver for DaliProxy {
                     .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
                 let change = parse(&snapshot, target, call)?;
                 match change {
+                    Operation::Groups(action, expected) => groups::resolve(
+                        &snapshot,
+                        target.ok_or_else(|| OpError::Rejected("output target required".into()))?,
+                        action,
+                        expected,
+                        context,
+                    )
+                    .map(|_| ())
+                    .map_err(op_error),
                     Operation::Assignment(p) => {
                         commissioning::resolve(&snapshot, p.bus, p.expected_revision, context)
                             .map(|_| ())
@@ -210,12 +227,43 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::Groups(groups::Action::Read, _) = change {
+            let result = self
+                .handle
+                .read_groups(
+                    target.ok_or_else(|| OpError::Rejected("output target required".into()))?,
+                    context.clone(),
+                    deadline,
+                )
+                .await
+                .map_err(op_error)?;
+            return serde_json::to_value(result)
+                .map(Some)
+                .map_err(|e| OpError::Unusable(e.to_string()));
+        }
         let completion = self
             .reporter
             .as_ref()
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::Groups(action, expected) => {
+                let result = self
+                    .handle
+                    .groups(
+                        target.ok_or_else(|| OpError::Rejected("output target required".into()))?,
+                        action,
+                        expected,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(18),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
             Operation::Assignment(p) => {
                 let result = self
                     .handle
@@ -566,6 +614,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    Groups(groups::Action, Option<u64>),
     Assignment(Assignment),
     Metadata(Change),
     Discovery(Discovery),
@@ -584,11 +633,75 @@ struct DiscoveryParams {
     address: u8,
     expected_revision: u64,
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GroupAssignment {
+    group: u8,
+    member: bool,
+    expected_revision: u64,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GroupReview {
+    reviewed_mask: u16,
+    expected_revision: u64,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GroupCreation {
+    bus: u8,
+    group: u8,
+    name: String,
+    expected_revision: u64,
+}
 fn parse(
     snapshot: &Snapshot,
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if matches!(
+        call.command.as_str(),
+        "read_groups" | "assign_group" | "adopt_groups" | "repair_groups"
+    ) {
+        if target.is_none() {
+            return Err(OpError::Rejected("output target required".into()));
+        }
+        return match call.command.as_str() {
+            "read_groups" if call.params.is_empty() => {
+                Ok(Operation::Groups(groups::Action::Read, None))
+            }
+            "assign_group" => {
+                let p: GroupAssignment = decode(call)?;
+                let group = crate::dali::gear::GroupAddress::new(p.group)
+                    .map_err(|e| OpError::Rejected(e.to_string()))?;
+                Ok(Operation::Groups(
+                    groups::Action::Assign {
+                        group,
+                        member: p.member,
+                    },
+                    Some(p.expected_revision),
+                ))
+            }
+            "adopt_groups" | "repair_groups" => {
+                let p: GroupReview = decode(call)?;
+                Ok(Operation::Groups(
+                    if call.command == "adopt_groups" {
+                        groups::Action::Adopt {
+                            reviewed_mask: p.reviewed_mask,
+                        }
+                    } else {
+                        groups::Action::Repair {
+                            reviewed_mask: p.reviewed_mask,
+                        }
+                    },
+                    Some(p.expected_revision),
+                ))
+            }
+            _ => Err(OpError::Rejected(
+                "read_groups accepts no parameters".into(),
+            )),
+        };
+    }
     if call.command == "assign_next_output" {
         if target.is_some() {
             return Err(OpError::Rejected(
@@ -624,6 +737,17 @@ fn parse_metadata(
     call: &CommandCall,
 ) -> Result<Change, OpError> {
     let edit = match (call.command.as_str(), target) {
+        ("create_group", None) => {
+            let p: GroupCreation = decode(call)?;
+            (
+                p.expected_revision,
+                MetadataEdit::CreateGroup {
+                    bus: p.bus,
+                    group: p.group,
+                    name: p.name,
+                },
+            )
+        }
         ("remove_from_list", Some(target)) => {
             let params: Removal = decode(call)?;
             let projection = snapshot

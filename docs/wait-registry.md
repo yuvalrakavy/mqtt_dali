@@ -109,7 +109,7 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, commission, search, program
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, commission, search, program, groups, read_groups, change_groups
 ```
 
 ## Waiters (generated)
@@ -208,11 +208,13 @@ v2-service-loop src/service/owner.rs <DaliService as ProcessService>::run
 v2-service-request src/service.rs ServiceHandle::submit
 v2-service-request src/service/commissioning.rs ServiceHandle::assign
 v2-service-request src/service/discovery.rs ServiceHandle::discover
+v2-service-request src/service/groups.rs ServiceHandle::groups
 v2-service-request src/service/input/readback.rs ServiceHandle::read_input
 v2-service-request src/service/output.rs ServiceHandle::output
 v2-service-save src/service/owner.rs Owner::change
 v2-service-save src/service/owner.rs Owner::commission
 v2-service-save src/service/owner.rs Owner::discover
+v2-service-save src/service/owner/group_changes.rs Owner::groups
 v2-service-start src/service/owner.rs <DaliService as ProcessService>::run
 v2-store-close src/config_store.rs ConfigStore::close
 v2-store-close src/service/owner.rs <DaliService as ProcessService>::run

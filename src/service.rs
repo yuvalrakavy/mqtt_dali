@@ -12,6 +12,7 @@ use tokio::{
 
 pub mod commissioning;
 pub mod discovery;
+pub mod groups;
 mod hat;
 pub mod input;
 pub mod output;
@@ -75,6 +76,11 @@ mod build_info {
 /// Public metadata changes. Physical changes require verified commissioning jobs.
 #[derive(Debug, Clone)]
 pub enum MetadataEdit {
+    CreateGroup {
+        bus: u8,
+        group: u8,
+        name: String,
+    },
     /// Forget the saved fixture and its saved group references; no hardware write.
     RemoveOutput {
         bus: u8,
@@ -125,6 +131,15 @@ pub enum MetadataEdit {
 impl MetadataEdit {
     fn into_edit(self) -> Edit {
         match self {
+            Self::CreateGroup { bus, group, name } => Edit::AddGroup {
+                bus,
+                group: crate::config::Group {
+                    group_address: group,
+                    name,
+                    description: None,
+                    members: Vec::new(),
+                },
+            },
             Self::RemoveOutput { bus, address } => Edit::RemoveOutput { bus, address },
             Self::RemoveInput { bus, address } => Edit::RemoveInput { bus, address },
             Self::ConfigureBus { bus, name, enabled } => Edit::ConfigureBus { bus, name, enabled },
@@ -203,6 +218,7 @@ type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations)
 #[cfg(test)]
 type OutputAcceptanceHook = Arc<dyn Fn(&mut hat::Hat) + Send + Sync>;
 enum Message {
+    Groups(groups::Request),
     Commission(commissioning::Request),
     Discovery(discovery::Request),
     Output(output::Request),

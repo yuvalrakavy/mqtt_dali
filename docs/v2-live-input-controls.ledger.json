@@ -87,7 +87,7 @@
   },
   "native_action_report_helper_is_missing": {
    "last_real": {
-    "at": "2026-10-22T06:15:14Z",
+    "at": "2026-10-22T07:02:14Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,8 +97,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 21.6,
-    "sha": "fea28efce87833f283ea96122cc6dba830906cd8",
+    "secs": 16.3,
+    "sha": "c9fc2b3442eeb11267fd81be60359f7723ae1b53",
     "verdict": "RED"
    }
   },

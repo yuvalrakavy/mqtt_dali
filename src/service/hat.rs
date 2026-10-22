@@ -669,6 +669,22 @@ impl Hat {
                 observed_bus,
             })
     }
+    pub(super) fn enqueue_groups(
+        &mut self,
+        request: super::groups::Request,
+        route: super::groups::Route,
+    ) {
+        if request.action.writes_hardware()
+            && self
+                .settings
+                .as_ref()
+                .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
+        {
+            super::groups::finish(request,Err(ServiceError::Rejected("group programming requires --uart-repeat-terminals 1 or 2 for a known HAT profile".into())));
+            return;
+        }
+        self.enqueue_physical(physical::Work::Groups(request, route));
+    }
     pub(super) fn enqueue_commission(
         &mut self,
         request: super::commissioning::Request,

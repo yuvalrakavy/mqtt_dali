@@ -5,6 +5,63 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5e — per-fixture group membership
+
+Implemented saved-group creation and strict MQTT/typed APIs for captured reads,
+single-bit assignment, reviewed hardware adoption and explicit full-mask repair.
+Reuse existing group reducers and the common physical owner. Assign saves desired
+intent before programming only the selected bit; adopt changes metadata only;
+repair can explicitly clear unnamed slots. Report captured halves, quality,
+staleness, expected/drift masks and confirmed revision/partial outcome. Preserve
+the original stamp, permit and command completion across save/program. Group
+membership changes rotate only affected group contracts; fixture identity and
+intent continue. Read-class dispatch precedes mutation completion capture and
+supports absent MQTT generation/trace headers. No SDK or UART recovery change.
+
+Both sequential design gates approve; the first noted the Read-class completion
+seam, now implemented. The initial two MQTT regressions failed with unknown
+command before production changes. Local tests cover literal boundary frames,
+FFFF and incomplete/collision masks, both known repeat counts, strict payloads,
+create/rename/no-op, preservation of unnamed bits/other fixtures, adoption/repair
+review, physical mismatch/partial failure, held/failed/uncertain/canceled saves,
+bus changes through save, cancellation/expiry/native input and independent
+consumer continuity. A literal peer initially captured only its master descriptor;
+moving its whole PTY owner into the task fixes that fixture. The native-input
+assertion initially used a target-specific topic; actual events carry target in
+the controller-topic payload. Expiry tests distinguish request settlement from a
+late terminal: admission can release after backend retirement while UART readiness
+still refuses new work. Their local retry pace is shortened to fit the fixture's
+bound; production's existing five-second recovery pace stays unchanged.
+
+The first ten fault controls produced nine declared RED outcomes; the save-time
+bus-cycle case stayed GREEN when the original-stamp guard was removed because
+another receive-epoch check still refused programming. A focused already-observed
+cycle handoff test isolates that admission boundary. An additional adoption test
+checks stale evidence after confirmed save. Final control/restored/source-review
+results are recorded below once run. Browser/pattern/bus-wide group orchestration,
+group light/color operations and physical I4 validation remain unfinished.
+
+The first restored gate passes 462 native tests, scoped strict Clippy, Pi
+library/all four binaries, doctests (none), changed-file format/wait/whitespace.
+Self-review then identified that a correlated group-setting collision was
+classified as UART stream loss. A fail-first regression checks immediate link
+usability and explicit readback after partial repair. Treat that valid bus terminal
+as an operation failure, preserving the ready UART and saved intent without retry.
+No change to transport ordering/recovery is required.
+
+The next full run passes all group tests and 461/462 overall; an unchanged
+atomic-intent test observes level 64 after its invalid request sequence. It passes
+in isolation. Inspection finds its loop waits for one new Error, although one
+rejected map reports one Error per property and pending Desired values coalesce.
+Move its existing worker-order refresh barrier inside the loop, so each invalid
+complete map finishes before submitting the next, and assert both errors from the
+first two-property rejection. No SDK or output-routing code changes. Repeated
+focused and restored results follow before source acceptance.
+
+See [operator/API guide](groups.md),
+[design](superpowers/specs/2026-10-22-dali-v2-p5-groups.md) and
+`v2-group-controls.toml`.
+
 ## P5d — explicit Remove from list
 
 `remove_from_list` exposes existing `Edit::RemoveOutput` / `RemoveInput` through

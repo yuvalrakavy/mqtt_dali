@@ -2,8 +2,9 @@
 
 This guide is for MQTT consumers and bridge operators using the development v2
 bridge. Any MQTT v5 consumer can use it. A Store server is not required. Configure
-the controller and saved outputs first; discovery and the browser interface are
-subsequent work. See [running v2](running-v2.md) and
+the controller and saved outputs first; [discovery](discovery.md) and
+[commissioning](commissioning.md) APIs are available, with the browser interface
+under development. See [running v2](running-v2.md) and
 [the inventory contract](inventory-contract.md).
 
 For controller `Controller`, bus `Bus1` and output `Light1`, the target is
@@ -22,7 +23,13 @@ Brightness is the DALI control level, not measured luminous flux. Zero means off
 Power true alone recalls maximum; it does not restore an application's remembered
 brightness. Nulls, unknown properties, wrong JSON types, out-of-range levels and
 contradictory pairs are rejected before any output command is sent. Group
-execution remains pending. Individual DT8 colour controls are described below.
+light-level/color control remains pending; [membership operations](groups.md)
+are available. Individual DT8 colour controls are described below.
+
+BridgeKit coalesces pending Desired values by property. The driver validates and
+applies the complete effective map it receives. One rejected map can produce an
+Error for each property. Use an explicit refresh/readback to sequence actions;
+an Error count alone does not establish completion of a publication.
 
 ## Colour controls
 

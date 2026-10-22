@@ -138,6 +138,65 @@ async fn ready_output_hat(pty: &mut Pty) -> Hat {
     drive(&mut hat, |h| matches!(h, Hardware::Ready { .. })).await;
     hat
 }
+
+#[tokio::test]
+async fn group_program_handoff_rejects_original_stamp_after_already_observed_bus_cycle() {
+    use crate::service::{
+        groups,
+        tests::{model, snapshot},
+    };
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    hat.settings.as_mut().unwrap().repeat = RepeatPolicy::OneTerminal;
+    let old = hat.stamp(0).unwrap();
+    hat.power_cycle_output_samples_for_test();
+    assert_ne!(hat.stamp(0), Some(old));
+    let model = model();
+    let mut route = groups::resolve(
+        &snapshot(model.clone(), Phase::Ready),
+        "Bus1.Outputs.Light1",
+        groups::Action::Repair { reviewed_mask: 1 },
+        Some(1),
+        &context(1),
+    )
+    .unwrap();
+    route.plan = groups::Plan::Program {
+        desired: 1,
+        original_stamp: old,
+    };
+    let admission = std::sync::Arc::new(tokio::sync::Semaphore::new(1));
+    let (reply, receive) = tokio::sync::oneshot::channel();
+    let mut request = groups::Request {
+        target: "Bus1.Outputs.Light1".into(),
+        action: route.action,
+        expected: Some(1),
+        context: context(1),
+        deadline: deadline(),
+        completion: None,
+        committed: None,
+        reply,
+        _permit: admission.clone().try_acquire_owned().unwrap(),
+    };
+    request.committed = Some(groups::report(
+        &model,
+        &request,
+        &route,
+        "unconfirmed",
+        false,
+        None,
+        None,
+    ));
+    hat.enqueue_groups(request, route);
+    assert!(
+        hat.physical.is_none(),
+        "group continuation queued programming with retired physical stamp"
+    );
+    let report = receive.await.unwrap().unwrap();
+    assert_eq!(report.outcome, "unconfirmed");
+    assert!(report.probe.is_none());
+    assert_eq!(admission.available_permits(), 1);
+    hat.close(deadline()).await.unwrap();
+}
 fn queue_output(
     hat: &mut Hat,
     intent: Option<crate::dali::gear::Intent>,

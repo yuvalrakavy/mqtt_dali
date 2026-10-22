@@ -18,7 +18,8 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 | Identity/memory reads | Pending | P4 model/driver |
 | Data Parts 251–253 | Pending | P4 luminaire/energy/diagnostics with units/status |
 | DT1 emergency | Pending | P4 status/configuration/test operations |
-| Group/scene operator workflows | Pending | P5 verification, repair, assignment, recall/copy/clear |
+| Output group membership | Saved-group creation/rename, captured per-fixture read, one-bit assignment, reviewed hardware adoption and full-mask repair; independent literal peers/emulator/private MQTT and consumer tests | Browser/pattern/bus-wide orchestration, group level/color control and physical validation |
+| Scene operator workflows | Pending | P5 capture, verification, recall/copy/clear |
 | BridgeKit MQTT | Canonical daemon, managed inventory service, fenced targets, metadata commands, base output properties, original trace and independent consumer/ephemeral-broker tests | Remaining capability paths; local shared dependency commit must be published for portable clones |
 | Protected web UI | Approved design; implementation pending | P6/P7 service/authentication/browser tests |
 | Store device/preset integration | Approved design; implementation pending | P8 schema and persisted migration |
