@@ -7,7 +7,8 @@ The approved architecture and phase acceptance criteria are in
 
 ## P5h2b1 — owned stored-scene reads and native recall
 
-Implementation is in verification; source acceptance is pending. Named scenes
+Accepted locally at frozen source `b45c471`: **564 native tests** and both final
+sequential source reviews pass. Named scenes
 can be recalled on their bus or a native numeric group. Individual outputs can
 read any stored slot, including unnamed ones, with explicit Off/MASK/missing/
 collision and stored-colour evidence. Queries do not activate the scene or
@@ -53,7 +54,19 @@ control detects delayed invalidation. Both cache controls produce intended REDs;
 restored nine-case checks, scoped strict Clippy, Pi lib/four bins, formatting,
 affected control plans, wait validation and final base-to-worktree whitespace
 check pass (`/tmp/dali-scene-operations-inflight-check`). Fix-set source review
-and full regressions remain pending.
+and full regressions follow below.
+
+Both fix-set frozen-source reviews APPROVE `b45c471` without findings, including
+admission publication before possible send and exact bus scoping. Final restored
+acceptance passes **564/564 native tests** across eleven binaries (one opt-in
+browser test skipped), doctests (none), complete base-to-HEAD whitespace and clean
+worktree checks. Native command wall time is 98 s; logs:
+`/tmp/dali-scene-operations-acceptance`. Scoped strict Clippy, Pi library/four-bin,
+formatting, affected plans and zero-finding wait validation remain green from
+the restored fix check. All thirteen current scene controls have intended RED
+evidence (eleven unchanged initial rows plus the retargeted/new cache pair), as
+does the existing headerless group-read control. Reviews are same-family and
+source-only; cross-family and physical HAT validation are not claimed.
 
 ## P5h2a — durable named scene slots
 
@@ -1819,7 +1832,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene protocol/model and durable named-slot metadata accepted locally | Full reassign/restore and managed physical scenes/UI |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene codec/model, named slots, stored reads and bus/group recall accepted locally | Full reassign/restore, private scene editing/capture/verify/copy/clear and Scenes UI |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

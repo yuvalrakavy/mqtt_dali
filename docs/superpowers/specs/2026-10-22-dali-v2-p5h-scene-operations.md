@@ -148,7 +148,12 @@ both commands. Eight library cases plus one canonical/standalone process case
 cover the planned surfaces, including all returned colour attributes. Thirteen
 scene fault controls and the existing headerless group-read control produce
 intended behavioral REDs. Contributor/operator docs and capability catalog are
-updated. Full restored regressions and frozen-source review remain pending.
+updated. Final source `b45c471` has both sequential fix-set approvals without
+findings and passes 564 native regressions, scoped strict Clippy, Pi four-bin
+check, formatting, affected control plans, wait validation and full-diff whitespace.
+Source review is same-family/source-only; no physical or cross-family acceptance.
+The progress ledger records the initial EOF correction and test-first admission
+invalidation improvement without reopening UART recovery.
 
 Check sibling cases: output read versus scene recall authority; optional read
 token versus required mutation token; bus versus group scope; Off versus MASK
