@@ -52,6 +52,18 @@ does not authorize a repair. Recovery stops for changed configuration, stale
 identities, connection loss, other Blink claims or uncertain evidence. Completed
 saves/assignments remain saved if you close the page or stop later steps.
 
+## Clearing an individual short address
+
+DALI supports clearing an addressed fixture's short address. For output gear,
+SetShortAddress with DTR0 = FF removes the address; see the
+[python-dali command definition](https://github.com/sde1000/python-dali/blob/master/dali/gear/general.py).
+The fixture then participates in unaddressed commissioning again.
+
+The current bridge does not yet expose an individual **Clear short address**
+action. **Remove from list** only removes its saved record and does not clear
+hardware. Full reassignment clears the selected whole address space and retires
+its saved identities; it is not an individual-clear operation.
+
 ## API
 
 Use the saved fixture's original `target-generation` MQTT v5 property, a response

@@ -230,7 +230,17 @@ controller token. An empty saved space still clears unsaved native gear.
 assignment/discovery/current reads per space with frozen roots/epoch/lifetime.
 Do not reuse Controller.scan (both spaces), latest-root injection, or demand a
 65th search after 64verified assignments. See `docs/reassignment.md` and
-`docs/v2-reassignment-controls.md`. Lost-address restoration remains pending.
+`docs/v2-reassignment-controls.md`. Lost-address recovery uses `service::restoration`:
+identified recovery probes, then atomically removes the candidate and readdresses
+the original saved identity to its new address. Preserve module/child Origins,
+move output desired group references, and keep private scene rows by Origin.
+Free the old reservation; never send a second native address change. Accept the
+own new mapping token/root while completing under the original request token.
+The sole-unaddressed shortcut may reuse the old address without a config edit.
+Its unchanged token/stamp requires permanently revocable queued Notice flags.
+Keep both cuts and MQTT/SSE checks. Browser recovery accepts already scanned
+rows, freezes both identities, stops Blink first and refreshes the resulting
+address. See `docs/address-recovery.md` and `docs/v2-restoration-controls.md`.
 
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`

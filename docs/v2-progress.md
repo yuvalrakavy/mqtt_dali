@@ -5,6 +5,65 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5i2 — identify recovered fixtures and adopt their new addresses
+
+Implemented locally at `f53e4bc`, with the discovery-admission fix at frozen
+source `55a782c`. Both design and source review lenses APPROVE; both source
+reviewers extended approval over the admission fix. Reviews are same-family,
+read-only/source-only. No physical HAT or actual Store migration is claimed.
+
+The Devices page can recover a saved fixture through candidates found by normal
+**Add unaddressed** or its own single-step Find. Blink each new light, select the
+original saved fixture, review the identified candidate and adopt its new address.
+Confirmed Stop restores Blink's original brightness first. The original Origin,
+name, descriptions, representation, group/scene intent and consumer bindings
+continue; the temporary candidate retires and the old reservation becomes free.
+Input modules carry their original children to the identified new address.
+Identified recovery queries hardware only. The sole-unaddressed shortcut can
+reuse the old reservation, including when all 64 saved slots are occupied.
+
+Fail-first input-model and UI cases reproduced missing child continuity and
+scan-first candidate selection. Service, literal UART and independent-consumer
+cases cover atomic removal/readdress, save and stamp guards, native preservation,
+old-slot reuse, original MQTT completion, child/object continuity and replay.
+Permanent per-route Notice revocation prevents queued old presses resurfacing
+after unique recovery leaves its token unchanged. Actual paused MQTT and SSE
+tests cover that behavior after fresh activity/readback.
+
+All 13 recovery fault controls produced their intended REDs; six older controls
+affected by helper/guard changes were rechecked and produced intended REDs.
+The longer browser run twice passed recovery and exposed Busy during the existing
+full-rescan workflow: periodic state reads share discovery's nonwaiting permit.
+Discovery now queues once within its original deadline, then validates its
+original root/token. Its fail-first literal-peer test covers contention,
+cancellation, expiry and a root retired during waiting, with no invalid UART
+submission. The added discovery control also produces its intended RED.
+
+Earlier acceptance passed all 615 native and 40 frontend tests. Final full-suite
+execution adds the admission regression: 615/616 passed; the sole failure was
+the wait registry requiring the exact words "on expiry" in its new prose row.
+That wording was corrected and both the registry test and standalone checker
+were rerun successfully (zero findings). No production change followed. The
+other restored checks pass: strict scoped Clippy, Pi library/four binaries,
+changed-file formatting, affected control plans, 40 frontend tests, deterministic
+assets and whole-base whitespace. Logs: `/tmp/dali-restoration-final-acceptance`
+and `/tmp/dali-restoration-registry-final`. The earlier doctest run has no cases.
+
+Final real phone/desktop acceptance passes in 66.55 seconds through 867 owned
+commands with normal periodic polling enabled. It explicitly scans two fixtures
+that lost addresses, Blinks/adopts each, checks both freed reservations and then
+passes output-only, input-only and both-space full reassignment. Artifacts:
+`/tmp/dali-browser-069b6e2eb496220a1dcc56c23ef91dab`. Phone and desktop recovery
+screenshots were inspected. Initial Busy failures and their diagnostics remain
+in `/tmp/dali-restoration-acceptance` and
+`/tmp/dali-restoration-browser-diagnostic.log`; fail-first and intentional-fault
+admission evidence is in `/tmp/dali-discovery-contention-*`.
+
+See [address recovery](address-recovery.md), its
+[specification](superpowers/specs/2026-10-22-dali-v2-p5i-address-restoration.md)
+and [fault controls](v2-restoration-controls.md). Individual short-address
+clearing has protocol/emulator support but no per-fixture UI/API action yet.
+
 ## P5i1 — full selected-space address reassignment
 
 Accepted locally at frozen source `2c39885` (production `dbc4f84`): **595 native
@@ -2024,7 +2083,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification; native scenes, named slots, stored reads/recall, reviewed private scene composition and full selected-space reassignment accepted locally | Lost-address restoration through an identified candidate |
+| P5 commissioning | Addressed discovery/default adoption, unaddressed output/input assignment, bus setup, removal, per-fixture group membership, pattern/verification and Blink/Stop; native scenes/private settings, full reassignment and identity-preserving lost-address adoption implemented locally | Individual short-address clearing and remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

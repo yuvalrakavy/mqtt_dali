@@ -4,8 +4,9 @@ The development bridge can assign one unaddressed output fixture or input module
 Existing short addresses, saved names, groups and missing-fixture reservations are
 preserved. The served bus page composes discovery/assignment and current reads.
 For a complete restart of selected address spaces, use
-[explicit full reassignment](reassignment.md). Lost-address restoration remains
-a separate unfinished workflow.
+[explicit full reassignment](reassignment.md). To recover a saved fixture after
+address loss, [identify and adopt its newly assigned address](address-recovery.md).
+The original saved identity and bindings continue; the old reservation is freed.
 
 First [discover already addressed devices](discovery.md). Then read the current
 inventory revision and controller `target-generation` from

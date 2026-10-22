@@ -55,6 +55,15 @@ instance must retain the same parent lifetime across a batch. Instance type is
 part of its projection, so a type change cannot keep the old generation or carry
 old binding intent as though it were merely a rename.
 
+Input address adoption likewise carries the module and every continuing child
+Origin to the new short address, rotating their mapping generations together.
+The old reservation becomes free. A discovered temporary candidate and its
+children retire in the same atomic batch. Existing consumer object IDs and
+compatible bindings follow the original Origins, rather than the temporary
+row or numeric address. Output adoption uses the existing readdress operation;
+desired groups follow the relocated original, and private scene references keep
+its Origin. See [address recovery](address-recovery.md).
+
 An output can optionally configure `color_representation`: `temperature`, `xy`
 or `rgbwaf`. Omitted or null means the basic power/brightness contract; absent
 values are omitted when saved. This is the public component selection, not a

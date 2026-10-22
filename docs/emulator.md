@@ -88,6 +88,13 @@ selection. Identical backward bytes still aggregate to one value; independent
 literal-peer tests supply exact-collision refusal evidence. Physical certification
 and input event configuration are outside this model.
 
+Standard FD broadcast-unaddressed input queries answer only modules without a
+short address, independently of the bridge codec. Sole-candidate recovery uses
+them for topology checks before programming. Identified recovery performs only
+short-address Status/count/type queries and changes bridge inventory, leaving
+the native fixture at its newly assigned address. The operator workflow is in
+[address recovery](address-recovery.md).
+
 Keep numeric instance types; add optional value profiles to a module:
 
 ```json

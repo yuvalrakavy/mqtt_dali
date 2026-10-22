@@ -122,7 +122,10 @@ remove a saved output/input module (including its instances), create an empty na
 rename an output/group/input module/input instance/bus or update the
 controller description. Supply the expected current inventory revision, original
 item token (instance token for bus/description), and one absolute deadline.
-Admission is nonwaiting and exclusive; Busy is a refusal to wait in another queue.
+Admission is exclusive and normally nonwaiting; Busy refuses overlapping work.
+Discovery and identification use fair admission within their original deadlines.
+Discovery validates its original root/generation after acquiring the permit so
+background state polling can delay a scan without aborting it or renewing authority.
 The actor rechecks phase/revision/token before saving. Input and instance names
 use the same MQTT `rename` command as outputs, with their exact qualified target.
 Renaming a module rotates descendant mappings together; the original module
@@ -232,6 +235,20 @@ without silently retagging the original request. Empty saved spaces still clear
 unsaved hardware. The report distinguishes cleared from retired-but-unconfirmed;
 the served UI composes assignment/refresh separately. See
 [reassignment](reassignment.md) and [fault controls](v2-reassignment-controls.md).
+
+`restore_identified_address` probes the absent old address and present compatible
+candidate, then atomically removes the candidate and readdresses the original
+saved output or input subtree. It uses normal ConfigStore/SDK activation with
+the original command completion; the new mapping legitimately rotates its token.
+There is no native address write after saving. The resulting report retains the
+previous address, resulting address/current generation and own committed root.
+The old reservation becomes free; original Origins, desired group references and
+per-Origin private scenes continue. `restore_unaddressed_address` instead reuses
+the old reserved address after proving a sole unaddressed candidate. Its native
+plan shares the extracted bounded commissioning helpers. Permanent per-route
+Notice revocation prevents queued presses resurfacing across this unchanged-token
+shortcut. See [address recovery](address-recovery.md) and its
+[fault controls](v2-restoration-controls.md).
 
 Commands use `DALI/Command/<controller>` and exactly one MQTT v5
 `target-generation` property. They are momentary WithReply commands; provide a

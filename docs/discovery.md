@@ -4,8 +4,9 @@ The development bridge can probe one existing short address and save newly
 detected devices with default names. It queries outputs and input modules in
 their separate address spaces. Use the separate [assignment operation](commissioning.md)
 for new unaddressed outputs or input modules. Input assignment creates an empty
-module; follow it with this discovery to add real instances. Discovery does not reset addresses, remove missing
-items or provide the approved bus-page UI.
+module; follow it with this discovery to add real instances. Discovery does not
+reset addresses or remove missing saved items. The served Devices page composes
+these addressed probes with assignment and current-state refresh.
 
 Read `DALI/State/Controller/__inventory` for the current revision and controller
 `target-generation`. Publish this JSON to `DALI/Command/Controller` with that
@@ -56,8 +57,8 @@ Output and input address 0 can coexist.
 Read the updated inventory after each addition before probing another address:
 the controller revision/generation changes. The command that caused that change
 still receives exactly one reply under its original token. To scan a bus, iterate
-the wanted addresses/spaces and stop sending requests when cancelled. Automatic
-browser iteration belongs to the upcoming UI.
+the wanted addresses/spaces and stop sending requests when cancelled. The served
+Devices page performs this iteration for Add unaddressed and Refresh addressed.
 
 MQTT discovery has one 10 s budget, including admission, a maximum 8 s hardware probe
 and durable save. A busy state read delays admission within that same deadline;

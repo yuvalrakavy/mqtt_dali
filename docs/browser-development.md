@@ -56,12 +56,15 @@ suites skip this explicitly ignored browser dependency.
 Full reassignment cases exercise cancelled frozen review, outputs/inputs/both,
 fresh names, reference pruning, preservation of native live/group/scene values,
 and leaving the tab during an admitted reset.
+Recovery cases cover unique repair, multiple-candidate refusal, normal scan-first
+candidate selection, confirmed Blink stop followed by adopting the new address,
+input activity/child continuity, freed old reservations and tab cancellation.
 Query-before-event cases include multi-bit Part 302 inputs and exact 64-bit
 Part 304 sensor data. The logout case holds a real job admission while discovery
 is busy, then verifies session revocation and absence of later batch commands.
 
 Run `docs/v2-browser-controls.toml`, `docs/v2-scenes-ui-controls.toml` and
-`docs/v2-reassignment-controls.toml` with
+`docs/v2-reassignment-controls.toml` and `docs/v2-restoration-controls.toml` with
 the existing Store negative-control runner
 to prove the frontend authority/race guards and protected embedded routes detect
 their intended mutations. Mutations, source edits and verification must remain
@@ -86,3 +89,11 @@ reservations, and waits for the exact SSE root. At 64 confirmed assignments,
 capacity is a normal stop; no extra free-address search is required. BusActions
 is keyed by number and tab so an old completion cannot start later steps after
 navigation. Its operation cancellation is independent of global batch flags.
+
+`restoration.ts` freezes original/candidate identity, exact root and connection
+epoch. Candidates can already exist from normal discovery or be added by its
+single-step Find action. After the exact own result plus SSE, identified recovery
+updates its expected address/token and refreshes there; it must not reassert the
+previous token or refresh the old address. Unique repair accepts the same root
+and token. A failed refresh reports the confirmed recovery separately. Devices
+unmount permanently cancels the operation regardless of later global flags.

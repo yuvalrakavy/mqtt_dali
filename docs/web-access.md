@@ -98,7 +98,11 @@ frozen review for outputs, inputs or both, followed by per-space retirement,
 clearing, assignment and refresh. Native live values, groups and scene memory
 remain; saved selected identities and output references are retired. See
 [full reassignment](reassignment.md) for partial outcomes and limits.
-Lost-address restoration remains unfinished.
+**Actions -> Restore lost address** preserves an original saved fixture while
+adopting an identified candidate's new address and freeing the old reservation.
+Blink or operate candidates on the same Devices list, including rows found by
+normal discovery. The sole-unaddressed shortcut can reuse the old reserved
+address. See [address recovery](address-recovery.md).
 
 Blink a fixture, type its meaningful name and press the checkmark, Enter, or move
 focus to save. Those three actions share one save. Successful rename ends Blink
@@ -166,7 +170,8 @@ Supported commands: `configure_bus`, `rename_bus`, `rename`, `describe`,
 `assign_next_output`, `assign_next_input`, `create_group`, `read_groups`,
 `assign_group`, `adopt_groups`, `repair_groups`, `create_scene`, `read_scene`,
 `recall_scene`, `set_scene_row`, `adopt_scene_row`, `repair_scene_row`,
-`capture_scene_row`. HTTP also supports the observation
+`capture_scene_row`, `reset_address_space`, `restore_identified_address`,
+`restore_unaddressed_address`. HTTP also supports the observation
 operations below. These extra names are HTTP-only; MQTT keeps its existing
 Desired and refresh forms.
 Unknown envelope/parameter fields are refused. Malformed commands return 400;
@@ -187,7 +192,8 @@ is replaced with safe inspection guidance; errors have a stable code: busy,
 closed, expired, refused, uncertain or result_unavailable.
 
 Work keeps its original deadline (2 s metadata/recovery/group/saved-scene read, 10 s addressed
-discovery, 18 s assignment/group/scene mutation, 8 s stored-scene read/capture,
+discovery, 18 s assignment/address recovery/reassignment/group/scene mutation,
+8 s stored-scene read/capture,
 3 s native recall). Jobs own their result after an HTTP
 connection closes or the initiating session logs out. Log in again to inspect.
 There is no automatic retry, idempotency guarantee or persistent job journal.
