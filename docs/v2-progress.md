@@ -51,7 +51,10 @@ the test observer's inline lock and the prepared-operation await; isolate the
 test-only observer and explicitly register the existing request deadline.
 No production timing/policy changed. Logs: `/tmp/dali-web-job-controls.log`,
 `/tmp/dali-web-job-reanchored-control.log`, `/tmp/dali-web-job-acceptance`.
-Frozen source reviews follow. See [web access](web-access.md) and
+Both sequential source gates approve frozen **d2f6828** against **df3e924**,
+with no material findings (82 seconds and 2m40s). Reviews were read-only,
+same-family/source-only and ran no verification or mutations. Browser and
+physical hardware validation remain outstanding. See [web access](web-access.md) and
 [slice design](superpowers/specs/2026-10-22-dali-v2-p6b-web-commands.md).
 
 ## P6a — authenticated HTTP foundation
@@ -1491,7 +1494,7 @@ no verification. Physical hardware validation remains outstanding.
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
 | P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal and per-fixture group membership implemented | Full reassign/restore, identification, browser/pattern group workflows and native scenes |
-| P6 authenticated HTTP | Session/lifecycle/status foundation accepted; existing-command jobs implemented, final verification in progress | Output apply/read, observation/native-event routes and complete protected frontend integration |
+| P6 authenticated HTTP | Session/lifecycle/status foundation and existing-command jobs accepted and locally verified | Output apply/read, observation/native-event routes and complete protected frontend integration |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |
