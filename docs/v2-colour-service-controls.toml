@@ -107,3 +107,30 @@ replacement = ".map_or(255, |_| 0),"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_channel_assignments)"]
 expect_text = "emulator assigned-colour reply lost the physical profile role"
+
+[[control]]
+name = "known_colour_write_keeps_plain_two_second_budget"
+file = "src/service/proxy.rs"
+anchor = "let deadline = Instant::now() + Self::output_budget(&snapshot, target);"
+replacement = "let deadline = Instant::now() + Duration::from_secs(2);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_paced_base_write)"]
+expect_text = "paced known-colour base write expired before full readback"
+
+[[control]]
+name = "known_colour_target_read_keeps_plain_two_second_budget"
+file = "src/service/proxy.rs"
+anchor = "let deadline = Instant::now() + Self::output_budget(&snapshot, &target);"
+replacement = "let deadline = Instant::now() + Duration::from_secs(2);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_paced_target_read)"]
+expect_text = "paced known-colour base read expired"
+
+[[control]]
+name = "known_colour_all_read_keeps_plain_two_second_budget"
+file = "src/service/proxy.rs"
+anchor = "deadline.min(Instant::now() + Self::output_budget(&self.snapshot()?, target));"
+replacement = "deadline.min(Instant::now() + Duration::from_secs(2));"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_paced_all_read)"]
+expect_text = "paced known-colour base read expired"

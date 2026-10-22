@@ -451,6 +451,131 @@ async fn colour_service_final_epoch_invalidation_marks_colour_stale() {
     stop(running, peer).await;
 }
 
+#[derive(Clone, Copy)]
+enum PacedOperation {
+    Write,
+    TargetRead,
+    AllRead,
+}
+async fn paced_base(operation: PacedOperation) {
+    use mqtt_test_broker::SendOptions;
+    let fixture = Fixture::new();
+    let peer = Peer::start(Profile {
+        features: 0xc2,
+        status: 0x80,
+        assignments: vec![1, 2, 3, 4, 5, 6],
+        ..Profile::default()
+    });
+    let broker = mqtt_test_broker::FakeBroker::start().await;
+    let (service, handle) = fixture.service();
+    let running = start(
+        service.with_uart(peer.path.clone(), RepeatPolicy::Unverified),
+        &handle,
+        &broker,
+    )
+    .await;
+    wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+    assert!(
+        broker
+            .wait_for_subscription("DALI/Command/Controller", Duration::from_secs(2))
+            .await
+    );
+    assert!(
+        broker
+            .wait_for_subscription("DALI/Desired/Controller/+", Duration::from_secs(2))
+            .await
+    );
+    let sample = handle
+        .read_colour(TARGET, context(1), deadline())
+        .await
+        .unwrap();
+    assert_eq!(sample.colour.unwrap().quality, Quality::Current);
+    // A realistic bounded response pace, not a claim about every HAT/fixture.
+    // This profile needs 73 exchanges, so its complete sample exceeds 2 s.
+    peer.profile.lock().unwrap().pace = Duration::from_millis(40);
+    let started = tokio::time::Instant::now();
+    match operation {
+        PacedOperation::Write => {
+            assert!(broker.send_with(
+                "DALI/Desired/Controller/Bus1.Outputs.Light1",
+                r#"{"PowerState":false}"#,
+                &SendOptions::default()
+                    .user_property("target-generation", context(1).generation().unwrap())
+            ));
+            assert!(
+                broker
+                    .wait_until(Duration::from_secs(6), |_| handle.snapshot().is_some_and(
+                        |s| s
+                            .outputs
+                            .get(TARGET)
+                            .is_some_and(|o| o.power() == Some(false)
+                                && o.colour
+                                    .as_ref()
+                                    .is_some_and(|c| c.quality == Quality::Current))
+                    ))
+                    .await,
+                "paced known-colour base write expired before full readback"
+            );
+            assert!(
+                broker.received_on("DALI/Error/Controller").is_empty(),
+                "paced known-colour base write reported an error"
+            );
+        }
+        PacedOperation::TargetRead | PacedOperation::AllRead => {
+            let payload = match operation {
+                PacedOperation::TargetRead => {
+                    r#"{"command":"refresh","target":"Bus1.Outputs.Light1"}"#
+                }
+                _ => r#"{"command":"refresh"}"#,
+            };
+            assert!(broker.send_with(
+                "DALI/Command/Controller",
+                payload,
+                &SendOptions::default().response_topic("test/paced-colour")
+            ));
+            assert!(
+                broker
+                    .wait_until(Duration::from_secs(6), |b| !b
+                        .received_on("test/paced-colour")
+                        .is_empty())
+                    .await
+            );
+            let reply: serde_json::Value =
+                serde_json::from_slice(&broker.received_on("test/paced-colour")[0].payload)
+                    .unwrap();
+            assert!(
+                reply.get("error").is_none(),
+                "paced known-colour base read expired: {reply}"
+            );
+            assert_eq!(
+                handle.snapshot().unwrap().outputs[TARGET]
+                    .colour
+                    .as_ref()
+                    .unwrap()
+                    .quality,
+                Quality::Current
+            );
+        }
+    }
+    assert!(
+        started.elapsed() > Duration::from_secs(2),
+        "peer did not actually exercise the longer readback path"
+    );
+    stop(running, peer).await;
+}
+#[tokio::test]
+async fn colour_service_paced_base_write_keeps_actual_colour() {
+    paced_base(PacedOperation::Write).await;
+}
+#[tokio::test]
+async fn colour_service_paced_target_read_keeps_actual_colour() {
+    paced_base(PacedOperation::TargetRead).await;
+}
+#[tokio::test]
+async fn colour_service_paced_all_read_keeps_actual_colour() {
+    paced_base(PacedOperation::AllRead).await;
+}
+
 #[tokio::test]
 async fn colour_service_reads_actual_tc_xy_rgb_and_keeps_master_independent() {
     let fixture = Fixture::new();

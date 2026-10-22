@@ -21,6 +21,7 @@ pub struct Profile {
     pub high_failure: Option<&'static str>,
     pub low_failure: Option<&'static str>,
     pub hold: Option<u16>,
+    pub pace: Duration,
 }
 impl Default for Profile {
     fn default() -> Self {
@@ -35,6 +36,7 @@ impl Default for Profile {
             high_failure: None,
             low_failure: None,
             hold: None,
+            pace: Duration::ZERO,
         }
     }
 }
@@ -118,7 +120,11 @@ impl Peer {
                             }
                         };
                         line.clear();
-                        if let Some(bytes) = response { write.write_all(bytes.as_bytes()).await.unwrap(); }
+                        if let Some(bytes) = response {
+                            let pace = state.lock().unwrap().pace;
+                            tokio::time::sleep(pace).await;
+                            write.write_all(bytes.as_bytes()).await.unwrap();
+                        }
                     }
                 }
             }

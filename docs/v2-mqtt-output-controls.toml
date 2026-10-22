@@ -74,8 +74,8 @@ expect_text = "disconnect erased All-read cursor progress"
 [[control]]
 name = "per_fixture_deadline_extends_aggregate_ceiling"
 file = "src/service/proxy.rs"
-anchor = '''let until = deadline.min(Instant::now() + Duration::from_secs(2));'''
-replacement = '''let until = Instant::now() + Duration::from_secs(2);'''
+anchor = '''deadline.min(Instant::now() + Self::output_budget(&self.snapshot()?, target));'''
+replacement = '''Instant::now() + Self::output_budget(&self.snapshot()?, target);'''
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(all_read_clips_each_fixture_to_the_original_aggregate_ceiling)"]
 expect_text = "next fixture received a fresh window beyond the aggregate deadline"

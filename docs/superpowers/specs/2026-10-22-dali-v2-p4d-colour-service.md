@@ -173,3 +173,21 @@ discovery, independent success predicates, requested-kind confirmation and the
 explicit manual-activation/normalized-mode initial mutation boundary. Reviews
 were source-only and from the same model family; no independent-family coverage
 or runtime verification is implied by those approvals.
+
+## Source gate timing amendment
+
+The first source gate found one material integration defect in frozen `cf241b2`:
+known-colour base operations still inherited the proxy's 2 s deadline despite a
+six-channel RGBWAF+Tc sample requiring 73 frame exchanges (74 with a base write).
+Three independent 40 ms paced-peer MQTT tests reproduced expiry for writes,
+individual refresh and aggregate refresh before the fix.
+
+The proxy now selects 6 s before admission for a same-generation mapping with
+colour evidence, retaining 2 s for plain mappings. Aggregate targets are still
+clipped to the original 15 s total ceiling, and explicit service caller deadlines
+remain unchanged. No per-frame renewal, queue or recovery mechanism is added.
+This is a bounded allowance verified by paced tests, not a physical timing
+guarantee. The three regressions and the original aggregate-ceiling test pass;
+three new timing guard-removal controls and three affected existing MQTT controls
+fail behaviorally as intended. The source gate requested this minimal correction
+and found no other material defect in the completed pass.

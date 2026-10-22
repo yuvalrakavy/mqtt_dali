@@ -59,8 +59,11 @@ off reading. A missing fixture stays in Inventory and does not prevent controlli
 another healthy fixture. Available is not a certification that a fixture is
 fault-free. Saved inventory alone never proves physical presence.
 
-Target reads and writes have a 2 s service budget. Background polling runs every
-30 s, with a 15 s aggregate ceiling and at most 2 s per fixture. Large/incomplete
+Target reads and writes have a 2 s service budget, or 6 s when that mapping has
+already sampled colour evidence and therefore includes fresh colour readback.
+The longer budget is selected before admission; explicit library caller deadlines
+are unchanged. Background polling runs every 30 s, with a 15 s aggregate ceiling
+and each fixture clipped to the remaining total and its 2 s/6 s budget. Large/incomplete
 passes report an error while keeping completed samples, and the next pass resumes
 fairly from a persistent cursor. Disabled buses are not queried. Without a ready
 UART, background reads reject before taking physical admission; metadata remains

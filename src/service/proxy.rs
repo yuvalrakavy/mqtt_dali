@@ -116,8 +116,9 @@ impl DeviceDriver for DaliProxy {
         context: &RequestContext,
     ) -> Result<(), OpError> {
         let intent = state::intent(values)?;
-        Self::output_route(&self.snapshot()?, target, context, true)?;
-        let deadline = Instant::now() + Duration::from_secs(2);
+        let snapshot = self.snapshot()?;
+        Self::output_route(&snapshot, target, context, true)?;
+        let deadline = Instant::now() + Self::output_budget(&snapshot, target);
         let observed = self
             .handle
             .apply_output(target, intent, context.clone(), deadline)
@@ -177,6 +178,17 @@ impl DeviceDriver for DaliProxy {
 }
 
 impl DaliProxy {
+    fn output_budget(snapshot: &Snapshot, target: &str) -> Duration {
+        let known_colour = snapshot.outputs.get(target).is_some_and(|sample| {
+            sample.colour.is_some()
+                && routing::generations(&snapshot.model)
+                    .targets
+                    .get(target)
+                    .map(String::as_str)
+                    == sample.context.generation()
+        });
+        Duration::from_secs(if known_colour { 6 } else { 2 })
+    }
     fn output_route(
         snapshot: &Snapshot,
         target: &str,
@@ -243,7 +255,7 @@ impl DaliProxy {
                     }
                     return Ok(vec![state]);
                 }
-                let deadline = Instant::now() + Duration::from_secs(2);
+                let deadline = Instant::now() + Self::output_budget(&snapshot, &target);
                 let observed = self
                     .read_observation(&target, cause.clone(), deadline)
                     .await?;
@@ -314,7 +326,8 @@ impl DaliProxy {
             let context = RequestContext::new(table.targets[target].clone())
                 .map_err(OpError::Unusable)?
                 .with_traceparent(cause.traceparent());
-            let until = deadline.min(Instant::now() + Duration::from_secs(2));
+            let until =
+                deadline.min(Instant::now() + Self::output_budget(&self.snapshot()?, target));
             match self.read_observation(target, context, until).await {
                 Ok(value) => observed.push((target.clone(), value)),
                 Err(_) => failed += 1,

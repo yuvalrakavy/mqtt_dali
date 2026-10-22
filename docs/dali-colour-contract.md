@@ -82,6 +82,10 @@ missing/collided incidental colour reply degrades colour independently and does
 not fail a successful observed on/off or brightness write. Transport uncertainty
 still uses existing whole-output invalidation. Rename/address reuse retires the
 old sample and token, and epoch loss marks colour stale with its base observation.
+The MQTT proxy selects a 6 s per-target budget before admission for known colour
+mappings, retaining 2 s for plain mappings and the unchanged 15 s aggregate cap.
+This accounts for the extra correlated exchanges; it is not a hardware timing
+guarantee or a renewed per-frame deadline. Explicit service deadlines are unchanged.
 
 All evidence currently comes from private PTYs, an independent literal ATX peer
 and the independent HAT emulator. Physical firmware/fixture verification remains

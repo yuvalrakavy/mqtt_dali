@@ -883,8 +883,18 @@ passing run. All **12 new controls** and **6 affected existing output controls**
 failed at their intended behavioral assertions (91 s and 43 s). The restored
 gate passes **350 native tests**, strict scoped Clippy, Pi library/all four binary
 compilation, changed-file format/whitespace, wait registry and doctests (none
-defined). Two sequential frozen-source reviews remain pending. Evidence logs:
-`/tmp/dali-colour-service-controls` and `/tmp/dali-colour-service-restored-gate`.
+defined). The first source gate found a practical timing regression: known-colour
+base operations still used the proxy's 2 s budget despite 73 correlated exchanges
+for a six-channel RGBWAF+Tc sample. Three paced UART/MQTT regressions reproduced
+expiry before a bounded correction: select 6 s for same-generation known-colour
+targets before admission, retain 2 s for plain targets, and preserve the original
+15 s aggregate ceiling and explicit service caller deadlines. All three paced
+regressions and the original aggregate-clipping test pass. Their three new timing
+controls and three affected existing MQTT controls fail as intended (28 s/24 s).
+The corrected restored gate passes **353 native tests** and the same lint, Pi,
+format/whitespace, wait and doc checks. Source re-review is active. Evidence logs include
+`/tmp/dali-colour-service-controls`, `/tmp/dali-colour-service-restored-gate`,
+`/tmp/dali-colour-paced-controls` and `/tmp/dali-colour-paced-restored-gate`.
 
 See [colour operations](dali-colour-contract.md#owned-service-operations) and the
 [slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-service.md).
