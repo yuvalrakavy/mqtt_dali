@@ -6,6 +6,9 @@ pub(super) mod execute;
 
 #[derive(Debug, Clone)]
 pub enum Action {
+    ClearShortAddress {
+        expected_revision: u64,
+    },
     OnlyUnaddressed {
         expected_revision: u64,
     },
@@ -18,7 +21,8 @@ pub enum Action {
 impl Action {
     pub(super) fn expected(&self) -> u64 {
         match self {
-            Self::OnlyUnaddressed { expected_revision }
+            Self::ClearShortAddress { expected_revision }
+            | Self::OnlyUnaddressed { expected_revision }
             | Self::Identified {
                 expected_revision, ..
             } => *expected_revision,
@@ -26,6 +30,7 @@ impl Action {
     }
     pub(super) fn name(&self) -> &'static str {
         match self {
+            Self::ClearShortAddress { .. } => "clear_short_address",
             Self::OnlyUnaddressed { .. } => "restore_unaddressed_address",
             Self::Identified { .. } => "restore_identified_address",
         }
@@ -34,6 +39,7 @@ impl Action {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ResultKind {
+    Cleared,
     Restored,
     NoUnaddressedFixture,
     MultipleUnaddressedFixtures,
@@ -78,6 +84,7 @@ pub(super) struct Candidate {
 }
 #[derive(Clone, Copy)]
 pub(super) enum Plan {
+    Clear,
     Unique,
     Identified,
 }
@@ -97,6 +104,7 @@ pub(super) struct Route {
     pub plan: Plan,
 }
 pub(super) enum Step {
+    Cleared,
     NoCandidate,
     Multiple,
     ReadyToRebind,
@@ -230,10 +238,10 @@ pub(super) fn resolve(
         candidate,
         context: context.clone(),
         original_stamp: None,
-        plan: if matches!(action, Action::OnlyUnaddressed { .. }) {
-            Plan::Unique
-        } else {
-            Plan::Identified
+        plan: match action {
+            Action::ClearShortAddress { .. } => Plan::Clear,
+            Action::OnlyUnaddressed { .. } => Plan::Unique,
+            Action::Identified { .. } => Plan::Identified,
         },
     })
 }
@@ -285,7 +293,10 @@ pub(super) fn finish(request: Box<Request>, result: Result<Report, ServiceError>
         Err(error)
             if request.report.is_some()
                 && (request.committed
-                    || matches!(request.action, Action::OnlyUnaddressed { .. })) =>
+                    || matches!(
+                        request.action,
+                        Action::OnlyUnaddressed { .. } | Action::ClearShortAddress { .. }
+                    )) =>
         {
             let mut report = request.report.clone().unwrap();
             report.outcome = if request.committed {
@@ -303,6 +314,23 @@ pub(super) fn finish(request: Box<Request>, result: Result<Report, ServiceError>
     let _ = reply.send(result);
 }
 impl ServiceHandle {
+    /// Clear only the native address, retaining the saved fixture and its reservation.
+    pub async fn clear_short_address(
+        &self,
+        target: &str,
+        expected_revision: u64,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.restore(
+            target,
+            Action::ClearShortAddress { expected_revision },
+            context,
+            deadline,
+            None,
+        )
+        .await
+    }
     /// Associate explicitly selected hardware with a continuing saved fixture.
     pub async fn restore_address(
         &self,

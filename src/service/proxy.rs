@@ -32,6 +32,7 @@ impl DeviceDriver for DaliProxy {
                 "repair_groups",
                 "restore_unaddressed_address",
                 "restore_identified_address",
+                "clear_short_address",
                 "reset_address_space",
                 "assign_next_output",
                 "assign_next_input",
@@ -1285,7 +1286,7 @@ fn parse(
     }
     if matches!(
         call.command.as_str(),
-        "restore_unaddressed_address" | "restore_identified_address"
+        "restore_unaddressed_address" | "restore_identified_address" | "clear_short_address"
     ) {
         if target.is_none() {
             return Err(OpError::Rejected("saved fixture target required".into()));
@@ -1302,7 +1303,12 @@ fn parse(
             candidate: String,
             candidate_generation: String,
         }
-        let action = if call.command == "restore_unaddressed_address" {
+        let action = if call.command == "clear_short_address" {
+            let p: Unique = decode(call)?;
+            restoration::Action::ClearShortAddress {
+                expected_revision: p.expected_revision,
+            }
+        } else if call.command == "restore_unaddressed_address" {
             let p: Unique = decode(call)?;
             restoration::Action::OnlyUnaddressed {
                 expected_revision: p.expected_revision,

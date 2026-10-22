@@ -72,8 +72,35 @@ async fn input_compatible(bus: &Bus<'_>, route: &Route, source: Option<u8>) -> R
     Ok(())
 }
 async fn run(bus: &Bus<'_>, route: &Route, entered: &mut bool) -> Result<Step, Error> {
+    if matches!(route.plan, Plan::Clear) {
+        present(bus, route.address).await?;
+        let frames = match route.space {
+            discovery::Space::Outputs => crate::dali::addressing::output(
+                Some(crate::dali::gear::ShortAddress::new(route.address).unwrap()),
+                None,
+            )
+            .into_iter()
+            .map(DaliFrame::Bits16)
+            .collect::<Vec<_>>(),
+            discovery::Space::Inputs => crate::dali::addressing::input(
+                Some(device::Address::new(route.address).unwrap()),
+                None,
+            )
+            .into_iter()
+            .map(DaliFrame::Bits24)
+            .collect(),
+        };
+        for (index, frame) in frames.into_iter().enumerate() {
+            bus.command(frame, index == 1).await?;
+        }
+        if bus.query(bus.status(route.address)).await? != BusReply::NoResponse {
+            return Err(Error::Evidence("short address clearing was not confirmed"));
+        }
+        return Ok(Step::Cleared);
+    }
     absent(bus, route.address).await?;
     match route.plan {
+        Plan::Clear => unreachable!(),
         Plan::Unique => {
             let random = match bus.only_unaddressed(entered).await? {
                 Selection::None => return Ok(Step::NoCandidate),

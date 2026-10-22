@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Controller } from './controller.ts';
-import { Restoration } from './restoration.ts';
+import { ClearAddress, Restoration } from './restoration.ts';
 import type { PhysicalRow } from './model.ts';
 
 function fixture(input=false){
@@ -24,6 +24,27 @@ function fixture(input=false){
   };
   ui.client.job=answer;return {ui,scope,old,candidate,calls,answer,epoch};
 }
+function clearing(input=false){
+  const f=fixture(input),clear=new ClearAddress(f.ui,f.old);
+  const result={operation:'clear_short_address',outcome:'cleared',target:f.old.item.target,target_generation:f.old.generation,current_generation:f.old.generation,bus:0,previous_address:0,address:0,revision:3,configuration_changed:false};
+  f.ui.client.job=async(generation,target,command,params)=>{f.calls.push({generation,target,command,params});return command==='stop_blink'?{phase:'restored'}:{...result};};
+  return {...f,clear,result};
+}
+test('individual clear preserves saved authority and submits no automatic rediscovery',async()=>{
+  for(const input of [false,true]){const f=clearing(input),saved=structuredClone(f.ui.snapshot.inventory);await f.clear.run();assert.deepEqual(f.calls,[{generation:f.old.generation,target:f.old.item.target,command:'clear_short_address',params:{expected_revision:3}}]);assert.deepEqual(f.ui.snapshot.inventory,saved);assert.match(f.ui.notice,/Short address cleared.*bindings retained/);f.ui.client.close();}
+});
+test('individual clear requires confirmed Blink stop and keeps original authority afterward',async()=>{
+  for(const phase of ['restored','interrupted']){const f=clearing();f.ui.snapshot.identification={target:f.old.item.target,generation:f.old.generation,phase:'blinking',actual_level:91};const answer=f.ui.client.job;f.ui.client.job=async(...args)=>args[2]==='stop_blink'?(f.calls.push({command:'stop_blink'}),{phase}):answer(...args);if(phase==='restored'){await f.clear.run();assert.deepEqual(f.calls.map(c=>c.command),['stop_blink','clear_short_address']);}else{await assert.rejects(f.clear.run(),/Blink restoration is unconfirmed/);assert.equal(f.calls.length,1);}f.ui.client.close();}
+});
+test('individual clear refuses closed, reconnected or changed scopes before submission',async()=>{
+  for(const change of ['closed','reconnect','root','generation']){const f=clearing();if(change==='closed')f.clear.scope.cancelled=true;if(change==='reconnect')f.ui.client.views.epoch++;if(change==='root')f.ui.snapshot.inventory.revision++;if(change==='generation')f.ui.snapshot.inventory.buses[0].outputs[0].binding_revision++;await assert.rejects(f.clear.run());assert.equal(f.calls.length,0);f.ui.client.close();}
+});
+test('individual clear unconfirmed or mismatched result never reports success',async()=>{
+  for(const change of ['outcome','revision','generation']){const f=clearing();f.ui.client.job=async()=>({...f.result,...change==='outcome'?{outcome:'unconfirmed'}:change==='revision'?{revision:4}:{current_generation:`${f.epoch}.9`}});await assert.rejects(f.clear.run());assert.equal(f.ui.notice,'');f.ui.client.close();}
+});
+test('individual clear rechecks its original scope after awaiting Blink stop',async()=>{
+  for(const change of ['closed','reconnect','root']){const f=clearing();f.ui.snapshot.identification={target:f.old.item.target,generation:f.old.generation,phase:'blinking',actual_level:91};f.ui.client.job=async(_generation,_target,command)=>{f.calls.push({command});if(change==='closed')f.clear.scope.cancelled=true;if(change==='reconnect')f.ui.client.views.epoch++;if(change==='root')f.ui.snapshot.inventory.revision++;return {phase:'restored'};};await assert.rejects(f.clear.run());assert.deepEqual(f.calls.map(c=>c.command),['stop_blink']);f.ui.client.close();}
+});
 test('unique restoration accepts unchanged revision and preserves original authority during refresh',async()=>{
   for(const input of [false,true]){const f=fixture(input);await f.scope.review().run();assert.equal(f.calls[0].generation,`${f.epoch}.1`);assert.equal(f.calls[0].params.expected_revision,3);assert.equal(f.scope.revision,3);assert.match(f.ui.notice,/Address restored/);assert.equal(f.calls[1].params.space,input?'inputs':'outputs');assert.equal(f.calls[1].params.address,0);f.ui.client.close();}
 });

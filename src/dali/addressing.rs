@@ -30,6 +30,22 @@ mod tests {
         assert_eq!(output(None, None), [0xa3ff, 0xff80]);
         assert_eq!(input(None, None), [0xc130ff, 0xfffe14]);
         assert_eq!(
+            output(Some(gear::ShortAddress::new(0).unwrap()), None),
+            [0xa3ff, 0x0180]
+        );
+        assert_eq!(
+            output(Some(gear::ShortAddress::new(63).unwrap()), None),
+            [0xa3ff, 0x7f80]
+        );
+        assert_eq!(
+            input(Some(input::Address::new(0).unwrap()), None),
+            [0xc130ff, 0x01fe14]
+        );
+        assert_eq!(
+            input(Some(input::Address::new(63).unwrap()), None),
+            [0xc130ff, 0x7ffe14]
+        );
+        assert_eq!(
             output(
                 Some(gear::ShortAddress::new(0).unwrap()),
                 Some(gear::ShortAddress::new(63).unwrap())

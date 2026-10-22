@@ -87,7 +87,8 @@ impl Work {
         }
     }
     pub fn mutating(&self) -> bool {
-        if matches!(self, Self::Restore(_, r) if matches!(r.plan,restoration::Plan::Unique)) {
+        if matches!(self, Self::Restore(_, r) if matches!(r.plan,restoration::Plan::Unique | restoration::Plan::Clear))
+        {
             return true;
         }
         if matches!(self, Self::Reassignment(..)) {

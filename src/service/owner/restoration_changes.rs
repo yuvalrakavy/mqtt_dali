@@ -65,6 +65,12 @@ impl Owner {
             ));
         }
         match observed.step {
+            Some(Step::Cleared) if matches!(route.plan, Plan::Clear) => {
+                let mut report = q.report.clone().unwrap();
+                report.outcome = ResultKind::Cleared;
+                report.reason = None;
+                Ok(Advance::Done(report))
+            }
             Some(Step::ReadyToRebind) if !q.committed => {
                 let fresh = restoration::resolve(&snapshot, &q.target, &q.action, &q.context)?;
                 let candidate = route.candidate.as_ref().expect("identified candidate");

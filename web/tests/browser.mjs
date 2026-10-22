@@ -1,6 +1,7 @@
 import { scenesFlow } from './scenes.mjs';
 import { reassignmentFlow } from './reassignment.mjs';
 import { restorationFlow } from './restoration.mjs';
+import { clearAddressFlow } from './clear-address.mjs';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { connect } from 'node:net';
@@ -73,6 +74,7 @@ try {
   await row('HallNew').getByRole('button',{name:'Actions HallNew',exact:true}).click();await page.getByRole('button',{name:'Remove from list',exact:true}).click();await page.getByRole('button',{name:'Remove from list',exact:true}).click();await until(async()=>(await inventory()).buses[0].outputs.length===2,'remove did not persist');assert.equal((await control({op:'snapshot'})).buses[0].outputs.length,3,'remove altered physical fixtures');
   await page.getByRole('button',{name:'Refresh addressed',exact:true}).click();await until(async()=>!await page.getByRole('button',{name:'Refresh addressed',exact:true}).isDisabled(),'rediscovery did not finish',90000);assert.deepEqual((await inventory()).buses[0].outputs.map(o=>o.name),['KitchenMain','KitchenSide','Light1'],'rediscovery failed to preserve existing names and add the removed address');
   await page.getByRole('link',{name:'Settings',exact:true}).click();const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Download inventory report',exact:true}).click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'dali-inventory-report.json');await page.getByRole('link',{name:'Diagnostics',exact:true}).click();await page.getByRole('heading',{name:'Recent commands',exact:true}).waitFor();await page.screenshot({path:join(artifacts,'desktop-diagnostics.png'),fullPage:true});
+  await clearAddressFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await restorationFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
   await reassignmentFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
   let entered;const admitted=new Promise(resolve=>entered=resolve),held=new Promise(resolve=>releaseAdmission=resolve);let hold=true;

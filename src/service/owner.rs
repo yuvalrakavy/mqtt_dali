@@ -708,7 +708,7 @@ impl ProcessService for DaliService {
                         route.original_stamp = Some(hat.restoration_stamp(
                             route.bus,
                             route.space,
-                            matches!(route.plan, restoration::Plan::Unique),
+                            matches!(route.plan, restoration::Plan::Unique | restoration::Plan::Clear),
                         )?);
                         Ok(route)
                     })();

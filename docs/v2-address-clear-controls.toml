@@ -1,0 +1,71 @@
+[[control]]
+name = "individual_clear_ui_skips_post_stop_scope"
+file = "web/src/restoration.ts"
+anchor = "scope.assert();\n    }\n    const result=await ui.client.job(old.generation,old.item.target,'clear_short_address'"
+replacement = "}\n    const result=await ui.client.job(old.generation,old.item.target,'clear_short_address'"
+target = "command"
+argv = ["node","--test","web/src/restoration.test.ts"]
+expect_text = "individual clear rechecks its original scope after awaiting Blink stop"
+
+[[control]]
+name = "individual_clear_skips_presence"
+file = "src/service/restoration/execute.rs"
+anchor = "present(bus, route.address).await?;"
+replacement = "// Missing presence check."
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(individual_clear_literal)"]
+expect_text = "individual clear accepted missing presence or absent final proof"
+
+[[control]]
+name = "individual_clear_skips_absence"
+file = "src/service/restoration/execute.rs"
+anchor = "if bus.query(bus.status(route.address)).await? != BusReply::NoResponse {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(individual_clear_literal)"]
+expect_text = "individual clear accepted missing presence or absent final proof"
+
+[[control]]
+name = "individual_clear_broadcasts_output_write"
+file = "src/service/restoration/execute.rs"
+anchor = "Some(crate::dali::gear::ShortAddress::new(route.address).unwrap()),"
+replacement = "None,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(individual_clear_preserves)"]
+expect_text = "individual clear changed other native settings or fixtures"
+
+[[control]]
+name = "individual_clear_unknown_profile_admitted"
+file = "src/service/owner.rs"
+anchor = "matches!(route.plan, restoration::Plan::Unique | restoration::Plan::Clear),"
+replacement = "matches!(route.plan, restoration::Plan::Unique),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(individual_clear_refuses)"]
+expect_text = "individual clear admitted invalid authority or repeat profile"
+
+[[control]]
+name = "individual_clear_ui_skips_original_scope"
+file = "web/src/restoration.ts"
+anchor = "const scope=this.scope,ui=scope.ui,old=scope.original;\n    scope.assert();"
+replacement = "const scope=this.scope,ui=scope.ui,old=scope.original;"
+target = "command"
+argv = ["node","--test","web/src/restoration.test.ts"]
+expect_text = "individual clear refuses closed, reconnected or changed scopes before submission"
+
+[[control]]
+name = "individual_clear_ui_skips_stop_confirmation"
+file = "web/src/restoration.ts"
+anchor = "if(stopped.phase!=='restored')throw new Error('Blink restoration is unconfirmed. Address clearing stopped.');"
+replacement = "// Missing confirmed Stop."
+target = "command"
+argv = ["node","--test","web/src/restoration.test.ts"]
+expect_text = "individual clear requires confirmed Blink stop and keeps original authority afterward"
+
+[[control]]
+name = "individual_clear_ui_accepts_unconfirmed"
+file = "web/src/restoration.ts"
+anchor = "if(result.outcome!=='cleared')throw new Error('Address clearing is unconfirmed. Inspect hardware before retrying.');"
+replacement = "// Missing confirmed clear outcome."
+target = "command"
+argv = ["node","--test","web/src/restoration.test.ts"]
+expect_text = "individual clear unconfirmed or mismatched result never reports success"

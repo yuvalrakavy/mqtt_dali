@@ -96,3 +96,26 @@ export class RestorationReview {
     await scope.refresh();
   }
 }
+
+/** Frozen individual clearing; saved identities and their reservation continue. */
+export class ClearAddress {
+  readonly scope:Restoration;
+  constructor(ui:Controller,row:PhysicalRow){this.scope=new Restoration(ui,row);}
+  async run(){
+    const scope=this.scope,ui=scope.ui,old=scope.original;
+    scope.assert();
+    const blink=ui.snapshot.identification;
+    if(blink&&['starting','blinking','restoring'].includes(blink.phase)){
+      if(blink.target!==old.item.target||blink.generation!==old.generation)throw new Error('Stop the other blinking fixture before clearing an address.');
+      const stopped=await ui.client.job(old.generation,old.item.target,'stop_blink',{});
+      if(stopped.phase!=='restored')throw new Error('Blink restoration is unconfirmed. Address clearing stopped.');
+      scope.assert();
+    }
+    const result=await ui.client.job(old.generation,old.item.target,'clear_short_address',{expected_revision:scope.revision});
+    if(result.operation!=='clear_short_address'||result.target!==old.item.target||result.target_generation!==old.generation||result.current_generation!==old.generation||result.bus!==old.bus.bus||result.previous_address!==old.item.short_address||result.address!==old.item.short_address||result.revision!==scope.revision||result.configuration_changed!==false)
+      throw new Error('Address clearing result changed. Inspect hardware before retrying.');
+    await scope.accept(result.revision);
+    if(result.outcome!=='cleared')throw new Error('Address clearing is unconfirmed. Inspect hardware before retrying.');
+    ui.notice='Short address cleared. Saved name and bindings retained. Use Add unaddressed, then Restore lost address to identify it again.';
+  }
+}

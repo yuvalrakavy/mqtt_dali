@@ -7,6 +7,8 @@ use crate::{
         restoration::{Action, ResultKind},
     },
 };
+mod clear;
+mod clear_literal;
 mod literal;
 
 fn limit() -> Instant {
