@@ -48,7 +48,10 @@ changed-file format, whitespace, control plan and wait-registry validation (zero
 findings). Logs: `/tmp/dali-web-acceptance`. The wait helper was initially invoked
 from the bridge checkout and inherited its Pi target; rerunning from its native
 SDK checkout succeeds. No SDK source or production runtime change resulted.
-Frozen source gates follow before acceptance.
+Both sequential read-only source gates approve frozen **70afa696** against
+**d46cb812**, with no material findings (76 and about 70 seconds). Reviews were
+same-family/source-only and ran no verification or mutations. Browser and
+physical hardware acceptance remain outstanding.
 An isolated headless Chrome probe opens about:blank at phone
 viewport, confirming local Playwright capability; no feature/browser pass claimed.
 See [operator/API guide](web-access.md), [design](superpowers/specs/2026-10-22-dali-v2-p6a-web-foundation.md)
@@ -1439,7 +1442,7 @@ no verification. Physical hardware validation remains outstanding.
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
 | P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal and per-fixture group membership implemented | Full reassign/restore, identification, browser/pattern group workflows and native scenes |
-| P6 authenticated HTTP | Session/lifecycle/status API foundation in progress | Shared-service mutations/job routes and complete protected frontend integration |
+| P6 authenticated HTTP | Session/lifecycle/status API foundation implemented and locally verified | Shared-service mutations/job routes and complete protected frontend integration |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |
