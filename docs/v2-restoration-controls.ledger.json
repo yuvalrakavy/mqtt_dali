@@ -121,18 +121,18 @@
   },
   "restore_ui_accepts_unconfirmed_stop": {
    "last_real": {
-    "at": "2026-10-22T16:59:10Z",
+    "at": "2026-10-22T22:07:32Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:bf3c70edf1e7e012",
-     "guard": "file:84d5dcad4fa6fa63",
-     "row": "424abc234787e656",
-     "test": "test:52e568f45af32ae5"
+     "files": "files:6da5532cff8e20ce",
+     "guard": "file:1869688e811e1274",
+     "row": "acd2b3c6c0f95254",
+     "test": "test:f1ce3e62369a32c2"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "sha": "8dc03fcb564b74185d4964ae999cf8abc232d268",
     "verdict": "RED"
    }
   },

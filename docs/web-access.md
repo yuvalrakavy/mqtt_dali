@@ -171,7 +171,7 @@ Supported commands: `configure_bus`, `rename_bus`, `rename`, `describe`,
 `assign_group`, `adopt_groups`, `repair_groups`, `create_scene`, `read_scene`,
 `recall_scene`, `set_scene_row`, `adopt_scene_row`, `repair_scene_row`,
 `capture_scene_row`, `reset_address_space`, `restore_identified_address`,
-`restore_unaddressed_address`. HTTP also supports the observation
+`restore_unaddressed_address`, `clear_short_address`. HTTP also supports the observation
 operations below. These extra names are HTTP-only; MQTT keeps its existing
 Desired and refresh forms.
 Unknown envelope/parameter fields are refused. Malformed commands return 400;

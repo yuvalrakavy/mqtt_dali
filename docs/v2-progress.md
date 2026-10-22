@@ -5,6 +5,73 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5i3 — clear one short address while retaining its saved identity
+
+Accepted locally at frozen source `8dc03fc` (initial implementation `aeac073`).
+The design gate and both final source lenses APPROVE. Reviews are same-family
+and read-only/source-only; physical HAT and Store deployment remain unverified.
+
+`clear_short_address` is available through strict MQTT, authenticated HTTP, the
+typed service handle and output/input-module row menus. It uses a distinct Clear
+action in the existing restoration physical owner: fresh presence, DTR0 FF plus
+an addressed repeated write, fresh absence and current final stamp/authority.
+No ConfigStore edit occurs. Saved names, child identities, binding intent and
+the old reservation remain; adoption after rediscovery frees the old reservation.
+The report's address is the saved reservation, while `cleared` describes removal
+of the physical address. Missing presence refuses writing; uncertainty cannot
+claim success. The UI requires confirmed matching Blink stop and performs no
+automatic rediscovery. Current observations and queued input Notices use the
+existing admission/settlement cuts.
+
+The new preservation regression first failed against a stub native plan.
+Four focused cases cover both spaces/profiles, saved bytes and complete model
+state, other fixtures/native settings, strict MQTT and original replies,
+profile/authority/final-evidence refusal, and an independent literal UART peer.
+DTR scratch registers and advancing clocks are deliberately excluded from
+native-setting equality. The literal peer rejects broadcast/commissioning
+frames and checks required presence, addressed repetition and final absence.
+The 21-case recovery/clear suite passes. All eight new intentional-fault controls
+produce intended REDs, including the refreshed formatted profile anchor.
+
+Full native acceptance passes **620/620** across eleven binaries, with only the
+separately run browser test skipped. Strict scoped Clippy, Pi library/four
+binaries, standalone wait validation and **45 frontend tests** pass. The initial
+restored gate found only Rust formatting in the admission expression; that was
+corrected and its control anchor rerun. The final restored native/lint/Pi/wait,
+format and asset checks pass. The control-plan pass also found an older Stop
+anchor matching both recovery and clearing; it was qualified to its recovery
+error text, reran intended RED, and all affected plans then passed. Those two
+check corrections did not alter runtime behavior. Final plan/Node/asset logs are
+`/tmp/dali-individual-clear-plans-final.log`,
+`/tmp/dali-individual-clear-node-final.log` and
+`/tmp/dali-individual-clear-dist-final.log`.
+
+One source-review P1 exposed deferred passive cleanup: dismissing Clear while
+awaiting Blink stop could still send the destructive command. The actual browser
+regression first reproduces that mistake with passive timers/animation frames
+paused (`/tmp/dali-individual-clear-lifecycle-red.log`, unexpected command after
+Cancel, 402 versus 401). Explicit dismissal now revokes synchronously and
+`useLayoutEffect` cleanup revokes during component removal. Actual Cancel,
+Close and navigation all pass before releasing the held completed Stop reply.
+The browser guide records this handler/lifecycle test requirement. An unrelated
+immediate filter-count assertion was changed to wait for its rendered result;
+its failure screenshot already showed the correct empty filtered list.
+
+Final real phone/desktop acceptance passes through **886 owned commands in
+70.01 seconds**, including individual output/input clear and explicit recovery,
+the three delayed-cleanup dismissal cases, and existing scenes, restoration,
+reassignment and logout workflows. Artifacts:
+`/tmp/dali-browser-f1f96d998fb1e710520ee3351923226b`; initial phone/desktop Clear
+confirmation screenshots were inspected at
+`/tmp/dali-browser-7202173371a0437f7688c940a38043d6` (77.49-second initial run).
+Full logs: `/tmp/dali-individual-clear-acceptance`,
+`/tmp/dali-individual-clear-restored-final` and
+`/tmp/dali-individual-clear-lifecycle-final.log`.
+See [operator/API instructions](address-recovery.md), the
+[specification](superpowers/specs/2026-10-23-dali-v2-individual-address-clear.md)
+and `v2-address-clear-controls.toml`. No live bus, Store, legacy, SDK publication,
+push, merge or deployment action belongs to this slice.
+
 ## P5i2 — identify recovered fixtures and adopt their new addresses
 
 Implemented locally at `f53e4bc`, with the discovery-admission fix at frozen
@@ -62,7 +129,7 @@ admission evidence is in `/tmp/dali-discovery-contention-*`.
 See [address recovery](address-recovery.md), its
 [specification](superpowers/specs/2026-10-22-dali-v2-p5i-address-restoration.md)
 and [fault controls](v2-restoration-controls.md). Individual short-address
-clearing has protocol/emulator support but no per-fixture UI/API action yet.
+clearing was still pending at this checkpoint and is implemented in P5i3 above.
 
 ## P5i1 — full selected-space address reassignment
 
@@ -2083,7 +2150,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, unaddressed output/input assignment, bus setup, removal, per-fixture group membership, pattern/verification and Blink/Stop; native scenes/private settings, full reassignment and identity-preserving lost-address adoption implemented locally | Individual short-address clearing and remaining capability workflows |
+| P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Input configuration and remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

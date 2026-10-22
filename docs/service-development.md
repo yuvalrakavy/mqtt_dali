@@ -250,6 +250,15 @@ Notice revocation prevents queued presses resurfacing across this unchanged-toke
 shortcut. See [address recovery](address-recovery.md) and its
 [fault controls](v2-restoration-controls.md).
 
+`clear_short_address` uses a distinct Clear action/plan in the same physical
+owner. It confirms present, sends the existing addressed clear plan, then checks
+absence. There is no ConfigStore edit or identity transition. Include Clear in
+mutating/profile admission and unconfirmed-report conversion. Keep the original
+stamp/authority and permanent Notice cuts at admission/settlement. `cleared`
+describes physical address removal; the report's address remains the saved
+reservation. The browser performs no automatic follow-up. See
+[address recovery](address-recovery.md) and `v2-address-clear-controls.toml`.
+
 Commands use `DALI/Command/<controller>` and exactly one MQTT v5
 `target-generation` property. They are momentary WithReply commands; provide a
 response topic and correlation data when awaiting the result.

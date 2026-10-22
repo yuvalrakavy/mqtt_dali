@@ -91,8 +91,8 @@ expect_text = "Missing expected rejection"
 [[control]]
 name = "restore_ui_accepts_unconfirmed_stop"
 file = "web/src/restoration.ts"
-anchor = "if(stopped.phase!=='restored')"
-replacement = "if(false)"
+anchor = "if(stopped.phase!=='restored')throw new Error('Blink restoration is unconfirmed. Address recovery stopped.');"
+replacement = "if(false)throw new Error('Blink restoration is unconfirmed. Address recovery stopped.');"
 target = "command"
 argv = ["node", "--test", "--test-name-pattern", "unconfirmed stop and other blink", "web/src/restoration.test.ts"]
 expect_text = "Missing expected rejection"

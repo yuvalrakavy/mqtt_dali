@@ -59,10 +59,33 @@ SetShortAddress with DTR0 = FF removes the address; see the
 [python-dali command definition](https://github.com/sde1000/python-dali/blob/master/dali/gear/general.py).
 The fixture then participates in unaddressed commissioning again.
 
-The current bridge does not yet expose an individual **Clear short address**
-action. **Remove from list** only removes its saved record and does not clear
-hardware. Full reassignment clears the selected whole address space and retires
-its saved identities; it is not an individual-clear operation.
+Open the output or input-module row menu and select **Clear short address**.
+Review its name, controller/bus and address, then confirm **Clear address**.
+An active Blink on that light must stop and restore successfully first. Another
+active Blink must be stopped separately. Canceling the confirmation sends nothing.
+
+The saved row, name, bindings, desired groups/scenes and old address reservation
+remain. Hardware levels, colour and stored groups/scenes are preserved. Use
+**Add unaddressed**, identify the resulting candidate, and adopt it through the
+workflow above. The old reservation becomes free on adoption. Alternatively,
+the sole-unaddressed shortcut can explicitly reuse the old reservation.
+There is no automatic discovery or restoration after clearing.
+
+**Remove from list** only removes the saved record and does not clear hardware.
+Full reassignment clears a whole address space and retires its saved identities.
+
+MQTT and authenticated HTTP use `clear_short_address` with the original saved
+fixture target/generation and exactly `expected_revision`. Typed clients use
+`ServiceHandle::clear_short_address`. The report has `operation` equal to
+`clear_short_address`, outcome `cleared` or `unconfirmed`, unchanged revision and
+mapping generations, and `configuration_changed: false`. Its `address` and
+`previous_address` describe the retained saved reservation; a cleared physical
+fixture has no short address. Missing presence refuses writing. Only confirmed
+absence after the addressed repeated write and current final evidence allow
+`cleared`. Uncertainty requires inspecting hardware before any explicit retry.
+The original 18-second budget, strict target authority and known output repeat
+profile requirements are shared with recovery. Input instances cannot be cleared
+independently of their module.
 
 ## API
 

@@ -59,6 +59,16 @@ and leaving the tab during an admitted reset.
 Recovery cases cover unique repair, multiple-candidate refusal, normal scan-first
 candidate selection, confirmed Blink stop followed by adopting the new address,
 input activity/child continuity, freed old reservations and tab cancellation.
+Individual-clear cases exercise cancelled phone review, output/input confirmations,
+confirmed Blink stop, retained saved identity/native settings and explicit recovery.
+The ClearAddress wrapper freezes a Restoration scope; dialog closure and route
+unmount permanently cancel it. It accepts only its original unchanged mapping/root
+and a confirmed `cleared` result; it submits no automatic rediscovery.
+Dismissal must revoke the scope in its event handler. ClearAddress lifetime
+cleanup uses `useLayoutEffect`, because passive `useEffect` can run after an
+awaited reply has resumed. Test the actual Cancel/Close/navigation handlers with
+an admitted Stop reply held and browser timers/animation frames paused; directly
+setting a test scope's cancellation flag does not test that lifecycle wiring.
 Query-before-event cases include multi-bit Part 302 inputs and exact 64-bit
 Part 304 sensor data. The logout case holds a real job admission while discovery
 is busy, then verifies session revocation and absence of later batch commands.

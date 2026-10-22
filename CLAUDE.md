@@ -242,6 +242,18 @@ Keep both cuts and MQTT/SSE checks. Browser recovery accepts already scanned
 rows, freezes both identities, stops Blink first and refreshes the resulting
 address. See `docs/address-recovery.md` and `docs/v2-restoration-controls.md`.
 
+Individual `clear_short_address` uses restoration's distinct Clear action/plan,
+the addressed codec and the same stamp, permanent Notice cuts and final authority.
+Presence -> DTR0 FF/addressed repeated write -> absence; preserve the saved row
+and old reservation without a config edit. Clear is mutating and needs the known
+output repeat profile. UI confirms frozen name/address, stops matching Blink
+first and does not rediscover automatically. `docs/v2-address-clear-controls.toml`
+checks native scope/proofs/profile and frontend authority/Stop/outcome guards.
+Clear dismissal revokes its scope synchronously; layout-effect cleanup handles
+unmount. Passive effects can allow an awaited Stop reply to resume first. The
+real browser test pauses timers/animation frames while exercising actual Cancel,
+Close and navigation; directly toggling a unit-test scope cannot test that wiring.
+
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`
 reuse whole-plan DTR/enable ownership, captured deadlines and final acceptance.
