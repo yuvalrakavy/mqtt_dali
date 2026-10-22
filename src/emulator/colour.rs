@@ -165,6 +165,7 @@ impl State {
         }
         .unwrap_or(65535);
         let [high, low] = word.to_be_bytes();
+        dtr[1] = high;
         dtr[0] = low;
         high
     }

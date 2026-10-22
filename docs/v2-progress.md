@@ -842,7 +842,13 @@ before the passing run. All **11 new controls** and **2 affected existing base
 controls** failed at their intended assertions. The restored gate passes **338
 native tests**, strict scoped Clippy, Pi library/all four binary compilation,
 changed-file format/whitespace, wait registry and doctests (none defined).
-Fresh source review follows the frozen implementation commit.
+Fresh source review found that word colour queries left DTR1 stale. A literal
+regression reproduced AA instead of the returned MSB; the model now updates both
+registers. The added test covers normal/full-MASK words and known/MASK byte
+queries preserving both registers. Its new control and two affected word/byte
+controls failed as intended. The corrected restored gate passes **339 native
+tests** and the same build/lint/format/wait/doc checks. Final source re-review
+follows the frozen correction commit.
 
 No service/MQTT/SDK/Store or recovery behavior changed. The emulator explicitly
 does not yet model alternate RGBWAF control modes/channel assignment, physical

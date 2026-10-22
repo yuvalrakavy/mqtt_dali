@@ -55,8 +55,8 @@ model, preserving private PTYs, strict scenario validation and existing controls
 - Value selectors match the codec's required current x/y/Tc (0/1/2), RGBWAF
   channels/control (9..15) and Tc limits (128..131). Active representation values
   are readable; inactive/unsupported values yield MASK (no recalculation model).
-  Word replies place MSB on the bus and LSB in the gear DTR0; byte values do not
-  invent a low byte. Unsupported word selectors yield FFFF; unsupported byte
+  Word replies place MSB on the bus and in DTR1, and LSB in the gear DTR0; byte
+  values preserve both registers. Unsupported word selectors yield FFFF; unsupported byte
   selectors yield FF. Distinguish actual no-response from a MASK byte.
 - Queries and writes keep existing short/group/broadcast fixture selection.
   Different simultaneous values collide; identical values follow the emulator's
@@ -132,3 +132,13 @@ Clippy, Pi library/all four binary compilation, changed-file formatting,
 whitespace, wait registry and doctests (none defined). No new wait or actual
 resource owner was introduced. A fresh read-only source gate follows the frozen
 implementation commit; physical certification remains unclaimed.
+
+The source gate identified a missing word-query side effect in DTR1. The pinned
+reference explicitly stores MSB there as well as returning it; a new literal
+regression reproduced stale AA instead of 00. The one-line fix updates DTR1 and
+the regression checks both normal/MASK words plus known/MASK byte preservation.
+The new guard-removal control and two affected word/byte controls failed for their
+named assertions. The corrected restored gate passes 339 native tests and the
+same scoped lint, Pi, formatting, whitespace, wait and zero-doctest checks. A
+final narrow source re-review follows the frozen correction commit. This shows
+why shared-register effects need assertions alongside the visible reply byte.

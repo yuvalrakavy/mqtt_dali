@@ -99,8 +99,8 @@ extended command. Emulator and bridge have separate command/value implementation
 
 Supported queries include colour gear/type features, active type/range status,
 current xy/Tc/RGBWAF values, Tc limits, control and raw extended version 1.
-Word values return their MSB and place the LSB in DTR0. RGBWAF byte queries leave
-DTR0 alone. Inactive/unsupported representations return MASK, without inventing
+Word values return their MSB, place it in DTR1 and place the LSB in DTR0. RGBWAF
+byte queries preserve both registers. Inactive/unsupported representations return MASK, without inventing
 a converted colour. RGBWAF control is the fixed normalized profile value 0x80;
 gear features report manual activation and no automatic calibration.
 

@@ -311,3 +311,43 @@ fn emulator_rgb_only_fixture_masks_missing_channels_without_word_side_effects() 
     assert_eq!(value(&mut m, 2), Reply::Value(255));
     assert_eq!(m.transmit(0, 0x0798, 0), Reply::Value(255));
 }
+
+#[test]
+fn emulator_colour_queries_update_both_word_registers_but_preserve_byte_registers() {
+    let mut m = model(physical());
+    send(&mut m, &[0xc3aa, 0xa302, 0xc108]);
+    assert_eq!(m.transmit(0, 0x07fa, 0), Reply::Value(0));
+    assert_eq!(m.transmit(0, 0x0798, 0), Reply::Value(250));
+    assert_eq!(
+        m.transmit(0, 0x079c, 0),
+        Reply::Value(0),
+        "word query left a stale MSB in DTR1"
+    );
+    send(&mut m, &[0xc3aa, 0xa300, 0xc108]); // Inactive xy = FFFF.
+    assert_eq!(m.transmit(0, 0x07fa, 0), Reply::Value(255));
+    assert_eq!(m.transmit(0, 0x0798, 0), Reply::Value(255));
+    assert_eq!(
+        m.transmit(0, 0x079c, 0),
+        Reply::Value(255),
+        "word MASK did not fill DTR1"
+    );
+    send(&mut m, &[0xc3aa, 0xa309, 0xc108]); // Inactive RGB byte = FF, registers untouched.
+    assert_eq!(m.transmit(0, 0x07fa, 0), Reply::Value(255));
+    assert_eq!(m.transmit(0, 0x0798, 0), Reply::Value(9));
+    assert_eq!(
+        m.transmit(0, 0x079c, 0),
+        Reply::Value(0xaa),
+        "byte query overwrote DTR1"
+    );
+    let mut rgb_profile = physical();
+    rgb_profile["buses"][0]["outputs"][0]["colour"]["active"] = json!("rgbwaf");
+    let mut rgb = model(rgb_profile);
+    send(&mut rgb, &[0xc3aa, 0xa309, 0xc108]);
+    assert_eq!(rgb.transmit(0, 0x07fa, 0), Reply::Value(1));
+    assert_eq!(rgb.transmit(0, 0x0798, 0), Reply::Value(9));
+    assert_eq!(
+        rgb.transmit(0, 0x079c, 0),
+        Reply::Value(0xaa),
+        "known byte query overwrote DTR1"
+    );
+}

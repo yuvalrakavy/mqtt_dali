@@ -95,3 +95,12 @@ replacement = "dtr[0] = 255; return if self.actual.active != ColourType::Rgbwaf 
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_rgb_only_fixture)"]
 expect_text = "byte value query overwrote DTR0 as a word low byte"
+
+[[control]]
+name = "colour_word_query_leaves_stale_high_register"
+file = "src/emulator/colour.rs"
+anchor = "dtr[1] = high;"
+replacement = "dtr[1] = 0xaa;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_colour_queries_update_both)"]
+expect_text = "word query left a stale MSB in DTR1"

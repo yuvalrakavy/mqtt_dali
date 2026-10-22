@@ -68,7 +68,8 @@ result, rather than the size of every wire reply.
 
 Value plans first query actual level to update colour reporting, then load the
 selector, enable DT8 and query the value. A word value uses that response as MSB
-and an additional QUERY CONTENT DTR0 as LSB. A byte value has no extra low-byte
+and an additional QUERY CONTENT DTR0 as LSB. The emulator also updates DTR1 to
+the MSB, as in its independently authored gear reference. A byte value has no extra low-byte
 query. Stop on a failed query. Never use a monitored frame, missing reply or
 collision as a successful byte.
 
