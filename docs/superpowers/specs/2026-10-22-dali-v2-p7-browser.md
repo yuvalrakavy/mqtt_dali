@@ -248,4 +248,12 @@ inventing units and route logout outside the busy gate, stopping later batch
 steps while reporting revocation failure honestly. Browser coverage now includes
 12-bit Part 302, 64-bit Part 304 and logout with an admitted discovery job held.
 The full phone/desktop run passes 308 commands and fourteen frontend tests pass.
-Two additional behavioral controls are RED. Updated frozen-source verdicts follow.
+Two additional behavioral controls are RED. Frozen `08abf86` is approved against
+`0eb776b`: gate 1 focused recheck 20 s, gate 2 complete source 98 s, no remaining
+material findings. Reviews are sequential, same-family and source-only; supplied
+runtime verification and screenshot inspection were performed separately by parent.
+Restored acceptance passes 531 native tests, fourteen frontend tests, scoped strict
+Clippy, Pi library/four binaries, reproducible assets, formatting, affected plans
+and whitespace. Final wait validation reports zero findings. This accepts the
+current-backend UI increment; remaining scene/reassign/restore/capability work and
+physical/HTTPS/Store deployment remain open.

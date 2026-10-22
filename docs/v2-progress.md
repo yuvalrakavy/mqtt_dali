@@ -66,7 +66,11 @@ rerun the five model controls, all RED. Logs:
 `/tmp/dali-browser-review-fix-functional-final.log`,
 `/tmp/dali-browser-review-fix-controls.log` and
 `/tmp/dali-browser-sensor-controls-final.log`.
-Frozen-source reviews are being finalized. Browser evidence is recorded separately in
+Frozen `08abf86` is approved against `0eb776b` by both sequential source reviews.
+Gate 1 initially requested the two corrections (about 90 s), then approved their
+focused recheck (20 s); gate 2 approves the full source (98 s), with no material
+findings. Both are same-family/source-only; the parent separately executed tests
+and inspected browser screenshots. Browser evidence is recorded separately in
 `/tmp/dali-browser-review-fix-functional-final.log`, with screenshots under
 `/tmp/dali-browser-c5976b6a2974c740cfd0f272e0f118d7`. See
 [operator guide](web-access.md), [build/test guide](browser-development.md) and
@@ -1668,7 +1672,7 @@ no verification. Physical hardware validation remains outstanding.
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
 | P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented | Full reassign/restore and native scenes |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
-| P7 browser UI | Embedded responsive screens implemented; local phone/desktop browser workflows pass; final source acceptance in progress | Remaining P4/P5 workflows as their backends are implemented |
+| P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |
 
