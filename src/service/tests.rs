@@ -159,6 +159,12 @@ impl Fixture {
     pub(super) fn disk(&self) -> Inventory {
         serde_json::from_slice(&fs::read(&self.paths.current).unwrap()).unwrap()
     }
+    pub(super) fn add_button(&self) {
+        let mut inventory = self.disk();
+        inventory.buses[0].inputs = serde_json::from_value(json!([
+            {"short_address":0,"name":"Panel","instances":[{"number":0,"name":"Button","instance_type":1}]}])).unwrap();
+        fs::write(&self.paths.current, serde_json::to_vec(&inventory).unwrap()).unwrap();
+    }
 }
 impl Drop for Fixture {
     fn drop(&mut self) {

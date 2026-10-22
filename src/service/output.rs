@@ -9,6 +9,13 @@ use crate::dali::gear::{
     Destination, Intent, LevelValue, Query, QueryReply, QueryValue, ShortAddress,
 };
 use std::collections::BTreeMap;
+pub mod colour;
+
+#[derive(Debug, Clone, Copy)]
+pub(super) enum WriteIntent {
+    Base(Intent),
+    Colour(crate::dali::colour::Intent),
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Quality {
@@ -23,6 +30,7 @@ pub struct Observation {
     pub context: RequestContext,
     pub actual_level: Option<QueryReply>,
     pub status: Option<QueryReply>,
+    pub colour: Option<colour::Observation>,
     pub quality: Quality,
     pub reason: Option<String>,
     pub(super) stamp: Stamp,
@@ -55,6 +63,10 @@ impl Observation {
     pub(super) fn invalidate(&mut self, reason: &str) {
         self.quality = Quality::Stale;
         self.reason = Some(reason.into());
+        if let Some(colour) = &mut self.colour {
+            colour.quality = colour::Quality::Stale;
+            colour.reason = Some(reason.into());
+        }
     }
     fn update_quality(&mut self) {
         self.quality = if matches!(self.level(), Some(LevelValue::Known(_)))
@@ -79,7 +91,8 @@ pub(super) struct Stamp {
 }
 pub(super) struct Request {
     pub target: String,
-    pub intent: Option<Intent>,
+    pub intent: Option<WriteIntent>,
+    pub include_colour: bool,
     pub context: RequestContext,
     pub deadline: Instant,
     pub reply: oneshot::Sender<Result<Observation, ServiceError>>,
@@ -167,21 +180,24 @@ pub(super) async fn execute(
     link: Transactions<Serial>,
     route: Route,
     stamp: Stamp,
-    intent: Option<Intent>,
+    intent: Option<WriteIntent>,
+    include_colour: bool,
     deadline: Instant,
 ) -> Outcome {
     let mut observation = Observation {
-        context: route.context,
+        context: route.context.clone(),
         actual_level: None,
         status: None,
+        colour: None,
         quality: Quality::Unavailable,
         reason: None,
         stamp,
         bus: route.bus,
     };
     let mut recovery = false;
+    let mut rejection = None;
     let operation = async {
-        if let Some(intent) = intent {
+        if let Some(WriteIntent::Base(intent)) = intent {
             match frame(
                 &link,
                 route.bus,
@@ -202,31 +218,41 @@ pub(super) async fn execute(
                 }
             }
         }
-        let level = frame(
-            &link,
-            route.bus,
-            route.address.query(Query::ActualLevel),
-            deadline,
-            stamp,
-        )
-        .await?;
-        observation.actual_level = Some(Query::ActualLevel.decode(level));
-        observation.update_quality();
-        let status = frame(
-            &link,
-            route.bus,
-            route.address.query(Query::Status),
-            deadline,
-            stamp,
-        )
-        .await?;
-        observation.status = Some(Query::Status.decode(status));
-        observation.update_quality();
+        read_base(&mut observation, &link, &route, stamp, deadline).await?;
+        if include_colour {
+            let sample = observation.colour.insert(colour::Observation::default());
+            colour::discover(sample, &link, &route, stamp, deadline).await?;
+            if let Some(WriteIntent::Colour(intent)) = intent {
+                if let Err(reason) = sample.preflight(intent) {
+                    rejection = Some(reason);
+                    return Ok(());
+                }
+                // From the first setter onward pre-write colour/base evidence
+                // cannot confirm this mutation, even if the transport fails.
+                sample.quality = colour::Quality::Partial;
+                sample.values.clear();
+                sample.raw_values.clear();
+                observation.actual_level = None;
+                observation.status = None;
+                observation.update_quality();
+                colour::apply(&link, &route, stamp, deadline, intent).await?;
+                read_base(&mut observation, &link, &route, stamp, deadline).await?;
+                colour::read_values(
+                    observation.colour.as_mut().unwrap(),
+                    &link,
+                    &route,
+                    stamp,
+                    deadline,
+                )
+                .await?;
+            }
+        }
         Ok(())
     }
     .await;
     let error = match operation {
         Err(error) => {
+            recovery |= error == TransactionError::StreamLoss;
             observation.reason = Some(error.to_string());
             Some(if intent.is_some() {
                 ServiceError::Uncertain(error.to_string())
@@ -234,9 +260,15 @@ pub(super) async fn execute(
                 ServiceError::Rejected(error.to_string())
             })
         }
+        Ok(()) if rejection.is_some() => rejection.map(ServiceError::Rejected),
         Ok(()) if intent.is_some() && observation.quality != Quality::Current => Some(
             ServiceError::Uncertain("post-write fixture readback is incomplete".into()),
         ),
+        Ok(()) if matches!(intent, Some(WriteIntent::Colour(value)) if !observation.colour.as_ref().is_some_and(|sample| sample.confirms(value))) => {
+            Some(ServiceError::Uncertain(
+                "requested colour representation readback is incomplete".into(),
+            ))
+        }
         _ => None,
     };
     Outcome {
@@ -244,6 +276,41 @@ pub(super) async fn execute(
         error,
         recovery,
     }
+}
+async fn read_base(
+    observation: &mut Observation,
+    link: &Transactions<Serial>,
+    route: &Route,
+    stamp: Stamp,
+    deadline: Instant,
+) -> Result<(), TransactionError> {
+    observation.actual_level = Some(
+        Query::ActualLevel.decode(
+            frame(
+                link,
+                route.bus,
+                route.address.query(Query::ActualLevel),
+                deadline,
+                stamp,
+            )
+            .await?,
+        ),
+    );
+    observation.update_quality();
+    observation.status = Some(
+        Query::Status.decode(
+            frame(
+                link,
+                route.bus,
+                route.address.query(Query::Status),
+                deadline,
+                stamp,
+            )
+            .await?,
+        ),
+    );
+    observation.update_quality();
+    Ok(())
 }
 async fn frame(
     link: &Transactions<Serial>,
@@ -276,7 +343,7 @@ impl ServiceHandle {
         context: RequestContext,
         deadline: Instant,
     ) -> Result<Observation, ServiceError> {
-        self.output(target, None, context, deadline).await
+        self.output(target, None, false, context, deadline).await
     }
     pub async fn apply_output(
         &self,
@@ -285,12 +352,44 @@ impl ServiceHandle {
         context: RequestContext,
         deadline: Instant,
     ) -> Result<Observation, ServiceError> {
-        self.output(target, Some(intent), context, deadline).await
+        self.output(
+            target,
+            Some(WriteIntent::Base(intent)),
+            false,
+            context,
+            deadline,
+        )
+        .await
+    }
+    pub async fn read_colour(
+        &self,
+        target: &str,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Observation, ServiceError> {
+        self.output(target, None, true, context, deadline).await
+    }
+    pub async fn apply_colour(
+        &self,
+        target: &str,
+        intent: crate::dali::colour::Intent,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Observation, ServiceError> {
+        self.output(
+            target,
+            Some(WriteIntent::Colour(intent)),
+            true,
+            context,
+            deadline,
+        )
+        .await
     }
     async fn output(
         &self,
         target: &str,
-        intent: Option<Intent>,
+        intent: Option<WriteIntent>,
+        include_colour: bool,
         context: RequestContext,
         deadline: Instant,
     ) -> Result<Observation, ServiceError> {
@@ -308,12 +407,17 @@ impl ServiceHandle {
         let snapshot = self
             .snapshot()
             .ok_or_else(|| ServiceError::Rejected("service is starting".into()))?;
-        resolve(&snapshot, target, &context, intent.is_some())?;
+        let route = resolve(&snapshot, target, &context, intent.is_some())?;
         let (reply, receive) = oneshot::channel();
         self.send
             .try_send(Message::Output(Request {
                 target: target.into(),
                 intent,
+                include_colour: include_colour
+                    || snapshot.outputs.get(target).is_some_and(|sample| {
+                        sample.context.generation() == route.context.generation()
+                            && sample.colour.is_some()
+                    }),
                 context,
                 deadline,
                 reply,

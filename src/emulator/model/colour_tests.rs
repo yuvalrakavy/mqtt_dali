@@ -33,6 +33,21 @@ fn value(model: &mut Model, selector: u8) -> Reply {
 }
 
 #[test]
+fn colour_channel_assignments_are_physical_profile_roles() {
+    let mut model = model(physical());
+    for (index, expected) in [(0, 1), (2, 3), (5, 6), (6, 255), (255, 255)] {
+        send(&mut model, &[0xa300 | index]);
+        assert_eq!(
+            query(&mut model, 0x07fc),
+            Reply::Value(expected),
+            "emulator assigned-colour reply lost the physical profile role"
+        );
+    }
+    send(&mut model, &[0xa300, 0xc108]);
+    assert_eq!(model.transmit(0, 0x09fc, 0), Reply::Value(255));
+}
+
+#[test]
 fn emulator_colour_profiles_validate_capabilities_and_native_ranges() {
     let valid: Scenario = serde_json::from_value(physical()).unwrap();
     assert!(valid.validate().is_ok());

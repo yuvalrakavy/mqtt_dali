@@ -19,18 +19,18 @@
   },
   "caller_uses_earlier_acceptance_sample": {
    "last_real": {
-    "at": "2026-10-21T22:34:31Z",
+    "at": "2026-10-22T00:40:14Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:fbdaa6851fb2447c",
+     "guard": "item:2bba8deace7ae36b",
      "row": "32edcb6782edd985",
      "test": null
     },
     "path": "command",
-    "secs": 5.6,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 7.5,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
     "verdict": "RED"
    }
   },
@@ -70,7 +70,7 @@
   },
   "completed_output_ignores_bus_epoch_loss": {
    "last_real": {
-    "at": "2026-10-21T22:34:26Z",
+    "at": "2026-10-22T00:40:06Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -80,8 +80,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 7.1,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 7.9,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
     "verdict": "RED"
    }
   },
@@ -172,24 +172,24 @@
   },
   "queued_output_adopts_a_new_bus_epoch": {
    "last_real": {
-    "at": "2026-10-21T22:34:19Z",
+    "at": "2026-10-22T00:39:58Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:12a320fe99284fd4",
+     "guard": "item:48e9d05ec4a34d16",
      "row": "2cb1581778d0a312",
      "test": null
     },
     "path": "command",
-    "secs": 7.4,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 8.7,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
     "verdict": "RED"
    }
   },
   "queued_read_loses_original_trace": {
    "last_real": {
-    "at": "2026-10-21T22:35:23Z",
+    "at": "2026-10-22T00:40:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -199,8 +199,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 7.2,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 5.8,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
     "verdict": "RED"
    }
   },
@@ -240,7 +240,7 @@
   },
   "rename_retains_old_mapping_samples": {
    "last_real": {
-    "at": "2026-10-21T22:34:41Z",
+    "at": "2026-10-22T00:40:28Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -250,8 +250,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.3,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 6.3,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
     "verdict": "RED"
    }
   },
@@ -274,7 +274,7 @@
   },
   "retired_target_token_is_accepted": {
    "last_real": {
-    "at": "2026-10-21T22:34:37Z",
+    "at": "2026-10-22T00:40:21Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -284,8 +284,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.7,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 7.3,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
     "verdict": "RED"
    }
   },

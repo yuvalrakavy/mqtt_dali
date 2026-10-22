@@ -153,10 +153,16 @@ before each await, skip disabled buses and reject absent UART before admission.
 The regression controls are `docs/v2-mqtt-output-controls.toml`.
 
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
-see `docs/dali-colour-contract.md`. Whole-plan DTR/enable ownership remains the
-future executor's responsibility. Never share the codec with emulator semantics,
+see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`
+reuse whole-plan DTR/enable ownership, captured deadlines and final acceptance.
+Colour quality is independent of base quality; incidental colour failures cannot
+fail successful base writes. Writes preflight manual activation, representation,
+normalized RGBWAF mode and physical channel assignments; no implicit mode change.
+Automatic activation and combined colour/base ordering must precede general MQTT
+colour mutation. Controls are in `docs/v2-colour-service-controls.toml`.
+Never share the codec with emulator semantics,
 treat a high byte FF as full-word MASK, clear unrequested WAF channels, or infer
-RGB support from DT8 alone. No bridge color execution/MQTT path is claimed yet.
+RGB support from DT8 alone. No MQTT colour path is claimed yet.
 The independent emulator's optional strict colour profile covers selected DT8
 staging/activation/current values and limits; see `docs/emulator.md`. Staged MASK
 overwrites earlier staged numeric values; ACTIVATE clears temporaries. Standard

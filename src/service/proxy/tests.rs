@@ -477,6 +477,7 @@ fn answered_mask_is_not_current_mqtt_availability_or_invented_power() {
         }],
     };
     let observation = output::Observation {
+        colour: None,
         context: context(1),
         actual_level: Some(Query::ActualLevel.decode(BusReply::Value(255))),
         status: Some(Query::Status.decode(BusReply::Value(4))),

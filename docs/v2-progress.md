@@ -858,6 +858,37 @@ These remain subsequent work rather than inferred from base command success.
 See [emulator colour profiles](emulator.md#colour-fixtures) and the
 [slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-emulator.md).
 
+## P4d3 — owned colour service (source review active)
+
+The individual output service now discovers DT8 capability (including bounded
+multiple-type enumeration), physical RGBWAF assignments and active native values.
+`read_colour`/`apply_colour` use the existing owned HAT job, permit, context,
+deadline, stamps and final acceptance. Setters require fresh manual-activation
+confirmation and supported representation; RGBWAF also requires normalized mode
+and the requested physical colour assignments. Automatic activation and combined
+base/colour ordering remain required before general MQTT colour mutation.
+
+Actual readback retains clamping/range/limit evidence and must match the requested
+representation to confirm a colour write. Fresh incidental colour samples have
+their own quality and cannot fail successful base control. Whole-output epoch
+invalidation marks colour stale. There is no new UART recovery, SDK queue or Store
+dependency. The independent emulator now answers physical channel assignments.
+
+The first actual-colour test failed behaviorally against the API skeleton before
+execution was connected. Eleven new focused tests pass, including Tc/xy/RGBWAF,
+untouched WAF/master independence, type enumeration, unsupported preflight, failed
+word bytes, wrong active type, native inputs during cancelled colour work and
+final epoch invalidation. Rust reply ownership errors were fixed before the
+passing run. All **12 new controls** and **6 affected existing output controls**
+failed at their intended behavioral assertions (91 s and 43 s). The restored
+gate passes **350 native tests**, strict scoped Clippy, Pi library/all four binary
+compilation, changed-file format/whitespace, wait registry and doctests (none
+defined). Two sequential frozen-source reviews remain pending. Evidence logs:
+`/tmp/dali-colour-service-controls` and `/tmp/dali-colour-service-restored-gate`.
+
+See [colour operations](dali-colour-contract.md#owned-service-operations) and the
+[slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-service.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -865,7 +896,7 @@ See [emulator colour profiles](emulator.md#colour-fixtures) and the
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, pure DT8 colour codec and independent DT8 emulator implemented | Input discovery/full-value polling/configuration/feedback, bridge color discovery/execution/MQTT and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator and owned colour service implemented (source review active) | Input discovery/full-value polling/configuration/feedback, color automatic activation/MQTT and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

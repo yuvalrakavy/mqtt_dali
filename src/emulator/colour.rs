@@ -119,6 +119,13 @@ impl State {
             } else {
                 255
             }),
+            0xfc => Some(
+                self.actual
+                    .rgbwaf
+                    .as_ref()
+                    .filter(|channels| usize::from(dtr[0]) < channels.len())
+                    .map_or(255, |_| dtr[0] + 1),
+            ),
             0xff => Some(1), // Emulated profile's raw extended version.
             _ => return None,
         };

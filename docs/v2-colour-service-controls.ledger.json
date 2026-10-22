@@ -1,0 +1,209 @@
+{
+ "rows": {
+  "colour_activation_is_omitted": {
+   "last_real": {
+    "at": "2026-10-22T00:39:35Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:76f41561d30e80ef",
+     "row": "3c4ef333e5c4c4c6",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.2,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_assignment_preflight_removed": {
+   "last_real": {
+    "at": "2026-10-22T00:38:40Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:2b987e9a143020af",
+     "row": "d97565c3566d8dbf",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.0,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_base_refresh_forgets_known_colour": {
+   "last_real": {
+    "at": "2026-10-22T00:39:09Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:b784c4f98ab3824e",
+     "row": "f2123d8dbab05262",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.8,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_base_success_requires_incidental_colour": {
+   "last_real": {
+    "at": "2026-10-22T00:39:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:dbdfd20e96aedce3",
+     "row": "46d23b24ba0291c4",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.9,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_confirmation_accepts_another_active_kind": {
+   "last_real": {
+    "at": "2026-10-22T00:38:51Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:50896cf944e4c081",
+     "row": "4686125ef7166289",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.1,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_failed_high_still_queries_low": {
+   "last_real": {
+    "at": "2026-10-22T00:39:27Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cd648dbb7c6d4b4b",
+     "row": "79a346678b5f195e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.9,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_manual_activation_preflight_removed": {
+   "last_real": {
+    "at": "2026-10-22T00:38:27Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:2b987e9a143020af",
+     "row": "9fe4680c40f45c83",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.4,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_normalized_control_preflight_removed": {
+   "last_real": {
+    "at": "2026-10-22T00:38:34Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:2b987e9a143020af",
+     "row": "f00c560d49ad9d01",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.3,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_supported_representation_guard_removed": {
+   "last_real": {
+    "at": "2026-10-22T00:38:45Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:2b987e9a143020af",
+     "row": "b09eaa9432949df1",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.5,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_type_enumeration_accepts_repeated_prefix": {
+   "last_real": {
+    "at": "2026-10-22T00:39:18Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:564929957dcbbb78",
+     "row": "9ef9a551ef7f2c01",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.1,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "colour_uart_invalidation_leaves_colour_current": {
+   "last_real": {
+    "at": "2026-10-22T00:39:44Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:11b1d0a7c565504e",
+     "row": "f81109d59fbf64cf",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.1,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  },
+  "emulator_channel_assignment_reports_unassigned": {
+   "last_real": {
+    "at": "2026-10-22T00:39:49Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:474374ed2570b671",
+     "row": "cb99ce07e9de9adc",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.5,
+    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

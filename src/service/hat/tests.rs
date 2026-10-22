@@ -109,7 +109,8 @@ fn queue_output(
     hat.enqueue_output(
         output::Request {
             target: "Bus1.Outputs.Light1".into(),
-            intent,
+            intent: intent.map(output::WriteIntent::Base),
+            include_colour: false,
             context: context(1),
             deadline: until,
             reply,

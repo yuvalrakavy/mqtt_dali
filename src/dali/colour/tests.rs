@@ -6,6 +6,33 @@ fn short(raw: u8) -> Destination {
 }
 
 #[test]
+fn physical_channel_queries_keep_assignment_separate_from_channel_count() {
+    assert_eq!(
+        ChannelIndex::new(5)
+            .unwrap()
+            .query(ShortAddress::new(3).unwrap()),
+        vec![Step::Send(0xa305), Step::Send(0xc108), Step::Query(0x07fc)],
+        "assigned-colour query changed its channel register or opcode"
+    );
+    assert!(ChannelIndex::new(6).is_err());
+    for (raw, slot) in [
+        (0, None),
+        (1, Some(0)),
+        (3, Some(2)),
+        (6, Some(5)),
+        (7, None),
+        (255, None),
+    ] {
+        assert_eq!(AssignedColour::decode(raw).slot(), slot);
+    }
+    assert_eq!(AssignedColour::decode(42), AssignedColour::Unknown(42));
+    assert_eq!(
+        Intent::temperature(Temperature::new(250).unwrap()).kind(),
+        ColourType::Temperature
+    );
+}
+
+#[test]
 fn colour_values_validate_masks_units_and_normalized_boundaries() {
     for raw in [0, 65535] {
         assert!(

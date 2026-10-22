@@ -153,6 +153,7 @@ pub enum Query {
     PhysicalMinimum,
     Version,
     DeviceType,
+    NextDeviceType,
 }
 impl Query {
     fn opcode(self) -> u8 {
@@ -160,6 +161,7 @@ impl Query {
             Self::Status => 0x90,
             Self::Version => 0x97,
             Self::DeviceType => 0x99,
+            Self::NextDeviceType => 0xa7,
             Self::PhysicalMinimum => 0x9a,
             Self::ActualLevel => 0xa0,
             Self::MaximumLevel => 0xa1,
@@ -182,7 +184,7 @@ impl Query {
             Self::MaximumLevel => QueryValue::MaximumLevel(LevelValue::decode(raw)),
             Self::PhysicalMinimum => QueryValue::PhysicalMinimum(LevelValue::decode(raw)),
             Self::Version => QueryValue::Version(raw),
-            Self::DeviceType => QueryValue::DeviceType(match raw {
+            Self::DeviceType | Self::NextDeviceType => QueryValue::DeviceType(match raw {
                 254 => DeviceType::None,
                 255 => DeviceType::Multiple,
                 other => DeviceType::Specific(other),

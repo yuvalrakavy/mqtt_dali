@@ -15,6 +15,8 @@ pub enum Error {
     Channel,
     #[error("RGBWAF intent must change at least one channel")]
     Empty,
+    #[error("RGBWAF physical channel index {0} is outside 0..5")]
+    ChannelIndex(u8),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,6 +98,19 @@ enum Drive {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Intent(Drive);
 impl Intent {
+    pub fn kind(self) -> ColourType {
+        match self.0 {
+            Drive::Temperature(_) => ColourType::Temperature,
+            Drive::Xy(_, _) => ColourType::Xy,
+            Drive::Rgbwaf(_) => ColourType::Rgbwaf,
+        }
+    }
+    pub fn channels(self) -> Option<[Option<Channel>; 6]> {
+        match self.0 {
+            Drive::Rgbwaf(values) => Some(values),
+            _ => None,
+        }
+    }
     pub fn temperature(value: Temperature) -> Self {
         Self(Drive::Temperature(value))
     }
@@ -180,7 +195,7 @@ pub enum Width {
     Byte,
     Word,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ValueQuery {
     X,
     Y,
@@ -196,6 +211,63 @@ pub enum ValueQuery {
     PhysicalCoolest,
     Warmest,
     PhysicalWarmest,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ChannelIndex(u8);
+impl ChannelIndex {
+    pub fn new(raw: u8) -> Result<Self, Error> {
+        if raw > 5 {
+            return Err(Error::ChannelIndex(raw));
+        }
+        Ok(Self(raw))
+    }
+    pub fn query(self, address: ShortAddress) -> Vec<Step> {
+        vec![
+            Step::Send(special(0xa3, self.0)),
+            Step::Send(0xc108),
+            Step::Query(Destination::Short(address).command(0xfc)),
+        ]
+    }
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AssignedColour {
+    Unassigned,
+    Red,
+    Green,
+    Blue,
+    White,
+    Amber,
+    Free,
+    Mask,
+    Unknown(u8),
+}
+impl AssignedColour {
+    pub fn decode(raw: u8) -> Self {
+        match raw {
+            0 => Self::Unassigned,
+            1 => Self::Red,
+            2 => Self::Green,
+            3 => Self::Blue,
+            4 => Self::White,
+            5 => Self::Amber,
+            6 => Self::Free,
+            255 => Self::Mask,
+            other => Self::Unknown(other),
+        }
+    }
+    /// Logical colour slot, independent of the physical output channel queried.
+    pub fn slot(self) -> Option<usize> {
+        match self {
+            Self::Red => Some(0),
+            Self::Green => Some(1),
+            Self::Blue => Some(2),
+            Self::White => Some(3),
+            Self::Amber => Some(4),
+            Self::Free => Some(5),
+            _ => None,
+        }
+    }
 }
 impl ValueQuery {
     pub fn width(self) -> Width {

@@ -1,0 +1,109 @@
+# Each control mutates one guard and must fail a named behavior test.
+
+[[control]]
+name = "colour_manual_activation_preflight_removed"
+file = "src/service/output/colour.rs"
+anchor = "if !matches!(self.gear_features, Some(Reply::Value(raw)) if raw & 1 == 0) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_preflight_rejects)"]
+expect_text = "invalid colour preflight reached mutation"
+
+[[control]]
+name = "colour_normalized_control_preflight_removed"
+file = "src/service/output/colour.rs"
+anchor = "if !matches!(self.control, Some(Reply::Value(raw)) if raw >> 6 == 2) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_preflight_rejects)"]
+expect_text = "invalid colour preflight reached mutation"
+
+[[control]]
+name = "colour_assignment_preflight_removed"
+file = "src/service/output/colour.rs"
+anchor = "if value.is_some()\n                    && !self"
+replacement = "if false && value.is_some()\n                    && !self"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_preflight_rejects)"]
+expect_text = "invalid colour preflight reached mutation"
+
+[[control]]
+name = "colour_supported_representation_guard_removed"
+file = "src/service/output/colour.rs"
+anchor = "if self.dt8 != Some(true) || !self.supported(intent.kind()) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_preflight_rejects)"]
+expect_text = "invalid colour preflight reached mutation"
+
+[[control]]
+name = "colour_confirmation_accepts_another_active_kind"
+file = "src/service/output/colour.rs"
+anchor = "&& self.active() == Some(intent.kind())"
+replacement = "&& self.active().is_some()"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_ignored_activate)"]
+expect_text = "different active kind falsely confirmed colour write"
+
+[[control]]
+name = "colour_base_success_requires_incidental_colour"
+file = "src/service/output.rs"
+anchor = "Ok(()) if intent.is_some() && observation.quality != Quality::Current => Some("
+replacement = "Ok(()) if intent.is_some() && (observation.quality != Quality::Current || observation.colour.as_ref().is_some_and(|sample| sample.quality != colour::Quality::Current)) => Some("
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_incidental_failures)"]
+expect_text = "incidental colour failure rejected an observed base write"
+
+[[control]]
+name = "colour_base_refresh_forgets_known_colour"
+file = "src/service/output.rs"
+anchor = "&& sample.colour.is_some()"
+replacement = "&& false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_reads_actual)"]
+expect_text = "called `Option::unwrap()` on a `None` value"
+
+[[control]]
+name = "colour_type_enumeration_accepts_repeated_prefix"
+file = "src/service/output/colour.rs"
+anchor = "previous.is_none_or(|p| value > p)"
+replacement = "previous.is_none_or(|_p| true)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_enumerates_multiple)"]
+expect_text = "invalid type enumeration guessed DT8"
+
+[[control]]
+name = "colour_failed_high_still_queries_low"
+file = "src/service/output/colour.rs"
+anchor = "if !matches!(reply, BusReply::Value(_)) {\n                    break;"
+replacement = "if !matches!(reply, BusReply::Value(_)) {\n                    continue;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_failed_word_bytes)"]
+expect_text = "failed word high still queried low register"
+
+[[control]]
+name = "colour_activation_is_omitted"
+file = "src/service/output/colour.rs"
+anchor = "for value in intent.frames(gear::Destination::Short(route.address)) {"
+replacement = "for value in intent.frames(gear::Destination::Short(route.address)).into_iter().filter(|value| value & 255 != 0xe2) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_reads_actual)"]
+expect_text = "colour write echoed intent instead of actual clamp"
+
+[[control]]
+name = "colour_uart_invalidation_leaves_colour_current"
+file = "src/service/output.rs"
+anchor = "colour.quality = colour::Quality::Stale;"
+replacement = "let _ = colour::Quality::Stale;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_final_epoch)"]
+expect_text = "final UART invalidation left colour current"
+
+[[control]]
+name = "emulator_channel_assignment_reports_unassigned"
+file = "src/emulator/colour.rs"
+anchor = ".map_or(255, |_| dtr[0] + 1),"
+replacement = ".map_or(255, |_| 0),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_channel_assignments)"]
+expect_text = "emulator assigned-colour reply lost the physical profile role"

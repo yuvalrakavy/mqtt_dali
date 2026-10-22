@@ -3,6 +3,18 @@ use crate::atx::transactions::BusReply;
 use crate::atx::wire::{Command, DaliFrame};
 
 #[test]
+fn next_device_type_uses_the_standard_query_and_retains_termination() {
+    assert_eq!(
+        ShortAddress::new(3).unwrap().query(Query::NextDeviceType),
+        0x07a7
+    );
+    assert_eq!(
+        Query::NextDeviceType.decode(BusReply::Value(254)),
+        QueryReply::Value(QueryValue::DeviceType(DeviceType::None))
+    );
+}
+
+#[test]
 fn address_bounds_are_rejected_before_frame_creation() {
     assert!(ShortAddress::new(63).is_ok());
     for raw in [64, 127, 255] {

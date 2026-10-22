@@ -2,8 +2,8 @@
 
 `dali::colour` provides typed Part 209 values and complete 16-bit frame plans.
 It performs no UART, MQTT, persistence, discovery or emulator operations. The
-canonical daemon currently still exposes the base output and live input paths;
-colour service execution and capability discovery are subsequent work. The
+canonical daemon currently exposes the base output and live input MQTT paths;
+the library service also supports owned colour operations described below. The
 [independent HAT emulator](emulator.md#colour-fixtures) now provides selected
 physical DT8 semantics for later integration tests; it does not import this codec.
 
@@ -30,8 +30,62 @@ representation. RGBWAF order is red, green, blue, white, amber, free colour.
 Each optional channel is either a validated value or unchanged MASK; an entirely
 unchanged intent is rejected. Sending RGB does not clear WAF. Plans do not
 select a new RGBWAF control mode, alter power or master brightness, or convert
-RGB into xy. The later executor must discover capability, active mode and limits
-before accepting an operation. DT8 alone does not imply RGB support.
+RGB into xy. The service discovers capability, active mode and limits before
+accepting an operation. DT8 alone does not imply RGB support.
+
+## Owned service operations
+
+`ServiceHandle::read_colour` and `apply_colour` use the same capacity-one output
+owner as base output operations. Supply the named individual output, original
+request context and absolute deadline. Writes require the current target
+generation. These library APIs do not add MQTT properties or browser controls.
+A whole operation owns DTRs and device-type selection through actual helper
+settlement, including when its frontend is cancelled. Native input events keep
+flowing through the existing UART reader. No UART recovery behavior is added.
+
+The service reads actual level/status, discovers device type 8, and queries colour
+features/status. Multiple device types are enumerated without intervening frames,
+with a strictly ascending prefix and at most nine next-type queries before
+finding or passing 8. Unknown replies do not establish capability. RGBWAF channel
+counts are separate from physical channel roles: QUERY ASSIGNED COLOUR identifies
+each supported output channel, retaining unassigned, MASK and unknown bytes.
+
+This first internal service implementation permits colour writes only when a
+fresh gear-features reply confirms manual activation. Enabled or unknown automatic
+activation is rejected before setters; persistent gear settings are never changed
+implicitly. RGBWAF writes additionally require normalized control mode and a
+confirmed assignment for every requested logical colour. Unsupported modes and
+representations are rejected with actual base evidence retained. Automatic
+activation and combined base/colour ordering remain required work before general
+MQTT colour mutation is exposed.
+
+Successful writes include new actual base/status/colour reads. The active
+representation must match the requested type, with usable actual values; intended
+values are never substituted. A clamped Tc can succeed and retains the range bit
+and supported physical/configured limits. A different complete active type is
+reported as actual evidence but returns `Uncertain`. A current sample during a
+fade does not promise that the fade has finished or that a requested value was
+reached exactly. Primary-N is reported but cannot be controlled by these APIs.
+
+`output::Observation::colour` contains separate colour quality, DT8 presence,
+raw device-type replies/prefix, gear/type/status/control replies, physical channel
+assignments and a map of typed actual values. `raw_values` retains each value
+plan's replies in order, including its leading actual-level query, high/byte reply
+and (for a successful word high) low byte. No missing byte becomes zero. The
+`active()` and `value()` accessors suppress stale evidence; raw fields remain for
+diagnostics under their recorded quality. The outer observation carries the one
+original context and UART/bus stamp for the entire sample.
+
+Once colour has been sampled at a target, subsequent base reads/writes include
+fresh colour samples instead of copying old fields under a new trace. A normal
+missing/collided incidental colour reply degrades colour independently and does
+not fail a successful observed on/off or brightness write. Transport uncertainty
+still uses existing whole-output invalidation. Rename/address reuse retires the
+old sample and token, and epoch loss marks colour stale with its base observation.
+
+All evidence currently comes from private PTYs, an independent literal ATX peer
+and the independent HAT emulator. Physical firmware/fixture verification remains
+outstanding. See the [support matrix](support-matrix.md) for unfinished modes.
 
 ## Integrating a plan
 

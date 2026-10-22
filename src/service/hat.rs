@@ -737,11 +737,15 @@ impl Hat {
                 let span = route.context.operation_span(&route.controller, "output");
                 let stamp = physical.stamp;
                 let intent = physical.request.intent;
+                let include_colour = physical.request.include_colour;
                 let deadline = physical.request.deadline;
                 self.spawn(
                     JobKind::Output,
                     async move {
-                        Done::Output(output::execute(link, route, stamp, intent, deadline).await)
+                        Done::Output(
+                            output::execute(link, route, stamp, intent, include_colour, deadline)
+                                .await,
+                        )
                     }
                     .instrument(span),
                 );
