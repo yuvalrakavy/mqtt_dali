@@ -986,6 +986,10 @@ Logs: `/tmp/dali-colour-selection-review-controls` and
 `/tmp/dali-colour-selection-review-restored-gate`. Corrected frozen-source
 acceptance follows; no UART/SDK/physical setting behavior changed.
 
+Corrected frozen `1a2a472` is approved by both sequential source gates against
+`dfd10de`, with no remaining material findings. Reviewers inspected source/tests/
+controls only and ran no verification; same-model-family limitation applies.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |

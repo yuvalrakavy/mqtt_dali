@@ -134,3 +134,8 @@ passing. All eleven selection controls now detect their declared faults. The
 new enum injector initially used an unavailable Map method; that compile failure
 was not counted, the injector was corrected to the locked API and rerun RED at
 the intended assertion. No new physical or SDK behavior changed.
+
+Both sequential source gates approve corrected frozen `1a2a472` against `dfd10de`.
+The first verified its bounded corrections; the second reviewed the full slice
+and found no additional material issue. Both reviews were read-only, source-only
+and same-family, with no tests/builds/controls/mutations performed by reviewers.
