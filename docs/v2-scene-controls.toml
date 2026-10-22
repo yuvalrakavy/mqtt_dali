@@ -100,7 +100,7 @@ expect_text = "copying scene report activated colour"
 [[control]]
 name = "scene_rgb_control_is_ignored"
 file = "src/emulator/colour.rs"
-anchor = "self.actual_control = staged.control;"
+anchor = "self.actual_control = staged.control & (0xc0 | linked_mask);"
 replacement = "self.actual_control = 0x80;"
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_rgb_masks_control)"]
@@ -132,6 +132,15 @@ replacement = "Some(ColourType::Temperature) if staged.temperature != 65535 => {
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_all_masked_selected)"]
 expect_text = "scene MASK value prevented selected-family activation"
+
+[[control]]
+name = "scene_control_links_unsupported_channels"
+file = "src/emulator/colour.rs"
+anchor = "self.actual_control = staged.control & (0xc0 | linked_mask);"
+replacement = "self.actual_control = staged.control;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_rgb_control_links_only)"]
+expect_text = "scene RGB control linked unsupported channels"
 
 [[control]]
 name = "scene_reset_retains_colour"

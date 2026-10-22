@@ -137,7 +137,8 @@ impl State {
                     }
                     self.actual.active = ColourType::Rgbwaf;
                     if staged.control != 255 {
-                        self.actual_control = staged.control;
+                        let linked_mask = (1_u8 << channels.len()) - 1;
+                        self.actual_control = staged.control & (0xc0 | linked_mask);
                     }
                     self.temperature_out_of_range = false;
                 }

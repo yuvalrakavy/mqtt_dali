@@ -402,3 +402,51 @@ fn scene_all_masked_selected_families_switch_type_in_auto_and_manual_modes() {
         }
     }
 }
+
+#[test]
+fn scene_rgb_control_links_only_supported_channels_and_preserves_mode_and_mask() {
+    for (count, control, expected) in [
+        (3, 0xbf, 0x87),
+        (1, 0x3f, 0x01),
+        (2, 0x7f, 0x43),
+        (4, 0xbf, 0x8f),
+        (5, 0x3f, 0x1f),
+        (6, 0x7f, 0x7f),
+    ] {
+        let mut m = Model::new(
+            serde_json::from_value(json!({"version":1,"clock":"frozen","buses":[
+                {"number":0,"outputs":[{"id":"rgb","short_address":3,"level":100,"device_type":8,
+                    "colour":{"active":"rgbwaf","auto_activation":true,"rgbwaf":vec![10;count]}}]}
+            ]}))
+            .unwrap(),
+        )
+        .unwrap();
+        stage_masked(&mut m, 0x80);
+        send(&mut m, &[0xa300 | control, 0xc108, 0x07ed]);
+        store(&mut m, 0, 255);
+        send(&mut m, &[0x0710, 0xc108]);
+        assert_eq!(
+            m.transmit(0, 0x07fb, 0),
+            Reply::Value(expected),
+            "scene RGB control linked unsupported channels"
+        );
+        assert_eq!(m.transmit(0, 0x07a0, 0), Reply::Value(100));
+        assert_eq!(
+            value(&mut m, 239),
+            expected,
+            "actual RGB report retained unsupported linked channels"
+        );
+        stage_masked(&mut m, 0x80);
+        store(&mut m, 1, 255);
+        send(&mut m, &[0x0711, 0xc108]);
+        assert_eq!(
+            m.transmit(0, 0x07fb, 0),
+            Reply::Value(expected),
+            "MASK scene control did not preserve normalized links and mode"
+        );
+        assert_eq!(
+            m.snapshot()["buses"][0]["outputs"][0]["colour_state"]["actual"]["rgbwaf"],
+            json!(vec![10; count])
+        );
+    }
+}

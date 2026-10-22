@@ -44,6 +44,17 @@ scene control pass their declared checks; two affected old Tc/cleanup controls
 remain RED. Correct the two older documentation claims too. Logs:
 `/tmp/dali-scenes-masked-family-red.log` and `/tmp/dali-scenes-review-controls`.
 Restored regression and source rechecks follow.
+
+The first reviewer's corrected-source recheck approves (10 s). The second full
+review requests one correction (55 s): actual RGBWAF control must report links to
+unsupported channels as zero. A three-channel literal case first fails with BF
+instead of 87. Normalize supported links while preserving mode bits and MASK;
+the regression varies one through six channels and checks recall, direct query,
+actual report and subsequent masked control. Seventeen focused cases pass; the
+seventeenth scene control and two affected RGB/control controls have intended
+REDs. Logs: `/tmp/dali-scenes-channel-links-red.log` and
+`/tmp/dali-scenes-links-controls`. Full restored verification and both final
+source rechecks follow.
 See the [scene contract](dali-scenes-contract.md) and
 [slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scenes.md).
 

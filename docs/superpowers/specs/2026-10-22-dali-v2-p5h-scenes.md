@@ -155,11 +155,11 @@ requires temporary RGBWAF control to select RGBWAF type; a separate failing-firs
 case establishes that control-only scene staging clears prior pending Tc.
 
 Every P5h1 part in the table has its code and a named test: five literal codec
-tests in `dali/scenes/tests.rs`, eight literal physical tests in
+tests in `dali/scenes/tests.rs`, nine literal physical tests in
 `emulator/model/scene_tests.rs`, and
 `standalone_native_scene_codec_programs_and_queries_physical_colour_over_pty`.
 The existing live-colour vectors remain exercised. The whole scene-filtered run
-has fifteen cases including the pre-existing base scene test.
+has sixteen cases including the pre-existing base scene test.
 
 All fifteen scene sensitivity controls have intended behavioral REDs, followed
 by source restoration. Three affected older controls are also retargeted:
@@ -182,3 +182,13 @@ MASK while selecting its family and consuming temporaries. Both older doc claims
 are corrected. Sixteen focused cases and the sixteenth scene control pass their
 declared checks; two affected old controls remain RED. Restored acceptance and
 frozen rechecks follow. See `/tmp/dali-scenes-review-controls`.
+
+The first corrected-source recheck approves (10 s). The second full review
+requests unsupported RGBWAF link bits read zero (55 s; IEC command 251). A
+three-channel case first fails BF versus 87, then a literal matrix verifies all
+one-to-six channel counts, the three supported mode bit pairs, actual report,
+recall and later MASK preservation. Normalize actual links at activation; scene
+storage and mode bits retain their existing semantics. Seventeen focused cases,
+the seventeenth scene control and two affected RGB controls pass their declared
+checks. Logs: `/tmp/dali-scenes-links-controls`. Final restored acceptance and
+both source rechecks follow.

@@ -68,6 +68,9 @@ Scenario version 1 and configured level scenes remain valid. Colour scenes start
 masked and are programmed through native commands. QueryActualLevel and
 StoreActualLevelInDTR select actual colour for reporting.
 
+Actual RGBWAF control reports unsupported channel links as zero while preserving
+the selected mode. Tests vary physical profiles from one through six channels.
+
 The model covers immediate values and masks. Fades, photometry, colour-space
 conversion, RGBWAF linking/control-mode effects on arc power, other DT8 settings
 and hardware conformance remain outside this increment.

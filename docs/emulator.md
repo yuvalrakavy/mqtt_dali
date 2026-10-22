@@ -149,6 +149,7 @@ Word values return their MSB, place it in DTR1 and place the LSB in DTR0. RGBWAF
 byte queries preserve both registers. Inactive/unsupported representations return MASK, without inventing
 a converted colour. RGBWAF control starts at 0x80 and follows temporary
 control/ACTIVATE and native scene recall; xy/Tc activation unlinks channels.
+Actual control masks links to unsupported channels while preserving mode bits.
 Gear features report the profile's automatic-activation bit and no automatic calibration.
 
 With automatic activation enabled, the supported immediate base commands (OFF,
