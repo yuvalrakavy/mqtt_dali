@@ -35,6 +35,15 @@ pub fn run() -> ExitCode {
             "uart-quiet-ms",
             "quiet recovery interval, 1..5000 ms (default 250)",
         ),
+        (
+            "web-bind",
+            "enable web access at IP:port (disabled by default)",
+        ),
+        (
+            "web-origin",
+            "canonical browser http(s) origin; do not infer proxy headers",
+        ),
+        ("web-password", "web password (or MQTT_DALI_WEB_PASSWORD)"),
     ]
     .into_iter()
     .map(|(key, help)| (key.into(), help.into()))
@@ -55,6 +64,7 @@ pub fn run() -> ExitCode {
         .as_ref()
         .map_err(Clone::clone)
         .and_then(|args| config::parse(args.clone(), &mut settings, &declared));
+    let mut web = None;
     let parsed = parsed.and_then(|()| {
         for (option, _) in &declared {
             if settings.options.get(option).is_some_and(String::is_empty) {
@@ -62,6 +72,7 @@ pub fn run() -> ExitCode {
             }
         }
         uart_quiet(settings.options.get("uart-quiet-ms").map(String::as_str))?;
+        web = web_options(&mut settings)?;
         uart_repeat(
             settings
                 .options
@@ -90,9 +101,11 @@ pub fn run() -> ExitCode {
     );
     let mut bridge = Bridge::new("DALI").app_name("mqtt_dali").version(&version);
     for (key, help) in &declared {
-        bridge = bridge.option(key, help);
+        if key != "web-password" {
+            bridge = bridge.option(key, help);
+        }
     }
-    let bridge = bridge.args(arguments.expect("validated arguments"));
+    let bridge = bridge.args(runtime_arguments(arguments.expect("validated arguments")));
     let paths = ConfigPaths {
         current: bridge.value("config").unwrap_or("dali.v2.json").into(),
         legacy: bridge.value("legacy-config").unwrap_or("dali.json").into(),
@@ -103,6 +116,9 @@ pub fn run() -> ExitCode {
         .clone()
         .expect("validated required instance");
     let (mut service, _handle) = DaliService::new(paths, instance);
+    if let Some(web) = web {
+        service = service.with_web(web);
+    }
     let uart = bridge.value("uart").unwrap_or("/dev/serial0");
     if uart != "none" {
         service = service.with_uart(
@@ -117,6 +133,60 @@ pub fn run() -> ExitCode {
     }
     // WAIT: v2-daemon-run
     bridge.run_managed(service)
+}
+
+fn web_options(settings: &mut Settings) -> Result<Option<crate::web::Settings>, Problem> {
+    let password = settings.options.remove("web-password");
+    let Some(bind) = settings.options.get("web-bind") else {
+        if password.is_some() || settings.options.contains_key("web-origin") {
+            return Err(Problem::Usage("web options require --web-bind".into()));
+        }
+        return Ok(None);
+    };
+    let bind: std::net::SocketAddr = bind
+        .parse()
+        .map_err(|_| Problem::Usage("--web-bind must be IP:port".into()))?;
+    if bind.port() == 0 {
+        return Err(Problem::Usage("--web-bind requires a nonzero port".into()));
+    }
+    let origin = settings
+        .options
+        .get("web-origin")
+        .ok_or_else(|| Problem::Usage("web requires --web-origin".into()))?;
+    let password = match password {
+        Some(password) => password,
+        None => match std::env::var("MQTT_DALI_WEB_PASSWORD") {
+            Ok(password) => password,
+            Err(std::env::VarError::NotPresent) => String::new(),
+            Err(_) => return Err(Problem::Usage("web password must be valid UTF-8".into())),
+        },
+    };
+    crate::web::Settings::new(bind, origin, &password)
+        .map(Some)
+        .map_err(Problem::Usage)
+}
+/// Privacy transform after the shared parser accepts the grammar. Every ordinary
+/// option still keeps its literal value, even if that value looks like a flag.
+fn runtime_arguments(arguments: Vec<String>) -> Vec<String> {
+    let mut source = arguments.into_iter();
+    let mut result = Vec::new();
+    while let Some(flag) = source.next() {
+        if flag == "--web-password" {
+            source.next();
+            continue;
+        }
+        if flag.starts_with("--web-password=") {
+            continue;
+        }
+        let separate = flag.starts_with("--") && !flag.contains('=');
+        result.push(flag);
+        if separate {
+            if let Some(value) = source.next() {
+                result.push(value);
+            }
+        }
+    }
+    result
 }
 
 fn uart_repeat(value: Option<&str>) -> Result<RepeatPolicy, Problem> {
@@ -156,4 +226,55 @@ fn offline_check(arguments: &[std::ffi::OsString]) -> bool {
         }
     }
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn web_password_is_consumed_before_runtime_settings_and_literal_values_survive() {
+        let secret = "unique-web-secret-9e8c169f91";
+        let options = vec![
+            ("web-password".into(), "password".into()),
+            ("web-bind".into(), "bind".into()),
+            ("web-origin".into(), "origin".into()),
+        ];
+        for password in [
+            vec!["--web-password".to_owned(), secret.into()],
+            vec![format!("--web-password={secret}")],
+        ] {
+            let mut args = vec![
+                "--instance".into(),
+                "--web-password".into(),
+                "--broker".into(),
+                "127.0.0.1:9".into(),
+                "--web-bind".into(),
+                "127.0.0.1:8080".into(),
+                "--web-origin".into(),
+                "http://localhost:8080".into(),
+            ];
+            args.extend(password);
+            let mut preflight = Settings::new("DALI");
+            config::parse(args.clone(), &mut preflight, &options).unwrap();
+            assert!(web_options(&mut preflight).unwrap().is_some());
+            assert!(
+                !format!("{preflight:?}").contains(secret),
+                "preflight retained web credential in Debug settings"
+            );
+            let sanitized = runtime_arguments(args);
+            let mut runtime = Settings::new("DALI");
+            let ordinary: Vec<_> = options
+                .iter()
+                .filter(|(name, _)| name != "web-password")
+                .cloned()
+                .collect();
+            config::parse(sanitized, &mut runtime, &ordinary).unwrap();
+            assert_eq!(runtime.instance.as_deref(), Some("--web-password"));
+            assert!(!runtime.options.contains_key("web-password"));
+            assert!(
+                !format!("{runtime:?}").contains(secret),
+                "runtime Debug settings retained web credential"
+            );
+        }
+    }
 }

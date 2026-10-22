@@ -5,6 +5,55 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P6a — authenticated HTTP foundation
+
+Implement the independent API/lifecycle foundation while remaining P4/P5 actions
+stay open. Add optional Axum server owned by DaliService, explicit startup
+password/origin, fixed-size verifier and cookie sessions, Origin/CSRF gates,
+protected public-inventory/status snapshots and pull-based SSE. Idle expiry is
+30 minutes, absolute 12 hours; explicit user activity alone renews inactivity.
+No URL/Bearer auth, persisted sessions, default password, SDK or recovery change.
+P7 still supplies the approved HTML/Preact screens and typed mutation/job routes
+follow; `/login` currently returns minimum identity JSON, not a finished UI.
+
+Design gate 1 found raw credential retention in the SDK's Debug Settings; consume
+the option and strip separate/inline password arguments before Bridge composition.
+Both sequential gates approve the amended design. Cached Axum source showed
+outer-task abort does not own its spawned connections: accepted IO now carries
+forced cancellation and a permit, with actual-drop accounting at close. Share
+the existing startup and absolute cleanup ceilings; no second daemon/framework.
+
+The first process regression fails at its missing-password preflight assertion
+before production. Initial compile-only module-path failure is not behavioral
+evidence. Early socket tests catch URI parsing accepting a nonnumeric port;
+explicit authority-suffix validation fixes it. Fifteen focused tests pass before
+the added standalone password-verifier control test: direct routes, origin/CSRF,
+cookie-only/secure flags, rate/cap/rotation, idle/absolute expiry, live logout,
+latest inventory, occupied/expired bind, broker-without-CONNACK usability,
+actual managed stop, incomplete-upload forced cleanup and canonical CLI/environment
+credential privacy. New dependencies preserve existing futures/tokio-util lock
+versions rather than upgrading their graph incidentally.
+
+All **19 behavioral controls** fail at their declared assertions after restoration.
+The first stream-cap control was WRONG-REASON: the test helper waited for an
+incorrectly accepted infinite response body before asserting status. A captured
+diagnostic confirms that timeout. Assert response headers first; the corrected
+control is RED. Five additional password/privacy/cookie/upload controls are RED.
+Logs: `/tmp/dali-web-controls.log`,
+`/tmp/dali-web-stream-control-diagnostic.log`, `/tmp/dali-web-additional-controls.log`.
+
+Restored acceptance passes **492/492 native tests** across 11 binaries (four
+processes), scoped strict Clippy, Pi library/all four binaries, doctests (none),
+changed-file format, whitespace, control plan and wait-registry validation (zero
+findings). Logs: `/tmp/dali-web-acceptance`. The wait helper was initially invoked
+from the bridge checkout and inherited its Pi target; rerunning from its native
+SDK checkout succeeds. No SDK source or production runtime change resulted.
+Frozen source gates follow before acceptance.
+An isolated headless Chrome probe opens about:blank at phone
+viewport, confirming local Playwright capability; no feature/browser pass claimed.
+See [operator/API guide](web-access.md), [design](superpowers/specs/2026-10-22-dali-v2-p6a-web-foundation.md)
+and `v2-web-controls.toml`.
+
 ## P5f — one unaddressed input-module assignment
 
 Extend the existing owned commissioning flow with explicit output/input address
@@ -1390,7 +1439,7 @@ no verification. Physical hardware validation remains outstanding.
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
 | P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal and per-fixture group membership implemented | Full reassign/restore, identification, browser/pattern group workflows and native scenes |
-| P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
+| P6 authenticated HTTP | Session/lifecycle/status API foundation in progress | Shared-service mutations/job routes and complete protected frontend integration |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |

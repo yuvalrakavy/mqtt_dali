@@ -10,3 +10,4 @@ pub mod emulator;
 pub mod inventory;
 pub mod service;
 pub mod targets;
+pub mod web;

@@ -8,7 +8,10 @@ supports [live bus setup](bus-setup.md),
 [input State, current-value queries and native events](mqtt-inputs.md),
 [discovery of already addressed devices](discovery.md) and
 [one-at-a-time unaddressed output/input assignment](commissioning.md).
-Full readdress/restore and the web interface remain in development.
+An [optional authenticated HTTP foundation](web-access.md) serves protected saved
+inventory/live status; the approved browser UI, full readdress/restore and remaining
+capabilities are still in development. Web is disabled by default and requires an
+explicit password; there is no shared default.
 
 Start one controller with an MQTT broker and its own writable config directory:
 

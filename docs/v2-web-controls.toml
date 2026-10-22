@@ -1,0 +1,184 @@
+[[control]]
+name = "web_protected_router_omits_authentication"
+file = "src/web/handlers.rs"
+anchor = ".layer(middleware::from_fn_with_state(state.clone(), protect));"
+replacement = ";"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_http_protects_direct_urls)"]
+expect_text = "direct protected API bypassed authentication"
+
+[[control]]
+name = "web_accepts_untrusted_login_origin"
+file = "src/web/handlers.rs"
+anchor = "values.len() == 1 && values[0].as_bytes() == state.settings.origin.as_bytes()"
+replacement = "!values.is_empty()"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_http_origin_csrf_rotation)"]
+expect_text = "login origin check was bypassed"
+
+[[control]]
+name = "web_skips_csrf_comparison"
+file = "src/web/handlers.rs"
+anchor = "!bool::from(session.access.csrf.as_bytes().ct_eq(tokens[0].as_bytes()))"
+replacement = "false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_http_origin_csrf_rotation)"]
+expect_text = "logout bypassed origin or CSRF protection"
+
+[[control]]
+name = "web_passive_access_extends_idle_session"
+file = "src/web/auth.rs"
+anchor = "let session = self.sessions.get(token)?;"
+replacement = "let session = self.sessions.get_mut(token)?; session.activity=now;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_auth_enforces_idle)"]
+expect_text = "passive inspection extended idle expiry"
+
+[[control]]
+name = "web_activity_bypasses_absolute_expiry"
+file = "src/web/auth.rs"
+anchor = "(session.activity + policy.idle).min(session.created + policy.absolute)"
+replacement = "session.activity + policy.idle"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_auth_enforces_idle)"]
+expect_text = "user activity bypassed absolute expiry"
+
+[[control]]
+name = "web_password_guessing_bypasses_rate_limit"
+file = "src/web/auth.rs"
+anchor = "if self.attempts.len() >= self.policy.attempts {"
+replacement = "if false && self.attempts.len() >= self.policy.attempts {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_http_rate_secure_cookie)"]
+expect_text = "HTTP password guessing bypassed rate limit"
+
+[[control]]
+name = "web_session_map_ignores_capacity"
+file = "src/web/auth.rs"
+anchor = "if self.sessions.len() >= policy.sessions {"
+replacement = "if false && self.sessions.len() >= policy.sessions {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_auth_enforces_idle)"]
+expect_text = "session cap was ignored"
+
+[[control]]
+name = "web_sse_ignores_session_revocation"
+file = "src/web/handlers.rs"
+anchor = "let allowed = access(&stream.state, &stream.token)?;"
+replacement = "let allowed = Access {csrf:String::new(),expires:Instant::now()+Duration::from_secs(60),absolute:Instant::now()+Duration::from_secs(60)};"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_http_origin_csrf_rotation)"]
+expect_text = "SSE did not wake or terminate"
+
+[[control]]
+name = "web_sse_never_wakes_for_expiry"
+file = "src/web/handlers.rs"
+anchor = "_=tokio::time::sleep_until(allowed.expires)=>{},"
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_sse_idle_expiry)"]
+expect_text = "SSE did not wake or terminate"
+
+[[control]]
+name = "web_tcp_connection_cap_is_bypassed"
+file = "src/web/transport.rs"
+anchor = '''            let Ok(permit) = self.slots.clone().try_acquire_owned() else {
+                drop(stream);
+                continue;
+            };'''
+replacement = "let permit=self.slots.clone().try_acquire_owned().unwrap_or_else(|_| Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap());"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_stream_and_connection_caps)"]
+expect_text = "accepted TCP connection cap was ignored"
+
+[[control]]
+name = "web_stream_capacity_is_bypassed"
+file = "src/web/handlers.rs"
+anchor = '''    let Ok(permit) = state.streams.clone().try_acquire_owned() else {
+        return error(StatusCode::SERVICE_UNAVAILABLE, "too many live streams");
+    };'''
+replacement = "let permit=state.streams.clone().try_acquire_owned().unwrap_or_else(|_| Arc::new(tokio::sync::Semaphore::new(1)).try_acquire_owned().unwrap());"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_stream_and_connection_caps)"]
+expect_text = "SSE subscription cap was ignored"
+
+[[control]]
+name = "web_forced_close_does_not_cancel_accepted_io"
+file = "src/web/server.rs"
+anchor = '''    fn force_connections(&self) {
+        self.force.cancel();
+    }'''
+replacement = "    fn force_connections(&self) {}"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_forced_close_destroys)"]
+expect_text = "forced web shutdown did not destroy admitted body reader"
+
+[[control]]
+name = "web_shutdown_ignores_actual_connection_drop"
+file = "src/web/server.rs"
+anchor = '''        let destroyed = timeout_at(
+            deadline,
+            self.connections
+                .clone()
+                .acquire_many_owned(transport::CONNECTIONS),
+        )
+        .await
+        .is_ok_and(|r| r.is_ok());'''
+replacement = "        let destroyed = true;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_close_reports_incomplete)"]
+expect_text = "web close ignored an outstanding connection ownership permit"
+
+[[control]]
+name = "web_cli_password_enters_shared_runtime_arguments"
+file = "src/daemon.rs"
+anchor = "bridge.args(runtime_arguments(arguments.expect(\"validated arguments\")))"
+replacement = "bridge.args(arguments.expect(\"validated arguments\"))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","v2_process","-E","test(web_canonical_daemon_accepts)"]
+expect_text = "canonical daemon failed before authenticated HTTP startup"
+
+[[control]]
+name = "web_password_comparison_is_skipped"
+file = "src/web/auth.rs"
+anchor = "!bool::from(self.password.ct_eq(&digest(password)))"
+replacement = "false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_password_verifier_refuses)"]
+expect_text = "password verifier accepted a wrong credential"
+
+[[control]]
+name = "web_preflight_debug_settings_retain_password"
+file = "src/daemon.rs"
+anchor = 'let password = settings.options.remove("web-password");'
+replacement = 'let password = settings.options.get("web-password").cloned();'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_password_is_consumed)"]
+expect_text = "preflight retained web credential in Debug settings"
+
+[[control]]
+name = "web_https_cookie_omits_secure_attribute"
+file = "src/web/handlers.rs"
+anchor = "if state.settings.secure {"
+replacement = "if false && state.settings.secure {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_http_rate_secure_cookie)"]
+expect_text = "secure session cookie omitted required attribute"
+
+[[control]]
+name = "web_handler_capacity_is_bypassed"
+file = "src/web/handlers.rs"
+anchor = "match state.handlers.clone().try_acquire_owned() {"
+replacement = "match state.handlers.clone().try_acquire_owned().or_else(|_| Arc::new(tokio::sync::Semaphore::new(1)).try_acquire_owned()) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_incomplete_uploads_are_capacity)"]
+expect_text = "HTTP handler capacity was ignored"
+
+[[control]]
+name = "web_body_read_loses_its_deadline"
+file = "src/web/handlers.rs"
+anchor = "timeout(Duration::from_secs(5), next.run(request))"
+replacement = "timeout(Duration::from_secs(50), next.run(request))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_incomplete_uploads_are_capacity)"]
+expect_text = "HTTP body read exceeded its request deadline"

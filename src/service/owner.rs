@@ -465,6 +465,19 @@ impl ProcessService for DaliService {
         }
         let table = routing::generations(&model);
         self.update_snapshot(model.clone(), Phase::AwaitingRuntime);
+        let mut web = match self.web.take() {
+            Some(settings) => {
+                match crate::web::Server::start(settings, self.handle.clone(), deadline).await {
+                    Ok(server) => Some(server),
+                    Err(error) => {
+                        // WAIT: v2-store-close
+                        store.close(Instant::now() + Duration::from_secs(1)).await;
+                        return Err(error);
+                    }
+                }
+            }
+            None => None,
+        };
         if let Err(error) = context.ready(DaliProxy {
             handle: self.handle.clone(),
             initial: table.clone(),
@@ -503,6 +516,10 @@ impl ProcessService for DaliService {
             let message = tokio::select! {
                 biased;
                 _=context.cancelled()=>break,
+                result=crate::web::server::changed(&mut web)=> {
+                    failure=Some(result.err().unwrap_or_else(||"web server ended unexpectedly".into()));
+                    break;
+                },
                 message=self.receive.recv()=>match message {Some(message)=>Some(message),None=>break},
                 result=hat.changed()=>{
                     if let Err(error)=result { failure=Some(error);break; }
@@ -731,6 +748,9 @@ impl ProcessService for DaliService {
             }
         }
         self.handle.permit.close();
+        if let Some(web) = &web {
+            web.begin_stop();
+        }
         self.receive.close();
         self.update_snapshot(owner.model.clone(), Phase::Stopping);
         while let Ok(message) = self.receive.try_recv() {
@@ -769,8 +789,18 @@ impl ProcessService for DaliService {
         self.state.send_replace(Some(snapshot.clone()));
         let _ = self.handle.updates.send(snapshot);
         // WAIT: v2-store-close
-        if !owner.store.close(deadline).await {
+        let disk = owner.store.close(deadline).await;
+        let http = if let Some(web) = &mut web {
+            // WAIT: web-close
+            web.close(deadline).await
+        } else {
+            true
+        };
+        if !disk {
             return Err("configuration owner did not finish shutdown".into());
+        }
+        if !http {
+            return Err("web owner did not finish shutdown".into());
         }
         hardware?;
         if let Some(error) = failure {

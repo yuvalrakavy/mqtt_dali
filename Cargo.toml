@@ -28,6 +28,11 @@ serde = { version = "1.0.215", features = ["derive"] }
 rumqttc = { version = "0.25.1", default-features = false }
 rustop = "1.1.4"
 rand = "0.10.0"
+axum = { version = "=0.8.9", default-features = false, features = ["http1", "json", "tokio"] }
+sha2 = "0.10.9"
+subtle = "2.6.1"
+futures-util = "0.3.31"
+tokio-util = { version = "0.7.12", features = ["rt"] }
 libc = "0.2"
 tracing = { version = "0.1.41"  }
 log = "0.4.22"

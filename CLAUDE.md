@@ -135,6 +135,13 @@ cargo run --bin mqtt_dali_v1 -- --setup <mqtt_broker_address>
 
 ## Legacy regression harness reference
 
+Optional HTTP uses `src/web` and the existing managed owner; see
+`docs/web-access.md`. Disabled by default; explicit password/origin, cookie-only
+sessions, CSRF and live stream expiry/revocation. Strip CLI credentials before
+shared Debug Settings. Clean stop includes actual accepted-IO drop, not just
+Axum's outer task. `docs/v2-web-controls.toml` tests these guards. Browser assets
+and typed mutation routes remain subsequent work.
+
 Managed v2 group membership uses `dali::groups`, `service::groups` and concrete
 `physical::Work::Groups`; see `docs/groups.md`. Ordinary assignment saves desired
 membership before programming only one bit. Adoption saves reviewed hardware

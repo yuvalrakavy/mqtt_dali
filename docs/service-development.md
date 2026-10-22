@@ -6,7 +6,9 @@ operations, selected-family DT8 MQTT controls and native input observations/acti
 `mqtt_dali` executable now runs it through BridgeKit; `mqtt_dali_v2` is an alias.
 `--check-config` remains an explicit offline operation. See
 [running the development daemon](running-v2.md). MQTT base fixture properties
-use [the output wire contract](mqtt-outputs.md). Web handlers are pending; embedders can use the
+use [the output wire contract](mqtt-outputs.md). Optional authenticated HTTP status,
+sessions and SSE use [web access](web-access.md); physical/configuration handlers
+and browser assets are subsequent work. Embedders can use the
 [single-output service API](output-service.md).
 
 `DaliService::new(paths, instance)` returns a resource-free service and a
@@ -17,6 +19,14 @@ Configuration opens inside the managed runtime after framework startup, not in
 the constructor. All tracing-init repository dependencies are pinned to one
 revision in Cargo.toml/lock; that development commit is currently local and must
 be published before promising a portable fresh clone or release.
+
+`with_web(web::Settings::new(bind, origin, password)?)` enables the optional server
+without opening resources in the builder. The managed owner binds after config
+identity validates, before proxy readiness, and collects unexpected completion.
+HTTP/HAT/config cleanup share the existing absolute deadline. Axum's outer task
+is not the whole connection owner: cancellable accepted IO holds permits until
+actual drop; clean teardown includes an all-permits barrier. Session/rate locks
+never span await. Use `v2-web-controls.toml` for auth/lifecycle fault controls.
 
 The first proxy connection attaches the runtime Reporter independently of UART
 setup and MQTT availability. Inventory and metadata editing therefore

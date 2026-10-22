@@ -28,6 +28,13 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `web-bind` | bounded | optional HTTP listener startup | Inside the original five-second service opening ceiling, before proxy readiness. On expiry reject and drop the listener; close the config owner on failure. No listener exists when web is disabled. |
+| `web-auth` | acyclic | bounded session/rate mutex | Holds at most 16 sessions and 10 attempt timestamps for synchronous checks/updates only. No await, Reporter call or service operation occurs under the guard; no other lock is taken. |
+| `web-accept` | acyclic | Axum/Tokio accepting a TCP client | Owns only the optional listener; no service caller waits for it. Parent cancellation drops accept through the server signal. At most 64 accepted IO wrappers retain permits; excess connections close. Each wrapper's pending polls also wake on forced cancellation. |
+| `web-serve` | acyclic | optional HTTP server lifetime / join notification | Service loop selects cancellation independently. An absent/completed server branch stays dormant; an unexpected server end fails the service. Graceful stop signals Axum and SSE, then bounded close collects the server and actual IO ownership. No secret or session lock spans these waits. |
+| `web-handler` | bounded | HTTP handler/body extraction | At most five seconds per admitted handler; at most 32 handlers and 8 KiB bodies. On expiry return 408 and release admission. Streaming response bodies use separate stream/connection limits and stop/expiry cancellation. |
+| `web-events` | bounded | snapshot updates, revocation, session expiry or stop | Pull-based stream with no per-client producer queue; at most eight subscribers. Recheck session before each snapshot. Wake at the existing idle/absolute deadline (30 min/12 h), revoke without needing a bus update, and on expiry end the stream; also end on parent stop. Passive traffic never renews user activity; lag re-snapshots latest complete data. |
+| `web-close` | bounded | server join and all accepted-IO permits returning | Share the existing absolute 1.5-second HAT/disk/HTTP cleanup ceiling. Reserve the final 100 ms for forced IO cancellation, outer-task abort/join and the all-permits destruction barrier. On expiry return incomplete cleanup; aborting the outer task alone is not proof of connection destruction. |
 | `v2-commissioning-randomise` | bounded | DALI random-address generation timer | Wait 100 ms for outputs / 200 ms for inputs under the original search deadline. On expiry reject the search without reserving/programming a short address; retain physical ownership through settlement. Temporary initialization mode may expire or be terminated by the next operation. |
 | `v2-service-request` | bounded | capacity-one service operation reply | Nonwaiting permit and bounded channel admission; the caller supplies an absolute deadline. On expiry report uncertainty for mutations or reject an input read, and drop the reply receiver. Keep routing frozen if saving began; physical jobs retain service admission until their backend request settles or actual transport teardown completes under its fixed cleanup ceiling. |
 | `v2-service-attach` | bounded | inventory actor installing its first runtime Reporter | At most 2 s, independently of MQTT and UART. On expiry fail proxy connect; reconnect attachment is idempotent and cannot reopen uncertain routing. |
@@ -109,7 +116,7 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, assign_space, commission, search, program, groups, read_groups, change_groups
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, assign_space, commission, search, program, groups, read_groups, change_groups, finished
 ```
 
 ## Waiters (generated)
@@ -221,4 +228,18 @@ v2-store-close src/service/owner.rs <DaliService as ProcessService>::run
 v2-store-open src/config_store.rs ConfigStore::open_with
 v2-store-request src/config_store.rs ConfigStore::submit
 v2-store-worker src/config_store/worker.rs run
+web-accept src/web/transport.rs <Listener as Listener>::accept
+web-auth src/web/handlers.rs access
+web-auth src/web/handlers.rs activity
+web-auth src/web/handlers.rs login
+web-auth src/web/handlers.rs logout
+web-bind src/web/server.rs Server::start
+web-close src/service/owner.rs <DaliService as ProcessService>::run
+web-close src/web/server.rs Server::close
+web-events src/web/handlers.rs events
+web-handler src/web/handlers.rs limits
+web-handler src/web/handlers.rs protect
+web-serve src/web/server.rs Server::finished
+web-serve src/web/server.rs Server::start
+web-serve src/web/server.rs changed
 ```

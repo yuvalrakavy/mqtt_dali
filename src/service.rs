@@ -202,6 +202,7 @@ pub struct DaliService {
     state: watch::Sender<Option<Snapshot>>,
     handle: ServiceHandle,
     uart: Option<hat::Settings>,
+    web: Option<crate::web::Settings>,
     #[cfg(test)]
     hooks: crate::config_store::test_hooks::Hooks,
     #[cfg(test)]
@@ -242,6 +243,11 @@ struct Request {
     _permit: OwnedSemaphorePermit,
 }
 impl DaliService {
+    /// Enable authenticated HTTP inside the managed lifetime; opens no listener.
+    pub fn with_web(mut self, settings: crate::web::Settings) -> Self {
+        self.web = Some(settings);
+        self
+    }
     /// Enable a real UART/PTY. Construction performs no I/O; firmware version
     /// never supplies an implicit repeat policy.
     pub fn with_uart(
@@ -284,6 +290,7 @@ impl DaliService {
                 state,
                 handle: handle.clone(),
                 uart: None,
+                web: None,
                 #[cfg(test)]
                 hooks: Default::default(),
                 #[cfg(test)]
