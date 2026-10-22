@@ -7,7 +7,10 @@ The approved architecture and phase acceptance criteria are in
 
 ## P5h1 — native scene protocol and physical model
 
-Implement checked sixteen-slot scene frames, explicit repeated Store/Remove,
+Accepted locally at frozen source `2e46c31`: **546 native tests** and both
+sequential source reviews pass. Managed scene configuration/UI remains next.
+
+Implemented checked sixteen-slot scene frames, explicit repeated Store/Remove,
 Off versus MASK replies, stored colour report plans and nonactivating live/stored
 Tc/xy/RGBWAF staging. The independent model now has scene colours, separate
 temporary/report registers, RGBWAF control and auto/manual recall. Store consumes
@@ -20,15 +23,15 @@ The focused run passes 32 new/existing scene and colour cases; the standalone
 PTY test also passes actual typed programming/query/manual recall/Remove with the
 unchanged one-terminal repeat policy. A seventh physical test first fails on
 control-only RGB staging retaining Tc type, then passes after selecting RGBWAF.
-The final scene-filtered run passes fourteen cases, including one existing base
+The initial scene-filtered run passes fourteen cases, including one existing base
 case; thirteen tests are new.
 
-All fifteen scene controls and three affected older controls have intended RED
+The initial fifteen scene controls and three affected older controls have intended RED
 evidence. Two older anchors were already ambiguous at the baseline; scope them
 to their owning methods. One first retarget used the wrong input path and stayed
 GREEN; the corrected tested `intervening_frame` path is RED. Logs:
 `/tmp/dali-scenes-controls` and `/tmp/dali-scenes-controls-final`.
-Restored acceptance passes **544/544 native tests** (eleven binaries; one opt-in
+Initial restored acceptance passes **544/544 native tests** (eleven binaries; one opt-in
 browser case skipped), scoped strict Clippy, Pi library/four-bin compile,
 doctests (none), changed-file formatting, all eight affected control plans,
 whitespace and wait validation. Native execution is 54.137 s; suite command wall
@@ -55,6 +58,17 @@ seventeenth scene control and two affected RGB/control controls have intended
 REDs. Logs: `/tmp/dali-scenes-channel-links-red.log` and
 `/tmp/dali-scenes-links-controls`. Full restored verification and both final
 source rechecks follow.
+
+Final frozen `2e46c31` is approved by both sequential source rechecks (10 s and
+3 s), with no remaining material findings. All **seventeen current scene
+controls** have intended RED evidence, including rerun affected RGB controls.
+Restored final acceptance passes **546/546 native tests** (eleven binaries; one
+opt-in browser case skipped), scoped strict Clippy, Pi library/four-bin compile,
+doctests (none), changed-file formatting, all eight affected control plans,
+whitespace and wait validation. Native execution is 53.877 s; command wall time
+is 98 s. Logs: `/tmp/dali-scenes-links-acceptance`. Reviewers are same-family and
+source-only; the parent ran verification. No physical firmware or managed
+scene/UI/Store acceptance is implied.
 See the [scene contract](dali-scenes-contract.md) and
 [slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scenes.md).
 
@@ -1723,7 +1737,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene protocol/model verified locally, source reviews pending | Full reassign/restore and managed native scenes/UI |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene protocol/model accepted locally | Full reassign/restore and managed native scenes/UI |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

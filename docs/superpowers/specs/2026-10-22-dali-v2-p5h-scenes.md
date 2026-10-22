@@ -192,3 +192,11 @@ storage and mode bits retain their existing semantics. Seventeen focused cases,
 the seventeenth scene control and two affected RGB controls pass their declared
 checks. Logs: `/tmp/dali-scenes-links-controls`. Final restored acceptance and
 both source rechecks follow.
+
+Final frozen `2e46c31` is approved by both sequential source rechecks (10 s and
+3 s). Seventeen scene controls have intended RED evidence; restored acceptance
+passes 546 native tests, scoped strict Clippy, Pi compile, doctests, formatting,
+all eight affected plans, whitespace and wait validation. Logs:
+`/tmp/dali-scenes-links-acceptance`. Reviews are same-family/source-only and ran
+no verification; the parent executed checks. P5h1 is accepted locally. P5h2
+managed configuration/jobs, P5h3 UI and physical conformance remain unbuilt.
