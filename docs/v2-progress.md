@@ -5,6 +5,58 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P6c — actual scalar values and live input/job activity
+
+Extend HTTP jobs with individual apply_output/read_output/read_input, reusing the
+same atomic scalar intent parser, 2/4/6/8-second budgets, typed physical ownership
+and latest-snapshot acceptance as MQTT. Shared pure input acceptance preserves
+newer native values over an already-ready query. Complete snapshot states carry
+actual values/quality and original generations, with unknown/stale clearing.
+The HTTP budget grows to 4 MiB; MQTT inventory remains 512 KiB. A dense valid
+model measures 522,331 inventory bytes and 1,054,621 HTTP bytes for 1,824 initially
+unobserved scalar states, demonstrating the real 1 MiB boundary.
+
+SSE adds complete jobs, native input actions with exact Notice::current receive
+fencing, and explicit loss followed by a current snapshot. One pending notice/
+loss plus dirty flags and a three-kind cursor prevent snapshot/job/input traffic
+starving one another. Recheck authorization before each emission; no passive
+renewal, action replay, detached producer, SDK/MQTT schema or UART policy change.
+
+Both sequential design reviews approve (about 50 and 47 seconds, same-family,
+source-only); the first requested the simultaneous-ready fairness regression.
+Initial HTTP regressions fail before implementation on missing observations and
+native SSE. The native test's nested equal timeouts initially reported its inner
+wait rather than outer named criterion; shorten the outer test oracle. Thirty-
+nine focused tests pass before the loss-conversion consolidation. These include
+all colour families, real actual/quantized values, exact 255-bit inputs, physical
+preflight, reads resumed after rename/newer native evidence, ready-source fairness,
+lag, receive cutover, busy-stream expiry and real running/completed job updates.
+Two new test assumptions were corrected against existing producers: compare
+device state without the advancing emulator clock, and xy raw/65536 units.
+
+The first 17-control run produces 16 intended REDs and one GREEN: an await-side
+loss conversion is masked by the ordinary snapshot notification before native
+prefetch. Remove the duplicated conversion in favor of one InputEvent::receive
+used by both paths, and replace the two conversion controls with one shared-rule
+control. The affected stream tests pass; the new shared control is RED (10 s).
+All **16 current observation controls** now have intended behavioral RED evidence.
+The initial GREEN remains in its historical log/ledger; it is not counted as a
+successful control. One reanchored metadata control is RED (14 s), and the two
+updated baseline SSE revocation/expiry oracles remain RED (30 s).
+Logs: `/tmp/dali-web-observation-controls.log`,
+`/tmp/dali-web-observation-shared-loss-control.log`,
+`/tmp/dali-web-observation-reanchored-control.log`,
+`/tmp/dali-web-observation-sse-controls.log`. Restored acceptance passes
+**516/516 native tests** across 11 binaries (four processes; execution 52 s,
+wall 98 s), scoped strict Clippy (9 s), Pi library/all four binaries (4 s),
+doctests (none), changed-file format, affected control plans, whitespace and
+wait validation (zero findings). The registry initially needed explicit
+"on expiry end the stream" wording; its generated waiter now names event_stream.
+Logs: `/tmp/dali-web-observation-acceptance`. Frozen source reviews follow.
+Browser workflows and physical HAT validation
+remain pending. See [web access](web-access.md) and
+[slice design](superpowers/specs/2026-10-22-dali-v2-p6c-web-observations.md).
+
 ## P6b — authenticated configuration and commissioning jobs
 
 Add strict POST `/api/jobs` and protected list/result routes. Preparation reuses
@@ -1494,7 +1546,7 @@ no verification. Physical hardware validation remains outstanding.
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
 | P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal and per-fixture group membership implemented | Full reassign/restore, identification, browser/pattern group workflows and native scenes |
-| P6 authenticated HTTP | Session/lifecycle/status foundation and existing-command jobs accepted and locally verified | Output apply/read, observation/native-event routes and complete protected frontend integration |
+| P6 authenticated HTTP | Session/status and command jobs accepted; scalar observation/apply and native/job SSE implemented, final verification in progress | Protected frontend integration and remaining P4/P5 actions |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |

@@ -290,13 +290,20 @@ async fn chunk(stream: &mut BufReader<TcpStream>) -> Option<String> {
         if size == 0 {
             return None;
         }
-        assert!(size <= 1024 * 1024 + 100);
+        assert!(size <= handlers::SNAPSHOT_BYTES + 100);
         let mut bytes = vec![0; size + 2];
         stream.read_exact(&mut bytes).await.unwrap();
         Some(String::from_utf8(bytes[..size].to_vec()).unwrap())
     })
     .await
     .expect("SSE did not wake or terminate")
+}
+async fn bootstrap(stream: &mut BufReader<TcpStream>) -> String {
+    let snapshot = chunk(stream).await.expect("missing initial snapshot");
+    assert!(snapshot.contains("event: snapshot\n"));
+    let jobs = chunk(stream).await.expect("missing initial jobs");
+    assert!(jobs.contains("event: jobs\n"));
+    snapshot
 }
 
 #[tokio::test]
@@ -417,7 +424,7 @@ async fn web_http_origin_csrf_rotation_and_logout_revoke_live_stream() {
     )
     .await;
     assert_eq!(reply.status, 200);
-    assert!(chunk(&mut stream).await.unwrap().contains("PrivateLight"));
+    assert!(bootstrap(&mut stream).await.contains("PrivateLight"));
     for (origin, token) in [
         ("http://evil.test", csrf.as_str()),
         ("http://dali.test", "bad"),
@@ -519,7 +526,7 @@ async fn web_sse_idle_expiry_and_user_activity_preserve_fixed_absolute_expiry() 
         "",
     )
     .await;
-    assert!(chunk(&mut stream).await.is_some());
+    bootstrap(&mut stream).await;
     for _ in 0..3 {
         assert_eq!(
             fixture
@@ -543,7 +550,7 @@ async fn web_sse_idle_expiry_and_user_activity_preserve_fixed_absolute_expiry() 
         "",
     )
     .await;
-    assert!(chunk(&mut stream).await.is_some());
+    bootstrap(&mut stream).await;
     for _ in 0..3 {
         tokio::time::sleep(Duration::from_millis(400)).await;
         assert_eq!(
@@ -681,7 +688,7 @@ async fn web_managed_owner_serves_without_broker_and_closes_with_retained_handle
         Some("saved without broker")
     );
     let (_, mut stream) = open(address, "GET", "/api/events", &[("Cookie", cookie)], "").await;
-    assert!(chunk(&mut stream).await.is_some());
+    bootstrap(&mut stream).await;
     let clean = timeout(Duration::from_secs(6), running.stop())
         .await
         .expect("managed web shutdown exceeded process bound");

@@ -1,0 +1,156 @@
+[[control]]
+name = "web_snapshot_regresses_to_inventory_only_size_budget"
+file = "src/web/handlers.rs"
+anchor = "pub(super) const SNAPSHOT_BYTES: usize = 4 * 1024 * 1024;"
+replacement = "pub(super) const SNAPSHOT_BYTES: usize = 1024 * 1024;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_dense_valid)"]
+expect_text = "dense valid inventory and shared observations exceed HTTP snapshot budget"
+
+[[control]]
+name = "web_snapshot_omits_observed_states"
+file = "src/web/handlers.rs"
+anchor = '"states":crate::service::projected_states(snapshot)'
+replacement = '"states":[]'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_output_jobs)"]
+expect_text = "snapshot omitted the selected target observation"
+
+[[control]]
+name = "web_apply_accepts_unknown_parameter_fields"
+file = "src/service/proxy.rs"
+anchor = '''#[serde(deny_unknown_fields)]
+struct OutputValues {'''
+replacement = "struct OutputValues {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_selected_colour)"]
+expect_text = "HTTP apply accepted unknown parameter fields"
+
+[[control]]
+name = "web_apply_skips_shared_atomic_intent_parser"
+file = "src/service/proxy.rs"
+anchor = '''                    Some(
+                        state::intent(&p.values, colour::configured(snapshot, target))
+                            .map_err(|_| PreparationError::Invalid)?,
+                    )'''
+replacement = "Some(output::WriteIntent::Base(crate::dali::gear::Intent::new(Some(false),None).unwrap()))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_selected_colour)"]
+expect_text = "invalid HTTP output map was partially accepted"
+
+[[control]]
+name = "web_output_skips_final_snapshot_acceptance"
+file = "src/service/proxy.rs"
+anchor = "return state::accepted(&latest, &target, &observed)"
+replacement = "return Ok::<ContextualState,OpError>(ContextualState::new(TargetState::new(target,PropertyMap::new()),observed.context))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(local_observed_reply_rechecks)"]
+expect_text = "HTTP completed an observation against a retired mapping"
+
+[[control]]
+name = "web_input_skips_final_snapshot_acceptance"
+file = "src/service/proxy.rs"
+anchor = "return accepted_input(&latest, &target, &observed, deadline)"
+replacement = "return Ok::<ContextualState,OpError>(ContextualState::new(TargetState::new(target,PropertyMap::new()),observed.context))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(local_observed_reply_rechecks)"]
+expect_text = "HTTP completed an observation against a retired mapping"
+
+[[control]]
+name = "web_output_echoes_requested_brightness"
+file = "src/service/proxy.rs"
+anchor = '''return state::accepted(&latest, &target, &observed)
+                    .map(projected_state)'''
+replacement = '''return state::accepted(&latest, &target, &observed)
+ .map(|s|{let mut v=projected_state(s);v["values"]["Brightness"]=Value::from(0.4);v})'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_output_jobs)"]
+expect_text = "HTTP apply echoed intent instead of actual level"
+
+[[control]]
+name = "web_input_uses_ready_query_instead_of_latest_native_state"
+file = "src/service/proxy.rs"
+anchor = '''    input::projections(snapshot)
+        .into_iter()'''
+replacement = '''    input::projections(&{let mut snapshot=snapshot.clone();snapshot.inputs.insert(target.into(),observed.clone());snapshot})
+        .into_iter()'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(local_input_reply_projects_a_newer)"]
+expect_text = "HTTP input reply overwrote newer native truth"
+
+[[control]]
+name = "web_native_event_skips_current_receive_predicate"
+file = "src/web/handlers.rs"
+anchor = "if !notice.current(&snapshot) {"
+replacement = "if false && !notice.current(&snapshot) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_stream_drops_retired)"]
+expect_text = "web stream replayed an event from a retired receive lifetime"
+
+[[control]]
+name = "web_native_event_replaces_original_generation"
+file = "src/web/handlers.rs"
+anchor = 'value["generation"] = json!(notice.context.generation());'
+replacement = 'value["generation"]=json!(format!("{}.{}",snapshot.model.inventory().inventory_epoch,snapshot.model.inventory().revision));'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_stream_rotates_ready)"]
+expect_text = "web input action replaced its original generation"
+
+[[control]]
+name = "web_native_receiver_hides_broadcast_loss"
+file = "src/web/handlers.rs"
+anchor = "Err(RecvError::Lagged(dropped)) => Some(Self::Lost(dropped)),"
+replacement = "Err(RecvError::Lagged(_)) => None,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_stream_rotates_ready)"]
+expect_text = "slow web input consumer hid native event loss"
+
+[[control]]
+name = "web_native_loss_does_not_refresh_snapshot"
+file = "src/web/handlers.rs"
+anchor = '''                        // Cursor now points to snapshot, before further actions.
+                        self.snapshot_dirty = true;'''
+replacement = "self.snapshot_dirty = false;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_stream_rotates_ready)"]
+expect_text = "native event loss was not followed by a current snapshot"
+
+[[control]]
+name = "web_stream_always_prioritizes_snapshots"
+file = "src/web/handlers.rs"
+anchor = "let kind = (self.cursor + offset) % 3;"
+replacement = "let kind = offset;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_stream_rotates_ready)"]
+expect_text = "ready snapshots and jobs starved native activity"
+
+[[control]]
+name = "web_retired_notice_strands_dirty_snapshots"
+file = "src/web/handlers.rs"
+anchor = "if stream.snapshot_dirty || stream.jobs_dirty || stream.pending_input.is_some() {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_stream_drops_retired)"]
+expect_text = "retired input notice stranded ready snapshot or job updates"
+
+[[control]]
+name = "web_job_admission_does_not_notify_stream"
+file = "src/web/jobs.rs"
+anchor = '''        drop(records);
+        self.changed
+            .send_modify(|value| *value = value.wrapping_add(1));'''
+replacement = "        drop(records);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_job_notifications)"]
+expect_text = "job admission did not notify the live stream"
+
+[[control]]
+name = "web_job_completion_does_not_notify_stream"
+file = "src/web/jobs.rs"
+anchor = '''            drop(records);
+            self.changed
+                .send_modify(|value| *value = value.wrapping_add(1));'''
+replacement = "            drop(records);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_observed_job_notifications)"]
+expect_text = "job completion did not notify the live stream"

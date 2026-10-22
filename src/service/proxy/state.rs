@@ -1,4 +1,4 @@
-//! Physical projections are published only on the BridgeKit worker thread.
+//! Shared pure scalar projections; MQTT publication stays on its BridgeKit worker.
 use super::*;
 
 pub(super) fn intent(

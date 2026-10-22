@@ -21,7 +21,7 @@ mod physical;
 mod proxy;
 mod routing;
 pub use proxy::DaliProxy;
-pub(crate) use proxy::{PreparationError, PreparedCommand};
+pub(crate) use proxy::{projected_states, PreparationError, PreparedCommand};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Phase {

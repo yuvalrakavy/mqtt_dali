@@ -7,7 +7,7 @@ use std::{
     collections::VecDeque,
     sync::{Arc, Mutex},
 };
-use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
+use tokio::sync::{mpsc, watch, OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
 use tracing::Instrument;
 
@@ -34,6 +34,7 @@ pub(super) struct Jobs {
     send: mpsc::Sender<Request>,
     pub(super) slots: Arc<Semaphore>,
     records: Mutex<VecDeque<Record>>,
+    pub(super) changed: watch::Sender<u64>,
     #[cfg(test)]
     pub(super) observed_contexts: Mutex<Vec<mqtt_bridge_kit::RequestContext>>,
 }
@@ -49,6 +50,7 @@ impl Jobs {
                 send,
                 slots: Arc::new(Semaphore::new(ACTIVE)),
                 records: Mutex::new(VecDeque::new()),
+                changed: watch::channel(0).0,
                 #[cfg(test)]
                 observed_contexts: Mutex::new(Vec::new()),
             },
@@ -116,6 +118,9 @@ impl Jobs {
             command,
             _permit: permit,
         });
+        drop(records);
+        self.changed
+            .send_modify(|value| *value = value.wrapping_add(1));
         Some(record)
     }
     fn finish(&self, id: String, result: Result<Value, ServiceError>) {
@@ -130,14 +135,17 @@ impl Jobs {
             };
             record.result = result;
             record.error = error;
+            drop(records);
+            self.changed
+                .send_modify(|value| *value = value.wrapping_add(1));
         }
     }
 }
 pub(super) fn public_result(result: Result<Value, ServiceError>) -> (Option<Value>, Option<Value>) {
     let code = match result {
         Ok(mut value) => {
-            // Only the three existing report types or a revision reach here.
-            // Their free-form reason can contain a private save failure.
+            // Reports, revisions and accepted scalar states reach here. A
+            // report's free-form reason can contain a private save failure.
             if value.get("reason").is_some_and(|r| !r.is_null()) {
                 value["reason"] = json!("Operation was not fully confirmed; inspect configuration and hardware before retrying.");
             }

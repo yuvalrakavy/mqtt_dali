@@ -144,7 +144,12 @@ remain subsequent work. Configuration/commissioning command jobs reuse the stric
 proxy parser and typed service APIs with original context/deadline and no MQTT
 completion. Bound job futures inside the Server task, never detached; results
 are process-local, with private free-text reasons sanitized. See
-`docs/v2-web-job-controls.toml`. Output apply/read/observations follow separately.
+`docs/v2-web-job-controls.toml`. HTTP-only scalar apply/read uses the existing
+intent parser, budgets and latest-snapshot acceptance. SSE shares exact
+Notice::current receive fencing, bounded loss reporting and three-source rotation;
+job watch notifications occur after dropping the book lock. Snapshots replace
+the complete state array, with unknown/stale values preserved as such. See
+`docs/v2-web-observation-controls.toml`. Preact assets remain pending.
 
 Managed v2 group membership uses `dali::groups`, `service::groups` and concrete
 `physical::Work::Groups`; see `docs/groups.md`. Ordinary assignment saves desired

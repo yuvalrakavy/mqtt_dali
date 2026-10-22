@@ -38,7 +38,7 @@ pub struct Notice {
     stamp: Stamp,
 }
 impl Notice {
-    fn current(&self, snapshot: &Snapshot) -> bool {
+    pub(crate) fn current(&self, snapshot: &Snapshot) -> bool {
         matches!(snapshot.phase, Phase::Ready | Phase::Writing)
             && snapshot.input_listeners.contains(&self.target)
             && routing::generations(&snapshot.model)

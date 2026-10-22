@@ -69,8 +69,8 @@ All responses are no-store and carry content/frame restrictions.
 | GET `/api/session` | Cookie; CSRF and remaining idle/absolute milliseconds; no activity renewal |
 | POST `/api/session/activity` | Cookie + Origin + CSRF; 204 on accepted user activity |
 | POST `/api/logout` | Cookie + Origin + CSRF; revokes session/stream and clears cookie; 204 |
-| GET `/api/snapshot` | Cookie; explicit routing/hardware status and complete public inventory envelope |
-| GET `/api/events` | Cookie; SSE `snapshot` with initial/latest complete snapshot; closes on revocation/expiry/stop |
+| GET `/api/snapshot` | Cookie; routing/hardware status, complete public inventory and actual per-target scalar `states` |
+| GET `/api/events` | Cookie; initial/latest `snapshot`, complete `jobs`, native `input` and `input_events_lost`; closes on revocation/expiry/stop |
 | POST `/api/jobs` | Cookie + Origin + CSRF; strict command JSON below, 202 with job record and Location |
 | GET `/api/jobs` | Cookie; `{"jobs":[...]}` in admission order; no activity renewal |
 | GET `/api/jobs/{id}` | Cookie; job record or 404; no activity renewal |
@@ -105,8 +105,9 @@ change MQTT naming or add a second encoding. Params is always a JSON object.
 Supported commands: `configure_bus`, `rename_bus`, `rename`, `describe`,
 `set_color_representation`, `remove_from_list`, `recover`, `discover_address`,
 `assign_next_output`, `assign_next_input`, `create_group`, `read_groups`,
-`assign_group`, `adopt_groups`, `repair_groups`. Output power/colour apply and read
-routes, observed values and native input event streaming follow separately.
+`assign_group`, `adopt_groups`, `repair_groups`. HTTP also supports the observation
+operations below. These extra names are HTTP-only; MQTT keeps its existing
+Desired and refresh forms.
 Unknown envelope/parameter fields are refused. Malformed commands return 400;
 retired authority or a changed revision/routing state returns 409. Refresh and
 review the selection before another attempt. Authorization is checked again
@@ -138,9 +139,69 @@ not keep sessions alive; authenticated submissions record explicit user activity
 Stopping the server drops its owned command futures through existing service
 cancellation semantics, including uncertainty after an interrupted save.
 
+## Light controls and current input values
+
+Use the selected item's original generation and complete target for these jobs.
+They do not change inventory and take no expected_revision:
+
+| HTTP command | params | Result |
+|---|---|---|
+| `apply_output` | `{"values":{"PowerState":true,"Brightness":0.4}}` | Accepted actual scalar state after physical readback |
+| `read_output` | `{}` | Actual base/selected-family colour values and quality |
+| `read_input` | `{}` | Current individual input-instance values, source and resolution |
+
+Only individual outputs/instances are accepted. Apply values reuse the complete
+MQTT scalar contract: booleans for PowerState, 0..1 brightness/RGBWAF, Kelvin
+temperature and normalized xy. Colour fields must belong to the saved
+representation. An invalid member rejects the entire map before any write.
+Colour-only changes preserve master level; omitted channels/xy coordinates
+preserve their physical values. Read the output after selecting a representation
+to discover physical capabilities before applying colour. See
+[output/colour contract](mqtt-outputs.md).
+
+The result is `{"target":"...","generation":"...","values":{...}}`.
+Brightness and colour are actual readback, including quantization/clamping;
+they can differ from the request. Base and colour availability/quality remain
+independent. The existing 2/6/8-second output budgets and four-second input read
+budget begin at preparation and are never extended by queueing. A rename or
+receive change before completion cannot turn old evidence into a new item result.
+
+`states` in the complete snapshot is an array of the same record shape. Replace
+previous state when a new snapshot arrives. Missing base values and explicit
+nulls are unknown/unavailable; retaining an older value would misrepresent a
+disabled or changed fixture. Querying an input never fabricates a button action.
+Input values expose ValueSource, exact InputValueRaw hex and ValueResolution up
+to 255 bits; do not convert wide hex into a JavaScript Number. Contact InputState,
+button Status, occupancy and raw light values follow [the input contract](mqtt-inputs.md).
+
+## Live activity and job changes
+
+An SSE connection begins with a complete `snapshot` and `jobs` event. Subsequent
+updates coalesce complete snapshots/job books; they are not incremental patches.
+For `jobs`, replace the previous list, including completed results. A completed
+job may already be present by the time an admission notification is read.
+
+`input` contains the native action payload plus its original generation. Only
+the exact current endpoint and receive lifetime can emit it. Button actions
+include pressed, released, short_press, double_press and the native long-press
+variants. These identify actual activity independently of the latest retained
+state; a short press need not imply that the button is still held.
+
+`input_events_lost` carries a dropped count when the bounded native receiver
+falls behind, followed by a current snapshot. Show missed activity explicitly;
+do not reconstruct missing presses from state. Streams rotate ready snapshot,
+job and native sources so a busy status feed cannot hide switch activity.
+There is no historical input replay or Last-Event-ID resume. Reconnect supplies
+current values/jobs and newly observed actions, with the same authentication and
+expiry checks before every event kind. Background activity does not renew login.
+
 Streams are limited to eight and accepted TCP connections to 64; excess requests
 are refused/closed. Handlers have a five-second bound and capacity 32. Snapshot
-responses cap at 1 MiB and fail as a whole if unavailable. Slow clients do not hold
+responses cap at 4 MiB and fail as a whole if unavailable. The MQTT inventory
+ceiling stays 512 KiB. A local dense-inventory probe (522,331 inventory bytes,
+1,824 initially unobserved states) produces a 1,054,621-byte HTTP snapshot; this
+is a measured example, not a maximum-size proof for every valid configuration.
+Slow clients do not hold
 the UART/config owner. Broker/HAT absence still permits protected saved inventory
 and truthful degraded status. The managed service owns startup and shutdown;
 accepted IO must actually drop before it reports successful cleanup.
@@ -158,4 +219,8 @@ claim it. See [design](superpowers/specs/2026-10-22-dali-v2-p6a-web-foundation.m
 and [command-job design](superpowers/specs/2026-10-22-dali-v2-p6b-web-commands.md).
 Command tests also exercise the independent PTY emulator and held/failed saves.
 [Job controls](v2-web-job-controls.toml) cover authority, reauthorization, bounded
-ownership/results and privacy. See [progress](v2-progress.md).
+ownership/results and privacy. [Observation controls](v2-web-observation-controls.toml)
+exercise real scalar application, final mapping/readback acceptance, native
+receive cutover/loss, fair stream progress and live job updates. See
+[the observation design](superpowers/specs/2026-10-22-dali-v2-p6c-web-observations.md)
+and [progress](v2-progress.md).

@@ -7,8 +7,8 @@ operations, selected-family DT8 MQTT controls and native input observations/acti
 `--check-config` remains an explicit offline operation. See
 [running the development daemon](running-v2.md). MQTT base fixture properties
 use [the output wire contract](mqtt-outputs.md). Optional authenticated HTTP status,
-sessions, SSE and configuration/commissioning jobs use [web access](web-access.md);
-output apply/read routes and browser assets are subsequent work. Embedders can use the
+sessions, SSE, scalar reads/applies and configuration/commissioning jobs use
+[web access](web-access.md); browser assets are subsequent work. Embedders can use the
 [single-output service API](output-service.md).
 
 `DaliService::new(paths, instance)` returns a resource-free service and a
@@ -34,6 +34,14 @@ survives the bounded mailbox. At most four futures are polled inside the existin
 Server task, with 32 process-local result records; no detached job task or new
 physical owner. Stop drops receiver futures under the existing lifecycle ceiling.
 Use `v2-web-job-controls.toml` for this boundary.
+HTTP-only prepared read/apply actions reuse the scalar intent parser, current
+2/4/6/8-second budgets and exact final acceptance used by MQTT. Shared pure
+projections supply complete replacement snapshot states. Native HTTP events must
+call `Notice::current` against the latest snapshot after awaits, then add the
+original generation; `Notice::value` alone is not acceptance. Keep MQTT's payload
+unchanged. The one pull stream rotates snapshot/job/native readiness, holds at
+most one notice/loss, and uses one common broadcast-result conversion. Job watch
+notifications happen after the book lock drops. See `v2-web-observation-controls.toml`.
 
 The first proxy connection attaches the runtime Reporter independently of UART
 setup and MQTT availability. Inventory and metadata editing therefore

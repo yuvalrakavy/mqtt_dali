@@ -35,7 +35,7 @@ expect_text = "stale controller generation admitted HTTP work"
 name = "web_jobs_skip_revision_preparation"
 file = "src/service/proxy.rs"
 anchor = '''        operation
-            .admit(snapshot, target.as_deref(), &context)
+            .admit(snapshot, target, context)
             .map_err(|_| PreparationError::Conflict)?;'''
 replacement = ""
 target = "command"

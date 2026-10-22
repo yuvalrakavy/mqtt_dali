@@ -363,11 +363,15 @@ fn snapshot_value(snapshot: &Snapshot) -> Value {
             json!({"state":"ready","buses":buses.iter().map(|b|json!({"bus":b.bus,"status":b.status,"channels":b.channels})).collect::<Vec<_>>()})
         }
     };
-    json!({"identity":identity_value(snapshot),"phase":phase,"hardware":hardware,"inventory":serde_json::from_slice::<Value>(&snapshot.model.state_bytes().expect("validated model")).expect("validated JSON")})
+    json!({"identity":identity_value(snapshot),"phase":phase,"hardware":hardware,"inventory":serde_json::from_slice::<Value>(&snapshot.model.state_bytes().expect("validated model")).expect("validated JSON"),"states":crate::service::projected_states(snapshot)})
 }
+pub(super) const SNAPSHOT_BYTES: usize = 4 * 1024 * 1024;
 fn encoded_snapshot(state: &State) -> Option<String> {
-    let data = serde_json::to_string(&snapshot_value(&state.handle.snapshot()?)).ok()?;
-    (data.len() <= 1024 * 1024).then_some(data)
+    encode_snapshot(&state.handle.snapshot()?)
+}
+pub(super) fn encode_snapshot(snapshot: &Snapshot) -> Option<String> {
+    let data = serde_json::to_string(&snapshot_value(snapshot)).ok()?;
+    (data.len() <= SNAPSHOT_BYTES).then_some(data)
 }
 async fn snapshot(AxumState(state): AxumState<Arc<State>>) -> Response {
     match encoded_snapshot(&state) {
@@ -379,9 +383,107 @@ struct StreamState {
     state: Arc<State>,
     token: String,
     updates: tokio::sync::broadcast::Receiver<Snapshot>,
+    inputs: tokio::sync::broadcast::Receiver<crate::service::input::Notice>,
+    jobs: watch::Receiver<u64>,
     revoked: watch::Receiver<u64>,
-    initial: bool,
+    snapshot_dirty: bool,
+    jobs_dirty: bool,
+    pending_input: Option<InputEvent>,
+    cursor: usize,
     _permit: OwnedSemaphorePermit,
+}
+enum InputEvent {
+    Notice(crate::service::input::Notice),
+    Lost(u64),
+}
+impl InputEvent {
+    fn receive(
+        result: Result<crate::service::input::Notice, tokio::sync::broadcast::error::RecvError>,
+    ) -> Option<Self> {
+        use tokio::sync::broadcast::error::RecvError;
+        match result {
+            Ok(notice) => Some(Self::Notice(notice)),
+            Err(RecvError::Lagged(dropped)) => Some(Self::Lost(dropped)),
+            Err(RecvError::Closed) => None,
+        }
+    }
+}
+impl StreamState {
+    fn prefetch(&mut self) -> Option<()> {
+        use tokio::sync::broadcast::error::TryRecvError;
+        match self.updates.try_recv() {
+            Ok(_) | Err(TryRecvError::Lagged(_)) => {
+                self.snapshot_dirty = true;
+                // Snapshot is a full latest value, not a history replay.
+                self.updates = self.updates.resubscribe();
+            }
+            Err(TryRecvError::Closed) => return None,
+            Err(TryRecvError::Empty) => {}
+        }
+        if self.jobs.has_changed().ok()? {
+            self.jobs.borrow_and_update();
+            self.jobs_dirty = true;
+        }
+        if self.pending_input.is_none() {
+            let result = match self.inputs.try_recv() {
+                Ok(notice) => Ok(notice),
+                Err(TryRecvError::Lagged(dropped)) => {
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(dropped))
+                }
+                Err(TryRecvError::Closed) => Err(tokio::sync::broadcast::error::RecvError::Closed),
+                Err(TryRecvError::Empty) => return Some(()),
+            };
+            self.pending_input = Some(InputEvent::receive(result)?);
+        }
+        Some(())
+    }
+    fn next_event(&mut self) -> Result<Option<Event>, ()> {
+        for offset in 0..3 {
+            let kind = (self.cursor + offset) % 3;
+            let ready = match kind {
+                0 => self.snapshot_dirty,
+                1 => self.jobs_dirty,
+                _ => self.pending_input.is_some(),
+            };
+            if !ready {
+                continue;
+            }
+            self.cursor = (kind + 1) % 3;
+            let (name, data) = match kind {
+                0 => {
+                    self.snapshot_dirty = false;
+                    ("snapshot", encoded_snapshot(&self.state).ok_or(())?)
+                }
+                1 => {
+                    self.jobs_dirty = false;
+                    let data = serde_json::to_string(&json!({"jobs":self.state.jobs.list()}))
+                        .map_err(|_| ())?;
+                    if data.len() > SNAPSHOT_BYTES {
+                        return Err(());
+                    }
+                    ("jobs", data)
+                }
+                _ => match self.pending_input.take().expect("ready input") {
+                    InputEvent::Notice(notice) => {
+                        let snapshot = self.state.handle.snapshot().ok_or(())?;
+                        if !notice.current(&snapshot) {
+                            return Ok(None);
+                        }
+                        let mut value = notice.value();
+                        value["generation"] = json!(notice.context.generation());
+                        ("input", serde_json::to_string(&value).map_err(|_| ())?)
+                    }
+                    InputEvent::Lost(dropped) => {
+                        // Cursor now points to snapshot, before further actions.
+                        self.snapshot_dirty = true;
+                        ("input_events_lost", json!({"dropped":dropped}).to_string())
+                    }
+                },
+            };
+            return Ok(Some(Event::default().event(name).data(data)));
+        }
+        Ok(None)
+    }
 }
 async fn events(
     AxumState(state): AxumState<Arc<State>>,
@@ -390,13 +492,25 @@ async fn events(
     let Ok(permit) = state.streams.clone().try_acquire_owned() else {
         return error(StatusCode::SERVICE_UNAVAILABLE, "too many live streams");
     };
-    let stream = stream::unfold(
+    sse(event_stream(state, session.token, permit))
+}
+pub(super) fn event_stream(
+    state: Arc<State>,
+    token: String,
+    permit: OwnedSemaphorePermit,
+) -> impl Stream<Item = Result<Event, Infallible>> + Send {
+    stream::unfold(
         StreamState {
             updates: state.handle.subscribe(),
+            inputs: state.handle.subscribe_inputs(),
+            jobs: state.jobs.changed.subscribe(),
             revoked: state.revoked.subscribe(),
             state,
-            token: session.token,
-            initial: true,
+            token,
+            snapshot_dirty: true,
+            jobs_dirty: true,
+            pending_input: None,
+            cursor: 0,
             _permit: permit,
         },
         |mut stream| async move {
@@ -405,13 +519,13 @@ async fn events(
                 if stream.state.stop.is_cancelled() {
                     return None;
                 }
-                if stream.initial {
-                    stream.initial = false;
-                    let data = encoded_snapshot(&stream.state)?;
-                    return Some((
-                        Ok::<_, Infallible>(Event::default().event("snapshot").data(data)),
-                        stream,
-                    ));
+                stream.prefetch()?;
+                if let Some(event) = stream.next_event().ok()? {
+                    return Some((Ok::<_, Infallible>(event), stream));
+                }
+                // Dropping a retired notice must not strand already-dirty data.
+                if stream.snapshot_dirty || stream.jobs_dirty || stream.pending_input.is_some() {
+                    continue;
                 }
                 // WAIT: web-events
                 tokio::select! {
@@ -420,14 +534,15 @@ async fn events(
                     result=stream.revoked.changed()=>if result.is_err() { return None; },
                     _=tokio::time::sleep_until(allowed.expires)=>{},
                     result=stream.updates.recv()=>match result {
-                        Ok(_) | Err(tokio::sync::broadcast::error::RecvError::Lagged(_))=>stream.initial=true,
+                        Ok(_) | Err(tokio::sync::broadcast::error::RecvError::Lagged(_))=>stream.snapshot_dirty=true,
                         Err(tokio::sync::broadcast::error::RecvError::Closed)=>return None,
-                    }
+                    },
+                    result=stream.jobs.changed()=>if result.is_err() {return None;} else {stream.jobs_dirty=true;},
+                    result=stream.inputs.recv()=>stream.pending_input=Some(InputEvent::receive(result)?),
                 }
             }
         },
-    );
-    sse(stream)
+    )
 }
 fn sse(stream: impl Stream<Item = Result<Event, Infallible>> + Send + 'static) -> Response {
     Sse::new(stream).into_response()

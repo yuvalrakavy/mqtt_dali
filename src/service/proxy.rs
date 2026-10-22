@@ -403,24 +403,7 @@ impl DaliProxy {
         if let Some(pause) = &self.read_pause {
             pause.point().await;
         }
-        let snapshot = self.snapshot()?;
-        super::input::readback::resolve(&snapshot, target, &observed.context).map_err(op_error)?;
-        if Instant::now() >= deadline
-            || !snapshot.inputs.get(target).is_some_and(|value| {
-                !value.stale && value.context.generation() == observed.context.generation()
-            })
-            || !matches!(&snapshot.hardware,Hardware::Ready{buses,..} if buses.iter().any(|b|b.bus==observed.bus && b.status==2))
-        {
-            return Err(OpError::Rejected(
-                "input evidence changed before MQTT completion".into(),
-            ));
-        }
-        super::input::projections(&snapshot)
-            .into_iter()
-            .find(|s| {
-                s.state.target == target && s.context.generation() == observed.context.generation()
-            })
-            .ok_or_else(|| OpError::Rejected("input mapping changed before MQTT completion".into()))
+        accepted_input(&self.snapshot()?, target, &observed, deadline)
     }
     async fn read_observation(
         &self,
@@ -645,7 +628,7 @@ impl Operation {
 
 /// HTTP composition uses typed service calls, never an SDK worker completion.
 pub(crate) struct PreparedCommand {
-    operation: Operation,
+    operation: PreparedAction,
     target: Option<String>,
     pub(crate) context: RequestContext,
     deadline: Instant,
@@ -653,6 +636,116 @@ pub(crate) struct PreparedCommand {
 pub(crate) enum PreparationError {
     Invalid,
     Conflict,
+}
+enum PreparedAction {
+    Command(Operation),
+    Output(Option<output::WriteIntent>),
+    Input,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct OutputValues {
+    values: PropertyMap,
+}
+impl PreparedAction {
+    fn prepare(
+        snapshot: &Snapshot,
+        target: Option<&str>,
+        call: &CommandCall,
+        context: &RequestContext,
+    ) -> Result<(Self, Duration), PreparationError> {
+        let action = match call.command.as_str() {
+            "apply_output" | "read_output" | "read_input" => {
+                let target = target.ok_or(PreparationError::Invalid)?;
+                let location = snapshot
+                    .model
+                    .projections()
+                    .into_iter()
+                    .find(|p| p.target == target)
+                    .ok_or(PreparationError::Conflict)?
+                    .location;
+                if call.command == "read_input" {
+                    if !call.params.is_empty()
+                        || !matches!(location, crate::inventory::Location::InputInstance { .. })
+                    {
+                        return Err(PreparationError::Invalid);
+                    }
+                    input::readback::resolve(snapshot, target, context)
+                        .map_err(|_| PreparationError::Conflict)?;
+                    return Ok((Self::Input, Duration::from_secs(4)));
+                }
+                if !matches!(location, crate::inventory::Location::Output { .. }) {
+                    return Err(PreparationError::Invalid);
+                }
+                let intent = if call.command == "apply_output" {
+                    let p: OutputValues = decode(call).map_err(|_| PreparationError::Invalid)?;
+                    Some(
+                        state::intent(&p.values, colour::configured(snapshot, target))
+                            .map_err(|_| PreparationError::Invalid)?,
+                    )
+                } else {
+                    if !call.params.is_empty() {
+                        return Err(PreparationError::Invalid);
+                    }
+                    None
+                };
+                DaliProxy::output_route(snapshot, target, context, intent.is_some())
+                    .map_err(|_| PreparationError::Conflict)?;
+                let colour_write = matches!(
+                    intent,
+                    Some(output::WriteIntent::Colour(_) | output::WriteIntent::Combined(_, _))
+                );
+                return Ok((
+                    Self::Output(intent),
+                    DaliProxy::output_budget(snapshot, target, colour_write),
+                ));
+            }
+            _ => {
+                Self::Command(parse(snapshot, target, call).map_err(|_| PreparationError::Invalid)?)
+            }
+        };
+        let Self::Command(operation) = &action else {
+            unreachable!()
+        };
+        operation
+            .admit(snapshot, target, context)
+            .map_err(|_| PreparationError::Conflict)?;
+        let budget = operation.budget();
+        Ok((action, budget))
+    }
+}
+fn accepted_input(
+    snapshot: &Snapshot,
+    target: &str,
+    observed: &input::Observation,
+    deadline: Instant,
+) -> Result<ContextualState, OpError> {
+    input::readback::resolve(snapshot, target, &observed.context).map_err(op_error)?;
+    if Instant::now() >= deadline
+        || !snapshot.inputs.get(target).is_some_and(|value| {
+            !value.stale && value.context.generation() == observed.context.generation()
+        })
+        || !matches!(&snapshot.hardware,Hardware::Ready{buses,..} if buses.iter().any(|b|b.bus==observed.bus && b.status==2))
+    {
+        return Err(OpError::Rejected(
+            "input evidence changed before MQTT completion".into(),
+        ));
+    }
+    input::projections(snapshot)
+        .into_iter()
+        .find(|s| {
+            s.state.target == target && s.context.generation() == observed.context.generation()
+        })
+        .ok_or_else(|| OpError::Rejected("input mapping changed before MQTT completion".into()))
+}
+fn projected_state(state: ContextualState) -> Value {
+    serde_json::json!({"target":state.state.target,"generation":state.context.generation(),"values":state.state.values})
+}
+pub(crate) fn projected_states(snapshot: &Snapshot) -> Vec<Value> {
+    state::projections(snapshot)
+        .into_iter()
+        .map(projected_state)
+        .collect()
 }
 impl PreparedCommand {
     pub(crate) fn new(
@@ -673,12 +766,9 @@ impl PreparedCommand {
         if context.generation() != Some(token.as_str()) {
             return Err(PreparationError::Conflict);
         }
-        let operation =
-            parse(snapshot, target.as_deref(), call).map_err(|_| PreparationError::Invalid)?;
-        operation
-            .admit(snapshot, target.as_deref(), &context)
-            .map_err(|_| PreparationError::Conflict)?;
-        let deadline = Instant::now() + operation.budget();
+        let (operation, budget) =
+            PreparedAction::prepare(snapshot, target.as_deref(), call, &context)?;
+        let deadline = Instant::now() + budget;
         Ok(Self {
             operation,
             target,
@@ -700,6 +790,48 @@ impl PreparedCommand {
             serde_json::to_value(value)
                 .map_err(|_| ServiceError::Uncertain("result encoding failed".into()))
         }
+        let operation = match operation {
+            PreparedAction::Command(operation) => operation,
+            PreparedAction::Output(intent) => {
+                let target = target
+                    .ok_or_else(|| ServiceError::Rejected("output target required".into()))?;
+                let observed = match intent {
+                    None => handle.read_output(&target, context, deadline).await,
+                    Some(output::WriteIntent::Base(base)) => {
+                        handle.apply_output(&target, base, context, deadline).await
+                    }
+                    Some(output::WriteIntent::Colour(colour)) => {
+                        handle
+                            .apply_colour(&target, colour, context, deadline)
+                            .await
+                    }
+                    Some(output::WriteIntent::Combined(base, colour)) => {
+                        handle
+                            .apply_colour_with_output(&target, colour, base, context, deadline)
+                            .await
+                    }
+                }?;
+                if Instant::now() >= deadline {
+                    return Err(ServiceError::Uncertain(
+                        "output completion exceeded its original deadline".into(),
+                    ));
+                }
+                let latest = handle.snapshot().ok_or(ServiceError::Closed)?;
+                return state::accepted(&latest, &target, &observed)
+                    .map(projected_state)
+                    .map_err(|e| ServiceError::Rejected(e.to_string()));
+            }
+            PreparedAction::Input => {
+                let target = target.ok_or_else(|| {
+                    ServiceError::Rejected("input instance target required".into())
+                })?;
+                let observed = handle.read_input(&target, context, deadline).await?;
+                let latest = handle.snapshot().ok_or(ServiceError::Closed)?;
+                return accepted_input(&latest, &target, &observed, deadline)
+                    .map(projected_state)
+                    .map_err(|e| ServiceError::Rejected(e.to_string()));
+            }
+        };
         match operation {
             Operation::Metadata(change) => {
                 let snapshot = handle.submit(change, context, deadline, None).await?;

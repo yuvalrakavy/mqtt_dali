@@ -257,35 +257,35 @@
   },
   "web_sse_ignores_session_revocation": {
    "last_real": {
-    "at": "2026-10-22T08:03:25Z",
+    "at": "2026-10-22T09:17:29Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:5ffd524a1d746d26",
+     "guard": "item:167b4c01120b0a49",
      "row": "bc069895aecdb235",
      "test": null
     },
     "path": "command",
-    "secs": 14.8,
-    "sha": "d46cb812ea194bed6ac3e72e020103aa0e7369db",
+    "secs": 16.3,
+    "sha": "fe7c30dfee2363b361eb91e63ceef412c7839173",
     "verdict": "RED"
    }
   },
   "web_sse_never_wakes_for_expiry": {
    "last_real": {
-    "at": "2026-10-22T08:03:39Z",
+    "at": "2026-10-22T09:17:42Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:5ffd524a1d746d26",
+     "guard": "item:167b4c01120b0a49",
      "row": "112ec9bbc503a61a",
      "test": null
     },
     "path": "command",
-    "secs": 14.1,
-    "sha": "d46cb812ea194bed6ac3e72e020103aa0e7369db",
+    "secs": 13.5,
+    "sha": "fe7c30dfee2363b361eb91e63ceef412c7839173",
     "verdict": "RED"
    }
   },
