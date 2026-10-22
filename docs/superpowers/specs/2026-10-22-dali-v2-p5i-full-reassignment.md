@@ -208,3 +208,18 @@ Inline implementation follows the selected shape. Early local evidence: six
 service tests, independent literal peer across both spaces/profiles and failure
 cases, four new codec/model tests, six frontend tests, and the real browser
 workflow pass. This is not the final acceptance verdict.
+
+
+## Acceptance
+
+Accepted locally at `2c39885`, production `dbc4f84`. Both sequential source
+lenses APPROVE and extended approval through the test-only missing-fixture/
+other-bus/permit-diagnostic delta. All 14 current controls have intended RED
+evidence. Restored 8/8 checks pass; final acceptance passes 595 native tests,
+32 frontend tests, doc tests and phone/desktop functional browser with 697owned
+commands. Logs: `/tmp/dali-reassignment-restored-final` and
+`/tmp/dali-reassignment-acceptance`. Physical HAT timing remains unverified;
+P5i2 lost-address restoration remains separate. See the phase ledger for exact
+scope, correction history and artifact paths. No new Store/global skill or
+memory entry is needed: bridge CLAUDE and operator/contributor guides carry the
+procedure. Review coverage is same-family only.

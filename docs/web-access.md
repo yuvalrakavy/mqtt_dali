@@ -93,8 +93,12 @@ spaces, preserving saved names and reserving existing addresses. It then assigns
 unaddressed gear one device at a time and reads current values. **Refresh
 addressed** scans both spaces without assigning addresses or removing missing
 items. Progress can stop after the currently admitted operation; completed
-changes remain saved. Full destructive reassignment and lost-address restoration
-are not available in this build.
+changes remain saved. **Bus actions → Reassign addresses** provides an explicit
+frozen review for outputs, inputs or both, followed by per-space retirement,
+clearing, assignment and refresh. Native live values, groups and scene memory
+remain; saved selected identities and output references are retired. See
+[full reassignment](reassignment.md) for partial outcomes and limits.
+Lost-address restoration remains unfinished.
 
 Blink a fixture, type its meaningful name and press the checkmark, Enter, or move
 focus to save. Those three actions share one save. Successful rename ends Blink

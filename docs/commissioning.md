@@ -2,8 +2,10 @@
 
 The development bridge can assign one unaddressed output fixture or input module per request.
 Existing short addresses, saved names, groups and missing-fixture reservations are
-preserved. Full bus readdressing, lost-address restoration
-and the approved commissioning web page remain separate unfinished work.
+preserved. The served bus page composes discovery/assignment and current reads.
+For a complete restart of selected address spaces, use
+[explicit full reassignment](reassignment.md). Lost-address restoration remains
+a separate unfinished workflow.
 
 First [discover already addressed devices](discovery.md). Then read the current
 inventory revision and controller `target-generation` from
@@ -16,8 +18,8 @@ inventory revision and controller `target-generation` from
 
 The command has no `target`, address or mode field. Unknown/missing fields and
 stale revisions/tokens are refused. An optional `traceparent` follows the request.
-For another new fixture, repeat using the latest revision/generation. A browser
-batch will iterate these bounded steps; no background bus job is exposed yet.
+For another new fixture, repeat using the accepted revision/generation. The
+served browser iterates these bounded steps; completed changes remain visible.
 
 The result is in the BridgeKit reply's `value`:
 
@@ -53,7 +55,7 @@ default-named module with a fresh identity. It does **not** invent instances or
 current values. After `assigned`, call `discover_address` with `space:"inputs"`,
 the returned address and the latest confirmed revision/controller generation.
 That separate operation discovers real instances under the continuing module
-identity. Future browser orchestration will perform both steps on the bus page.
+identity. The served browser performs both steps on the bus page.
 
 The bridge saves a reservation **before** programming. On interruption, the new
 row remains in inventory with unknown state. Inspect it before retrying: do not

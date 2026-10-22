@@ -53,11 +53,15 @@ cannot erase a later slot's name draft. Native hardware drift/repair execution
 has separate service/literal tests; the browser repair case uses matching data. Inspect screenshots and
 console errors; a successful compile alone is not UI acceptance. Routine Rust
 suites skip this explicitly ignored browser dependency.
+Full reassignment cases exercise cancelled frozen review, outputs/inputs/both,
+fresh names, reference pruning, preservation of native live/group/scene values,
+and leaving the tab during an admitted reset.
 Query-before-event cases include multi-bit Part 302 inputs and exact 64-bit
 Part 304 sensor data. The logout case holds a real job admission while discovery
 is busy, then verifies session revocation and absence of later batch commands.
 
-Run `docs/v2-browser-controls.toml` and `docs/v2-scenes-ui-controls.toml` with
+Run `docs/v2-browser-controls.toml`, `docs/v2-scenes-ui-controls.toml` and
+`docs/v2-reassignment-controls.toml` with
 the existing Store negative-control runner
 to prove the frontend authority/race guards and protected embedded routes detect
 their intended mutations. Mutations, source edits and verification must remain
@@ -73,3 +77,12 @@ only through its own result and exact SSE revision. Do not use metadata()'s
 latest-root injection for reviewed scene batches. Drafts preserve untouched raw
 codes and coalesce row blur/check commits. Keep operation snapshots only for the
 lifetime of their draft, review or batch. See the [operator guide](scenes-browser.md).
+
+
+`reassignment.ts` freezes the selected bus/root/connection and composes one
+space at a time. Do not call the ordinary both-space scan or metadata()'s latest
+root injection. Assignment accepts its own returned revision, including skipped
+reservations, and waits for the exact SSE root. At 64 confirmed assignments,
+capacity is a normal stop; no extra free-address search is required. BusActions
+is keyed by number and tab so an old completion cannot start later steps after
+navigation. Its operation cancellation is independent of global batch flags.

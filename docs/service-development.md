@@ -223,6 +223,16 @@ independent address reservations and raw short addresses. The returned input mod
 has no instances until a separate addressed discovery fills actual types under its
 continuing identity. Explicit recovery never resumes programming.
 
+`reset_address_space` uses the same controller authority and physical owner.
+One atomic removal vector and normal ConfigStore/SDK activation retire all saved
+rows in the selected space before any native clear frame. Preserve its original
+physical stamp through save, enqueue and final acceptance. Its own save retires
+the controller token, so post-save checks use the committed revision/Ready phase
+without silently retagging the original request. Empty saved spaces still clear
+unsaved hardware. The report distinguishes cleared from retired-but-unconfirmed;
+the served UI composes assignment/refresh separately. See
+[reassignment](reassignment.md) and [fault controls](v2-reassignment-controls.md).
+
 Commands use `DALI/Command/<controller>` and exactly one MQTT v5
 `target-generation` property. They are momentary WithReply commands; provide a
 response topic and correlation data when awaiting the result.
@@ -231,6 +241,7 @@ response topic and correlation data when awaiting the result.
 |---|---|---|
 | `blink` / `stop_blink` | Individual output `target`; no other fields | Current output token |
 | `configure_bus` | `bus` (0..3), `name`, `enabled` (bool), `expected_revision` | Current controller token |
+| `reset_address_space` | `bus` (0..3), `space` (`outputs` or `inputs`), `expected_revision`; no target | Current controller token |
 | `remove_from_list` | Output/input-module `target`, `expected_revision` | Current selected item token |
 | `rename` | `target`, `name`, `expected_revision` | Current output/group token |
 | `set_color_representation` | Individual output `target`, `color_representation` (`temperature`, `xy`, `rgbwaf` or null), `expected_revision` | Current output token |

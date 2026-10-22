@@ -5,6 +5,60 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5i1 — full selected-space address reassignment
+
+Accepted locally at frozen source `2c39885` (production `dbc4f84`): **595 native
+tests**, **32 frontend tests**, all **14 intentional-fault controls**, scoped
+strict lint/Pi/wait/format/control-plan/asset checks and the real phone/desktop
+workflow pass. Both sequential design and source lenses APPROVE. Reviews are
+same-family/source-only; no cross-family or physical HAT validation is claimed.
+
+`reset_address_space` exposes strict controller-only output/input clearing via
+shared MQTT/HTTP and a typed helper. One atomic removal vector, ConfigStore save
+and normal generation activation retire saved identities before native mutation.
+Original request/context/deadline/permit/completion and physical stamp survive
+the handoff; final success requires all 64 absent short addresses and the current
+own committed mapping. Otherwise the reply retains retirement and reports
+unconfirmed. Empty saved lists still clear unsaved physical gear. Output group
+references/private scene rows and input descendants retire through existing
+edits; fresh defaults get new Origins. Other buses/spaces remain unchanged.
+
+Bus actions offers a frozen outputs/inputs/both confirmation. Each selected
+space clears, assigns/discovers one device at a time, then refreshes addressed
+devices/current values before the next space. Capacity stops normally after 64
+verified assignments; it does not promise no additional unaddressed gear exists.
+Cancellation, tab lifetime, connection epoch and exact own revision fences stop
+later submissions. Native levels/colour, group bits and scene memory remain.
+See the [operator/API guide](reassignment.md).
+
+Fail-first independent model tests reproduced absent standard input address
+writes/broadcast/DTR0. Literal tests assert 16/24-bit vectors, raw input addresses,
+repeat timing/interruption, all 64 addresses and native/other-space preservation.
+Service tests cover both profiles, save failure/uncertainty, held-save permit and
+original stamp, final stamp, no-op saved spaces, MQTT original completion/strict
+params, missing saved rows, unaffected other-bus Origins and fresh reused names.
+The literal peer asserts Ready/durable retirement at the first clear frame and
+checks transport failure plus partially completed absence queries independently
+of the physical model. Eight scoped restored checks pass in
+`/tmp/dali-reassignment-restored-final`.
+
+The initial control run records 13 intended RED rows and one diagnostic mismatch:
+the Busy assertion lacked the table's custom failure text. The assertion message
+was corrected, the two affected tests passed and that control reran intended RED
+(ledger retained). No production change followed source review. Both reviewers
+extended approval through the test-only `2c39885` delta. Final acceptance is
+`/tmp/dali-reassignment-acceptance`:595/595 native across 11 binaries in 58.519 s
+execution/111 s command, doc tests, 32 frontend tests and the 53 s browser run with 697
+owned commands. Its required assertions match the earlier 614-command run; the
+count varies with streamed/private result scheduling. Screenshots/log:
+`/tmp/dali-browser-287138a94b72bc3dd89c5eff1c265bef`.
+
+The wait checker required an explicit existing-operation tag at the local clear
+call; the final registry reports 0 findings. The input-only confirmation text was
+scoped to its own effects during screenshot review. No SDK/UART recovery,
+Store, PanelScript, legacy source, live bus or deployment action belongs to this
+slice. Lost-address restoration is the next commissioning boundary.
+
 ## P5h3 — protected Scenes screen and reviewed operations
 
 Accepted locally at frozen source `77e7ae1` (initial source `f92c496`, revision
@@ -1970,7 +2024,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification; native scenes, named slots, stored reads/recall and private Set/Adopt/Repair/Capture accepted locally | Full reassign/restore and P5h3 Scenes UI with reviewed multi-row capture/copy/clear/verification |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification; native scenes, named slots, stored reads/recall, reviewed private scene composition and full selected-space reassignment accepted locally | Lost-address restoration through an identified candidate |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

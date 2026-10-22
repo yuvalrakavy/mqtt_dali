@@ -207,8 +207,8 @@ Retain original scene token, root revision, fixture Origin and physical stamp.
 Copy the confirmed cleared-slot MASK report before staging and Store; editing
 never activates. A no-op desired Set still programs, and repair rechecks review
 after the handoff. Capture uses actual native family/assigned channels, not the
-configured public component. The Scenes screen and reviewed multi-row
-capture/copy/clear composition remain pending.
+configured public component. The protected Scenes screen composes the row APIs
+for reviewed capture/copy/clear and verification.
 Controls: `docs/v2-scene-controls.toml`, `docs/v2-scene-identity-controls.toml` and
 `docs/v2-scene-operation-controls.toml`, `docs/v2-scene-settings-controls.toml`.
 The protected Scenes screen composes the accepted row APIs; operator guide:
@@ -221,6 +221,16 @@ Scene/fixture/root/connection authority and frozen candidates. Metadata dialogs
 retain their original Scene identity. Release completed operation snapshots.
 UI and reader controls: `docs/v2-scenes-ui-controls.toml`. Rebuild assets after
 the real browser creation control, then check-dist. No Store/PanelScript change.
+
+Full reassignment uses `service::reassignment` and the existing atomic removal
+edits. Save/activate before clear; preserve original stamp, context, completion
+and permit. Post-save checks use the own committed revision, not the retired
+controller token. An empty saved space still clears unsaved native gear.
+`reset_address_space` clears one explicit space; the browser composes existing
+assignment/discovery/current reads per space with frozen roots/epoch/lifetime.
+Do not reuse Controller.scan (both spaces), latest-root injection, or demand a
+65th search after 64verified assignments. See `docs/reassignment.md` and
+`docs/v2-reassignment-controls.md`. Lost-address restoration remains pending.
 
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`
