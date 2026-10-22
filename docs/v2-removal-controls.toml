@@ -1,0 +1,46 @@
+[[control]]
+name = "removal_skips_the_saved_output_edit"
+file = "src/service.rs"
+anchor = "Self::RemoveOutput { bus, address } => Edit::RemoveOutput { bus, address },"
+replacement = "Self::RemoveOutput { .. } => Edit::Description { description: None },"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(removal_mqtt_forgets)"]
+expect_text = "saved output was not removed"
+
+[[control]]
+name = "removal_uses_controller_instead_of_item_authority"
+file = "src/service/routing.rs"
+anchor = "                | MetadataEdit::RemoveOutput { bus, address }"
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(removal_requires_item_authority)"]
+expect_text = "controller token authorized removal of an item with another binding token"
+
+[[control]]
+name = "removal_clears_children_but_leaves_the_module_saved"
+file = "src/inventory/edit.rs"
+anchor = '''            let old = bus.inputs.remove(at);
+            retire_input(origins, *index, &old);'''
+replacement = "            bus.inputs[at].instances.clear();"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(removal_input_module_retires)"]
+expect_text = "input module remained saved after removal"
+
+[[control]]
+name = "removal_accepts_unknown_payload_fields"
+file = "src/service/proxy.rs"
+anchor = '''#[serde(deny_unknown_fields)]
+struct Removal {'''
+replacement = "struct Removal {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(removal_strict_mqtt)"]
+expect_text = "invalid remove-from-list payload was accepted"
+
+[[control]]
+name = "removal_retires_its_original_mqtt_reply"
+file = "src/service/owner.rs"
+anchor = "reporter.replace_generations_for_command(&self.table, next.clone(), completion)"
+replacement = "reporter.replace_generations(&self.table, next.clone())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(removal_mqtt_forgets)"]
+expect_text = "saved output was not removed"

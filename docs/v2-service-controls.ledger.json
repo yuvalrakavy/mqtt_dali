@@ -87,7 +87,7 @@
   },
   "recovery_skips_runtime_activation_for_changed_false": {
    "last_real": {
-    "at": "2026-10-22T06:14:37Z",
+    "at": "2026-10-22T06:32:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,8 +97,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 15.2,
-    "sha": "fea28efce87833f283ea96122cc6dba830906cd8",
+    "secs": 5.6,
+    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
     "verdict": "RED"
    }
   },

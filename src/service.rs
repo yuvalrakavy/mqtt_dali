@@ -75,6 +75,16 @@ mod build_info {
 /// Public metadata changes. Physical changes require verified commissioning jobs.
 #[derive(Debug, Clone)]
 pub enum MetadataEdit {
+    /// Forget the saved fixture and its saved group references; no hardware write.
+    RemoveOutput {
+        bus: u8,
+        address: u8,
+    },
+    /// Forget a saved module and every child instance; no hardware write.
+    RemoveInput {
+        bus: u8,
+        address: u8,
+    },
     ConfigureBus {
         bus: u8,
         name: String,
@@ -115,6 +125,8 @@ pub enum MetadataEdit {
 impl MetadataEdit {
     fn into_edit(self) -> Edit {
         match self {
+            Self::RemoveOutput { bus, address } => Edit::RemoveOutput { bus, address },
+            Self::RemoveInput { bus, address } => Edit::RemoveInput { bus, address },
             Self::ConfigureBus { bus, name, enabled } => Edit::ConfigureBus { bus, name, enabled },
             Self::OutputColorRepresentation {
                 bus,

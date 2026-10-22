@@ -70,18 +70,18 @@
   },
   "identical_text_hides_a_replacement_lifetime": {
    "last_real": {
-    "at": "2026-10-21T23:41:17Z",
+    "at": "2026-10-22T06:32:42Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:f38295c3284cafb2",
+     "guard": "item:dd69da27078a4569",
      "row": "ed6189b8496b8a60",
      "test": null
     },
     "path": "command",
-    "secs": 5.5,
-    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "secs": 8.3,
+    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
     "verdict": "RED"
    }
   },

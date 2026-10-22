@@ -5,6 +5,38 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5d — explicit Remove from list
+
+`remove_from_list` exposes existing `Edit::RemoveOutput` / `RemoveInput` through
+thin metadata/proxy/item-authority mappings. It removes saved fixture lifetimes,
+including all instances of a selected input module, and preserves hardware
+addresses, levels, scenes, physical groups and input configuration. Output removal
+cleans saved group references; continuing group identity remains stable while
+membership binding tokens rotate. Original MQTT reply metadata survives deleting
+the selected target. Unknown payloads/unsupported targets and stale revision/item
+authority are refused. Rediscovery creates fresh lifetimes; consumers retire old
+intent rather than transferring it by address/name. Store Home equipment handling
+remains P8 work.
+
+Both sequential design gates approved with no material findings. The first real
+MQTT regression failed with unknown command before production changes. Seven new
+tests and the existing explicit-removal consumer regression pass: output removal
+and State retirement, physical output/input preservation, same-address rediscovery,
+input subtree/queued-action retirement with continuing output 0, strict payloads,
+item/controller token distinction, held/failed/uncertain saves and explicit
+recovery, and independent-consumer identity/intent continuity. No SDK, UART
+recovery or new persistence machinery was needed. All **5 new behavioral controls**
+and **3 affected identity/activation controls** fail at their declared assertions.
+The restored gate passes **444/444 native tests** across 11 binaries with four
+test processes, scoped strict Clippy, Pi library/all four binary compilation,
+doctests (none defined), changed-file rustfmt, wait registry and whitespace.
+Logs are `/tmp/dali-removal-controls.log`, `/tmp/dali-removal-affected-gate` and
+`/tmp/dali-removal-restored-gate`. Source gates follow before this slice closes.
+
+See [operator/API guide](remove-from-list.md),
+[design](superpowers/specs/2026-10-22-dali-v2-p5-remove-from-list.md) and
+`v2-removal-controls.toml`.
+
 ## P5c — first-install bus setup
 
 `configure_bus` / `MetadataEdit::ConfigureBus` upserts an explicitly named physical

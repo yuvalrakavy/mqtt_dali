@@ -87,7 +87,7 @@
   },
   "producer_carries_children_across_parent_replacement": {
    "last_real": {
-    "at": "2026-10-21T23:40:37Z",
+    "at": "2026-10-22T06:32:51Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -97,8 +97,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 10.0,
-    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "secs": 9.2,
+    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
     "verdict": "RED"
    }
   }

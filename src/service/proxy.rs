@@ -24,6 +24,7 @@ impl DeviceDriver for DaliProxy {
                 "discover_address",
                 "rename",
                 "rename_bus",
+                "remove_from_list",
                 "describe",
                 "recover",
                 "set_color_representation",
@@ -524,6 +525,11 @@ struct Rename {
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
+struct Removal {
+    expected_revision: u64,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RenameBus {
     expected_revision: u64,
     bus: u8,
@@ -618,6 +624,35 @@ fn parse_metadata(
     call: &CommandCall,
 ) -> Result<Change, OpError> {
     let edit = match (call.command.as_str(), target) {
+        ("remove_from_list", Some(target)) => {
+            let params: Removal = decode(call)?;
+            let projection = snapshot
+                .model
+                .projections()
+                .into_iter()
+                .find(|p| p.target == target)
+                .ok_or_else(|| OpError::Rejected("unknown item".into()))?;
+            let edit = match projection.location {
+                crate::inventory::Location::Output { bus, short_address } => {
+                    MetadataEdit::RemoveOutput {
+                        bus,
+                        address: short_address,
+                    }
+                }
+                crate::inventory::Location::Input { bus, short_address } => {
+                    MetadataEdit::RemoveInput {
+                        bus,
+                        address: short_address,
+                    }
+                }
+                _ => {
+                    return Err(OpError::Unsupported(
+                        "output or input module required".into(),
+                    ))
+                }
+            };
+            (params.expected_revision, edit)
+        }
         ("set_color_representation", Some(target)) => {
             let params: ColorSelection = decode(call)?;
             if !call.params.contains_key("color_representation") {

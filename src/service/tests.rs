@@ -7,6 +7,7 @@ mod discovery;
 mod input;
 mod live_input;
 mod readback;
+mod removal;
 
 #[derive(Default)]
 pub(super) struct Pause {

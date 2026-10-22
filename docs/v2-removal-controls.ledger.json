@@ -1,0 +1,90 @@
+{
+ "rows": {
+  "removal_accepts_unknown_payload_fields": {
+   "last_real": {
+    "at": "2026-10-22T06:31:31Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:617a60bd14a3e205",
+     "row": "4582753e46b9e3ec",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.4,
+    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
+    "verdict": "RED"
+   }
+  },
+  "removal_clears_children_but_leaves_the_module_saved": {
+   "last_real": {
+    "at": "2026-10-22T06:31:23Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:a27b6b8f0dee9e71",
+     "row": "c2997a7d24116fce",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.8,
+    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
+    "verdict": "RED"
+   }
+  },
+  "removal_retires_its_original_mqtt_reply": {
+   "last_real": {
+    "at": "2026-10-22T06:31:41Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e93806aeccf4c636",
+     "row": "3e583ea62ea430ec",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.2,
+    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
+    "verdict": "RED"
+   }
+  },
+  "removal_skips_the_saved_output_edit": {
+   "last_real": {
+    "at": "2026-10-22T06:31:04Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:42c09c8b597d4307",
+     "row": "db9805977fe150d5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.0,
+    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
+    "verdict": "RED"
+   }
+  },
+  "removal_uses_controller_instead_of_item_authority": {
+   "last_real": {
+    "at": "2026-10-22T06:31:11Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:beb7e635740e7c96",
+     "row": "71e51921d959ff91",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.4,
+    "sha": "ff75fca33565f98f3310d2a32e84c95ed2908190",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

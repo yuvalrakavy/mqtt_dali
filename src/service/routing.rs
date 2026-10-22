@@ -37,7 +37,8 @@ pub(super) fn admit(
                 return Err(ServiceError::Rejected("inventory revision changed".into()));
             }
             let location = match edit {
-                MetadataEdit::RenameInput { bus, address, .. } => {
+                MetadataEdit::RenameInput { bus, address, .. }
+                | MetadataEdit::RemoveInput { bus, address } => {
                     Some(crate::inventory::Location::Input {
                         bus: *bus,
                         short_address: *address,
@@ -54,6 +55,7 @@ pub(super) fn admit(
                     instance: *instance,
                 }),
                 MetadataEdit::RenameOutput { bus, address, .. }
+                | MetadataEdit::RemoveOutput { bus, address }
                 | MetadataEdit::OutputColorRepresentation { bus, address, .. } => {
                     Some(crate::inventory::Location::Output {
                         bus: *bus,

@@ -91,6 +91,10 @@ Eviction leaves state unknown and calls for a read, never an assumed off value.
 Button events must not enter this retained replay cache.
 
 Missing hardware stays in saved inventory. Only explicit removal retires it.
+Public [Remove from list](remove-from-list.md) removes an output or input-module
+subtree through the durable metadata owner. Same-address/name rediscovery creates
+a fresh lifetime; removed intent/observations must not migrate into it. Output
+removal cleans saved group references but does not program physical groups.
 Bus [setup](bus-setup.md) preserves saved children. Enable-only changes preserve
 their Origins and binding tokens; a bus rename preserves Origins while changing
 descendant targets/bindings. Disabled buses retain reservations but retire live

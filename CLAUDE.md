@@ -236,6 +236,14 @@ helper's latest-snapshot check prevents pre-disable actions after re-enable.
 Ordinary asynchronous bus health remains best effort; no new UART recovery or
 health freshness framework. Controls: `docs/v2-bus-setup-controls.toml`.
 
+`remove_from_list` / `MetadataEdit::RemoveOutput` / `RemoveInput` exposes existing
+durable removal. See `docs/remove-from-list.md`. Require current selected item
+authority, not the controller token; preserve the committing command reply after
+target retirement. Module removal includes children; output removal clears saved
+group references. Hardware addresses/levels/groups/events remain unchanged.
+Rediscovery creates fresh lifetimes, never resurrecting old intent. Controls:
+`docs/v2-removal-controls.toml`. Store logical-equipment handling remains P8 work.
+
 ## Architecture (legacy)
 
 ### Module Dependency Flow

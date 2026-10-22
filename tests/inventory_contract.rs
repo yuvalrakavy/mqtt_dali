@@ -38,6 +38,74 @@ fn input_model() -> Model {
 }
 
 #[test]
+fn removal_consumer_retires_only_selected_lifetimes_and_never_revives_old_intent() {
+    let first = input_model();
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    let output = "Bus1.Outputs.Light1";
+    let other = "Bus1.Outputs.Light2";
+    let module = "Bus1.Inputs.Panel";
+    let key = "Bus1.Inputs.Panel.Instances.Key";
+    let ids =
+        [output, other, module, key, "Bus1.Groups.All"].map(|t| consumer.by_target(t).unwrap().id);
+    consumer.set_intent(output, json!({"Brightness":0.6}));
+    consumer.set_intent(key, json!({"Status":true}));
+    let removed = first
+        .edit(
+            1,
+            &[
+                Edit::RemoveOutput { bus: 0, address: 0 },
+                Edit::RemoveInput { bus: 0, address: 0 },
+            ],
+        )
+        .unwrap();
+    consumer.accept(&removed.state_bytes().unwrap()).unwrap();
+    for (target, id) in [(output, ids[0]), (module, ids[2]), (key, ids[3])] {
+        assert!(consumer.by_target(target).is_none());
+        assert!(consumer.retired.contains(&id));
+    }
+    assert_eq!(consumer.by_target(other).unwrap().id, ids[1]);
+    assert_eq!(consumer.by_target("Bus1.Groups.All").unwrap().id, ids[4]);
+    let recreated = removed
+        .edit(
+            2,
+            &[
+                Edit::AddOutput {
+                    bus: 0,
+                    output: first.inventory().buses[0].outputs[0].clone(),
+                },
+                Edit::AddInput {
+                    bus: 0,
+                    input: first.inventory().buses[0].inputs[0].clone(),
+                },
+            ],
+        )
+        .unwrap();
+    let reopened = Model::new(
+        serde_json::from_slice(&serde_json::to_vec(recreated.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    consumer.accept(&reopened.state_bytes().unwrap()).unwrap();
+    assert_ne!(
+        consumer.by_target(output).unwrap().id,
+        ids[0],
+        "rediscovery reused a removed consumer object"
+    );
+    assert_ne!(consumer.by_target(module).unwrap().id, ids[2]);
+    assert_ne!(consumer.by_target(key).unwrap().id, ids[3]);
+    assert!(
+        consumer.by_target(output).unwrap().intent.is_none(),
+        "old output intent reached a new lifetime"
+    );
+    assert!(
+        consumer.by_target(key).unwrap().intent.is_none(),
+        "old input intent reached a new lifetime"
+    );
+    assert!(!consumer.accepts_state(output, "0123456789abcdef0123456789abcdef.1"));
+    assert!(consumer.accepts_state(output, "0123456789abcdef0123456789abcdef.3"));
+}
+
+#[test]
 fn bus_setup_consumer_preserves_objects_across_disable_enable_and_bus_rename() {
     let first = input_model();
     let mut consumer = Consumer::default();
