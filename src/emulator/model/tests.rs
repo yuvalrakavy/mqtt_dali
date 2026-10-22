@@ -1,6 +1,131 @@
 use super::*;
 
 #[test]
+fn input_commissioning_literal_repeat_readiness_raw_address_and_expiry_are_independent() {
+    let scenario=serde_json::from_value(serde_json::json!({"version":1,"seed":9,"buses":[{"number":0,
+        "outputs":[{"id":"light","short_address":0,"level":99}],
+        "inputs":[{"id":"old","short_address":0,"instances":[1],"values":[{"instance":0,"resolution":1,"bytes":[255]}]},
+        {"id":"new","short_address":null,"instances":[2]}]}]})).unwrap();
+    let mut model = Model::new(scenario).unwrap();
+    // A pair separated by more than 100ms must not enter initialization.
+    model.transmit_input(0, 0xc1017f, 0);
+    model.transmit_input(0, 0xc1017f, 101);
+    model.transmit_input(0, 0xc10200, 102);
+    model.transmit_input(0, 0xc10200, 103);
+    assert_eq!(
+        model.transmit_input(0, 0xc10300, 303),
+        Reply::None,
+        "late input INITIALISE pair was accepted"
+    );
+    model.transmit_input(0, 0xc1017f, 400);
+    model.transmit_input(0, 0xc1017f, 401);
+    model.transmit_input(0, 0xc10200, 402);
+    model.transmit_input(0, 0xc10200, 403);
+    assert_eq!(
+        model.transmit_input(0, 0xc10300, 602),
+        Reply::None,
+        "input randomise became ready before 200ms"
+    );
+    assert_eq!(
+        model.transmit_input(0, 0xc10300, 603),
+        Reply::Value(255),
+        "Part103 INITIALISE/RANDOMISE did not select the unaddressed input"
+    );
+    let random = model.snapshot()["buses"][0]["inputs"][1]["random_address"]
+        .as_u64()
+        .unwrap() as u32;
+    for frame in [
+        0xc10500 | ((random >> 16) & 255),
+        0xc10600 | ((random >> 8) & 255),
+        0xc10700 | (random & 255),
+    ] {
+        model.transmit_input(0, frame, 604);
+    }
+    assert_eq!(model.transmit_input(0, 0xc10a00, 605), Reply::Value(255));
+    model.transmit_input(0, 0xc1083f, 606);
+    assert_eq!(
+        model.transmit_input(0, 0xc1093f, 607),
+        Reply::Value(255),
+        "input verify used shifted output short address"
+    );
+    assert_eq!(model.transmit_input(0, 0xc10a00, 608), Reply::Value(63));
+    assert_eq!(model.transmit_input(0, 0x7ffe35, 609), Reply::Value(1));
+    assert_eq!(model.transmit_input(0, 0x01008c, 610), Reply::Value(255));
+    assert_eq!(model.transmit(0, 0x01a0, 611), Reply::Value(99));
+    assert_eq!(
+        model.snapshot()["buses"][0]["inputs"][0]["short_address"],
+        0
+    );
+    model.advance_to(900_401);
+    assert_eq!(
+        model.transmit_input(0, 0xc10a00, 900_401),
+        Reply::None,
+        "input initialization did not expire"
+    );
+}
+
+#[test]
+fn input_commissioning_selectors_withdraw_terminate_and_random_width_are_independent() {
+    let mut scenario: Scenario = serde_json::from_value(
+        serde_json::json!({"version":1,"seed":7,"buses":[{"number":0,
+        "outputs":[{"id":"light","short_address":0}],
+        "inputs":[{"id":"old","short_address":63,"random_address":123,"instances":[1]},
+        {"id":"new","short_address":null,"random_address":456,"instances":[2]}]}]}),
+    )
+    .unwrap();
+    scenario.buses[0].inputs[0].random_address = Some(0x1000000);
+    assert!(
+        scenario.validate().is_err(),
+        "25-bit input random address was accepted"
+    );
+    scenario.buses[0].inputs[0].random_address = Some(123);
+    let mut model = Model::new(scenario).unwrap();
+    // An intervening output command breaks an input repeated pair.
+    model.transmit_input(0, 0xc1017f, 0);
+    model.transmit(0, 0x01a0, 1);
+    model.transmit_input(0, 0xc1017f, 2);
+    model.transmit_input(0, 0xc10200, 3);
+    model.transmit_input(0, 0xc10200, 4);
+    assert_eq!(model.transmit_input(0, 0xc10300, 204), Reply::None);
+    // Only the unaddressed module participates in this randomisation.
+    for (frame, at) in [
+        (0xc1017f, 300),
+        (0xc1017f, 301),
+        (0xc10200, 302),
+        (0xc10200, 303),
+    ] {
+        model.transmit_input(0, frame, at);
+    }
+    assert_eq!(
+        model.snapshot()["buses"][0]["inputs"][0]["random_address"],
+        123
+    );
+    assert_ne!(
+        model.snapshot()["buses"][0]["inputs"][1]["random_address"],
+        456
+    );
+    model.transmit_input(0, 0xc10000, 504);
+    assert_eq!(model.transmit_input(0, 0xc10300, 505), Reply::None);
+    // Raw selector 63 initializes the addressed module, not its unaddressed peer.
+    model.transmit_input(0, 0xc1013f, 600);
+    model.transmit_input(0, 0xc1013f, 601);
+    for frame in [0xc10500, 0xc10600, 0xc1077b] {
+        model.transmit_input(0, frame, 602);
+    }
+    assert_eq!(model.transmit_input(0, 0xc10a00, 603), Reply::Value(63));
+    model.transmit_input(0, 0xc10400, 604);
+    assert_eq!(
+        model.transmit_input(0, 0xc10300, 605),
+        Reply::None,
+        "withdrawn input still participated"
+    );
+    // All selection resets withdrawal and includes addressed inputs.
+    model.transmit_input(0, 0xc101ff, 700);
+    model.transmit_input(0, 0xc101ff, 701);
+    assert_eq!(model.transmit_input(0, 0xc10300, 702), Reply::Value(255));
+}
+
+#[test]
 fn literal_input_queries_latch_restart_and_output_address_space_are_independent() {
     let scenario: Scenario =
         serde_json::from_value(serde_json::json!({"version":1,"buses":[{"number":0,

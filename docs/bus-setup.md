@@ -28,7 +28,7 @@ It uses the same exclusive durable save and runtime activation as other metadata
 It is available with `--uart none` or a disconnected bus. When UART is connected,
 new enabled buses join health polling in the current process. After health becomes
 available, use [addressed discovery](discovery.md) or
-[unaddressed output assignment](commissioning.md).
+[unaddressed output/input assignment](commissioning.md).
 
 If the bus already exists, setup changes only its name and enabled flag. Outputs,
 input modules/instances, short addresses, descriptions, groups, memberships and

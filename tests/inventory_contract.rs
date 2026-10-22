@@ -294,6 +294,71 @@ fn commissioning_reservation_consumer_adds_unknown_item_without_replacing_existi
 }
 
 #[test]
+fn input_assignment_consumer_keeps_reserved_parent_when_real_instances_arrive() {
+    let first = input_model();
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    let old = "Bus1.Inputs.Panel.Instances.Key";
+    let old_id = consumer.by_target(old).unwrap().id;
+    consumer.set_intent(old, json!({"Status":true}));
+    let reserved = first
+        .edit(
+            1,
+            &[Edit::AddInput {
+                bus: 0,
+                input: serde_json::from_value(
+                    json!({"short_address":1,"name":"Input1","instances":[]}),
+                )
+                .unwrap(),
+            }],
+        )
+        .unwrap();
+    consumer.accept(&reserved.state_bytes().unwrap()).unwrap();
+    let parent = "Bus1.Inputs.Input1";
+    let child = "Bus1.Inputs.Input1.Instances.Input1";
+    let id = consumer.by_target(parent).unwrap().id;
+    assert!(
+        consumer.by_target(parent).unwrap().observed.is_none(),
+        "input reservation fabricated current State"
+    );
+    assert!(
+        consumer.by_target(child).is_none(),
+        "input reservation invented a child"
+    );
+    let discovered = reserved
+        .edit(
+            2,
+            &[Edit::AddInputInstance {
+                bus: 0,
+                address: 1,
+                instance: serde_json::from_value(
+                    json!({"number":0,"name":"Input1","instance_type":1}),
+                )
+                .unwrap(),
+            }],
+        )
+        .unwrap();
+    let reopened = Model::new(
+        serde_json::from_slice(&serde_json::to_vec(discovered.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    consumer.accept(&reopened.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.by_target(parent).unwrap().id,
+        id,
+        "input discovery replaced its reserved parent"
+    );
+    assert_eq!(consumer.by_target(old).unwrap().id, old_id);
+    assert!(consumer.by_target(old).unwrap().intent.is_some());
+    assert!(consumer.accepts_state(child, "0123456789abcdef0123456789abcdef.3"));
+    assert!(
+        !consumer.accepts_state(child, "0123456789abcdef0123456789abcdef.2"),
+        "pre-discovery action acquired a newly discovered child"
+    );
+    assert!(consumer.accepts_state(parent, "0123456789abcdef0123456789abcdef.2"));
+}
+
+#[test]
 fn input_expansion_consumer_keeps_parent_child_and_intent_continuity() {
     let first = input_model();
     let mut consumer = Consumer::default();

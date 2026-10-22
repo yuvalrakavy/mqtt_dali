@@ -1,0 +1,175 @@
+{
+ "rows": {
+  "input_assignment_accepts_unknown_fields": {
+   "last_real": {
+    "at": "2026-10-22T07:33:18Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:daff925c28986aa1",
+     "row": "7354ea86692e0484",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.2,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_assignment_invents_instance": {
+   "last_real": {
+    "at": "2026-10-22T07:33:08Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:bc28ff08496fa956",
+     "row": "7e8d51c18238395a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 12.3,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_emulator_accepts_late_repeat": {
+   "last_real": {
+    "at": "2026-10-22T07:33:36Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:400dd1b9694d2e1b",
+     "row": "2c24d48faa4b84ce",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.1,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_emulator_skips_randomisation_readiness": {
+   "last_real": {
+    "at": "2026-10-22T07:33:27Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6889288235e61320",
+     "row": "03d9b3d3ddd4cc81",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.2,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_pair_renews_its_deadline": {
+   "last_real": {
+    "at": "2026-10-22T07:31:59Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:ff8d03401c4d2a60",
+     "row": "10fc77943b485ae7",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.0,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_program_uses_output_encoding": {
+   "last_real": {
+    "at": "2026-10-22T07:32:33Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:24720b74795a895e",
+     "row": "dbcca196a6bc849f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.3,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_randomisation_uses_output_wait": {
+   "last_real": {
+    "at": "2026-10-22T07:32:22Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:ae5ead82498ac0dc",
+     "row": "67e3396d99918ac5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.5,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_readback_expects_shifted_address": {
+   "last_real": {
+    "at": "2026-10-22T07:32:55Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:1d569cee4709e2cc",
+     "row": "70a1e2c9f8d69f17",
+     "test": null
+    },
+    "path": "command",
+    "secs": 12.7,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_repeat_sends_one_frame": {
+   "last_real": {
+    "at": "2026-10-22T07:32:11Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:ff8d03401c4d2a60",
+     "row": "5b4bca336db15523",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.7,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  },
+  "input_verify_uses_output_encoding": {
+   "last_real": {
+    "at": "2026-10-22T07:32:42Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:de0e198a60ab3cc1",
+     "row": "fa0f50d18b038042",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.1,
+    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

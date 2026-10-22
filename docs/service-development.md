@@ -149,11 +149,14 @@ completion but queries hardware before adopting additions. See
 [addressed discovery](discovery.md) for the typed API, MQTT command, captured-probe
 report and cancellation/save contract. It does not fabricate fixture State.
 
-`assign_next_output` adds one unaddressed output using search, durable reservation
+`assign_next_output` / `assign_next_input` add one unaddressed fixture/module using search, durable reservation
 and programming phases under the same permit. Its structured outcome distinguishes
 assignment from a reserved-but-unconfirmed address. See
 [commissioning](commissioning.md) for the typed/MQTT contract, CLI repeat profile,
-phase budgets and recovery limits. Explicit recovery never resumes programming.
+phase budgets and recovery limits. Inputs use explicit bounded 24-bit pairs,
+independent address reservations and raw short addresses. The returned input module
+has no instances until a separate addressed discovery fills actual types under its
+continuing identity. Explicit recovery never resumes programming.
 
 Commands use `DALI/Command/<controller>` and exactly one MQTT v5
 `target-generation` property. They are momentary WithReply commands; provide a

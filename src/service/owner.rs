@@ -301,9 +301,10 @@ impl Owner {
                 )),
             };
         }
-        commissioning::resolve(
+        commissioning::resolve_space(
             &service.handle.snapshot().ok_or(ServiceError::Closed)?,
             request.bus,
+            request.space,
             request.expected,
             &request.context,
         )?;
@@ -319,7 +320,10 @@ impl Owner {
             Some(Step::NoCandidate) => {
                 return Ok(Advance::Done(commissioning::report(
                     request,
-                    AssignmentOutcome::NoUnaddressedOutput,
+                    match request.space {
+                        discovery::Space::Outputs => AssignmentOutcome::NoUnaddressedOutput,
+                        discovery::Space::Inputs => AssignmentOutcome::NoUnaddressedInput,
+                    },
                     self.model.inventory().revision,
                     None,
                 )))
@@ -338,19 +342,39 @@ impl Owner {
             .iter()
             .find(|b| b.bus == request.bus)
             .ok_or(ServiceError::Closed)?;
-        if saved.outputs.iter().any(|o| o.short_address == address) {
+        let reserved = match request.space {
+            discovery::Space::Outputs => saved.outputs.iter().any(|o| o.short_address == address),
+            discovery::Space::Inputs => saved.inputs.iter().any(|i| i.short_address == address),
+        };
+        if reserved {
             return Err(ServiceError::Rejected(
                 "destination is already reserved".into(),
             ));
         }
-        let name = discovery::unused_name("Light", saved.outputs.iter().map(|o| o.name.as_str()));
-        let edit = Edit::AddOutput {
-            bus: request.bus,
-            output: crate::config::Output {
-                short_address: address,
-                name,
-                description: None,
-                color_representation: None,
+        let edit = match request.space {
+            discovery::Space::Outputs => Edit::AddOutput {
+                bus: request.bus,
+                output: crate::config::Output {
+                    short_address: address,
+                    name: discovery::unused_name(
+                        "Light",
+                        saved.outputs.iter().map(|o| o.name.as_str()),
+                    ),
+                    description: None,
+                    color_representation: None,
+                },
+            },
+            discovery::Space::Inputs => Edit::AddInput {
+                bus: request.bus,
+                input: crate::config::Input {
+                    short_address: address,
+                    name: discovery::unused_name(
+                        "Input",
+                        saved.inputs.iter().map(|i| i.name.as_str()),
+                    ),
+                    description: None,
+                    instances: Vec::new(),
+                },
             },
         };
         service.update_snapshot(self.model.clone(), Phase::Writing);
@@ -373,12 +397,18 @@ impl Owner {
             .into_iter()
             .find(|p| {
                 p.location
-                    == crate::inventory::Location::Output {
-                        bus: request.bus,
-                        short_address: address,
+                    == match request.space {
+                        discovery::Space::Outputs => crate::inventory::Location::Output {
+                            bus: request.bus,
+                            short_address: address,
+                        },
+                        discovery::Space::Inputs => crate::inventory::Location::Input {
+                            bus: request.bus,
+                            short_address: address,
+                        },
                     }
             })
-            .expect("confirmed reserved output")
+            .expect("confirmed reserved fixture")
             .target;
         request.reservation = Some(commissioning::Reservation {
             address,
@@ -392,6 +422,7 @@ impl Owner {
             .expect("confirmed generation")
             .with_traceparent(request.context.traceparent());
         Ok(Advance::Program(commissioning::Route {
+            space: request.space,
             bus: request.bus,
             controller: self.model.inventory().name.clone(),
             context: internal,
@@ -605,9 +636,10 @@ impl ProcessService for DaliService {
                         commissioning::finish(request, Err(ServiceError::Expired));
                     } else {
                         let snapshot = self.handle.snapshot().expect("service started");
-                        match commissioning::resolve(
+                        match commissioning::resolve_space(
                             &snapshot,
                             request.bus,
+                            request.space,
                             request.expected,
                             &request.context,
                         ) {

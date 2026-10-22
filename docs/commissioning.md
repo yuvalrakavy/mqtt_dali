@@ -1,8 +1,8 @@
-# Assigning an address to a new light
+# Assigning an address to a new light or input module
 
-The development bridge can assign one unaddressed output fixture per request.
+The development bridge can assign one unaddressed output fixture or input module per request.
 Existing short addresses, saved names, groups and missing-fixture reservations are
-preserved. Input-module assignment, full bus readdressing, lost-address restoration
+preserved. Full bus readdressing, lost-address restoration
 and the approved commissioning web page remain separate unfinished work.
 
 First [discover already addressed devices](discovery.md). Then read the current
@@ -22,7 +22,7 @@ batch will iterate these bounded steps; no background bus job is exposed yet.
 The result is in the BridgeKit reply's `value`:
 
 ```json
-{"outcome":"assigned","bus":0,"address":2,"target":"Bus1.Outputs.Light2","revision":2,"reason":null}
+{"space":"outputs","outcome":"assigned","bus":0,"address":2,"target":"Bus1.Outputs.Light2","revision":2,"reason":null}
 ```
 
 Outcomes are:
@@ -32,12 +32,28 @@ Outcomes are:
 | `assigned` | Programming, short-address verification and a fresh status query completed |
 | `reserved_but_unconfirmed` | The named address was durably reserved, but programming could not be confirmed; `reason` explains why |
 | `no_unaddressed_output` | No participating unaddressed output answered; revision is unchanged |
-| `no_free_address` | All output slots are saved/reserved or physically occupied; revision is unchanged |
+| `no_unaddressed_input` | No participating unaddressed input module answered; revision is unchanged |
+| `no_free_address` | All slots in the selected address space are saved/reserved or physically occupied; revision is unchanged |
 
 A responding unsaved fixture occupies its address. Missing saved fixtures also
 keep their reservations. Input address 0 does not occupy output address 0. New
 outputs use the first unused `LightN` name. No colour selection or light state
 is inferred; use ordinary fixture refresh for current values after assignment.
+
+For an input module, use the same controller authority and fields with:
+
+```json
+{"command":"assign_next_input","bus":0,"expected_revision":1}
+```
+
+The result has `space:"inputs"`, a target such as `Bus1.Inputs.Input1` and the
+raw short address. Missing saved input modules keep their address reservations;
+output reservations do not consume input slots. Assignment creates an empty
+default-named module with a fresh identity. It does **not** invent instances or
+current values. After `assigned`, call `discover_address` with `space:"inputs"`,
+the returned address and the latest confirmed revision/controller generation.
+That separate operation discovers real instances under the continuing module
+identity. Future browser orchestration will perform both steps on the bus page.
 
 The bridge saves a reservation **before** programming. On interruption, the new
 row remains in inventory with unknown state. Inspect it before retrying: do not
@@ -60,11 +76,11 @@ between helpers. Ordinary lighting commands still work in that mode.
 
 ## HAT repeated-command profile
 
-INITIALISE and RANDOMISE require a repeated frame pair. The existing transaction
+Output INITIALISE and RANDOMISE require a repeated frame pair. The existing transaction
 layer needs a known profile for whether the HAT reports one or two terminals for
 that pair. Set `--uart-repeat-terminals 1` or `2` for a measured deployment profile.
 The default `unverified` permits ordinary reads/control but refuses this addressing
-sequence before it starts. Invalid values fail startup before resources open.
+output sequence before it starts. Invalid values fail startup before resources open.
 Do not infer the count from a firmware number or an emulator pass.
 
 For the bundled **emulator** scenario `basic-i4.json` (`one_terminal`), use:
@@ -80,7 +96,18 @@ directory when developing. Physical I4 terminal counts and fixture timing remain
 unverified in this session. The [ATX manual](https://atxled.com/pdf/AL-DALI-HAT-I.pdf)
 documents the repeated transmit mode; it is not a substitute for firmware evidence.
 
+Input addressing uses the HAT's ordinary 24-bit `l` mode: two single exchanges
+for INITIALISE and RANDOMISE, each pair under one fixed 100 ms host deadline.
+Both exchanges must finish within it; failure stops without retry. RANDOMISE then
+has a 200 ms settling wait under the original search deadline (outputs use 100 ms).
+This works with the `unverified` **16-bit** repeat profile because no 24-bit `t`
+mode is assumed. Host bounds and emulator results do not certify physical timing;
+slow firmware may refuse. Native events continue; noisy/ambiguous exact candidate
+evidence is refused rather than putting inputs into an additional silent mode.
+
 Typed clients use `ServiceHandle::assign_next_output(bus, expected_revision,
-context, deadline)` and inspect `commissioning::Report::outcome`. Local literal
+context, deadline)` or `assign_next_input` with the same arguments and inspect
+`commissioning::Report::{space,outcome}`. Local literal
 UART/PTY, private MQTT, process and independent-consumer tests are complemented
-by [fault controls](v2-commissioning-controls.toml).
+by [output/shared fault controls](v2-commissioning-controls.toml) and
+[input fault controls](v2-input-assignment-controls.toml).

@@ -129,6 +129,8 @@ impl Colour {
 pub struct Input {
     pub id: String,
     pub short_address: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub random_address: Option<u32>,
     pub instances: Vec<u8>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub values: Vec<InputValue>,
@@ -194,6 +196,9 @@ impl Scenario {
                 return Err("input requires at most 32 valid instance types".into());
             }
             for input in &bus.inputs {
+                if input.random_address.is_some_and(|a| a > 0xffffff) {
+                    return Err("input random address exceeds 24 bits".into());
+                }
                 let mut instances = HashSet::new();
                 for value in &input.values {
                     if usize::from(value.instance) >= input.instances.len()

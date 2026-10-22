@@ -24,6 +24,7 @@ impl DeviceDriver for DaliProxy {
                 "adopt_groups",
                 "repair_groups",
                 "assign_next_output",
+                "assign_next_input",
                 "configure_bus",
                 "discover_address",
                 "rename",
@@ -85,11 +86,20 @@ impl DeviceDriver for DaliProxy {
                     )
                     .map(|_| ())
                     .map_err(op_error),
-                    Operation::Assignment(p) => {
-                        commissioning::resolve(&snapshot, p.bus, p.expected_revision, context)
-                            .map(|_| ())
-                            .map_err(op_error)
+                    Operation::Assignment(p, space) => match space {
+                        discovery::Space::Outputs => {
+                            commissioning::resolve(&snapshot, p.bus, p.expected_revision, context)
+                        }
+                        discovery::Space::Inputs => commissioning::resolve_space(
+                            &snapshot,
+                            p.bus,
+                            space,
+                            p.expected_revision,
+                            context,
+                        ),
                     }
+                    .map(|_| ())
+                    .map_err(op_error),
                     Operation::Metadata(change) => {
                         routing::admit(&snapshot, &change, context).map_err(op_error)
                     }
@@ -264,11 +274,12 @@ impl DeviceDriver for DaliProxy {
                     .map(Some)
                     .map_err(|e| OpError::Unusable(e.to_string()));
             }
-            Operation::Assignment(p) => {
+            Operation::Assignment(p, space) => {
                 let result = self
                     .handle
-                    .assign(
+                    .assign_space(
                         p.bus,
+                        space,
                         p.expected_revision,
                         context.clone(),
                         Instant::now() + Duration::from_secs(18),
@@ -615,7 +626,7 @@ struct Assignment {
 }
 enum Operation {
     Groups(groups::Action, Option<u64>),
-    Assignment(Assignment),
+    Assignment(Assignment, discovery::Space),
     Metadata(Change),
     Discovery(Discovery),
 }
@@ -702,13 +713,25 @@ fn parse(
             )),
         };
     }
-    if call.command == "assign_next_output" {
+    if matches!(
+        call.command.as_str(),
+        "assign_next_output" | "assign_next_input"
+    ) {
         if target.is_some() {
             return Err(OpError::Rejected(
                 "assignment requires controller target".into(),
             ));
         }
-        return decode(call).map(Operation::Assignment);
+        return decode(call).map(|p| {
+            Operation::Assignment(
+                p,
+                if call.command == "assign_next_output" {
+                    discovery::Space::Outputs
+                } else {
+                    discovery::Space::Inputs
+                },
+            )
+        });
     }
     if call.command == "discover_address" {
         if target.is_some() {

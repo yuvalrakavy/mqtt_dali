@@ -3,7 +3,8 @@
 The development bridge can probe one existing short address and save newly
 detected devices with default names. It queries outputs and input modules in
 their separate address spaces. Use the separate [assignment operation](commissioning.md)
-for new unaddressed outputs. Discovery does not reset addresses, remove missing
+for new unaddressed outputs or input modules. Input assignment creates an empty
+module; follow it with this discovery to add real instances. Discovery does not reset addresses, remove missing
 items or provide the approved bus-page UI.
 
 Read `DALI/State/Controller/__inventory` for the current revision and controller

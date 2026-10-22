@@ -690,10 +690,11 @@ impl Hat {
         request: super::commissioning::Request,
         route: super::commissioning::Route,
     ) {
-        if self
-            .settings
-            .as_ref()
-            .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
+        if route.space == super::discovery::Space::Outputs
+            && self
+                .settings
+                .as_ref()
+                .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
         {
             super::commissioning::finish(
                 request,

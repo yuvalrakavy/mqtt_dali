@@ -1,0 +1,96 @@
+[[control]]
+name = "input_pair_renews_its_deadline"
+file = "src/service/commissioning.rs"
+anchor = ".min(Instant::now() + Duration::from_millis(100))"
+replacement = ".min(Instant::now() + Duration::from_millis(500))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_pair_uses_one_deadline)"]
+expect_text = "input pair renewed the 100 ms deadline"
+
+[[control]]
+name = "input_repeat_sends_one_frame"
+file = "src/service/commissioning.rs"
+anchor = "for _ in 0..if input_pair { 2 } else { 1 } {"
+replacement = "for _ in 0..1 {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_literal_boundaries)"]
+expect_text = "input inclusive search or raw address verification failed"
+
+[[control]]
+name = "input_randomisation_uses_output_wait"
+file = "src/service/commissioning.rs"
+anchor = '''if self.route.space == Space::Inputs {
+                    200'''
+replacement = '''if self.route.space == Space::Inputs {
+                    100'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_literal_boundaries)"]
+expect_text = "input inclusive search or raw address verification failed"
+
+[[control]]
+name = "input_program_uses_output_encoding"
+file = "src/dali/input/commissioning.rs"
+anchor = "0xc10800 | u32::from(address.raw())"
+replacement = "0xc10800 | u32::from((address.raw() << 1) | 1)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_literal_boundaries)"]
+expect_text = "input inclusive search or raw address verification failed"
+
+[[control]]
+name = "input_verify_uses_output_encoding"
+file = "src/dali/input/commissioning.rs"
+anchor = "0xc10900 | u32::from(address.raw())"
+replacement = "0xc10900 | u32::from((address.raw() << 1) | 1)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_literal_boundaries)"]
+expect_text = "input inclusive search or raw address verification failed"
+
+[[control]]
+name = "input_readback_expects_shifted_address"
+file = "src/service/commissioning.rs"
+anchor = "Space::Inputs => candidate.address,"
+replacement = "Space::Inputs => (candidate.address << 1) | 1,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_literal_boundaries)"]
+expect_text = "input inclusive search or raw address verification failed"
+
+[[control]]
+name = "input_assignment_invents_instance"
+file = "src/service/owner.rs"
+anchor = "instances: Vec::new(),"
+replacement = 'instances: vec![serde_json::from_str(r#"{"number":0,"name":"Input1","instance_type":1}"#).unwrap()],'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_mqtt_reserves_fresh_module)"]
+expect_text = "input assignment invented undiscovered instance types"
+
+[[control]]
+name = "input_assignment_accepts_unknown_fields"
+file = "src/service/proxy.rs"
+anchor = '''#[serde(deny_unknown_fields)]
+struct Assignment {'''
+replacement = "struct Assignment {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_rejects_bad_authority)"]
+expect_text = "input assignment accepted an invalid payload"
+
+[[control]]
+name = "input_emulator_skips_randomisation_readiness"
+file = "src/emulator/input.rs"
+anchor = "self.randomise_ready_at = Some(now.saturating_add(200));"
+replacement = "self.randomise_ready_at = Some(now);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_commissioning_literal_repeat_readiness)"]
+expect_text = "input randomise became ready before 200ms"
+
+[[control]]
+name = "input_emulator_accepts_late_repeat"
+file = "src/emulator/model.rs"
+anchor = '''            .input_repeat
+            .take()
+            .is_some_and(|(old, at)| old == frame && self.now_ms.saturating_sub(at) <= 100);'''
+replacement = '''            .input_repeat
+            .take()
+            .is_some_and(|(old, at)| old == frame && self.now_ms.saturating_sub(at) <= 1000);'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_commissioning_literal_repeat_readiness)"]
+expect_text = "late input INITIALISE pair was accepted"

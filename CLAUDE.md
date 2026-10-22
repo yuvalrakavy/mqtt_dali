@@ -199,8 +199,8 @@ The codec is pure. Saved Inputs/Instances use the existing named identity ledger
 and durable metadata rename path; see `docs/inventory-contract.md`. Module
 replacement retires every child lifetime; ordinary rename preserves them. Replay
 validates hierarchy and continuing parent origins at every batch, and the
-independent consumer verifies this without producer replay helpers. Hardware
-address assignment and input configuration remain subsequent work. Addressed
+independent consumer verifies this without producer replay helpers. Input
+configuration remains subsequent work. Addressed
 discovery is documented in `docs/discovery.md`: one short address per bounded
 operation, captured probe evidence, durable additions only, preserved existing
 lifetimes and original command completion. Output/input address spaces are
@@ -223,7 +223,8 @@ clear old merged data. Preserve full bytes/hex, strip low padding and never
 truncate to u64, treat FF as MASK or fabricate actions/units. See
 `docs/v2-input-readback-controls.toml`; physical input validation remains pending.
 
-One unaddressed output can now be assigned per `assign_next_output` request; see
+One unaddressed output or input module can be assigned per `assign_next_output` /
+`assign_next_input` request; see
 `docs/commissioning.md`. Search/save/program are concrete owned phases retaining
 the same permit and captured search stamp. A fresh default-named reservation
 commits before PROGRAM and is not removed on physical failure/cancel. Confirmed
@@ -231,9 +232,13 @@ reservation failures return structured reserved_but_unconfirmed; disk/CAS
 uncertainty retains existing freeze/recover and never auto-programs. No fake
 fixture State or UART journal. `--uart-repeat-terminals unverified|1|2` exposes
 the existing policy, default unchanged; unknown profiles refuse the sequence
-before starting. The independent emulator and literal peers test both counts;
+before starting output assignment. Inputs use two ordinary 24-bit `l` exchanges
+under one 100 ms pair deadline, 200 ms randomisation wait and raw short addresses.
+They reserve empty `InputN` modules before PROGRAM; separate addressed discovery
+adds real instances under the continuing identity. No second save/CAS is hidden
+inside assignment. The independent emulator and literal peers test both counts;
 neither proves physical HAT behavior. Fault controls are in
-`docs/v2-commissioning-controls.toml`.
+`docs/v2-commissioning-controls.toml` and `docs/v2-input-assignment-controls.toml`.
 
 `configure_bus` / `MetadataEdit::ConfigureBus` creates or updates a bus through the
 same durable owner. See `docs/bus-setup.md`. Preserve saved children/Origins;

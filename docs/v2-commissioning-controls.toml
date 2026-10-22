@@ -11,7 +11,7 @@ expect_text = "inclusive search missed a valid boundary"
 name = "search_programs_before_durable_reservation"
 file = "src/service/commissioning.rs"
 anchor = "Ok(Step::Found { address, random })"
-replacement = "self.command(frames::program(gear::ShortAddress::new(address).unwrap()),false).await?;\n        Ok(Step::Found { address, random })"
+replacement = "self.command(DaliFrame::Bits16(frames::program(gear::ShortAddress::new(address).unwrap())),false).await?;\n        Ok(Step::Found { address, random })"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_bus_epoch_change)"]
 expect_text = "PROGRAM preceded durable reservation"
@@ -29,7 +29,7 @@ expect_text = "ambiguous exact random selection was programmed"
 name = "assignment_skips_fresh_status_confirmation"
 file = "src/service/commissioning.rs"
 anchor = '''        if !matches!(
-            self.query(address.query(gear::Query::Status)).await?,
+            self.query(self.status(candidate.address)).await?,
             BusReply::Value(_)
         ) {'''
 replacement = "        if false {"
@@ -49,10 +49,10 @@ expect_text = "failed verification claimed assignment success or lost the reserv
 [[control]]
 name = "reservation_releases_shared_permit_before_programming"
 file = "src/service/owner.rs"
-anchor = 'let name = discovery::unused_name("Light", saved.outputs.iter().map(|o| o.name.as_str()));'
-replacement = '''let name = discovery::unused_name("Light", saved.outputs.iter().map(|o| o.name.as_str()));
-        let fake=Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap();
-        drop(std::mem::replace(&mut request._permit,fake));'''
+anchor = 'let edit = match request.space {'
+replacement = '''let fake=Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap();
+        drop(std::mem::replace(&mut request._permit,fake));
+        let edit = match request.space {'''
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_bus_epoch_change)"]
 expect_text = "reservation released the physical permit before programming handoff"
@@ -69,8 +69,8 @@ expect_text = "new unaddressed output was not assigned"
 [[control]]
 name = "unknown_repeat_profile_begins_addressing_sequence"
 file = "src/service/hat.rs"
-anchor = ".is_none_or(|s| s.repeat == RepeatPolicy::Unverified)"
-replacement = ".is_none_or(|_| false)"
+anchor = "if route.space == super::discovery::Space::Outputs"
+replacement = "if false && route.space == super::discovery::Space::Outputs"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_unverified_profile)"]
 expect_text = "unverified commissioning started an addressing sequence"

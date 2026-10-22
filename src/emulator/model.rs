@@ -32,11 +32,14 @@ struct Bus {
     #[serde(skip)]
     repeat: Option<(u16, u64)>,
     #[serde(skip)]
+    input_repeat: Option<(u32, u64)>,
+    #[serde(skip)]
     enabled_type: Option<u8>,
 }
 pub struct Model {
     buses: Vec<Bus>,
     rng: u64,
+    input_rng: u64,
     now_ms: u64,
     unsupported: u64,
 }
@@ -51,6 +54,7 @@ impl Model {
     pub fn new(scenario: Scenario) -> Result<Self, String> {
         scenario.validate()?;
         let mut rng = scenario.seed;
+        let mut input_rng = scenario.seed ^ 0x8a5cd789635d2dff;
         let buses = scenario
             .buses
             .into_iter()
@@ -58,11 +62,17 @@ impl Model {
                 number: bus.number,
                 powered: bus.powered,
                 repeat: None,
+                input_repeat: None,
                 enabled_type: None,
                 inputs: bus
                     .inputs
                     .into_iter()
-                    .map(super::input::State::new)
+                    .map(|mut config| {
+                        config
+                            .random_address
+                            .get_or_insert_with(|| random(&mut input_rng));
+                        super::input::State::new(config)
+                    })
                     .collect(),
                 outputs: bus
                     .outputs
@@ -91,6 +101,7 @@ impl Model {
         Ok(Self {
             buses,
             rng,
+            input_rng,
             now_ms: 0,
             unsupported: 0,
         })
@@ -101,6 +112,9 @@ impl Model {
     pub fn advance_to(&mut self, now_ms: u64) {
         self.now_ms = self.now_ms.max(now_ms);
         for bus in &mut self.buses {
+            for input in &mut bus.inputs {
+                input.advance_to(self.now_ms);
+            }
             for gear in &mut bus.outputs {
                 if gear
                     .initialize_until
@@ -152,7 +166,6 @@ impl Model {
     }
     pub fn transmit_input(&mut self, number: u8, frame: u32, now_ms: u64) -> Reply {
         self.advance_to(now_ms);
-        self.intervening_frame(number);
         let Some(bus) = self
             .buses
             .iter_mut()
@@ -160,7 +173,39 @@ impl Model {
         else {
             return Reply::None;
         };
+        bus.repeat = None;
         let [high, address, instance, opcode] = frame.to_be_bytes();
+        let repeated = bus
+            .input_repeat
+            .take()
+            .is_some_and(|(old, at)| old == frame && self.now_ms.saturating_sub(at) <= 100);
+        if high == 0 && address == 0xc1 {
+            if instance > 10 || (matches!(instance, 0 | 2 | 3 | 4 | 10) && opcode != 0) {
+                self.unsupported += 1;
+                return Reply::None;
+            }
+            if matches!(instance, 1 | 2) && !repeated {
+                bus.input_repeat = Some((frame, self.now_ms));
+                return Reply::None;
+            }
+            let replies: Vec<_> = bus
+                .inputs
+                .iter_mut()
+                .filter_map(|input| {
+                    let generated = if instance == 2 {
+                        random(&mut self.input_rng)
+                    } else {
+                        0
+                    };
+                    input.special(instance, opcode, self.now_ms, generated)
+                })
+                .collect();
+            return match replies.first() {
+                None => Reply::None,
+                Some(value) if replies.iter().all(|r| r == value) => Reply::Value(*value),
+                Some(_) => Reply::Collision,
+            };
+        }
         if high != 0 || address & 1 == 0 || address > 0x7f || (instance > 31 && instance != 0xfe) {
             self.unsupported += 1;
             return Reply::None;
@@ -186,6 +231,7 @@ impl Model {
     pub fn intervening_frame(&mut self, number: u8) {
         if let Some(bus) = self.buses.iter_mut().find(|b| b.number == number) {
             bus.repeat = None;
+            bus.input_repeat = None;
         }
     }
     pub fn transmit(&mut self, number: u8, frame: u16, now_ms: u64) -> Reply {
@@ -197,6 +243,7 @@ impl Model {
         else {
             return Reply::None;
         };
+        bus.input_repeat = None;
         let [address, opcode] = frame.to_be_bytes();
         // One shared broadcast latch suffices: all gear on a modeled bus hears
         // the same C1 special. Consume standard commands before repeat/selection.

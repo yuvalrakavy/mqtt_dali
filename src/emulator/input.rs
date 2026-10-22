@@ -9,13 +9,76 @@ pub(super) struct State {
     pub config: Input,
     #[serde(skip)]
     latches: BTreeMap<u8, (Vec<u8>, usize)>,
+    initialize_until: Option<u64>,
+    randomise_ready_at: Option<u64>,
+    withdrawn: bool,
+    search: u32,
 }
 impl State {
     pub fn new(config: Input) -> Self {
         Self {
             config,
             latches: BTreeMap::new(),
+            initialize_until: None,
+            randomise_ready_at: None,
+            withdrawn: false,
+            search: 0xffffff,
         }
+    }
+    pub fn advance_to(&mut self, now: u64) {
+        if self.initialize_until.is_some_and(|until| now >= until) {
+            self.initialize_until = None;
+        }
+    }
+    /// Independent raw Part 103 commands. Repeat acceptance belongs to the bus.
+    pub fn special(&mut self, command: u8, param: u8, now: u64, random: u32) -> Option<u8> {
+        let eligible = self.initialize_until.is_some() && !self.withdrawn;
+        let ready = self.randomise_ready_at.is_none_or(|at| now >= at);
+        let exact = eligible && ready && self.config.random_address == Some(self.search);
+        match (command, param) {
+            (0, 0) => {
+                self.initialize_until = None;
+                self.withdrawn = false;
+                self.randomise_ready_at = None;
+            }
+            (1, selector) => {
+                if selector == 255
+                    || (selector == 127 && self.config.short_address.is_none())
+                    || (selector <= 63 && self.config.short_address == Some(selector))
+                {
+                    self.initialize_until = Some(now.saturating_add(900_000));
+                    self.withdrawn = false;
+                }
+            }
+            (2, 0) => {
+                if self.initialize_until.is_some() {
+                    self.config.random_address = Some(random);
+                    self.randomise_ready_at = Some(now.saturating_add(200));
+                }
+            }
+            (3, 0)
+                if eligible
+                    && ready
+                    && self.config.random_address.is_some_and(|a| a <= self.search) =>
+            {
+                return Some(255)
+            }
+            (4, 0) if exact => self.withdrawn = true,
+            (5, value) => self.search = (self.search & 0xffff) | (u32::from(value) << 16),
+            (6, value) => self.search = (self.search & 0xff00ff) | (u32::from(value) << 8),
+            (7, value) => self.search = (self.search & 0xffff00) | u32::from(value),
+            (8, address) if exact && (address <= 63 || address == 255) => {
+                self.config.short_address = if address == 255 { None } else { Some(address) }
+            }
+            (9, address)
+                if exact && address <= 63 && self.config.short_address == Some(address) =>
+            {
+                return Some(255)
+            }
+            (10, 0) if exact => return Some(self.config.short_address.unwrap_or(255)),
+            _ => {}
+        }
+        None
     }
     pub fn query(&mut self, instance: u8, opcode: u8) -> Option<u8> {
         if instance == 0xfe {

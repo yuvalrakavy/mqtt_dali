@@ -6,6 +6,7 @@ mod commissioning;
 mod discovery;
 mod groups;
 mod input;
+mod input_assignment;
 mod live_input;
 mod readback;
 mod removal;

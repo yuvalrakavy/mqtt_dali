@@ -1,11 +1,13 @@
-//! One output assignment: search, durable reservation, then verified programming.
+//! One output/input assignment: search, durable reservation, verified programming.
+pub use super::discovery::Space;
 use super::*;
 use crate::atx::{
     serial::Serial,
     transactions::{BusReply, Response, SessionState, TransactionError, Transactions},
     wire::{Command, DaliFrame},
 };
-use crate::dali::{commissioning as frames, gear};
+use crate::dali::input::commissioning as device;
+use crate::dali::{commissioning as frames, gear, input as input_frames};
 use serde::Serialize;
 use std::{collections::BTreeSet, time::Duration};
 
@@ -15,10 +17,12 @@ pub enum AssignmentOutcome {
     Assigned,
     ReservedButUnconfirmed,
     NoUnaddressedOutput,
+    NoUnaddressedInput,
     NoFreeAddress,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Report {
+    pub space: Space,
     pub outcome: AssignmentOutcome,
     pub bus: u8,
     pub address: Option<u8>,
@@ -33,6 +37,7 @@ pub(super) struct Reservation {
     pub revision: u64,
 }
 pub(super) struct Request {
+    pub space: Space,
     pub bus: u8,
     pub expected: u64,
     pub context: RequestContext,
@@ -55,6 +60,7 @@ pub(super) enum Plan {
 }
 #[derive(Clone)]
 pub(super) struct Route {
+    pub space: Space,
     pub bus: u8,
     pub controller: String,
     pub context: RequestContext,
@@ -96,6 +102,15 @@ pub(super) fn resolve(
     expected: u64,
     cause: &RequestContext,
 ) -> Result<Route, ServiceError> {
+    resolve_space(snapshot, bus, Space::Outputs, expected, cause)
+}
+pub(super) fn resolve_space(
+    snapshot: &Snapshot,
+    bus: u8,
+    space: Space,
+    expected: u64,
+    cause: &RequestContext,
+) -> Result<Route, ServiceError> {
     if snapshot.phase != Phase::Ready {
         return Err(ServiceError::Rejected("routing is not ready".into()));
     }
@@ -115,10 +130,14 @@ pub(super) fn resolve(
         .find(|b| b.bus == bus && b.enabled && bus <= 3)
         .ok_or_else(|| ServiceError::Rejected("unknown/disabled bus".into()))?;
     Ok(Route {
+        space,
         bus,
         controller: snapshot.model.inventory().name.clone(),
         context: cause.clone(),
-        plan: Plan::Search(saved.outputs.iter().map(|o| o.short_address).collect()),
+        plan: Plan::Search(match space {
+            Space::Outputs => saved.outputs.iter().map(|o| o.short_address).collect(),
+            Space::Inputs => saved.inputs.iter().map(|i| i.short_address).collect(),
+        }),
     })
 }
 pub(super) fn report(
@@ -128,6 +147,7 @@ pub(super) fn report(
     reason: Option<String>,
 ) -> Report {
     Report {
+        space: request.space,
         outcome,
         bus: request.bus,
         address: request.reservation.as_ref().map(|r| r.address),
@@ -168,16 +188,37 @@ struct Bus<'a> {
     deadline: Instant,
 }
 impl Bus<'_> {
-    async fn exchange(&self, frame: u16, repeat: bool) -> Result<Vec<BusReply>, Error> {
+    fn frame(&self, gear: u16, input: u32) -> DaliFrame {
+        match self.route.space {
+            Space::Outputs => DaliFrame::Bits16(gear),
+            Space::Inputs => DaliFrame::Bits24(input),
+        }
+    }
+    fn status(&self, address: u8) -> DaliFrame {
+        self.frame(
+            gear::ShortAddress::new(address)
+                .unwrap()
+                .query(gear::Query::Status),
+            input_frames::Address::new(address)
+                .unwrap()
+                .query(input_frames::DeviceQuery::Status),
+        )
+    }
+    async fn exchange(
+        &self,
+        frame: DaliFrame,
+        repeat: bool,
+        deadline: Instant,
+    ) -> Result<Vec<BusReply>, Error> {
         match self
             .link
             .execute_until(
                 Command::Send {
                     bus: self.route.bus,
-                    frame: DaliFrame::Bits16(frame),
+                    frame,
                     repeat,
                 },
-                self.deadline,
+                deadline,
                 Some((self.stamp.actor, self.stamp.bus)),
             )
             .await?
@@ -186,31 +227,55 @@ impl Bus<'_> {
             _ => Err(TransactionError::StreamLoss.into()),
         }
     }
-    async fn query(&self, frame: u16) -> Result<BusReply, Error> {
-        let mut replies = self.exchange(frame, false).await?;
+    async fn query(&self, frame: DaliFrame) -> Result<BusReply, Error> {
+        let mut replies = self.exchange(frame, false, self.deadline).await?;
         if replies.len() != 1 {
             return Err(TransactionError::StreamLoss.into());
         }
         Ok(replies.remove(0))
     }
-    async fn command(&self, frame: u16, repeat: bool) -> Result<(), Error> {
-        let replies = self.exchange(frame, repeat).await?;
-        if !replies.is_empty() && replies.iter().all(|r| *r == BusReply::NoResponse) {
-            Ok(())
+    async fn command(&self, frame: DaliFrame, repeat: bool) -> Result<(), Error> {
+        let input_pair = repeat && matches!(frame, DaliFrame::Bits24(_));
+        let deadline = if input_pair {
+            self.deadline
+                .min(Instant::now() + Duration::from_millis(100))
         } else {
-            Err(Error::Evidence(
-                "unexpected backward reply to addressing command",
-            ))
+            self.deadline
+        };
+        for _ in 0..if input_pair { 2 } else { 1 } {
+            let replies = self
+                .exchange(frame.clone(), repeat && !input_pair, deadline)
+                .await?;
+            if replies.is_empty() || replies.iter().any(|r| *r != BusReply::NoResponse) {
+                return Err(Error::Evidence(
+                    "unexpected backward reply to addressing command",
+                ));
+            }
         }
+        Ok(())
     }
     async fn select(&self, address: frames::SearchAddress) -> Result<(), Error> {
-        for frame in address.frames() {
+        let frames: Vec<_> = match self.route.space {
+            Space::Outputs => address
+                .frames()
+                .into_iter()
+                .map(DaliFrame::Bits16)
+                .collect(),
+            Space::Inputs => device::search(address)
+                .into_iter()
+                .map(DaliFrame::Bits24)
+                .collect(),
+        };
+        for frame in frames {
             self.command(frame, false).await?;
         }
         Ok(())
     }
     async fn compare(&self, exact: bool) -> Result<bool, Error> {
-        match self.query(frames::COMPARE).await? {
+        match self
+            .query(self.frame(frames::COMPARE, device::COMPARE))
+            .await?
+        {
             BusReply::Value(255) => Ok(true),
             BusReply::NoResponse => Ok(false),
             BusReply::ReceiveCollision(_) if !exact => Ok(true),
@@ -225,14 +290,7 @@ impl Bus<'_> {
             if reserved.contains(&address) {
                 continue;
             }
-            match self
-                .query(
-                    gear::ShortAddress::new(address)
-                        .unwrap()
-                        .query(gear::Query::Status),
-                )
-                .await?
-            {
+            match self.query(self.status(address)).await? {
                 BusReply::NoResponse => {
                     destination = Some(address);
                     break;
@@ -244,14 +302,29 @@ impl Bus<'_> {
         let Some(address) = destination else {
             return Ok(Step::NoCapacity);
         };
-        self.command(frames::TERMINATE, false).await?;
+        self.command(self.frame(frames::TERMINATE, device::TERMINATE), false)
+            .await?;
         *entered = true;
-        self.command(frames::INITIALISE_UNADDRESSED, true).await?;
-        self.command(frames::RANDOMISE, true).await?;
+        self.command(
+            self.frame(
+                frames::INITIALISE_UNADDRESSED,
+                device::INITIALISE_UNADDRESSED,
+            ),
+            true,
+        )
+        .await?;
+        self.command(self.frame(frames::RANDOMISE, device::RANDOMISE), true)
+            .await?;
         // WAIT: v2-commissioning-randomise
         timeout_at(
             self.deadline,
-            tokio::time::sleep(Duration::from_millis(100)),
+            tokio::time::sleep(Duration::from_millis(
+                if self.route.space == Space::Inputs {
+                    200
+                } else {
+                    100
+                },
+            )),
         )
         .await
         .map_err(|_| TransactionError::Deadline)?;
@@ -274,7 +347,10 @@ impl Bus<'_> {
         let random = frames::SearchAddress::new(low).unwrap();
         self.select(random).await?;
         if !self.compare(true).await?
-            || self.query(frames::QUERY_SHORT_ADDRESS).await? != BusReply::Value(255)
+            || self
+                .query(self.frame(frames::QUERY_SHORT_ADDRESS, device::QUERY_SHORT_ADDRESS))
+                .await?
+                != BusReply::Value(255)
         {
             return Err(Error::Evidence(
                 "selected candidate is no longer uniquely unaddressed",
@@ -285,33 +361,56 @@ impl Bus<'_> {
     async fn program(&self, candidate: &Candidate, entered: &mut bool) -> Result<Step, Error> {
         *entered = true;
         let address = gear::ShortAddress::new(candidate.address).unwrap();
-        if self.query(address.query(gear::Query::Status)).await? != BusReply::NoResponse {
+        if self.query(self.status(candidate.address)).await? != BusReply::NoResponse {
             return Err(Error::Evidence("reserved destination became occupied"));
         }
         self.select(candidate.random).await?;
         if !self.compare(true).await?
-            || self.query(frames::QUERY_SHORT_ADDRESS).await? != BusReply::Value(255)
+            || self
+                .query(self.frame(frames::QUERY_SHORT_ADDRESS, device::QUERY_SHORT_ADDRESS))
+                .await?
+                != BusReply::Value(255)
         {
             return Err(Error::Evidence(
                 "unaddressed candidate changed after reservation",
             ));
         }
-        self.command(frames::program(address), false).await?;
-        if self.query(frames::verify(address)).await? != BusReply::Value(255)
-            || self.query(frames::QUERY_SHORT_ADDRESS).await?
-                != BusReply::Value((candidate.address << 1) | 1)
+        self.command(
+            self.frame(
+                frames::program(address),
+                device::program(input_frames::Address::new(candidate.address).unwrap()),
+            ),
+            false,
+        )
+        .await?;
+        if self
+            .query(self.frame(
+                frames::verify(address),
+                device::verify(input_frames::Address::new(candidate.address).unwrap()),
+            ))
+            .await?
+            != BusReply::Value(255)
+            || self
+                .query(self.frame(frames::QUERY_SHORT_ADDRESS, device::QUERY_SHORT_ADDRESS))
+                .await?
+                != BusReply::Value(match self.route.space {
+                    Space::Outputs => (candidate.address << 1) | 1,
+                    Space::Inputs => candidate.address,
+                })
         {
             return Err(Error::Evidence("programmed short address was not verified"));
         }
-        self.command(frames::WITHDRAW, false).await?;
-        self.command(frames::TERMINATE, false).await?;
+        self.command(self.frame(frames::WITHDRAW, device::WITHDRAW), false)
+            .await?;
+        self.command(self.frame(frames::TERMINATE, device::TERMINATE), false)
+            .await?;
         *entered = false;
         if !matches!(
-            self.query(address.query(gear::Query::Status)).await?,
+            self.query(self.status(candidate.address)).await?,
             BusReply::Value(_)
         ) {
             return Err(Error::Evidence(
-                "assigned output did not answer a fresh status query",
+                "assigned fixture did not answer a fresh status query",
             ));
         }
         Ok(Step::Assigned)
@@ -343,7 +442,9 @@ pub(super) async fn execute(
         && link.status() == SessionState::Ready
         && Instant::now() < deadline
     {
-        let cleanup = bus.command(frames::TERMINATE, false).await;
+        let cleanup = bus
+            .command(bus.frame(frames::TERMINATE, device::TERMINATE), false)
+            .await;
         recovery |= matches!(
             &cleanup,
             Err(Error::Transaction(TransactionError::StreamLoss))
@@ -394,6 +495,37 @@ impl ServiceHandle {
         deadline: Instant,
         completion: Option<mqtt_bridge_kit::CommandCompletion>,
     ) -> Result<Report, ServiceError> {
+        self.assign_space(bus, Space::Outputs, expected, context, deadline, completion)
+            .await
+    }
+    /// Assign a new module; call addressed discovery afterward for real instances.
+    pub async fn assign_next_input(
+        &self,
+        bus: u8,
+        expected_revision: u64,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.assign_space(
+            bus,
+            Space::Inputs,
+            expected_revision,
+            context,
+            deadline,
+            None,
+        )
+        .await
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(super) async fn assign_space(
+        &self,
+        bus: u8,
+        space: Space,
+        expected: u64,
+        context: RequestContext,
+        deadline: Instant,
+        completion: Option<mqtt_bridge_kit::CommandCompletion>,
+    ) -> Result<Report, ServiceError> {
         if Instant::now() >= deadline {
             return Err(ServiceError::Expired);
         }
@@ -405,15 +537,17 @@ impl ServiceHandle {
             .clone()
             .try_acquire_owned()
             .map_err(|_| ServiceError::Busy)?;
-        resolve(
+        resolve_space(
             &self.snapshot().ok_or(ServiceError::Closed)?,
             bus,
+            space,
             expected,
             &context,
         )?;
         let (reply, receive) = oneshot::channel();
         self.send
             .try_send(Message::Commission(Request {
+                space,
                 bus,
                 expected,
                 context,

@@ -7,8 +7,8 @@ supports [live bus setup](bus-setup.md),
 [base and selected-family DT8 light control](mqtt-outputs.md),
 [input State, current-value queries and native events](mqtt-inputs.md),
 [discovery of already addressed devices](discovery.md) and
-[one-at-a-time unaddressed output assignment](commissioning.md). Input addressing,
-full readdress/restore and the web interface remain in development.
+[one-at-a-time unaddressed output/input assignment](commissioning.md).
+Full readdress/restore and the web interface remain in development.
 
 Start one controller with an MQTT broker and its own writable config directory:
 

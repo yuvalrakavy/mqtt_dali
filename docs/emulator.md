@@ -77,6 +77,17 @@ most 32 types in 0..31; explicit value profiles still require an existing instan
 The complete multi-type output enumeration regression uses a separate literal
 UART peer, rather than assuming emulator agreement proves protocol correctness.
 
+Unaddressed input modules also support independent raw Part 103 commissioning:
+INITIALISE selection/15-minute expiry, repeated pairs within 100 ms, RANDOMISE
+readiness after 200 ms, inclusive search, Compare, raw short-address Program /
+Verify / Query, Withdraw and Terminate. Optional `random_address` must fit 24 bits;
+missing values use a separate seeded input generator, preserving existing output
+draws. RANDOMISE replaces participating modules' random addresses. Input and
+output repeat latches are separate, and 24-bit input traffic preserves output DT8
+selection. Identical backward bytes still aggregate to one value; independent
+literal-peer tests supply exact-collision refusal evidence. Physical certification
+and input event configuration are outside this model.
+
 Keep numeric instance types; add optional value profiles to a module:
 
 ```json

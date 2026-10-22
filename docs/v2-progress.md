@@ -5,6 +5,43 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5f — one unaddressed input-module assignment
+
+Extend the existing owned commissioning flow with explicit output/input address
+space, pure Part 103 frames and an independent input addressing emulator.
+`assign_next_input` uses strict controller authority, raw short addresses,
+two ordinary 24-bit exchanges under one fixed 100 ms pair deadline and a 200 ms
+randomisation allowance. The 16-bit repeat profile remains output-only. Preserve
+the original stamp, permit and command completion through search/save/program.
+Save a fresh empty InputN module before PROGRAM, then verify/query the raw address
+and require fresh status. Separate addressed discovery fills real instance types
+under the same module identity. No SDK, quiet recovery or UART journal change.
+
+Both sequential design gates approve, with no material findings. The first MQTT
+test failed with unknown command before production; the independent emulator
+literal test failed before model wiring. Fifty focused tests pass, covering all
+six random-address boundaries, raw short addresses 0/63, range versus exact
+collision/invalid replies, one shared pair deadline/no retry, randomise readiness,
+initialization expiry, native event handling, cancellation/held/failed/uncertain
+saves, bus cycles during save, metadata-only recovery, strict payloads/authority,
+saved/occupied slots, empty reservations and separate real-instance discovery.
+An independent consumer preserves existing intent/module identity and refuses
+pre-discovery generations for new children. The save-cancellation fixture was
+corrected to expect the existing Uncertain phase and explicitly retry recovery
+while the released disk worker finishes; no production recovery change.
+
+All ten new behavioral fault controls and four re-anchored shared commissioning
+controls fail at their declared assertions, then restore source. Full acceptance
+passes **475/475 native tests** across 11 binaries (four test processes), scoped
+strict Clippy, Pi library/all four binaries, doctests (none defined), changed-file
+formatting, wait registry, whitespace and both control-table plan checks.
+Logs: `/tmp/dali-input-assignment-controls.log`,
+`/tmp/dali-input-shared-controls.log`, `/tmp/dali-input-assignment-acceptance`.
+The two frozen source gates follow. Physical I4/fixture timing remains unverified. Full bus
+readdress/restore, identification and browser orchestration remain unfinished.
+See [commissioning](commissioning.md), [design](superpowers/specs/2026-10-22-dali-v2-p5-input-assignment.md)
+and `v2-input-assignment-controls.toml`.
+
 ## P5e — per-fixture group membership
 
 Implemented saved-group creation and strict MQTT/typed APIs for captured reads,
@@ -1349,7 +1386,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption and one unaddressed output assignment implemented | Input assignment, full reassign/restore, identification, group/scene workflows |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal and per-fixture group membership implemented | Full reassign/restore, identification, browser/pattern group workflows and native scenes |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

@@ -77,9 +77,13 @@ impl Work {
             Self::Output(_, r) => r.context.operation_span(&r.controller, "output"),
             Self::Input(_, r) => r.context.operation_span(&r.controller, "input_read"),
             Self::Discovery(_, r) => r.context.operation_span(&r.controller, "discover_address"),
-            Self::Commission(_, r) => r
-                .context
-                .operation_span(&r.controller, "assign_next_output"),
+            Self::Commission(_, r) => r.context.operation_span(
+                &r.controller,
+                match r.space {
+                    discovery::Space::Outputs => "assign_next_output",
+                    discovery::Space::Inputs => "assign_next_input",
+                },
+            ),
         }
     }
     pub async fn wait_for_receiver_close(&mut self) {
