@@ -1,0 +1,260 @@
+{
+ "rows": {
+  "scene_actual_query_keeps_old_report": {
+   "last_real": {
+    "at": "2026-10-22T12:18:41Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:a16e5117c3d810aa",
+     "row": "29f6e82606f6a7ab",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.7,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_control_does_not_select_rgb_family": {
+   "last_real": {
+    "at": "2026-10-22T12:19:14Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:72a2aa697c9feac7",
+     "row": "b594e886bcb6b82d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.7,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_copy_report_activates": {
+   "last_real": {
+    "at": "2026-10-22T12:18:51Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:72a2aa697c9feac7",
+     "row": "843b33447e92e539",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.5,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_ignored_activates_pending": {
+   "last_real": {
+    "at": "2026-10-22T12:18:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:46edf0326a49aa55",
+     "row": "adf731793f9273c3",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.1,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_masked_control_overwrites_actual": {
+   "last_real": {
+    "at": "2026-10-22T12:19:06Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:b7e0b8b0825878ed",
+     "row": "1be8b632454f118d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.5,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_masked_type_erases_stored": {
+   "last_real": {
+    "at": "2026-10-22T12:17:39Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:69b88745331de821",
+     "row": "243087431f0e9c7b",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.7,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_query_reports_actual": {
+   "last_real": {
+    "at": "2026-10-22T12:18:30Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:f741da23c998eb9e",
+     "row": "618fe0e89ba9a33a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.8,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_recall_forces_activation": {
+   "last_real": {
+    "at": "2026-10-22T12:18:19Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:46edf0326a49aa55",
+     "row": "48153c304517dc59",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.3,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_remove_keeps_colour": {
+   "last_real": {
+    "at": "2026-10-22T12:18:02Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:26cbb4ab917f771b",
+     "row": "e7bf91cb41a05742",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.0,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_report_selects_actual": {
+   "last_real": {
+    "at": "2026-10-22T12:17:17Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:0f9dcc45790174cf",
+     "row": "6374a5ccec3e2162",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.8,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_reset_retains_colour": {
+   "last_real": {
+    "at": "2026-10-22T12:19:26Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:db9e50596f1093c1",
+     "row": "c45bc76f5c70a8be",
+     "test": null
+    },
+    "path": "command",
+    "secs": 12.2,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_rgb_control_is_ignored": {
+   "last_real": {
+    "at": "2026-10-22T12:18:59Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:b7e0b8b0825878ed",
+     "row": "3f5076795c4f08e8",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.5,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_staging_activates": {
+   "last_real": {
+    "at": "2026-10-22T12:17:28Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:c5ce9d28380b1317",
+     "row": "16b46edd71f72843",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.1,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_store_loses_repeat": {
+   "last_real": {
+    "at": "2026-10-22T12:16:58Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:71f6615790c5fc23",
+     "row": "02187790bdf854b6",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.6,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  },
+  "scene_store_retains_temporary": {
+   "last_real": {
+    "at": "2026-10-22T12:17:49Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:69b88745331de821",
+     "row": "2cb54f44aba72182",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.9,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

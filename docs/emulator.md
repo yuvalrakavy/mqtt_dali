@@ -146,8 +146,9 @@ Supported queries include colour gear/type features, active type/range status,
 current xy/Tc/RGBWAF values, Tc limits, control and raw extended version 1.
 Word values return their MSB, place it in DTR1 and place the LSB in DTR0. RGBWAF
 byte queries preserve both registers. Inactive/unsupported representations return MASK, without inventing
-a converted colour. RGBWAF control is the fixed normalized profile value 0x80;
-gear features report the profile's automatic-activation bit and no automatic calibration.
+a converted colour. RGBWAF control starts at 0x80 and follows temporary
+control/ACTIVATE and native scene recall; xy/Tc activation unlinks channels.
+Gear features report the profile's automatic-activation bit and no automatic calibration.
 
 With automatic activation enabled, the supported immediate base commands (OFF,
 DAPC, recall min/max and immediate steps) also apply staged colour and clear its
@@ -158,13 +159,19 @@ Levels/fades are still instantaneous in the model, so it proves command order,
 not physical fade completion or absence of visible transitions.
 
 Private `snapshot` retains `colour` as the initial physical profile and exposes
-`colour_state.actual`, `colour_state.temporary` and the range flag as live raw
+`colour_state.actual`, `colour_state.actual_control`, `colour_state.temporary`,
+`colour_state.scenes`, `colour_state.report` and the range flag as live raw
 model state. Profiles without colour omit this new state. Address/group changes
-do not replace fixture identity. The existing base RESET path does not establish
-DT8 reset/settings support.
+do not replace fixture identity. Base RESET clears all sixteen colour scenes
+alongside level scenes; broader DT8 reset/settings support remains pending.
 
-This model does not simulate photometry, xy gamut, fades, colour scenes, alternate
-RGBWAF modes/channel assignment changes, primary-N control, or DT8
+Native colour scenes support Store/Remove/Recall, manual/automatic activation,
+masked participation, report queries and CopyReportToTemporary. Scene colours
+start masked and are populated through native commands; see
+[scene semantics](dali-scenes-contract.md).
+
+This model does not simulate photometry, xy gamut, fades, RGBWAF control-mode or
+linking effects on arc power, channel assignment changes, primary-N control, or DT8
 reset/settings. Those remain explicit extensions. It is not a certification
 oracle or evidence of a particular firmware's behavior. Selected transitions were
 cross-checked with an independently authored
@@ -172,7 +179,8 @@ cross-checked with an independently authored
 and its [dispatch](https://github.com/cad435/OpenDALI_EVG/blob/c1f73d0261c79ae1def6c4a615dcb49f7dc335dd/Firmware/src/dali/protocol/dali_protocol.c),
 alongside the protocol references in [the colour codec guide](dali-colour-contract.md).
 The source was read, not copied. Focused sensitivity controls are in
-`v2-colour-emulator-controls.toml` and `v2-combined-colour-controls.toml`.
+`v2-colour-emulator-controls.toml`, `v2-combined-colour-controls.toml` and
+`v2-scene-controls.toml`.
 
 SIGINT/SIGTERM stops under bounded waits, including with unread output. Logging
 uses tracing-init's normal configuration. All tests use private PTYs/sockets and

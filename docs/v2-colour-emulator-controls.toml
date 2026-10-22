@@ -10,8 +10,8 @@ expect_text = "DT8 selection survived its command"
 [[control]]
 name = "input_frame_clears_dt8_selection"
 file = "src/emulator/model.rs"
-anchor = "bus.repeat = None;"
-replacement = "bus.repeat = None; bus.enabled_type = None;"
+anchor = "bus.repeat = None;\n            bus.input_repeat = None;"
+replacement = "bus.repeat = None; bus.enabled_type = None;\n            bus.input_repeat = None;"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_dt8_enable)"]
 expect_text = "input traffic incorrectly cancelled DT8 selection"
@@ -46,8 +46,8 @@ expect_text = "temporary Tc changed actual value before ACTIVATE"
 [[control]]
 name = "activate_retains_temporary_values"
 file = "src/emulator/colour.rs"
-anchor = "let staged = std::mem::take(&mut self.temporary);"
-replacement = "let staged = Temporary { kind: self.temporary.kind, xy: self.temporary.xy, temperature: self.temporary.temperature, rgbwaf: self.temporary.rgbwaf };"
+anchor = "fn activate(&mut self) {\n        let staged = std::mem::take(&mut self.temporary);"
+replacement = "fn activate(&mut self) {\n        let staged = self.temporary.clone();"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_tc_stages)"]
 expect_text = "ACTIVATE retained the temporary colour type"

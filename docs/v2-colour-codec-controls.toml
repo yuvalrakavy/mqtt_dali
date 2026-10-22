@@ -84,8 +84,8 @@ expect_text = "reserved seven-channel feature was advertised as valid"
 [[control]]
 name = "ambiguous_colour_type_guessed_as_rgb"
 file = "src/dali/colour.rs"
-anchor = "_ => None,"
-replacement = "_ => Some(ColourType::Rgbwaf),"
+anchor = "0x80 => Some(ColourType::Rgbwaf),\n            _ => None,"
+replacement = "0x80 => Some(ColourType::Rgbwaf),\n            _ => Some(ColourType::Rgbwaf),"
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(colour_features_and_status)"]
 expect_text = "ambiguous active colour type was guessed"

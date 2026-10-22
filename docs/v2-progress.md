@@ -5,6 +5,39 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5h1 — native scene protocol and physical model
+
+Implement checked sixteen-slot scene frames, explicit repeated Store/Remove,
+Off versus MASK replies, stored colour report plans and nonactivating live/stored
+Tc/xy/RGBWAF staging. The independent model now has scene colours, separate
+temporary/report registers, RGBWAF control and auto/manual recall. Store consumes
+temporary values while masked type preserves previous stored colour. Remove and
+base Reset clear colour participation. Ignored scenes preserve pending colour.
+
+Both sequential design reviews approve (45 and 96 seconds, same-family/source-only).
+All six initial literal model tests fail behaviorally before production changes.
+The focused run passes 32 new/existing scene and colour cases; the standalone
+PTY test also passes actual typed programming/query/manual recall/Remove with the
+unchanged one-terminal repeat policy. A seventh physical test first fails on
+control-only RGB staging retaining Tc type, then passes after selecting RGBWAF.
+The final scene-filtered run passes fourteen cases, including one existing base
+case; thirteen tests are new.
+
+All fifteen scene controls and three affected older controls have intended RED
+evidence. Two older anchors were already ambiguous at the baseline; scope them
+to their owning methods. One first retarget used the wrong input path and stayed
+GREEN; the corrected tested `intervening_frame` path is RED. Logs:
+`/tmp/dali-scenes-controls` and `/tmp/dali-scenes-controls-final`.
+Restored acceptance passes **544/544 native tests** (eleven binaries; one opt-in
+browser case skipped), scoped strict Clippy, Pi library/four-bin compile,
+doctests (none), changed-file formatting, all eight affected control plans,
+whitespace and wait validation. Native execution is 54.137 s; suite command wall
+time is 91 s. Logs: `/tmp/dali-scenes-acceptance`. Source reviews follow the
+frozen implementation. Managed scene identity/jobs and the Scenes screen remain
+unbuilt; broader DT8 settings/physics and hardware validation are still pending.
+See the [scene contract](dali-scenes-contract.md) and
+[slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scenes.md).
+
 ## P7 — embedded browser application
 
 Implement the approved responsive Preact/TypeScript interface in `web/`, with
@@ -1670,7 +1703,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented | Full reassign/restore and native scenes |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene protocol/model verified locally, source reviews pending | Full reassign/restore and managed native scenes/UI |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

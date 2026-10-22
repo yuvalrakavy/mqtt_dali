@@ -182,6 +182,15 @@ physical return after a newer driver report. Aggregate reads retain cursor progr
 before each await, skip disabled buses and reject absent UART before admission.
 The regression controls are `docs/v2-mqtt-output-controls.toml`.
 
+`dali::scenes` provides checked slots, Off/MASK levels, repeated Store/Remove,
+scene report plans and nonactivating colour staging. See
+`docs/dali-scenes-contract.md`. Store with masked temporary colour type preserves
+the old stored colour; Remove clears both kinds of participation. QueryActualLevel
+overwrites scene reporting. Keep each staging/report sequence under one bus
+permit. The independent emulator models sixteen colour slots and auto/manual
+recall. Managed scene inventory/jobs and the Scenes screen remain pending.
+Controls: `docs/v2-scene-controls.toml`.
+
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`
 reuse whole-plan DTR/enable ownership, captured deadlines and final acceptance.

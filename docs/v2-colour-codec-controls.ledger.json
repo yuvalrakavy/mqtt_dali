@@ -2,18 +2,18 @@
  "rows": {
   "ambiguous_colour_type_guessed_as_rgb": {
    "last_real": {
-    "at": "2026-10-22T00:11:09Z",
+    "at": "2026-10-22T12:19:47Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
      "guard": "item:699dda824729b016",
-     "row": "e90c35660f002e29",
+     "row": "8f94653bdc1d940d",
      "test": null
     },
     "path": "command",
-    "secs": 6.2,
-    "sha": "c27c2a250adbbde54f748b763c6ae16d1e6a0351",
+    "secs": 21.1,
+    "sha": "39c299083976c3124da519c3243d4becb3141686",
     "verdict": "RED"
    }
   },

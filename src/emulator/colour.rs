@@ -2,12 +2,13 @@
 use super::scenario::{Colour, ColourType};
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct Temporary {
     kind: Option<ColourType>,
     xy: [u16; 2],
     temperature: u16,
     rgbwaf: [u8; 6],
+    control: u8,
 }
 impl Default for Temporary {
     fn default() -> Self {
@@ -16,6 +17,7 @@ impl Default for Temporary {
             xy: [65535; 2],
             temperature: 65535,
             rgbwaf: [255; 6],
+            control: 255,
         }
     }
 }
@@ -23,14 +25,20 @@ impl Default for Temporary {
 #[derive(Serialize)]
 pub(super) struct State {
     actual: Colour,
+    actual_control: u8,
     temporary: Temporary,
+    scenes: [Temporary; 16],
+    report: Temporary,
     temperature_out_of_range: bool,
 }
 impl State {
     pub fn new(profile: Colour) -> Self {
         Self {
+            actual_control: if profile.rgbwaf.is_some() { 0x80 } else { 255 },
             actual: profile,
             temporary: Temporary::default(),
+            scenes: std::array::from_fn(|_| Temporary::default()),
+            report: Temporary::default(),
             temperature_out_of_range: false,
         }
     }
@@ -45,6 +53,51 @@ impl State {
             self.activate();
         }
     }
+    pub fn store_scene(&mut self, slot: usize) {
+        let staged = std::mem::take(&mut self.temporary);
+        if staged.kind.is_some() {
+            self.scenes[slot] = staged;
+        }
+    }
+    pub fn remove_scene(&mut self, slot: usize) {
+        self.scenes[slot] = Temporary::default();
+    }
+    pub fn recall_scene(&mut self, slot: usize, level: u8) {
+        if level == 255 && self.scenes[slot].kind.is_none() {
+            return;
+        }
+        self.temporary = self.scenes[slot].clone();
+        self.power_command();
+    }
+    pub fn report_scene(&mut self, slot: usize) {
+        self.report = self.scenes[slot].clone();
+    }
+    pub fn report_actual(&mut self) {
+        let mut report = Temporary {
+            kind: Some(self.actual.active),
+            ..Temporary::default()
+        };
+        match self.actual.active {
+            ColourType::Xy => report.xy = self.actual.xy.unwrap_or([65535; 2]),
+            ColourType::Temperature => {
+                report.temperature = self
+                    .actual
+                    .temperature
+                    .as_ref()
+                    .map_or(65535, |tc| tc.value)
+            }
+            ColourType::Rgbwaf => {
+                if let Some(channels) = &self.actual.rgbwaf {
+                    report.rgbwaf[..channels.len()].copy_from_slice(channels);
+                }
+                report.control = self.actual_control;
+            }
+        }
+        self.report = report;
+    }
+    pub fn reset_scenes(&mut self) {
+        self.scenes = std::array::from_fn(|_| Temporary::default());
+    }
     fn activate(&mut self) {
         let staged = std::mem::take(&mut self.temporary);
         match staged.kind {
@@ -54,6 +107,9 @@ impl State {
                     self.temperature_out_of_range = clamped != staged.temperature;
                     tc.value = clamped;
                     self.actual.active = ColourType::Temperature;
+                    if self.actual.rgbwaf.is_some() {
+                        self.actual_control &= 0xc0;
+                    }
                 }
             }
             Some(ColourType::Xy) => {
@@ -64,6 +120,9 @@ impl State {
                         }
                     }
                     self.actual.active = ColourType::Xy;
+                    if self.actual.rgbwaf.is_some() {
+                        self.actual_control &= 0xc0;
+                    }
                     self.temperature_out_of_range = false;
                 }
             }
@@ -75,6 +134,9 @@ impl State {
                         }
                     }
                     self.actual.active = ColourType::Rgbwaf;
+                    if staged.control != 255 {
+                        self.actual_control = staged.control;
+                    }
                     self.temperature_out_of_range = false;
                 }
             }
@@ -111,6 +173,17 @@ impl State {
                 self.activate();
                 None
             }
+            0xed => {
+                if self.actual.rgbwaf.is_some() && (dtr[0] < 192 || dtr[0] == 255) {
+                    self.select(ColourType::Rgbwaf);
+                    self.temporary.control = dtr[0];
+                }
+                None
+            }
+            0xee => {
+                self.temporary = self.report.clone();
+                None
+            }
             0xf7 => Some(u8::from(self.actual.auto_activation)),
             0xf8 => Some(self.status()),
             0xf9 => Some(
@@ -120,7 +193,7 @@ impl State {
             ),
             0xfa => Some(self.value(dtr)),
             0xfb => Some(if self.actual.rgbwaf.is_some() {
-                0x80
+                self.actual_control
             } else {
                 255
             }),
@@ -146,7 +219,30 @@ impl State {
     }
     fn value(&self, dtr: &mut [u8; 3]) -> u8 {
         let selector = dtr[0];
+        let stored = match selector {
+            192..=208 => Some((&self.temporary, selector - 192)),
+            224..=240 => Some((&self.report, selector - 224)),
+            _ => None,
+        };
         let word = match selector {
+            _ if stored.is_some() => {
+                let (data, field) = stored.unwrap();
+                match field {
+                    0 | 1 => Some(data.xy[usize::from(field)]),
+                    2 => Some(data.temperature),
+                    9..=14 => return data.rgbwaf[usize::from(field - 9)],
+                    15 => return data.control,
+                    16 => {
+                        return match data.kind {
+                            Some(ColourType::Xy) => 0x10,
+                            Some(ColourType::Temperature) => 0x20,
+                            Some(ColourType::Rgbwaf) => 0x80,
+                            None => 255,
+                        }
+                    }
+                    _ => None,
+                }
+            }
             0 | 1 if self.actual.active == ColourType::Xy => {
                 self.actual.xy.map(|xy| xy[usize::from(selector)])
             }
@@ -163,7 +259,7 @@ impl State {
                 return if self.actual.active != ColourType::Rgbwaf {
                     255
                 } else if selector == 15 {
-                    0x80
+                    self.actual_control
                 } else {
                     self.actual
                         .rgbwaf

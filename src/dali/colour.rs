@@ -133,6 +133,12 @@ impl Intent {
     }
     /// Includes ACTIVATE, but no power/brightness or control-mode change.
     pub fn frames(self, target: Destination) -> Vec<u16> {
+        let mut frames = self.staged_frames(target);
+        extended(&mut frames, target, 0xe2);
+        frames
+    }
+    /// Only stages temporary values. Store or ACTIVATE must follow explicitly.
+    pub fn staged_frames(self, target: Destination) -> Vec<u16> {
         let mut frames = Vec::with_capacity(12);
         match self.0 {
             Drive::Temperature(value) => load_word(&mut frames, target, value.raw(), 0xe7),
@@ -152,18 +158,17 @@ impl Intent {
                 }
             }
         }
-        extended(&mut frames, target, 0xe2);
         frames
     }
 }
 
-fn special(opcode: u8, value: u8) -> u16 {
+pub(super) fn special(opcode: u8, value: u8) -> u16 {
     u16::from_be_bytes([opcode, value])
 }
-fn extended(frames: &mut Vec<u16>, target: Destination, opcode: u8) {
+pub(super) fn extended(frames: &mut Vec<u16>, target: Destination, opcode: u8) {
     frames.extend([0xc108, target.command(opcode)]);
 }
-fn load_word(frames: &mut Vec<u16>, target: Destination, value: u16, opcode: u8) {
+pub(super) fn load_word(frames: &mut Vec<u16>, target: Destination, value: u16, opcode: u8) {
     let [low, high] = value.to_le_bytes();
     frames.extend([special(0xa3, low), special(0xc3, high)]);
     extended(frames, target, opcode);

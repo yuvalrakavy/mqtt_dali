@@ -1,0 +1,135 @@
+[[control]]
+name = "scene_store_loses_repeat"
+file = "src/dali/scenes.rs"
+anchor = "Step::Repeat(Destination::Short(address).command(0x40 + self.0))"
+replacement = "Step::Send(Destination::Short(address).command(0x40 + self.0))"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_literal_slot_level)"]
+expect_text = "scene Store lost Off or repeated-setting semantics"
+
+[[control]]
+name = "scene_report_selects_actual"
+file = "src/dali/scenes.rs"
+anchor = "Step::Query(scene.query(address))"
+replacement = "Step::Query(target.command(0xa0))"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_report_plans)"]
+expect_text = "scene report plan refreshed actual values or lost word LSB"
+
+[[control]]
+name = "scene_staging_activates"
+file = "src/dali/colour.rs"
+anchor = "pub fn staged_frames(self, target: Destination) -> Vec<u16> {\n        let mut frames = Vec::with_capacity(12);"
+replacement = "pub fn staged_frames(self, target: Destination) -> Vec<u16> {\n        let mut frames = vec![0xc108, target.command(0xe2)];"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_live_intents_can_stage)"]
+expect_text = "staging live intent activated or changed values"
+
+[[control]]
+name = "scene_masked_type_erases_stored"
+file = "src/emulator/colour.rs"
+anchor = "if staged.kind.is_some() {"
+replacement = "if true {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_masked_temporary_type)"]
+expect_text = "masked temporary type erased stored colour"
+
+[[control]]
+name = "scene_store_retains_temporary"
+file = "src/emulator/colour.rs"
+anchor = "let staged = std::mem::take(&mut self.temporary);\n        if staged.kind.is_some() {"
+replacement = "let staged = self.temporary.clone();\n        if staged.kind.is_some() {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_store_requires_repeat)"]
+expect_text = "scene Store retained temporary colour"
+
+[[control]]
+name = "scene_remove_keeps_colour"
+file = "src/emulator/colour.rs"
+anchor = "self.scenes[slot] = Temporary::default();"
+replacement = "self.scenes[slot] = self.scenes[slot].clone();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_masked_temporary_type)"]
+expect_text = "Remove kept scene colour participation"
+
+[[control]]
+name = "scene_ignored_activates_pending"
+file = "src/emulator/colour.rs"
+anchor = "if level == 255 && self.scenes[slot].kind.is_none() {\n            return;"
+replacement = "if level == 255 && self.scenes[slot].kind.is_none() {\n            self.power_command(); return;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_ignored_entry)"]
+expect_text = "ignored scene activated unrelated pending colour"
+
+[[control]]
+name = "scene_recall_forces_activation"
+file = "src/emulator/colour.rs"
+anchor = "self.temporary = self.scenes[slot].clone();\n        self.power_command();"
+replacement = "self.temporary = self.scenes[slot].clone();\n        self.activate();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_recall_colour_only)"]
+expect_text = "scene recall ignored activation mode"
+
+[[control]]
+name = "scene_query_reports_actual"
+file = "src/emulator/colour.rs"
+anchor = "self.report = self.scenes[slot].clone();"
+replacement = "self.report_actual();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_report_actual_and_temporary)"]
+expect_text = "scene query did not select stored report"
+
+[[control]]
+name = "scene_actual_query_keeps_old_report"
+file = "src/emulator/model.rs"
+anchor = "0xa0 => {\n                    if let Some(colour) = &mut gear.colour_state {\n                        colour.report_actual();"
+replacement = "0xa0 => {\n                    if let Some(_colour) = &mut gear.colour_state {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_report_actual_and_temporary)"]
+expect_text = "actual query retained stale scene report"
+
+[[control]]
+name = "scene_copy_report_activates"
+file = "src/emulator/colour.rs"
+anchor = "self.temporary = self.report.clone();"
+replacement = "self.temporary = self.report.clone(); self.activate();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_report_actual_and_temporary)"]
+expect_text = "copying scene report activated colour"
+
+[[control]]
+name = "scene_rgb_control_is_ignored"
+file = "src/emulator/colour.rs"
+anchor = "self.actual_control = staged.control;"
+replacement = "self.actual_control = 0x80;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_rgb_masks_control)"]
+expect_text = "RGB actual control ignored scene"
+
+[[control]]
+name = "scene_masked_control_overwrites_actual"
+file = "src/emulator/colour.rs"
+anchor = "if staged.control != 255 {"
+replacement = "if true {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_rgb_masks_control)"]
+expect_text = "masked scene control overwrote actual mode"
+
+[[control]]
+name = "scene_control_does_not_select_rgb_family"
+file = "src/emulator/colour.rs"
+anchor = "self.select(ColourType::Rgbwaf);\n                    self.temporary.control = dtr[0];"
+replacement = "self.temporary.control = dtr[0];"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_temporary_rgb_control)"]
+expect_text = "temporary RGB control did not select RGB family"
+
+[[control]]
+name = "scene_reset_retains_colour"
+file = "src/emulator/colour.rs"
+anchor = "self.scenes = std::array::from_fn(|_| Temporary::default());"
+replacement = "self.scenes[0] = Temporary::default();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_rgb_masks_control)"]
+expect_text = "Reset retained a stored scene colour"
+

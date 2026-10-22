@@ -468,6 +468,9 @@ impl Model {
                 }
                 0x10..=0x1f => {
                     let level = gear.config.scenes[(opcode & 15) as usize];
+                    if let Some(colour) = &mut gear.colour_state {
+                        colour.recall_scene((opcode & 15) as usize, level);
+                    }
                     if level != 255 {
                         gear.config.level = if level == 0 {
                             0
@@ -480,6 +483,9 @@ impl Model {
                 0x20 => {
                     gear.config.groups = 0;
                     gear.config.scenes.fill(255);
+                    if let Some(colour) = &mut gear.colour_state {
+                        colour.reset_scenes();
+                    }
                     gear.min_level = 1;
                     gear.max_level = 254;
                     gear.config.level = 254;
@@ -492,6 +498,9 @@ impl Model {
                 }
                 0x21 => {
                     gear.dtr[0] = gear.config.level;
+                    if let Some(colour) = &mut gear.colour_state {
+                        colour.report_actual();
+                    }
                     None
                 }
                 0x2a => {
@@ -528,10 +537,16 @@ impl Model {
                 }
                 0x40..=0x4f => {
                     gear.config.scenes[(opcode & 15) as usize] = gear.dtr[0];
+                    if let Some(colour) = &mut gear.colour_state {
+                        colour.store_scene((opcode & 15) as usize);
+                    }
                     None
                 }
                 0x50..=0x5f => {
                     gear.config.scenes[(opcode & 15) as usize] = 255;
+                    if let Some(colour) = &mut gear.colour_state {
+                        colour.remove_scene((opcode & 15) as usize);
+                    }
                     None
                 }
                 0x60..=0x6f => {
@@ -559,13 +574,23 @@ impl Model {
                 0x99 => Some(gear.config.device_type),
                 0x9c => Some(gear.dtr[1]),
                 0x9d => Some(gear.dtr[2]),
-                0xa0 => Some(gear.config.level),
+                0xa0 => {
+                    if let Some(colour) = &mut gear.colour_state {
+                        colour.report_actual();
+                    }
+                    Some(gear.config.level)
+                }
                 0xa1 => Some(gear.max_level),
                 0xa2 => Some(gear.min_level),
                 0xa3 => Some(gear.power_on_level),
                 0xa4 => Some(gear.failure_level),
                 0xa5 => Some(gear.fade),
-                0xb0..=0xbf => Some(gear.config.scenes[(opcode & 15) as usize]),
+                0xb0..=0xbf => {
+                    if let Some(colour) = &mut gear.colour_state {
+                        colour.report_scene((opcode & 15) as usize);
+                    }
+                    Some(gear.config.scenes[(opcode & 15) as usize])
+                }
                 0xc0 => Some(gear.config.groups as u8),
                 0xc1 => Some((gear.config.groups >> 8) as u8),
                 0xc2 => Some((gear.config.random_address.unwrap() >> 16) as u8),
@@ -593,5 +618,7 @@ impl Model {
 }
 #[cfg(test)]
 mod colour_tests;
+#[cfg(test)]
+mod scene_tests;
 #[cfg(test)]
 mod tests;

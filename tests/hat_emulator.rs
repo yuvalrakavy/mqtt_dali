@@ -278,6 +278,128 @@ async fn existing_control_path_is_never_replaced() {
     assert_eq!(fs::read(fixture.socket()).unwrap(), b"keep this file");
 }
 
+async fn scene_steps(
+    link: &Transactions<Serial>,
+    steps: Vec<mqtt_dali::dali::scenes::Step>,
+) -> Vec<BusReply> {
+    use mqtt_dali::dali::scenes::Step;
+    let mut values = Vec::new();
+    for step in steps {
+        let (frame, repeat, query) = match step {
+            Step::Send(frame) => (frame, false, false),
+            Step::Repeat(frame) => (frame, true, false),
+            Step::Query(frame) => (frame, false, true),
+        };
+        let response = link
+            .execute(
+                Command::Send {
+                    bus: 0,
+                    frame: DaliFrame::Bits16(frame),
+                    repeat,
+                },
+                Duration::from_secs(1),
+            )
+            .await
+            .unwrap();
+        let Response::Dali(replies) = response else {
+            panic!("scene command had a non-DALI response")
+        };
+        assert_eq!(
+            replies.len(),
+            1,
+            "scene repeat policy produced extra terminals"
+        );
+        if query {
+            values.extend(replies);
+        } else {
+            assert_eq!(replies, [BusReply::NoResponse]);
+        }
+    }
+    values
+}
+
+#[tokio::test]
+async fn standalone_native_scene_codec_programs_and_queries_physical_colour_over_pty() {
+    use mqtt_dali::dali::{
+        colour,
+        gear::{Destination, ShortAddress},
+        scenes,
+    };
+    let fixture = Fixture::new();
+    fs::write(
+        fixture.0.join("physical.json"),
+        include_str!("../examples/emulator/colour-i4.json"),
+    )
+    .unwrap();
+    let mut child = fixture.command().spawn().unwrap();
+    let ready = ready(&mut child).await;
+    let (link, mut events) = Transactions::start(
+        Serial::open(ready["pty"].as_str().unwrap()).await.unwrap(),
+        RepeatPolicy::OneTerminal,
+    );
+    tokio::time::timeout(Duration::from_secs(1), events.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    link.initialize(Duration::from_secs(1)).await.unwrap();
+    let address = ShortAddress::new(3).unwrap();
+    let slot = scenes::Slot::new(15).unwrap();
+    for frame in scenes::Colour::Temperature(Some(colour::Temperature::new(350).unwrap()))
+        .staged_frames(address)
+    {
+        assert_eq!(literal_frame(&link, frame).await, BusReply::NoResponse);
+    }
+    scene_steps(&link, slot.store(address, scenes::Level::Mask)).await;
+    let snapshot = request(&fixture, serde_json::json!({"op":"snapshot"})).await;
+    let output = &snapshot["result"]["buses"][0]["outputs"][0];
+    assert_eq!(output["level"], 100);
+    assert_eq!(
+        output["colour_state"]["actual"]["temperature"]["value"], 250,
+        "programming a native scene activated physical colour"
+    );
+    assert_eq!(
+        scene_steps(&link, scenes::ReportValue::Type.plan(address, slot)).await,
+        [BusReply::Value(255), BusReply::Value(0x20)],
+        "native scene did not store colour-only participation"
+    );
+    assert_eq!(
+        scene_steps(&link, scenes::ReportValue::Temperature.plan(address, slot)).await,
+        [
+            BusReply::Value(255),
+            BusReply::Value(1),
+            BusReply::Value(94)
+        ]
+    );
+    literal_frame(&link, slot.recall(Destination::Short(address))).await;
+    // The fixture's manual mode needs explicit ACTIVATE after native recall.
+    let snapshot = request(&fixture, serde_json::json!({"op":"snapshot"})).await;
+    assert_eq!(
+        snapshot["result"]["buses"][0]["outputs"][0]["colour_state"]["actual"]["temperature"]
+            ["value"],
+        250
+    );
+    literal_frame(&link, 0xc108).await;
+    literal_frame(&link, 0x07e2).await;
+    let snapshot = request(&fixture, serde_json::json!({"op":"snapshot"})).await;
+    let output = &snapshot["result"]["buses"][0]["outputs"][0];
+    assert_eq!(
+        output["level"], 100,
+        "colour-only recall changed physical brightness"
+    );
+    assert_eq!(
+        output["colour_state"]["actual"]["temperature"]["value"],
+        350
+    );
+    scene_steps(&link, vec![slot.remove(address)]).await;
+    assert_eq!(
+        scene_steps(&link, scenes::ReportValue::Type.plan(address, slot)).await,
+        [BusReply::Value(255), BusReply::Value(255)],
+        "native Remove kept physical scene colour"
+    );
+    link.close().await.unwrap();
+    terminate(&mut child).await;
+}
+
 fn full_pipe() -> (fs::File, fs::File) {
     use std::io::Write;
     let mut fd = [-1; 2];
