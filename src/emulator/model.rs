@@ -180,7 +180,9 @@ impl Model {
             .take()
             .is_some_and(|(old, at)| old == frame && self.now_ms.saturating_sub(at) <= 100);
         if high == 0 && address == 0xc1 {
-            if instance > 10 || (matches!(instance, 0 | 2 | 3 | 4 | 10) && opcode != 0) {
+            if (instance > 10 && instance != 0x30)
+                || (matches!(instance, 0 | 2 | 3 | 4 | 10) && opcode != 0)
+            {
                 self.unsupported += 1;
                 return Reply::None;
             }
@@ -206,14 +208,22 @@ impl Model {
                 Some(_) => Reply::Collision,
             };
         }
-        if high != 0 || address & 1 == 0 || address > 0x7f || (instance > 31 && instance != 0xfe) {
+        if high != 0
+            || address & 1 == 0
+            || (address > 0x7f && address != 0xff)
+            || (instance > 31 && instance != 0xfe)
+        {
             self.unsupported += 1;
+            return Reply::None;
+        }
+        if instance == 0xfe && opcode == 0x14 && !repeated {
+            bus.input_repeat = Some((frame, self.now_ms));
             return Reply::None;
         }
         let replies: Vec<_> = bus
             .inputs
             .iter_mut()
-            .filter(|i| i.config.short_address == Some(address >> 1))
+            .filter(|i| address == 0xff || i.config.short_address == Some(address >> 1))
             .filter_map(|i| i.query(instance, opcode))
             .collect();
         match replies.first() {
@@ -616,6 +626,8 @@ impl Model {
         }
     }
 }
+#[cfg(test)]
+mod addressing_tests;
 #[cfg(test)]
 mod colour_tests;
 #[cfg(test)]

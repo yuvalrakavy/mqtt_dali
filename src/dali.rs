@@ -1,4 +1,5 @@
 //! Typed DALI device commands, separate from ATX transport and emulation.
+pub mod addressing;
 pub mod colour;
 pub mod commissioning;
 pub mod gear;

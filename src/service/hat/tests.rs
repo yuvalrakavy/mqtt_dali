@@ -197,6 +197,59 @@ async fn group_program_handoff_rejects_original_stamp_after_already_observed_bus
     assert_eq!(admission.available_permits(), 1);
     hat.close(deadline()).await.unwrap();
 }
+
+#[tokio::test]
+async fn reassignment_handoff_preserves_the_stamp_captured_before_retirement() {
+    use crate::service::{discovery::Space, reassignment};
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    hat.settings.as_mut().unwrap().repeat = RepeatPolicy::OneTerminal;
+    let original = hat.reassignment_stamp(0, Space::Outputs).unwrap();
+    hat.power_cycle_output_samples_for_test();
+    assert_ne!(hat.reassignment_stamp(0, Space::Outputs).unwrap(), original);
+    let permit = std::sync::Arc::new(tokio::sync::Semaphore::new(1));
+    let (reply, receive) = tokio::sync::oneshot::channel();
+    let request = reassignment::Request {
+        bus: 0,
+        space: Space::Outputs,
+        expected: 1,
+        context: context(1),
+        deadline: deadline(),
+        completion: None,
+        committed: Some(reassignment::Report {
+            bus: 0,
+            space: Space::Outputs,
+            outcome: reassignment::ResetOutcome::RetiredButUnconfirmed,
+            revision: 2,
+            retired_devices: 1,
+            retired_instances: 0,
+            checked_addresses: 0,
+            reason: None,
+        }),
+        reply,
+        _permit: permit.clone().try_acquire_owned().unwrap(),
+    };
+    let route = reassignment::Route {
+        bus: 0,
+        space: Space::Outputs,
+        controller: "Controller".into(),
+        context: context(1),
+        original_stamp: original,
+    };
+    hat.enqueue_reassignment(request, route);
+    assert!(
+        hat.physical.is_none(),
+        "reassignment queued address clear with a replacement stamp"
+    );
+    let report = receive.await.unwrap().unwrap();
+    assert_eq!(
+        report.outcome,
+        reassignment::ResetOutcome::RetiredButUnconfirmed
+    );
+    assert_eq!(report.revision, 2);
+    assert_eq!(permit.available_permits(), 1);
+    hat.close(deadline()).await.unwrap();
+}
 #[tokio::test]
 async fn scene_settings_program_handoff_refuses_a_previously_observed_bus_cycle() {
     use crate::{

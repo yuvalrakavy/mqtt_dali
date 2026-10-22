@@ -50,7 +50,7 @@ function w() {
 }
 function T(e, t, n, r, i, a, o, s, c, l, u) {
 	var p, m, h, g, _, v, y = r.__k || f, b = t.length;
-	for (c = E(n, t, y, c, b), p = 0; p < b; p++) (h = n.__k[p]) != null && (m = ~h.__i && y[h.__i] || d, h.__i = p, v = M(e, h, m, i, a, o, s, c, l, u), g = h.__e, (m.ref != h.ref || 8 & m.__u) && (m.ref && F(m.ref, null, h, m), h.ref && u.push(h.ref, h.__c || g, h)), _ = _ || g, 4 & h.__u ? (c = D(h, c, e, !m.__v), m.__e && (m.__e = null)) : typeof h.type == "function" && v !== void 0 ? c = v : g && (c = g.nextSibling), h.__u &= -7);
+	for (c = E(n, t, y, c, b), p = 0; p < b; p++) (h = n.__k[p]) != null && (m = ~h.__i && y[h.__i] || d, h.__i = p, v = M(e, h, m, i, a, o, s, c, l, u), g = h.__e, (m.ref != h.ref || 8 & m.__u) && (m.ref && P(m.ref, null, h, m), h.ref && u.push(h.ref, h.__c || g, h)), _ = _ || g, 4 & h.__u ? (c = D(h, c, e, !m.__v), m.__e && (m.__e = null)) : typeof h.type == "function" && v !== void 0 ? c = v : g && (c = g.nextSibling), h.__u &= -7);
 	return n.__e = _, c;
 }
 function E(e, t, n, r, i) {
@@ -63,7 +63,7 @@ function E(e, t, n, r, i) {
 		}
 		for (b = u.length; a--;) d[a] && (d[a] == b ? b-- : C[a].__u |= 4);
 	}
-	if (_) for (a = 0; a < g; a++) !(s = n[a]) || 2 & s.__u || (s.__e == r && (r = x(s)), I(s, s));
+	if (_) for (a = 0; a < g; a++) !(s = n[a]) || 2 & s.__u || (s.__e == r && (r = x(s)), F(s, s));
 	return r;
 }
 function D(e, t, n, r) {
@@ -117,7 +117,7 @@ function j(t) {
 	};
 }
 function M(t, n, r, i, a, o, s, c, l, u) {
-	var d, p, h, v, S, C, w, E, D, O, k, A, j, M, N, F, L, R, z, B, V = n.type;
+	var d, p, h, v, S, C, w, E, D, O, k, A, j, M, N, P, I, L, R, z, B = n.type;
 	if (n.constructor !== void 0) return null;
 	if (128 & r.__u && (l = 32 & r.__u, d = r.__c.__z)) {
 		if (n.__u |= l, p = o = [], d.nodeType == 8) for (h = 1, v = d.nextSibling; v; v = v.nextSibling) {
@@ -131,11 +131,11 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 		c = o[0];
 	}
 	(d = e.__b) && d(n);
-	n: if (typeof V == "function") {
+	n: if (typeof B == "function") {
 		S = s.length;
 		try {
-			if (O = n.props, k = (d = V.prototype) && d.render, A = (d = V.contextType) && i[d.__c], j = d ? A ? A.props.value : d.__ : i, r.__c ? 2 & (C = n.__c = r.__c).__g && (C.__g |= 1) : (k ? n.__c = C = new V(O, j) : (n.__c = C = new b(O, j), C.constructor = V, C.render = te), A && A.sub(C), C.state || (C.state = {}), C.__n = i, C.__g |= 8, C.__h = [], C.__k = []), k && (C.__s || (C.__s = C.state), V.getDerivedStateFromProps && (C.__s == C.state && (C.__s = g({}, C.__s)), g(C.__s, V.getDerivedStateFromProps(O, C.__s)))), w = C.props, E = C.state, C.__v = n, r.__c) {
-				if (k && !V.getDerivedStateFromProps && O !== w && C.componentWillReceiveProps && C.componentWillReceiveProps(O, j), n.__v == r.__v && !(8 & C.__g) || !(4 & C.__g) && C.shouldComponentUpdate && !1 === C.shouldComponentUpdate(O, C.__s, j)) {
+			if (O = n.props, k = (d = B.prototype) && d.render, A = (d = B.contextType) && i[d.__c], j = d ? A ? A.props.value : d.__ : i, r.__c ? 2 & (C = n.__c = r.__c).__g && (C.__g |= 1) : (k ? n.__c = C = new B(O, j) : (n.__c = C = new b(O, j), C.constructor = B, C.render = ne), A && A.sub(C), C.state || (C.state = {}), C.__n = i, C.__g |= 8, C.__h = [], C.__k = []), k && (C.__s || (C.__s = C.state), B.getDerivedStateFromProps && (C.__s == C.state && (C.__s = g({}, C.__s)), g(C.__s, B.getDerivedStateFromProps(O, C.__s)))), w = C.props, E = C.state, C.__v = n, r.__c) {
+				if (k && !B.getDerivedStateFromProps && O !== w && C.componentWillReceiveProps && C.componentWillReceiveProps(O, j), n.__v == r.__v && !(8 & C.__g) || !(4 & C.__g) && C.shouldComponentUpdate && !1 === C.shouldComponentUpdate(O, C.__s, j)) {
 					n.__v != r.__v && (C.props = O, C.state = C.__s, C.__g &= -9), n.__e = r.__e, n.__k = r.__k, n.__k.some(function(e) {
 						e && (e.__ = n);
 					}), f.push.apply(C.__h, C.__k), C.__k = [], C.__h.length && s.push(C), c = x(r);
@@ -144,46 +144,46 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 				C.componentWillUpdate && C.componentWillUpdate(O, C.__s, j), k && C.componentDidUpdate && C.__h.push(function() {
 					C.componentDidUpdate(w, E, D);
 				});
-			} else k && !V.getDerivedStateFromProps && C.componentWillMount && C.componentWillMount(), k && C.componentDidMount && C.__h.push(C.componentDidMount);
+			} else k && !B.getDerivedStateFromProps && C.componentWillMount && C.componentWillMount(), k && C.componentDidMount && C.__h.push(C.componentDidMount);
 			if (C.context = j, C.props = O, C.__P = t, C.__g &= -5, M = e.__r, N = 0, k) C.state = C.__s, C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), f.push.apply(C.__h, C.__k), C.__k = [];
 			else do
 				C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), C.state = C.__s;
 			while (8 & C.__g && ++N < 25);
-			C.state = C.__s, C.getChildContext && (i = g({}, i, C.getChildContext())), k && r.__c && C.getSnapshotBeforeUpdate && (D = C.getSnapshotBeforeUpdate(w, E)), F = d && d.type === y && d.key == null ? d.props.children : d, O.__P && (d = c, a = (t = O.__P).namespaceURI, l = o = null, r.props && r.props.__P != t && (r.__k.some(function(e) {
-				e && I(e, e);
-			}), r.__k = null), c = r.__k ? x(r, 0) : null), c = T(t, m(F) ? F : [F], n, r, i, a, o, s, c, l, u), O.__P && (n.__e = null, c = d), n.__u &= -161, 128 & r.__u && (C.__z = null), p && p.some(_), C.__h.length && s.push(C), 1 & C.__g && (C.__g &= -4);
+			C.state = C.__s, C.getChildContext && (i = g({}, i, C.getChildContext())), k && r.__c && C.getSnapshotBeforeUpdate && (D = C.getSnapshotBeforeUpdate(w, E)), P = d && d.type === y && d.key == null ? d.props.children : d, O.__P && (d = c, a = (t = O.__P).namespaceURI, l = o = null, r.props && r.props.__P != t && (r.__k.some(function(e) {
+				e && F(e, e);
+			}), r.__k = null), c = r.__k ? x(r, 0) : null), c = T(t, m(P) ? P : [P], n, r, i, a, o, s, c, l, u), O.__P && (n.__e = null, c = d), n.__u &= -161, 128 & r.__u && (C.__z = null), p && p.some(_), C.__h.length && s.push(C), 1 & C.__g && (C.__g &= -4);
 		} catch (t) {
 			if (s.length = S, n.__v = null, l || o) {
 				if (t.then) {
-					if (L = 0, n.__u |= l ? 160 : 128, o) {
-						for (~(z = o.indexOf(c || void 0)) || (z = o.length); (B = o[z - 1]) && B.nodeType == 8;) z--;
-						for (; z < o.length; z++) if (B = o[z]) {
-							if (o[z] = null, B.nodeType == 8) {
-								if (B.data.startsWith("$s")) L++ || (R = B);
-								else if (L && B.data.startsWith("/$s") && !--L) {
-									c = B;
+					if (I = 0, n.__u |= l ? 160 : 128, o) {
+						for (~(R = o.indexOf(c || void 0)) || (R = o.length); (z = o[R - 1]) && z.nodeType == 8;) R--;
+						for (; R < o.length; R++) if (z = o[R]) {
+							if (o[R] = null, z.nodeType == 8) {
+								if (z.data.startsWith("$s")) I++ || (L = z);
+								else if (I && z.data.startsWith("/$s") && !--I) {
+									c = z;
 									break;
 								}
-							} else if (!L) break;
+							} else if (!I) break;
 						}
 					}
-					if (!R) {
+					if (!L) {
 						for (; c && c.nodeType == 8 && c.nextSibling;) c = c.nextSibling;
-						R = c;
+						L = c;
 					}
-					n.__c.__z || (n.__c.__z = R), n.__e = c;
+					n.__c.__z || (n.__c.__z = L), n.__e = c;
 				} else o && o.some(_);
 			} else n.__e = r.__e;
 			n.__k || (n.__k = r.__k || []), t.then || ee(n), e.__e(t, n, r);
 		}
-	} else c = n.__e = P(r.__e, n, r, i, a, o, s, l, u, t);
+	} else c = n.__e = te(r.__e, n, r, i, a, o, s, l, u, t);
 	return (d = e.diffed) && d(n), 128 & n.__u ? void 0 : c;
 }
 function ee(e) {
 	e && (e.__c && (e.__c.__g |= 4), e.__k && e.__k.some(ee));
 }
 function N(t, n, r) {
-	for (var i = 0; i < r.length;) F(r[i++], r[i++], r[i++]);
+	for (var i = 0; i < r.length;) P(r[i++], r[i++], r[i++]);
 	e.__c && e.__c(n, t), t.some(function(n) {
 		try {
 			t = n.__h, n.__h = [], t.some(function(e) {
@@ -194,7 +194,7 @@ function N(t, n, r) {
 		}
 	});
 }
-function P(t, n, r, i, a, o, s, c, l, u) {
+function te(t, n, r, i, a, o, s, c, l, u) {
 	var f, g, v, y, b, S, C, w, E, D = r.props || d, O = n.props, k = n.type;
 	if (k == "svg" ? a = "http://www.w3.org/2000/svg" : k == "math" ? a = "http://www.w3.org/1998/Math/MathML" : a || (a = "http://www.w3.org/1999/xhtml"), o) {
 		for (f = 0; f < o.length; f++) if ((b = o[f]) && (k ? b.localName == k : b.nodeType == 3)) {
@@ -214,16 +214,16 @@ function P(t, n, r, i, a, o, s, c, l, u) {
 	} else D === O || c && t.data == O || (t.data = O);
 	return t;
 }
-function F(t, n, r, i) {
+function P(t, n, r, i) {
 	try {
 		typeof t == "function" ? n ? n.__x = t(n) || 1 : i && (i = i.__c || i.__e) && (n = i.__x) && (i.__x = null, typeof n == "function" ? n() : t(null)) : t.current = n;
 	} catch (t) {
 		e.__e(t, r);
 	}
 }
-function I(t, n, r) {
+function F(t, n, r) {
 	var i, a;
-	if (e.unmount && e.unmount(t), !(i = t.ref) || i.current && i.current != t.__e || F(i, null, n, t), i = t.__c) {
+	if (e.unmount && e.unmount(t), !(i = t.ref) || i.current && i.current != t.__e || P(i, null, n, t), i = t.__c) {
 		if (i.componentWillUnmount) try {
 			i.componentWillUnmount();
 		} catch (t) {
@@ -231,17 +231,17 @@ function I(t, n, r) {
 		}
 		i.__P = i.__n = null;
 	}
-	if (i = t.__k) for (a = 0; a < i.length; a++) i[a] && I(i[a], n, typeof t.type != "function" || r && !t.props.__P);
+	if (i = t.__k) for (a = 0; a < i.length; a++) i[a] && F(i[a], n, typeof t.type != "function" || r && !t.props.__P);
 	(i = t.__e) && (r || _(i), i.__e && (i.__e = null)), t.__e = t.__c = t.__ = null;
 }
-function te(e, t, n) {
+function ne(e, t, n) {
 	return this.constructor(e, n);
 }
-function L(t, n) {
+function I(t, n) {
 	var r, i, a, o;
 	e.__ && e.__(t, n), n.nodeType == 9 && (n = n.documentElement), i = (r = t && 32 & t.__u) ? null : n.__k, n.__k = v(y, { children: [t] }), a = [], o = [], M(n, n.__k, i || d, d, n.namespaceURI, i ? null : n.firstChild ? h.call(n.childNodes) : null, a, i ? i.__e : n.firstChild, r, o), N(a, n.__k, o), n.__k.props.children = null;
 }
-function R(e) {
+function L(e) {
 	function t(e) {
 		var n, r;
 		return this.getChildContext || (n = /* @__PURE__ */ new Set(), (r = {})[t.__c] = this, this.getChildContext = function() {
@@ -281,32 +281,32 @@ e = { __e: function(e, t, n, r) {
 	return e.__v.__b - t.__v.__b;
 }, o = Symbol(), s = /(PointerCapture)$|Capture$/i, c = 0, l = {}, u = 0;
 // node_modules/preact/hooks/dist/hooks.mjs
-var z, B, V, ne, re = Object.is, H = 0, ie = [], ae = [], U = e, oe = U.__b, se = U.__r, ce = U.diffed, le = U.__c, ue = U.unmount, de = U.__;
-function fe(e, t) {
-	U.__h && U.__h(B, e, H || t), H = 0;
-	var n = B.__H || (B.__H = {
+var R, z, B, re, ie = Object.is, V = 0, ae = [], oe = [], H = e, se = H.__b, ce = H.__r, le = H.diffed, ue = H.__c, de = H.unmount, fe = H.__;
+function pe(e, t) {
+	H.__h && H.__h(z, e, V || t), V = 0;
+	var n = z.__H || (z.__H = {
 		__: [],
 		__h: []
 	});
 	return e >= n.__.length && n.__.push({}), n.__[e];
 }
-function W(e) {
-	return H = 1, pe(Ce, e);
+function U(e) {
+	return V = 1, me(we, e);
 }
-function pe(e, t, n) {
-	var r = fe(z++, 2);
-	if (r.t = e, !r.__c && (r.__ = [n ? n(t) : Ce(void 0, t), function(e) {
+function me(e, t, n) {
+	var r = pe(R++, 2);
+	if (r.t = e, !r.__c && (r.__ = [n ? n(t) : we(void 0, t), function(e) {
 		var t = r.__N ? r.__N[0] : r.__[0], n = r.t(t, e);
-		re(t, n) || (r.__N = [n, r.__[1]], r.__c.setState({}));
-	}], r.__c = B, !B.__f)) {
-		B.__f = !0;
-		var i = B.shouldComponentUpdate;
-		B.shouldComponentUpdate = function(e, t, n) {
+		ie(t, n) || (r.__N = [n, r.__[1]], r.__c.setState({}));
+	}], r.__c = z, !z.__f)) {
+		z.__f = !0;
+		var i = z.shouldComponentUpdate;
+		z.shouldComponentUpdate = function(e, t, n) {
 			var r = this.__H;
 			if (!r) return !0;
 			var a = !1, o = this.props != e;
 			if (r.__.some(function(e) {
-				e.__N && (a = !0, re(e.__[0], e.__N[0]) || (o = !0));
+				e.__N && (a = !0, ie(e.__[0], e.__N[0]) || (o = !0));
 			}), i) {
 				var s = i.call(this, e, t, n);
 				return a ? s || o : s;
@@ -316,71 +316,71 @@ function pe(e, t, n) {
 	}
 	return r.__;
 }
-function G(e, t) {
-	var n = fe(z++, 3);
-	!U.__s && Se(n.__H, t) && (n.__P = !0, n.__ = e, n.u = t, B.__H.__h.push(n));
+function W(e, t) {
+	var n = pe(R++, 3);
+	!H.__s && Ce(n.__H, t) && (n.__P = !0, n.__ = e, n.u = t, z.__H.__h.push(n));
 }
-function me(e) {
-	return H = 5, he(function() {
+function he(e) {
+	return V = 5, ge(function() {
 		return { current: e };
 	}, []);
 }
-function he(e, t) {
-	var n = fe(z++, 7);
-	return Se(n.__H, t) && (n.__ = e(), n.__H = t), n.__;
+function ge(e, t) {
+	var n = pe(R++, 7);
+	return Ce(n.__H, t) && (n.__ = e(), n.__H = t), n.__;
 }
-function ge(e) {
-	var t = B.context[e.__c], n = fe(z++, 9);
-	return n.c = e, t ? (n.__ ?? (n.__ = !0, t.sub(B)), t.props.value) : e.__;
+function _e(e) {
+	var t = z.context[e.__c], n = pe(R++, 9);
+	return n.c = e, t ? (n.__ ?? (n.__ = !0, t.sub(z)), t.props.value) : e.__;
 }
-function _e() {
+function ve() {
 	var e;
 	do {
-		for (; e = ae.shift();) try {
-			K(e);
+		for (; e = oe.shift();) try {
+			G(e);
 		} catch (t) {
-			U.__e(t, { __: (e = e.__P) && e.__v });
+			H.__e(t, { __: (e = e.__P) && e.__v });
 		}
-		for (; e = ie.shift();) {
+		for (; e = ae.shift();) {
 			var t = e.__H;
 			if (e.__P && t) try {
-				t.__h.some(K), t.__h.some(xe), t.__h = [];
+				t.__h.some(G), t.__h.some(Se), t.__h = [];
 			} catch (n) {
-				t.__h = [], U.__e(n, e.__v);
+				t.__h = [], H.__e(n, e.__v);
 			}
 		}
-	} while (ae.length);
+	} while (oe.length);
 }
-U.__b = function(e) {
-	B = null, oe && oe(e);
-}, U.__ = function(e, t) {
-	e && t.__k && t.__k.__m && (e.__m = t.__k.__m), de && de(e, t);
-}, U.__r = function(e) {
-	se && se(e), z = 0;
-	var t = (B = e.__c).__H;
-	t && (V == B ? B.__h = [] : (t.__h.some(K), t.__h.some(xe), z = 0), t.__h = [], t.__.some(function(e) {
+H.__b = function(e) {
+	z = null, se && se(e);
+}, H.__ = function(e, t) {
+	e && t.__k && t.__k.__m && (e.__m = t.__k.__m), fe && fe(e, t);
+}, H.__r = function(e) {
+	ce && ce(e), R = 0;
+	var t = (z = e.__c).__H;
+	t && (B == z ? z.__h = [] : (t.__h.some(G), t.__h.some(Se), R = 0), t.__h = [], t.__.some(function(e) {
 		e.__N && (e.__ = e.__N), e.u = e.__N = void 0;
-	})), V = B;
-}, U.diffed = function(e) {
-	ce && ce(e);
+	})), B = z;
+}, H.diffed = function(e) {
+	le && le(e);
 	var t = e.__c;
-	t && t.__H && (t.__H.__h.length && be(ie.push(t)), t.__H.__.some(function(e) {
+	t && t.__H && (t.__H.__h.length && xe(ae.push(t)), t.__H.__.some(function(e) {
 		e.u && (e.__H = e.u);
-	})), V = B = null;
-}, U.__c = function(e, t) {
+	})), B = z = null;
+}, H.__c = function(e, t) {
 	t.some(function(e) {
 		try {
-			e.__h.some(K), e.__h = e.__h.filter(function(e) {
-				return !e.__ || xe(e);
+			e.__h.some(G), e.__h = e.__h.filter(function(e) {
+				return !e.__ || Se(e);
 			});
 		} catch (n) {
 			t.some(function(e) {
 				e.__h && (e.__h = []);
-			}), t = [], U.__e(n, e.__v);
+			}), t = [], H.__e(n, e.__v);
 		}
-	}), le && le(e, t);
-}, U.unmount = function(e) {
-	ue && ue(e);
+	}), ue && ue(e, t);
+}, H.unmount = function(e) {
+	de && de(e);
 	var t, n, r = e.__c;
 	r && r.__H && (r.__H.__.some(function(r) {
 		try {
@@ -389,45 +389,45 @@ U.__b = function(e) {
 					for (n = e.__; n && (!n.__c || !n.__c.__P);) n = n.__;
 					n = n && n.__c;
 				}
-				r.__P = n, be(ae.push(r));
-			} else K(r);
+				r.__P = n, xe(oe.push(r));
+			} else G(r);
 		} catch (e) {
 			t = e;
 		}
-	}), r.__H = void 0, t && U.__e(t, r.__v));
+	}), r.__H = void 0, t && H.__e(t, r.__v));
 };
-var ve = typeof requestAnimationFrame == "function";
-function ye(e) {
-	var t, n = function() {
-		clearTimeout(r), ve && cancelAnimationFrame(t), setTimeout(e);
-	}, r = setTimeout(n, 35);
-	ve && (t = requestAnimationFrame(n));
-}
+var ye = typeof requestAnimationFrame == "function";
 function be(e) {
-	e != 1 && ne == U.requestAnimationFrame || ((ne = U.requestAnimationFrame) || ye)(_e);
-}
-function K(e) {
-	var t = B, n = e.__c;
-	typeof n == "function" && (e.__c = void 0, n()), B = t;
+	var t, n = function() {
+		clearTimeout(r), ye && cancelAnimationFrame(t), setTimeout(e);
+	}, r = setTimeout(n, 35);
+	ye && (t = requestAnimationFrame(n));
 }
 function xe(e) {
-	var t = B;
-	e.__c = e.__(), B = t;
+	e != 1 && re == H.requestAnimationFrame || ((re = H.requestAnimationFrame) || be)(ve);
 }
-function Se(e, t) {
-	return !e || e.length != t.length || t.some(function(t, n) {
-		return !re(t, e[n]);
-	});
+function G(e) {
+	var t = z, n = e.__c;
+	typeof n == "function" && (e.__c = void 0, n()), z = t;
+}
+function Se(e) {
+	var t = z;
+	e.__c = e.__(), z = t;
 }
 function Ce(e, t) {
+	return !e || e.length != t.length || t.some(function(t, n) {
+		return !ie(t, e[n]);
+	});
+}
+function we(e, t) {
 	return typeof t == "function" ? t(e) : t;
 }
 // src/model.ts
-function q(e, t) {
+function K(e, t) {
 	if (!/^[a-f0-9]{32}$/.test(e) || !Number.isSafeInteger(t) || t < 1) throw Error("Invalid inventory authority; refresh the controller.");
 	return `${e}.${t}`;
 }
-function we(e, t) {
+function Te(e, t) {
 	let n = /* @__PURE__ */ new Map(), r = (e) => `${t}:${e.binding_revision}:${e.target}`;
 	for (let t of e.baseline) {
 		if (n.has(t.target)) throw Error("Duplicate inventory identity");
@@ -459,10 +459,10 @@ function we(e, t) {
 	}
 	return new Map([...n].map(([e, t]) => [e, t.key]));
 }
-function J(e) {
+function q(e) {
 	let t = e.inventory;
-	q(t.inventory_epoch, t.revision);
-	let n = we(t.identity_ledger, t.inventory_epoch), r = [];
+	K(t.inventory_epoch, t.revision);
+	let n = Te(t.identity_ledger, t.inventory_epoch), r = [];
 	for (let e of t.buses) {
 		let i = (i, a, o) => {
 			let s = n.get(a.target);
@@ -473,7 +473,7 @@ function J(e) {
 				bus: e,
 				item: a,
 				parent: o,
-				generation: q(t.inventory_epoch, a.binding_revision)
+				generation: K(t.inventory_epoch, a.binding_revision)
 			});
 		};
 		for (let t of e.outputs) i("output", t);
@@ -486,7 +486,7 @@ function J(e) {
 				kind: "scene",
 				bus: e,
 				item: i,
-				generation: q(t.inventory_epoch, i.binding_revision)
+				generation: K(t.inventory_epoch, i.binding_revision)
 			});
 		}
 		for (let t of e.inputs ?? []) {
@@ -496,27 +496,27 @@ function J(e) {
 	}
 	return r;
 }
-function Te(e, t) {
+function Ee(e, t) {
 	if (!e) return !0;
 	let n = e.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".");
 	return RegExp(`^${n}$`, "iu").test(t);
 }
-function Y(e, t) {
+function J(e, t) {
 	return e.phase === "ready" && t.enabled && e.hardware.state === "ready" && !!e.hardware.buses?.some((e) => e.bus === t.bus && e.status === 2);
 }
-function Ee(e, t) {
+function De(e, t) {
 	return e.states.find((e) => e.target === t.item.target && e.generation === t.generation)?.values ?? {};
 }
-var De = (e) => ({
+var Oe = (e) => ({
 	1: "Part 301 · button",
 	2: "Part 302 · input",
 	3: "Part 303 · occupancy",
 	4: "Part 304 · light sensor"
 })[e ?? 0] ?? `Type ${e ?? "unknown"}`;
-function Oe(e) {
+function ke(e) {
 	return typeof e.Status == "boolean" ? e.Status ? "Pressed" : "Released" : typeof e.InputState == "boolean" ? e.InputState ? "On" : "Off" : typeof e.Occupied == "boolean" ? e.Occupied ? "Occupied" : "Vacant" : typeof e.InputValueRaw == "string" ? `${typeof e.Position == "number" ? `${Math.round(e.Position * 100)}% · ` : ""}0x${e.InputValueRaw} / ${e.ValueResolution} bit` : typeof e.PositionRaw == "number" ? `${e.PositionRaw} raw` : typeof e.LightLevelRaw == "number" ? `${e.LightLevelRaw} raw` : "Unknown";
 }
-var ke = class {
+var Ae = class {
 	constructor(e, t, n) {
 		this.error = "", this.text = this.saved = e, this.baseline = {
 			target: t,
@@ -538,7 +538,7 @@ var ke = class {
 			this.pending = void 0;
 		}), this.pending) : (this.error = "A name is required.", Promise.reject(Error(this.error)));
 	}
-}, Ae = class {
+}, je = class {
 	constructor() {
 		this.epoch = 0, this.value = null, this.jobBook = [], this.ready = !1;
 	}
@@ -556,14 +556,14 @@ var ke = class {
 	}
 };
 // src/client.ts
-function je(e) {
+function Me(e) {
 	let t = {
 		...e,
 		inventory: e.inventory.Inventory
 	};
-	return J(t), t;
+	return q(t), t;
 }
-function Me(e, t, n, r) {
+function Y(e, t, n, r) {
 	let i = e.inventory.buses.find((e) => e.bus === r), a = t.inventory.buses.find((e) => e.bus === r);
 	return e.inventory.inventory_epoch === t.inventory.inventory_epoch && t.inventory.revision === n && !!i && !!a && i.name === a.name && a.enabled;
 }
@@ -573,7 +573,7 @@ var Ne = class extends Error {
 	}
 }, Pe = class {
 	constructor() {
-		this.views = new Ae(), this.csrf = "", this.error = "", this.events = [], this.lost = 0, this.stopped = !1, this.session = 0, this.activeAt = 0, this.requests = /* @__PURE__ */ new Set(), this.sleepers = /* @__PURE__ */ new Map(), this.listeners = /* @__PURE__ */ new Set();
+		this.views = new je(), this.csrf = "", this.error = "", this.events = [], this.lost = 0, this.stopped = !1, this.session = 0, this.activeAt = 0, this.requests = /* @__PURE__ */ new Set(), this.sleepers = /* @__PURE__ */ new Map(), this.listeners = /* @__PURE__ */ new Set();
 	}
 	subscribe(e) {
 		return this.listeners.add(e), () => this.listeners.delete(e);
@@ -633,7 +633,7 @@ var Ne = class extends Error {
 		let r = () => !this.stopped && this.session === t && this.views.epoch === e && this.source === n;
 		n.addEventListener("snapshot", (t) => {
 			if (r()) try {
-				this.views.snapshot(e, je(JSON.parse(t.data))), this.error = "", this.notify();
+				this.views.snapshot(e, Me(JSON.parse(t.data))), this.error = "", this.notify();
 			} catch {
 				this.error = "Invalid controller snapshot.", this.views.ready = !1, this.notify();
 			}
@@ -747,7 +747,7 @@ var Ne = class extends Error {
 		return e;
 	}
 	get currentRows() {
-		return J(this.snapshot);
+		return q(this.snapshot);
 	}
 	current(e) {
 		let t = this.currentRows.find((t) => t.key === e);
@@ -826,7 +826,7 @@ var Ne = class extends Error {
 	}
 	async configureBus(e, t, n) {
 		let r = this.snapshot;
-		await this.metadata("configure_bus", null, q(r.inventory.inventory_epoch, r.inventory.revision), {
+		await this.metadata("configure_bus", null, K(r.inventory.inventory_epoch, r.inventory.revision), {
 			bus: e,
 			name: t,
 			enabled: n
@@ -852,14 +852,14 @@ var Ne = class extends Error {
 		this.cancelled = !1;
 		let n = this.snapshot.inventory.revision, r = this.snapshot, i = async (t, i) => {
 			if (this.cancelled) return null;
-			if (!Me(r, this.snapshot, n, e.bus)) throw Error("Bus configuration changed during discovery. Review before starting again.");
-			let a = await this.client.job(q(r.inventory.inventory_epoch, n), null, t, {
+			if (!Y(r, this.snapshot, n, e.bus)) throw Error("Bus configuration changed during discovery. Review before starting again.");
+			let a = await this.client.job(K(r.inventory.inventory_epoch, n), null, t, {
 				...i,
 				expected_revision: n
 			});
 			if (!Number.isSafeInteger(a.revision)) throw Error("The controller returned an invalid inventory revision.");
 			let o = await this.changed(a.revision);
-			if (n = a.revision, !Me(r, o, n, e.bus)) throw Error("Configuration changed during discovery. Completed steps remain saved.");
+			if (n = a.revision, !Y(r, o, n, e.bus)) throw Error("Configuration changed during discovery. Completed steps remain saved.");
 			return a.probe && this.hint(a), a;
 		};
 		try {
@@ -883,7 +883,7 @@ var Ne = class extends Error {
 			}
 			for (let t of this.currentRows.filter((t) => t.bus.bus === e.bus && (t.kind === "output" || t.kind === "instance"))) {
 				if (this.cancelled) break;
-				if (!Me(r, this.snapshot, n, e.bus)) throw Error("Configuration changed before refresh.");
+				if (!Y(r, this.snapshot, n, e.bus)) throw Error("Configuration changed before refresh.");
 				this.progress = `Reading ${t.item.name}`, this.touch(), await this.read(t);
 			}
 			this.notice = this.cancelled ? "Stopped after the current operation. Completed changes remain saved." : "Discovery and current-value refresh finished.";
@@ -893,7 +893,7 @@ var Ne = class extends Error {
 	}
 	async createGroup(e, t, n) {
 		let r = this.snapshot;
-		await this.metadata("create_group", null, q(r.inventory.inventory_epoch, r.inventory.revision), {
+		await this.metadata("create_group", null, K(r.inventory.inventory_epoch, r.inventory.revision), {
 			bus: e.bus,
 			group: t,
 			name: n
@@ -939,9 +939,9 @@ function X(t, n, r, i, a, o) {
 	return (a || o) && (u.__source = a, u.__self = o), e.vnode && e.vnode(u), u;
 }
 // src/ui.tsx
-var Le = R(null);
+var Le = L(null);
 function Z() {
-	let e = ge(Le);
+	let e = _e(Le);
 	if (!e) throw Error("Controller is unavailable.");
 	return e;
 }
@@ -973,8 +973,8 @@ function Q(e) {
 	});
 }
 function $(e) {
-	let t = Z(), n = me(null);
-	return G(() => (n.current?.showModal(), () => n.current?.close()), []), /* @__PURE__ */ X("dialog", {
+	let t = Z(), n = he(null);
+	return W(() => (n.current?.showModal(), () => n.current?.close()), []), /* @__PURE__ */ X("dialog", {
 		ref: n,
 		onCancel: (t) => {
 			t.preventDefault(), e.close();
@@ -1005,7 +1005,7 @@ function Be({ row: e }) {
 	let t = Z(), n = t.drafts.get(e.key), r = () => {
 		let n = t.drafts.get(e.key);
 		n && (n.commit((n, r) => t.rename(e.key, n, r)).catch(() => {}).finally(() => t.touch()), t.touch());
-	}, i = me(null);
+	}, i = he(null);
 	return /* @__PURE__ */ X("div", {
 		class: "name-cell",
 		children: [
@@ -1022,7 +1022,7 @@ function Be({ row: e }) {
 					spellcheck: !1,
 					onInput: (n) => {
 						let r = t.drafts.get(e.key);
-						r || (r = new ke(e.item.name, e.item.target, e.generation), t.drafts.set(e.key, r)), r.text = n.currentTarget.value, r.error = "", t.touch();
+						r || (r = new Ae(e.item.name, e.item.target, e.generation), t.drafts.set(e.key, r)), r.text = n.currentTarget.value, r.error = "", t.touch();
 					},
 					onBlur: r,
 					onKeyDown: (n) => {
@@ -1063,14 +1063,14 @@ function Be({ row: e }) {
 }
 // src/devices.tsx
 function Ve({ row: e, close: t }) {
-	let n = Z(), r = n.physical(e.key), i = Ee(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
+	let n = Z(), r = n.physical(e.key), i = De(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
 		"ColorRed",
 		"ColorGreen",
 		"ColorBlue",
 		"ColorWhite",
 		"ColorAmber",
 		"ColorFree"
-	] : [], [u, d] = W({}), f = (e) => ({
+	] : [], [u, d] = U({}), f = (e) => ({
 		ColorTemperature: "Temperature (K)",
 		ColorX: "x",
 		ColorY: "y",
@@ -1219,11 +1219,11 @@ function He({ row: e, close: t }) {
 	});
 }
 function Ue({ row: e }) {
-	let t = Z(), n = t.snapshot, r = Ee(n, e), [i, a] = W(!1), [o, s] = W(!1), [c, l] = W(!1), [u, d] = W(!1), [f, p] = W(null), m = Y(n, e.bus) && t.client.views.ready, h = n.identification?.target === e.item.target ? n.identification : null, g = !!h && [
+	let t = Z(), n = t.snapshot, r = De(n, e), [i, a] = U(!1), [o, s] = U(!1), [c, l] = U(!1), [u, d] = U(!1), [f, p] = U(null), m = J(n, e.bus) && t.client.views.ready, h = n.identification?.target === e.item.target ? n.identification : null, g = !!h && [
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(h.phase), _ = t.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), v = t.hints.get(e.key), b = e.kind === "output" ? v?.length ? v.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : De(e.item.instance_type), x = Oe(r), S = typeof r.Brightness == "number" ? Math.round(r.Brightness * 100) : null;
+	].includes(h.phase), _ = t.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), v = t.hints.get(e.key), b = e.kind === "output" ? v?.length ? v.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Oe(e.item.instance_type), x = ke(r), S = typeof r.Brightness == "number" ? Math.round(r.Brightness * 100) : null;
 	return /* @__PURE__ */ X("div", {
 		class: `device-row ${e.kind === "output" ? "output-grid" : "input-grid"} ${g ? "identifying" : ""} ${_ && Date.now() - _.received < 5e3 ? "active-input" : ""}`,
 		"data-device-key": e.key,
@@ -1368,7 +1368,7 @@ function Ue({ row: e }) {
 	});
 }
 function We({ bus: e }) {
-	let t = Z(), [n, r] = W(""), i = t.currentRows.filter((t) => t.kind !== "scene" && t.bus.bus === e.bus), a = (e) => Te(n, e.item.name) || !!t.drafts.get(e.key)?.dirty || !!t.drafts.get(e.key)?.error, o = i.filter((e) => e.kind === "output" && a(e)), s = i.filter((e) => (e.kind === "input" || e.kind === "instance") && a(e)), c = Y(t.snapshot, e) && t.client.views.ready, l = [...t.drafts].filter(([e, n]) => n.dirty && !t.currentRows.some((t) => t.key === e));
+	let t = Z(), [n, r] = U(""), i = t.currentRows.filter((t) => t.kind !== "scene" && t.bus.bus === e.bus), a = (e) => Ee(n, e.item.name) || !!t.drafts.get(e.key)?.dirty || !!t.drafts.get(e.key)?.error, o = i.filter((e) => e.kind === "output" && a(e)), s = i.filter((e) => (e.kind === "input" || e.kind === "instance") && a(e)), c = J(t.snapshot, e) && t.client.views.ready, l = [...t.drafts].filter(([e, n]) => n.dirty && !t.currentRows.some((t) => t.key === e));
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X("div", {
 			class: "toolbar discovery",
@@ -1504,14 +1504,14 @@ function We({ bus: e }) {
 }
 // src/groups.tsx
 function Ge({ bus: e }) {
-	let t = Z(), [n, r] = W(0), [i, a] = W(""), [o, s] = W("add"), [c, l] = W(null), [u, d] = W(null), [f, p] = W(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = Y(t.snapshot, e) && t.client.views.ready;
+	let t = Z(), [n, r] = U(0), [i, a] = U(""), [o, s] = U("add"), [c, l] = U(null), [u, d] = U(null), [f, p] = U(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = J(t.snapshot, e) && t.client.views.ready;
 	function v() {
 		let e = h.map((e) => ({
 			key: e.key,
 			generation: e.generation,
 			name: e.item.name,
 			before: m?.members?.includes(e.item.short_address) ?? !1,
-			after: o === "add" && (m?.members?.includes(e.item.short_address) ?? !1) || Te(i, e.item.name)
+			after: o === "add" && (m?.members?.includes(e.item.short_address) ?? !1) || Ee(i, e.item.name)
 		})).filter((e) => e.before !== e.after);
 		l({
 			changes: e,
@@ -1530,7 +1530,7 @@ function Ge({ bus: e }) {
 		try {
 			for (let i of n.changes) {
 				if (t.cancelled) break;
-				if (t.progress = `Assigning group ${n.slot} · ${i.name}`, t.touch(), !Me(n.initial, t.snapshot, r, e.bus) || !t.currentRows.some((e) => e.key === n.groupKey)) throw Error("Group configuration changed after preview. Review the pattern again.");
+				if (t.progress = `Assigning group ${n.slot} · ${i.name}`, t.touch(), !Y(n.initial, t.snapshot, r, e.bus) || !t.currentRows.some((e) => e.key === n.groupKey)) throw Error("Group configuration changed after preview. Review the pattern again.");
 				let a = t.current(i.key);
 				if (a.generation !== i.generation) throw Error("A selected fixture changed after preview. Review again.");
 				r = (await t.group(a, n.slot, i.after)).revision;
@@ -1546,7 +1546,7 @@ function Ge({ bus: e }) {
 		try {
 			for (let i of h) {
 				if (t.cancelled) break;
-				if (!Me(n, t.snapshot, n.inventory.revision, e.bus) || t.current(i.key).generation !== i.generation) throw Error("Configuration changed during verification. Start verification again.");
+				if (!Y(n, t.snapshot, n.inventory.revision, e.bus) || t.current(i.key).generation !== i.generation) throw Error("Configuration changed during verification. Start verification again.");
 				t.progress = `Verifying groups · ${i.item.name}`, t.touch();
 				let a = await t.readGroups(i);
 				r.push({
@@ -1904,7 +1904,7 @@ function Qe(e) {
 // src/scene-controller.ts
 function $e(e, t, n) {
 	if (!e || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== t.inventory.revision || e.bus !== n.bus.bus || e.slot !== n.item.slot || !Array.isArray(e.fixtures)) throw Error("Saved scene view changed. Refresh it.");
-	let r = J(t).filter((e) => e.kind === "output" && e.bus.bus === n.bus.bus), i = /* @__PURE__ */ new Map();
+	let r = q(t).filter((e) => e.kind === "output" && e.bus.bus === n.bus.bus), i = /* @__PURE__ */ new Map();
 	for (let t of e.fixtures) {
 		let e = r.find((e) => e.item.target === t.fixture);
 		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !Je(t.saved)) throw Error("Saved scene view is incomplete or changed.");
@@ -1916,15 +1916,15 @@ function $e(e, t, n) {
 var et = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.slot = n, this.revision = this.initial.inventory.revision;
-		let r = J(this.initial);
+		let r = q(this.initial);
 		this.scene = r.find((e) => e.kind === "scene" && e.bus.bus === t && e.item.slot === n), this.outputs = r.filter((e) => e.kind === "output" && e.bus.bus === t);
 	}
 	assert(e = !0) {
 		let t = this.ui.snapshot, n = this.initial.inventory, r = t.inventory, i = r.buses.find((e) => e.bus === this.bus), a = n.buses.find((e) => e.bus === this.bus);
 		if (this.cancelled || e && this.ui.cancelled || this.ui.signingOut || this.epoch !== this.ui.client.views.epoch || !this.ui.client.views.ready) throw Error("Operation stopped. Review before continuing.");
-		if (n.inventory_epoch !== r.inventory_epoch || r.revision !== this.revision || !i || !a || i.name !== a.name || t.phase !== "ready" || e && !Y(t, i)) throw Error("Configuration or connection changed. Review the scene again.");
+		if (n.inventory_epoch !== r.inventory_epoch || r.revision !== this.revision || !i || !a || i.name !== a.name || t.phase !== "ready" || e && !J(t, i)) throw Error("Configuration or connection changed. Review the scene again.");
 		if (this.scene) {
-			let e = J(t).find((e) => e.key === this.scene.key);
+			let e = q(t).find((e) => e.key === this.scene.key);
 			if (!e || e.generation !== this.scene.generation || e.item.target !== this.scene.item.target) throw Error("Selected scene changed. Review it again.");
 		}
 	}
@@ -1980,17 +1980,17 @@ async function nt(e, t, n) {
 }
 // src/scenes.tsx
 function rt({ row: e, visible: t, view: n, makeScope: r }) {
-	let i = Z(), [a, o] = W(null), [s, c] = W(null), [l, u] = W(-1), [d, f] = W(!1), p = n && n.revision === i.snapshot.inventory.revision && n.epoch === i.client.views.epoch && n.rows.has(e.key), m = p && n ? n.rows.get(e.key) : a?.original ?? null, h = a?.error.startsWith("Saved settings are not confirmed");
-	G(() => () => {
+	let i = Z(), [a, o] = U(null), [s, c] = U(null), [l, u] = U(-1), [d, f] = U(!1), p = n && n.revision === i.snapshot.inventory.revision && n.epoch === i.client.views.epoch && n.rows.has(e.key), m = p && n ? n.rows.get(e.key) : a?.original ?? null, h = a?.error.startsWith("Saved settings are not confirmed");
+	W(() => () => {
 		s && (s.cancelled = !0);
-	}, [s]), G(() => {
+	}, [s]), W(() => {
 		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new Xe(n.rows.get(e.key))), c(null), u(n.revision));
 	}, [
 		n,
 		a?.dirty,
 		a?.pending
 	]);
-	let g = Y(i.snapshot, e.bus) && i.client.views.ready;
+	let g = J(i.snapshot, e.bus) && i.client.views.ready;
 	function _() {
 		a?.dirty || c(r());
 	}
@@ -1998,7 +1998,7 @@ function rt({ row: e, visible: t, view: n, makeScope: r }) {
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(b.phase), S = Ee(i.snapshot, e).ColorCapabilities;
+	].includes(b.phase), S = De(i.snapshot, e).ColorCapabilities;
 	function C() {
 		a && s && a.dirty && (a.commit(async (t) => {
 			if (i.busy) throw Error("Wait for the current operation, then save this draft.");
@@ -2202,17 +2202,17 @@ function rt({ row: e, visible: t, view: n, makeScope: r }) {
 	});
 }
 function it({ bus: e }) {
-	let t = Z(), [n, r] = W(0), [i, a] = W(""), [o, s] = W(""), [c, l] = W(null), [u, d] = W(""), [f, p] = W(0), [m, h] = W(null), [g, _] = W(null), [v, b] = W(1), [x, S] = W("bus"), [C, w] = W(null), [T, E] = W(""), [D, O] = W(null), k = me(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), ee = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), N = ee.filter((e) => Te(i, e.item.name)), P = Y(t.snapshot, e) && t.client.views.ready, F = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
-	function I() {
+	let t = Z(), [n, r] = U(0), [i, a] = U(""), [o, s] = U(""), [c, l] = U(null), [u, d] = U(""), [f, p] = U(0), [m, h] = U(null), [g, _] = U(null), [v, b] = U(1), [x, S] = U("bus"), [C, w] = U(null), [T, E] = U(""), [D, O] = U(null), k = he(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), ee = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), N = ee.filter((e) => Ee(i, e.item.name)), te = J(t.snapshot, e) && t.client.views.ready, P = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
+	function F() {
 		for (let e of k.current) e.cancelled && k.current.delete(e);
 		let r = new et(t, e.bus, n);
 		return k.current.add(r), r;
 	}
-	G(() => () => {
+	W(() => () => {
 		for (let e of k.current) e.cancelled = !0;
 		k.current.clear();
-	}, [n]), G(() => {
-		let e = I(), n = !0;
+	}, [n]), W(() => {
+		let e = F(), n = !0;
 		return d(""), l(null), t.client.views.ready && e.saved().then((t) => {
 			n && l({
 				revision: e.revision,
@@ -2232,22 +2232,22 @@ function it({ bus: e }) {
 		t.client.views.ready,
 		f
 	]);
-	function te(e) {
+	function ne(e) {
 		if (t.busy) {
 			t.cancelled = !0;
 			for (let e of k.current) e.cancelled = !0;
 		}
 		r(e), s(""), h(null), _(null);
 	}
-	function L() {
+	function I() {
 		for (let e of g ?? []) e.scope.cancelled = !0;
 		_(null);
 	}
-	function R(e) {
-		if (!F || !c?.rows.has(e.key)) throw Error("Wait for complete saved settings.");
+	function L(e) {
+		if (!P || !c?.rows.has(e.key)) throw Error("Wait for complete saved settings.");
 		return c.rows.get(e.key);
 	}
-	function z(e, t, n, r = []) {
+	function R(e, t, n, r = []) {
 		t.assert(), h({
 			title: e,
 			scope: t,
@@ -2255,44 +2255,44 @@ function it({ bus: e }) {
 			unresolved: [...r]
 		});
 	}
-	function B() {
-		t.cancelled = !1, z("Clear selected fixtures", I(), N.map((e) => ({
+	function z() {
+		t.cancelled = !1, R("Clear selected fixtures", F(), N.map((e) => ({
 			row: e,
-			before: R(e),
+			before: L(e),
 			after: Ke(),
 			command: "set_scene_row"
 		})));
 	}
-	async function V() {
+	async function B() {
 		t.cancelled = !1;
-		let e = I(), r = [], i = [], a = !1;
+		let e = F(), r = [], i = [], a = !1;
 		try {
 			for (let a of N) {
 				e.fixture(a), t.progress = `Capturing current output · ${a.item.name}`, t.touch();
 				let o = await e.inspect(a, n, !0);
 				Je(o.candidate) ? r.push({
 					row: a,
-					before: R(a),
+					before: L(a),
 					after: o.candidate,
 					command: "set_scene_row"
 				}) : i.push(a.item.name);
 			}
-			z("Review captured output", e, r, i), a = !0;
+			R("Review captured output", e, r, i), a = !0;
 		} finally {
 			a || (e.cancelled = !0), t.progress = "", t.touch();
 		}
 	}
-	async function ne() {
+	async function re() {
 		t.cancelled = !1;
-		let r = I(), i = new et(t, e.bus, v);
+		let r = F(), i = new et(t, e.bus, v);
 		k.current.add(i);
 		let a = !1;
 		try {
 			if (!i.scene) throw Error("Choose a named source scene.");
 			let e = await i.saved();
-			r.assert(), i.assert(), z(`Copy saved scene ${v} → ${n}`, r, N.filter((t) => e.get(t.key) !== null).map((t) => ({
+			r.assert(), i.assert(), R(`Copy saved scene ${v} → ${n}`, r, N.filter((t) => e.get(t.key) !== null).map((t) => ({
 				row: t,
-				before: R(t),
+				before: L(t),
 				after: e.get(t.key),
 				command: "set_scene_row"
 			}))), a = !0;
@@ -2300,7 +2300,7 @@ function it({ bus: e }) {
 			i.cancelled = !0, a || (r.cancelled = !0);
 		}
 	}
-	async function re() {
+	async function ie() {
 		let e = m;
 		if (e) {
 			h(null), t.cancelled = !1;
@@ -2313,9 +2313,9 @@ function it({ bus: e }) {
 			}
 		}
 	}
-	async function H(e) {
+	async function V(e) {
 		t.cancelled = !1;
-		let r = I(), i = [];
+		let r = F(), i = [];
 		try {
 			for (let a of e ? Array.from({ length: 16 }, (e, t) => t) : [n]) for (let e of r.outputs) {
 				r.fixture(e), t.progress = `Verifying scene ${a} · ${e.item.name}`, t.touch();
@@ -2333,25 +2333,25 @@ function it({ bus: e }) {
 			i.length && !r.cancelled && r.epoch === t.client.views.epoch && r.revision === t.snapshot.inventory.revision ? _(i) : r.cancelled = !0, t.progress = "", t.touch();
 		}
 	}
-	function ie(e) {
+	function ae(e) {
 		if (!g) return;
 		t.cancelled = !1;
-		let r = g.filter((e) => e.slot === n && Te(i, e.row.item.name)), a = I();
+		let r = g.filter((e) => e.slot === n && Ee(i, e.row.item.name)), a = F();
 		for (let e of r) if (e.scope.assert(), e.scope.revision !== a.revision) throw Error("Verification is stale. Verify again.");
 		let o = r.filter((t) => t.candidate && (e === "adopt_scene_row" || t.report.saved !== null) && t.report.comparison !== "matching").map((t) => ({
 			row: t.row,
-			before: R(t.row),
+			before: L(t.row),
 			after: e === "adopt_scene_row" ? t.candidate : t.report.saved,
 			reviewed: t.report.stored,
 			command: e
 		}));
-		L(), z(e === "adopt_scene_row" ? "Adopt reviewed native settings" : "Repair saved settings", a, o);
+		I(), R(e === "adopt_scene_row" ? "Adopt reviewed native settings" : "Repair saved settings", a, o);
 	}
-	async function ae() {
-		let r = I();
+	async function oe() {
+		let r = F();
 		try {
 			r.assert(!1);
-			let i = await t.client.job(q(r.initial.inventory.inventory_epoch, r.revision), null, "create_scene", {
+			let i = await t.client.job(K(r.initial.inventory.inventory_epoch, r.revision), null, "create_scene", {
 				bus: e.bus,
 				slot: n,
 				name: o || `Scene${n + 1}`,
@@ -2363,16 +2363,16 @@ function it({ bus: e }) {
 			r.cancelled = !0;
 		}
 	}
-	async function U() {
+	async function H() {
 		t.cancelled = !1;
-		let e = I();
+		let e = F();
 		try {
 			await e.recall(x === "bus" ? void 0 : Number(x)), t.notice = "Scene recall sent. Read fixtures for current output.";
 		} finally {
 			e.cancelled = !0;
 		}
 	}
-	let oe = !P || !F || !M || !!t.busy || !N.length;
+	let se = !te || !P || !M || !!t.busy || !N.length;
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X(Re, {}),
 		/* @__PURE__ */ X("div", {
@@ -2380,7 +2380,7 @@ function it({ bus: e }) {
 			children: /* @__PURE__ */ X("label", { children: ["Scene", /* @__PURE__ */ X("select", {
 				"aria-label": "Scene slot",
 				value: n,
-				onChange: (e) => te(Number(e.currentTarget.value)),
+				onChange: (e) => ne(Number(e.currentTarget.value)),
 				children: Array.from({ length: 16 }, (t, n) => /* @__PURE__ */ X("option", {
 					value: n,
 					children: [
@@ -2397,15 +2397,15 @@ function it({ bus: e }) {
 				class: "slots scene-slots",
 				children: [/* @__PURE__ */ X("h2", { children: "Scenes" }), Array.from({ length: 16 }, (t, r) => /* @__PURE__ */ X("button", {
 					class: r === n ? "selected" : "",
-					onClick: () => te(r),
+					onClick: () => ne(r),
 					children: [/* @__PURE__ */ X("span", { children: r }), e.scenes?.find((e) => e.slot === r)?.name ?? "Unnamed"]
 				}))]
 			}), /* @__PURE__ */ X("section", { children: [
 				/* @__PURE__ */ X("div", {
 					class: "section-heading",
 					children: [/* @__PURE__ */ X("h2", { children: ["Scene ", n] }), /* @__PURE__ */ X("button", {
-						disabled: !P || !!t.busy,
-						onClick: () => void t.run(() => H(!0)),
+						disabled: !te || !!t.busy,
+						onClick: () => void t.run(() => V(!0)),
 						children: "Verify all 16"
 					})]
 				}),
@@ -2443,7 +2443,7 @@ function it({ bus: e }) {
 							}), /* @__PURE__ */ X("button", {
 								class: "primary",
 								disabled: !!t.busy || !t.client.views.ready,
-								onClick: () => void t.run(ae),
+								onClick: () => void t.run(oe),
 								children: "Create scene"
 							})]
 						})
@@ -2454,8 +2454,8 @@ function it({ bus: e }) {
 					children: [
 						/* @__PURE__ */ X("button", {
 							class: "primary",
-							disabled: !P || !M || !!t.busy,
-							onClick: () => void t.run(U),
+							disabled: !te || !M || !!t.busy,
+							onClick: () => void t.run(H),
 							children: "Recall"
 						}),
 						/* @__PURE__ */ X("select", {
@@ -2476,8 +2476,8 @@ function it({ bus: e }) {
 							}))]
 						}),
 						/* @__PURE__ */ X("button", {
-							disabled: !P || !!t.busy,
-							onClick: () => void t.run(() => H(!1)),
+							disabled: !te || !!t.busy,
+							onClick: () => void t.run(() => V(!1)),
 							children: "Verify scene"
 						})
 					]
@@ -2504,13 +2504,13 @@ function it({ bus: e }) {
 					class: "toolbar scene-tools",
 					children: [
 						/* @__PURE__ */ X("button", {
-							disabled: oe,
-							onClick: () => void t.run(V),
+							disabled: se,
+							onClick: () => void t.run(B),
 							children: "Capture current"
 						}),
 						/* @__PURE__ */ X("button", {
-							disabled: oe,
-							onClick: () => void t.run(async () => B()),
+							disabled: se,
+							onClick: () => void t.run(async () => z()),
 							children: "Clear selected"
 						}),
 						/* @__PURE__ */ X("select", {
@@ -2528,8 +2528,8 @@ function it({ bus: e }) {
 							}))
 						}),
 						/* @__PURE__ */ X("button", {
-							disabled: oe || v === n,
-							onClick: () => void t.run(ne),
+							disabled: se || v === n,
+							onClick: () => void t.run(re),
 							children: "Copy saved"
 						})
 					]
@@ -2554,9 +2554,9 @@ function it({ bus: e }) {
 					class: "scene-fixtures",
 					children: ee.map((e) => /* @__PURE__ */ X(rt, {
 						row: e,
-						visible: Te(i, e.item.name),
+						visible: Ee(i, e.item.name),
 						view: c,
-						makeScope: I
+						makeScope: F
 					}, `${n}:${e.key}`))
 				}),
 				!N.length && /* @__PURE__ */ X("p", {
@@ -2609,7 +2609,7 @@ function it({ bus: e }) {
 							}), /* @__PURE__ */ X("button", {
 								class: "primary",
 								disabled: !!t.busy || !m.changes.length,
-								onClick: () => void t.run(re),
+								onClick: () => void t.run(ie),
 								children: "Apply reviewed settings"
 							})]
 						})
@@ -2617,7 +2617,7 @@ function it({ bus: e }) {
 				}),
 				g && /* @__PURE__ */ X($, {
 					title: "Verify native scenes",
-					close: L,
+					close: I,
 					children: [
 						/* @__PURE__ */ X("p", {
 							class: "hint",
@@ -2651,12 +2651,12 @@ function it({ bus: e }) {
 						/* @__PURE__ */ X("div", {
 							class: "dialog-actions",
 							children: [/* @__PURE__ */ X("button", {
-								disabled: !M || !!t.busy || !F,
-								onClick: () => void t.run(async () => ie("adopt_scene_row")),
+								disabled: !M || !!t.busy || !P,
+								onClick: () => void t.run(async () => ae("adopt_scene_row")),
 								children: "Review adoption"
 							}), /* @__PURE__ */ X("button", {
-								disabled: !M || !!t.busy || !F,
-								onClick: () => void t.run(async () => ie("repair_scene_row")),
+								disabled: !M || !!t.busy || !P,
+								onClick: () => void t.run(async () => ae("repair_scene_row")),
 								children: "Review repair"
 							})]
 						})
@@ -2716,9 +2716,198 @@ function it({ bus: e }) {
 		})
 	] });
 }
+// src/reassignment.ts
+var at = class {
+	constructor(e, t, n) {
+		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.revision = this.initial.inventory.revision, this.spaces = n === "both" ? ["outputs", "inputs"] : [n];
+	}
+	assert() {
+		let e = this.ui, t = e.snapshot, n = t.inventory.buses.find((e) => e.bus === this.bus);
+		if (this.cancelled || e.cancelled || e.signingOut || !e.client.views.ready || e.client.views.epoch !== this.epoch) throw Error("Reassignment stopped. Completed changes remain saved.");
+		if (!Y(this.initial, t, this.revision, this.bus) || t.phase !== "ready" || !n || !J(t, n)) throw Error("Configuration or bus connection changed. Completed changes remain saved; review before continuing.");
+	}
+	async perform(e, t, n) {
+		this.assert();
+		let r = await this.ui.client.job(K(this.initial.inventory.inventory_epoch, this.revision), null, e, {
+			bus: this.bus,
+			...e.startsWith("assign_next_") ? {} : { space: t },
+			...n === void 0 ? {} : { address: n },
+			expected_revision: this.revision
+		}), i = r.probe ?? r;
+		if (!Number.isSafeInteger(r.revision) || r.revision < this.revision || i.bus !== this.bus || i.space !== t) throw Error("Reassignment result changed. Inspect configuration before retrying.");
+		if (this.cancelled || this.ui.cancelled || this.ui.signingOut || this.epoch !== this.ui.client.views.epoch || !this.ui.client.views.ready) throw Error("Reassignment stopped. Inspect saved changes before retrying.");
+		if (await this.ui.changed(r.revision), this.revision = r.revision, this.assert(), r.probe?.types_complete && r.target) {
+			let e = this.ui.currentRows.find((e) => e.item.target === r.target);
+			e && this.ui.hints.set(e.key, r.probe.device_types);
+		}
+		return r;
+	}
+	async run(e) {
+		for (let t of this.spaces) {
+			if (e(`Retiring saved ${t} and clearing their addresses`), (await this.perform("reset_address_space", t)).outcome !== "cleared") throw Error("Saved identities were retired, but address clearing is unconfirmed. Reassignment stopped; review before retrying.");
+			let n = !0;
+			for (let r = 0; r < 64; r++) {
+				e(`Assigning ${t} · ${r} found`);
+				let i = await this.perform(t === "outputs" ? "assign_next_output" : "assign_next_input", t);
+				if (i.outcome === `no_unaddressed_${t === "outputs" ? "output" : "input"}`) {
+					n = !1;
+					break;
+				}
+				if (i.outcome !== "assigned" || !Number.isInteger(i.address) || i.address < 0 || i.address > 63) throw Error("Address assignment is unconfirmed or no free address remains. Completed changes remain saved.");
+				await this.perform("discover_address", t, i.address);
+			}
+			n && (this.ui.notice = `All 64 ${t} addresses are assigned. Additional unaddressed devices may remain.`);
+			for (let n = 0; n < 64; n++) e(`Refreshing ${t} · address ${n}`), await this.perform("discover_address", t, n);
+			let r = q(this.ui.snapshot).filter((e) => e.bus.bus === this.bus && (t === "outputs" ? e.kind === "output" : e.kind === "instance"));
+			for (let t of r) this.assert(), e(`Reading ${t.item.name}`), await this.ui.read(t), this.assert();
+		}
+		this.assert(), this.ui.notice = this.ui.notice || "Reassignment, discovery and current-value refresh finished. Identify the new default names on this screen.";
+	}
+};
+// src/reassignment-ui.tsx
+function ot({ bus: e, settings: t }) {
+	let n = Z(), [r, i] = U(!1), [a, o] = U(!1), [s, c] = U("outputs"), [l, u] = U(null), d = he(null);
+	W(() => () => {
+		d.current && (d.current.cancelled = !0);
+	}, []);
+	let f = n.client.views.ready && J(n.snapshot, e), p = l ? q(l.initial).filter((e) => e.bus.bus === l.bus && (e.kind === "output" ? l.spaces.includes("outputs") : (e.kind === "input" || e.kind === "instance") && l.spaces.includes("inputs"))) : [];
+	return /* @__PURE__ */ X(y, { children: [
+		/* @__PURE__ */ X("button", {
+			onClick: () => i(!0),
+			children: "Bus actions"
+		}),
+		r && /* @__PURE__ */ X($, {
+			title: `${n.snapshot.identity.controller}/${e.name}`,
+			close: () => i(!1),
+			children: /* @__PURE__ */ X("div", {
+				class: "menu-actions",
+				children: [/* @__PURE__ */ X("button", {
+					onClick: () => {
+						i(!1), t();
+					},
+					children: "Bus settings"
+				}), /* @__PURE__ */ X("button", {
+					class: "danger",
+					disabled: !f || !!n.busy,
+					onClick: () => {
+						i(!1), o(!0);
+					},
+					children: "Reassign addresses"
+				})]
+			})
+		}),
+		a && /* @__PURE__ */ X($, {
+			title: "Reassign addresses",
+			close: () => o(!1),
+			children: [
+				/* @__PURE__ */ X("label", {
+					class: "field",
+					children: ["Address space", /* @__PURE__ */ X("select", {
+						"aria-label": "Reassignment address space",
+						value: s,
+						onChange: (e) => c(e.currentTarget.value),
+						children: [
+							/* @__PURE__ */ X("option", {
+								value: "outputs",
+								children: "Outputs only"
+							}),
+							/* @__PURE__ */ X("option", {
+								value: "inputs",
+								children: "Inputs only"
+							}),
+							/* @__PURE__ */ X("option", {
+								value: "both",
+								children: "Outputs and inputs"
+							})
+						]
+					})]
+				}),
+				/* @__PURE__ */ X("p", { children: "Clear the selected short addresses and discover those devices with fresh default names." }),
+				/* @__PURE__ */ X("div", {
+					class: "dialog-actions",
+					children: [/* @__PURE__ */ X("button", {
+						onClick: () => o(!1),
+						children: "Cancel"
+					}), /* @__PURE__ */ X("button", {
+						class: "primary",
+						disabled: !f || !!n.busy,
+						onClick: () => {
+							u(new at(n, e.bus, s)), o(!1);
+						},
+						children: "Review reassignment"
+					})]
+				})
+			]
+		}),
+		l && /* @__PURE__ */ X($, {
+			title: "Confirm address reassignment",
+			close: () => u(null),
+			children: [
+				/* @__PURE__ */ X("p", { children: [
+					/* @__PURE__ */ X("strong", { children: [
+						l.initial.identity.controller,
+						"/",
+						l.initial.inventory.buses.find((e) => e.bus === l.bus).name
+					] }),
+					" · ",
+					l.spaces.join(" and ")
+				] }),
+				/* @__PURE__ */ X("p", { children: [
+					"The saved names below will be removed. ",
+					l.spaces.includes("outputs") && "Saved output group memberships and scene expectations will be removed. ",
+					"New devices receive default names such as ",
+					l.spaces.includes("outputs") ? "Light1" : "Input1",
+					"."
+				] }),
+				/* @__PURE__ */ X("p", { children: "Live light values, native group memberships and native scene memory stay unchanged. Use Verify groups/scenes afterward to review them." }),
+				/* @__PURE__ */ X("details", { children: [/* @__PURE__ */ X("summary", { children: [
+					p.filter((e) => e.kind !== "instance").length,
+					" saved devices · ",
+					p.filter((e) => e.kind === "instance").length,
+					" input instances"
+				] }), /* @__PURE__ */ X("ul", { children: p.map((e) => /* @__PURE__ */ X("li", { children: [
+					e.item.name,
+					" ",
+					/* @__PURE__ */ X("span", {
+						class: "hint",
+						children: e.kind
+					})
+				] }, e.key)) })] }),
+				/* @__PURE__ */ X("p", {
+					class: "hint",
+					children: "Selected spaces are processed one at a time. Stopping keeps completed changes. An unconfirmed step stops further work."
+				}),
+				/* @__PURE__ */ X("div", {
+					class: "dialog-actions",
+					children: [/* @__PURE__ */ X("button", {
+						onClick: () => u(null),
+						children: "Cancel"
+					}), /* @__PURE__ */ X("button", {
+						class: "danger",
+						disabled: !!n.busy || !f,
+						onClick: () => {
+							if (!l) return;
+							let e = l;
+							d.current = e, u(null), n.cancelled = !1, n.run(async () => {
+								try {
+									await e.run((e) => {
+										n.progress = e, n.touch();
+									});
+								} finally {
+									n.progress = "", d.current === e && (d.current = null), n.touch();
+								}
+							});
+						},
+						children: "Clear and reassign"
+					})]
+				})
+			]
+		})
+	] });
+}
 // src/app.tsx
-function at({ number: e, bus: t, close: n }) {
-	let r = Z(), [i, a] = W(t?.name ?? `Bus${e + 1}`), [o, s] = W(t?.enabled ?? !0);
+function st({ number: e, bus: t, close: n }) {
+	let r = Z(), [i, a] = U(t?.name ?? `Bus${e + 1}`), [o, s] = U(t?.enabled ?? !0);
 	return /* @__PURE__ */ X($, {
 		title: `Bus ${e + 1} settings`,
 		close: n,
@@ -2766,8 +2955,8 @@ function at({ number: e, bus: t, close: n }) {
 		})
 	});
 }
-function ot() {
-	let e = Z(), [t, n] = W(null), r = e.snapshot;
+function ct() {
+	let e = Z(), [t, n] = U(null), r = e.snapshot;
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X("header", {
 			class: "page-heading",
@@ -2826,7 +3015,7 @@ function ot() {
 						/* @__PURE__ */ X("div", {
 							class: "section-heading",
 							children: [/* @__PURE__ */ X("h2", { children: i?.name ?? `Bus${t + 1}` }), /* @__PURE__ */ X("span", {
-								class: `pill ${i && Y(r, i) ? "" : "unknown"}`,
+								class: `pill ${i && J(r, i) ? "" : "unknown"}`,
 								children: i ? i.enabled ? "Enabled" : "Disabled" : "Not configured"
 							})]
 						}),
@@ -2856,15 +3045,15 @@ function ot() {
 				}, t);
 			})
 		}),
-		t !== null && /* @__PURE__ */ X(at, {
+		t !== null && /* @__PURE__ */ X(st, {
 			number: t,
 			bus: r.inventory.buses.find((e) => e.bus === t),
 			close: () => n(null)
 		})
 	] });
 }
-function st({ number: e, tab: t }) {
-	let n = Z(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = W(!1);
+function lt({ number: e, tab: t }) {
+	let n = Z(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = U(!1);
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X("header", {
 			class: "page-heading",
@@ -2882,10 +3071,13 @@ function st({ number: e, tab: t }) {
 					class: "muted",
 					children: "Discover, identify and name the devices on this bus."
 				})
-			] }), /* @__PURE__ */ X("button", {
+			] }), /* @__PURE__ */ X(y, { children: r ? /* @__PURE__ */ X(ot, {
+				bus: r,
+				settings: () => a(!0)
+			}, `${e}-${t}`) : /* @__PURE__ */ X("button", {
 				onClick: () => a(!0),
 				children: "Bus settings"
-			})]
+			}) })]
 		}),
 		r ? /* @__PURE__ */ X(y, { children: [/* @__PURE__ */ X("nav", {
 			class: "tabs",
@@ -2914,14 +3106,14 @@ function st({ number: e, tab: t }) {
 				})
 			]
 		}),
-		i && /* @__PURE__ */ X(at, {
+		i && /* @__PURE__ */ X(st, {
 			number: e,
 			bus: r,
 			close: () => a(!1)
 		})
 	] });
 }
-function ct() {
+function ut() {
 	let e = Z().snapshot;
 	function t() {
 		let t = URL.createObjectURL(new Blob([JSON.stringify(e.inventory, null, 2)], { type: "application/json" })), n = document.createElement("a");
@@ -2974,7 +3166,7 @@ function ct() {
 		})
 	] });
 }
-function lt() {
+function dt() {
 	let e = Z(), t = e.snapshot;
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X("header", {
@@ -3063,9 +3255,9 @@ function lt() {
 		})
 	] });
 }
-function ut() {
-	let [e] = W(() => new Fe()), [, t] = W(0), [n, r] = W(location.pathname), [i, a] = W(!1);
-	G(() => {
+function ft() {
+	let [e] = U(() => new Fe()), [, t] = U(0), [n, r] = U(location.pathname), [i, a] = U(!1);
+	W(() => {
 		let n = e.client.subscribe(() => t((e) => e + 1));
 		e.client.start().catch((t) => {
 			e.client.error = t.message, e.touch();
@@ -3185,10 +3377,10 @@ function ut() {
 							role: "status",
 							children: e.notice
 						}),
-						o ? s ? /* @__PURE__ */ X(st, {
+						o ? s ? /* @__PURE__ */ X(lt, {
 							number: Number(s[1]),
 							tab: s[2] ?? ""
-						}, s[1]) : n === "/settings" ? /* @__PURE__ */ X(ct, {}) : n === "/diagnostics" ? /* @__PURE__ */ X(lt, {}) : n === "/" ? /* @__PURE__ */ X(ot, {}) : /* @__PURE__ */ X("div", {
+						}, s[1]) : n === "/settings" ? /* @__PURE__ */ X(ut, {}) : n === "/diagnostics" ? /* @__PURE__ */ X(dt, {}) : n === "/" ? /* @__PURE__ */ X(ct, {}) : /* @__PURE__ */ X("div", {
 							class: "card",
 							children: [/* @__PURE__ */ X("h1", { children: "Page not found" }), /* @__PURE__ */ X(Q, {
 								href: "/",
@@ -3214,4 +3406,4 @@ function ut() {
 		})
 	});
 }
-L(/* @__PURE__ */ X(ut, {}), document.getElementById("app"));
+I(/* @__PURE__ */ X(ft, {}), document.getElementById("app"));

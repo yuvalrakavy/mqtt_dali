@@ -6,6 +6,7 @@ import { Context, Link, Modal, useUi } from './ui.tsx';
 import { Devices } from './devices.tsx';
 import { Groups } from './groups.tsx';
 import { Scenes } from './scenes.tsx';
+import { BusActions } from './reassignment-ui.tsx';
 import './shared.css';
 import './app.css';
 
@@ -19,7 +20,7 @@ function Overview(){
 }
 function BusPage({number,tab}:{number:number;tab:string}){
   const ui=useUi(),bus=ui.snapshot.inventory.buses.find(b=>b.bus===number),[settings,setSettings]=useState(false);
-  return <><header class="page-heading"><div><p class="eyebrow">BUS MANAGEMENT</p><h1>{ui.snapshot.identity.controller}/{bus?.name??`Bus${number+1}`}</h1><p class="muted">Discover, identify and name the devices on this bus.</p></div><button onClick={()=>setSettings(true)}>Bus settings</button></header>{bus?<><nav class="tabs" aria-label="Bus pages">{[['','Devices'],['/groups','Groups'],['/scenes','Scenes']].map(([path,label])=><Link class={tab===path?'selected':''} href={`/buses/${number}${path}`}>{label}</Link>)}</nav>{tab==='/groups'?<Groups key={`groups-${number}`} bus={bus}/>:tab==='/scenes'?<Scenes key={`scenes-${number}`} bus={bus}/>:<Devices key={`devices-${number}`} bus={bus}/>}</>:<div class="card"><h2>Set up this bus</h2><p class="muted">Save a bus name and enable it before starting discovery.</p><button class="primary" onClick={()=>setSettings(true)}>Set up bus</button></div>}{settings&&<BusSettings number={number} bus={bus} close={()=>setSettings(false)}/>}</>;
+  return <><header class="page-heading"><div><p class="eyebrow">BUS MANAGEMENT</p><h1>{ui.snapshot.identity.controller}/{bus?.name??`Bus${number+1}`}</h1><p class="muted">Discover, identify and name the devices on this bus.</p></div><>{bus?<BusActions key={`${number}-${tab}`} bus={bus} settings={()=>setSettings(true)}/>:<button onClick={()=>setSettings(true)}>Bus settings</button>}</></header>{bus?<><nav class="tabs" aria-label="Bus pages">{[['','Devices'],['/groups','Groups'],['/scenes','Scenes']].map(([path,label])=><Link class={tab===path?'selected':''} href={`/buses/${number}${path}`}>{label}</Link>)}</nav>{tab==='/groups'?<Groups key={`groups-${number}`} bus={bus}/>:tab==='/scenes'?<Scenes key={`scenes-${number}`} bus={bus}/>:<Devices key={`devices-${number}`} bus={bus}/>}</>:<div class="card"><h2>Set up this bus</h2><p class="muted">Save a bus name and enable it before starting discovery.</p><button class="primary" onClick={()=>setSettings(true)}>Set up bus</button></div>}{settings&&<BusSettings number={number} bus={bus} close={()=>setSettings(false)}/>}</>;
 }
 function Settings(){
   const ui=useUi(),s=ui.snapshot;

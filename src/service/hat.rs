@@ -757,6 +757,41 @@ impl Hat {
     ) {
         self.enqueue_physical(physical::Work::Discovery(request, route));
     }
+    pub(super) fn reassignment_stamp(
+        &self,
+        bus: u8,
+        space: super::discovery::Space,
+    ) -> Result<output::Stamp, ServiceError> {
+        if self.physical.is_some() || self.completed.is_some() {
+            return Err(ServiceError::Busy);
+        }
+        if space == super::discovery::Space::Outputs
+            && self
+                .settings
+                .as_ref()
+                .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
+        {
+            return Err(ServiceError::Rejected(
+                "reassignment requires --uart-repeat-terminals 1 or 2 for a known HAT profile"
+                    .into(),
+            ));
+        }
+        let stamp = self
+            .stamp(bus)
+            .ok_or_else(|| ServiceError::Rejected("UART evidence unavailable".into()))?;
+        if !matches!(self.hardware(), Hardware::Ready { .. }) || !self.evidence_current(bus, stamp)
+        {
+            return Err(ServiceError::Rejected("UART or bus is not ready".into()));
+        }
+        Ok(stamp)
+    }
+    pub(super) fn enqueue_reassignment(
+        &mut self,
+        request: super::reassignment::Request,
+        route: super::reassignment::Route,
+    ) {
+        self.enqueue_physical(physical::Work::Reassignment(request, route));
+    }
     pub(super) fn enqueue_output(&mut self, request: output::Request, route: output::Route) {
         self.enqueue_physical(physical::Work::Output(request, route));
     }

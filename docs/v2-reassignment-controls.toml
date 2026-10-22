@@ -1,0 +1,125 @@
+[[control]]
+name = "reassignment_skips_durable_activation"
+file = "src/service/owner/reassignment_changes.rs"
+anchor = "        let accepted = self.accept_save(\n            service,\n            outcome,\n            request.completion.as_ref(),\n            &request.context,\n        )?;"
+replacement = "        let _ = outcome;\n        let accepted=service.handle.snapshot().unwrap();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(reassignment_save_failure_or_uncertainty)"]
+expect_text = "unconfirmed reassignment save was accepted"
+
+[[control]]
+name = "reassignment_releases_permit_during_save"
+file = "src/service/owner/reassignment_changes.rs"
+anchor = "        service.update_snapshot(self.model.clone(), Phase::Writing);"
+replacement = "        let fake=Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap();\n        drop(std::mem::replace(&mut request._permit,fake));\n        service.update_snapshot(self.model.clone(), Phase::Writing);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(reassignment_save_failure_or_uncertainty)"]
+expect_text = "reassignment save released physical permit"
+
+[[control]]
+name = "reassignment_replaces_original_stamp"
+file = "src/service/physical.rs"
+anchor = "Self::Reassignment(_, r) => Some(r.original_stamp),"
+replacement = "Self::Reassignment(_, _) => None,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(reassignment_handoff_preserves)"]
+expect_text = "reassignment queued address clear with a replacement stamp"
+
+[[control]]
+name = "reassignment_ignores_final_stamp"
+file = "src/service/owner/reassignment_changes.rs"
+anchor = "!o.stale && o.checked == 64 && hat.evidence_current(request.bus, o.stamp)"
+replacement = "!o.stale && o.checked == 64"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(reassignment_final_stamp)"]
+expect_text = "stale final address-clear evidence claimed success"
+
+[[control]]
+name = "reassignment_ignores_status_presence"
+file = "src/service/reassignment.rs"
+anchor = "if replies != [BusReply::NoResponse] {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(reassignment_literal_clear)"]
+expect_text = "incomplete status proof claimed address clearing"
+
+[[control]]
+name = "reassignment_sends_one_input_setting"
+file = "src/service/reassignment.rs"
+anchor = "for _ in 0..if pair { 2 } else { 1 } {"
+replacement = "for _ in 0..1 {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(reassignment_input_retirement)"]
+expect_text = "input clear was not verified"
+
+[[control]]
+name = "reassignment_unknown_profile_retires_names"
+file = "src/service/hat.rs"
+anchor = "if space == super::discovery::Space::Outputs"
+replacement = "if false && space == super::discovery::Space::Outputs"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(reassignment_final_stamp)"]
+expect_text = "unverified output profile retired saved identities"
+
+[[control]]
+name = "reassignment_shifted_input_address"
+file = "src/emulator/input.rs"
+anchor = "self.config.short_address = Some(self.dtr0);"
+replacement = "self.config.short_address = Some(self.dtr0 >> 1);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(input_address_write_requires)"]
+expect_text = "ordinary input SetShortAddress did not program raw DTR0"
+
+[[control]]
+name = "reassignment_ui_implicit_latest_root"
+file = "web/src/reassignment.ts"
+anchor = "expected_revision:this.revision"
+replacement = "expected_revision:this.ui.snapshot.inventory.revision+1"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "reassignment composes selected spaces", "web/src/reassignment.test.ts"]
+expect_text = "Expected values to be strictly equal"
+
+[[control]]
+name = "reassignment_ui_rebases_external_edit"
+file = "web/src/reassignment.ts"
+anchor = "if(!continuation(this.initial,s,this.revision,this.bus)||s.phase!=='ready'||!bus||!busReady(s,bus))"
+replacement = "if(false)"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "review freezes names and roots", "web/src/reassignment.test.ts"]
+expect_text = "Missing expected rejection"
+
+[[control]]
+name = "reassignment_ui_continues_uncertain_clear"
+file = "web/src/reassignment.ts"
+anchor = "if(reset.outcome!=='cleared')"
+replacement = "if(false)"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "unconfirmed clear or assignment", "web/src/reassignment.test.ts"]
+expect_text = "Missing expected rejection"
+
+[[control]]
+name = "reassignment_ui_refreshes_both_spaces"
+file = "web/src/reassignment.ts"
+anchor = "await this.perform('discover_address',space,address);"
+replacement = "await this.perform('discover_address',space==='outputs'?'inputs':'outputs',address);"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "reassignment composes selected spaces", "web/src/reassignment.test.ts"]
+expect_text = "selected-space refresh touched the other space"
+
+[[control]]
+name = "reassignment_ui_capacity_demands_extra_slot"
+file = "web/src/reassignment.ts"
+anchor = "count<64"
+replacement = "count<65"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "all 64 verified assignments", "web/src/reassignment.test.ts"]
+expect_text = "Expected values to be strictly equal"
+
+[[control]]
+name = "reassignment_ui_preview_is_live"
+file = "web/src/reassignment.ts"
+anchor = "this.initial=structuredClone(ui.snapshot)"
+replacement = "this.initial=ui.snapshot"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "review freezes names and roots", "web/src/reassignment.test.ts"]
+expect_text = "Expected values to be strictly equal"

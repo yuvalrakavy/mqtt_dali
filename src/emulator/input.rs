@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 pub(super) struct State {
     #[serde(flatten)]
     pub config: Input,
+    dtr0: u8,
     #[serde(skip)]
     latches: BTreeMap<u8, (Vec<u8>, usize)>,
     initialize_until: Option<u64>,
@@ -18,6 +19,7 @@ impl State {
     pub fn new(config: Input) -> Self {
         Self {
             config,
+            dtr0: 0,
             latches: BTreeMap::new(),
             initialize_until: None,
             randomise_ready_at: None,
@@ -36,6 +38,7 @@ impl State {
         let ready = self.randomise_ready_at.is_none_or(|at| now >= at);
         let exact = eligible && ready && self.config.random_address == Some(self.search);
         match (command, param) {
+            (0x30, value) => self.dtr0 = value,
             (0, 0) => {
                 self.initialize_until = None;
                 self.withdrawn = false;
@@ -83,6 +86,14 @@ impl State {
     pub fn query(&mut self, instance: u8, opcode: u8) -> Option<u8> {
         if instance == 0xfe {
             return match opcode {
+                0x14 => {
+                    if self.dtr0 == 255 {
+                        self.config.short_address = None;
+                    } else if self.dtr0 < 64 {
+                        self.config.short_address = Some(self.dtr0);
+                    }
+                    None
+                }
                 0x30 => Some(0),
                 0x35 => Some(self.config.instances.len() as u8),
                 _ => None,

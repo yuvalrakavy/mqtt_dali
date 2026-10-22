@@ -30,6 +30,7 @@ impl DeviceDriver for DaliProxy {
                 "assign_group",
                 "adopt_groups",
                 "repair_groups",
+                "reset_address_space",
                 "assign_next_output",
                 "assign_next_input",
                 "configure_bus",
@@ -338,6 +339,23 @@ impl DeviceDriver for DaliProxy {
                         target.ok_or_else(|| OpError::Rejected("output target required".into()))?,
                         action,
                         expected,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(18),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+            Operation::Reassignment(p, space) => {
+                let result = self
+                    .handle
+                    .reset_space(
+                        p.bus,
+                        space,
+                        p.expected_revision,
                         context.clone(),
                         Instant::now() + Duration::from_secs(18),
                         Some(completion),
@@ -682,6 +700,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    Reassignment(Assignment, discovery::Space),
     SavedScene,
     SceneSettings(scene_settings::Action),
     Scenes(scenes::Action),
@@ -737,6 +756,10 @@ impl Operation {
                 context,
             )
             .map(|_| ()),
+            Self::Reassignment(p, space) => {
+                commissioning::resolve_space(snapshot, p.bus, *space, p.expected_revision, context)
+                    .map(|_| ())
+            }
             Self::Assignment(p, space) => match space {
                 discovery::Space::Outputs => {
                     commissioning::resolve(snapshot, p.bus, p.expected_revision, context)
@@ -781,7 +804,7 @@ impl Operation {
             Self::Identify(_) => 4,
             Self::SavedScene | Self::Metadata(_) | Self::Groups(groups::Action::Read, _) => 2,
             Self::Discovery(_) => 10,
-            Self::Groups(_, _) | Self::Assignment(_, _) => 18,
+            Self::Reassignment(_, _) | Self::Groups(_, _) | Self::Assignment(_, _) => 18,
         })
     }
 }
@@ -1002,6 +1025,11 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::Reassignment(p, space) => value(
+                handle
+                    .reset_space(p.bus, space, p.expected_revision, context, deadline, None)
+                    .await?,
+            ),
             Operation::SavedScene => value(scene_settings::view::read(
                 &handle.snapshot().ok_or(ServiceError::Closed)?,
                 target
@@ -1208,6 +1236,31 @@ fn parse(
             }
         };
         return Ok(Operation::SceneSettings(action));
+    }
+    if call.command == "reset_address_space" {
+        if target.is_some() {
+            return Err(OpError::Rejected("controller-only command".into()));
+        }
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Reset {
+            bus: u8,
+            space: String,
+            expected_revision: u64,
+        }
+        let p: Reset = decode(call)?;
+        let space = match p.space.as_str() {
+            "outputs" => discovery::Space::Outputs,
+            "inputs" => discovery::Space::Inputs,
+            _ => return Err(OpError::Rejected("space must be outputs or inputs".into())),
+        };
+        return Ok(Operation::Reassignment(
+            Assignment {
+                bus: p.bus,
+                expected_revision: p.expected_revision,
+            },
+            space,
+        ));
     }
     if call.command == "read_scene" || call.command == "recall_scene" {
         if target.is_none() {

@@ -10,6 +10,7 @@ mod input;
 mod input_assignment;
 mod live_input;
 mod readback;
+mod reassignment;
 mod removal;
 mod scene_operations;
 mod scene_saved_view;

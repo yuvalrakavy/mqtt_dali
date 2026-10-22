@@ -1,0 +1,18 @@
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { Modal, useUi } from './ui.tsx';
+import { busReady, rows, type Bus } from './model.ts';
+import { Reassignment, type Selection } from './reassignment.ts';
+
+export function BusActions({bus,settings}:{bus:Bus;settings:()=>void}){
+  const ui=useUi(),[menu,setMenu]=useState(false),[choose,setChoose]=useState(false),[selection,setSelection]=useState<Selection>('outputs'),[review,setReview]=useState<Reassignment|null>(null);
+  const active=useRef<Reassignment|null>(null);
+  useEffect(()=>()=>{if(active.current)active.current.cancelled=true;},[]);
+  const ready=ui.client.views.ready&&busReady(ui.snapshot,bus);
+  const selected=review?rows(review.initial).filter(row=>row.bus.bus===review.bus&&(row.kind==='output'?review.spaces.includes('outputs'):(row.kind==='input'||row.kind==='instance')&&review.spaces.includes('inputs'))):[];
+  const confirm=()=>{if(!review)return;const operation=review;active.current=operation;setReview(null);ui.cancelled=false;void ui.run(async()=>{try{await operation.run(text=>{ui.progress=text;ui.touch();});}finally{ui.progress='';if(active.current===operation)active.current=null;ui.touch();}});};
+  return <><button onClick={()=>setMenu(true)}>Bus actions</button>
+    {menu&&<Modal title={`${ui.snapshot.identity.controller}/${bus.name}`} close={()=>setMenu(false)}><div class="menu-actions"><button onClick={()=>{setMenu(false);settings();}}>Bus settings</button><button class="danger" disabled={!ready||!!ui.busy} onClick={()=>{setMenu(false);setChoose(true);}}>Reassign addresses</button></div></Modal>}
+    {choose&&<Modal title="Reassign addresses" close={()=>setChoose(false)}><label class="field">Address space<select aria-label="Reassignment address space" value={selection} onChange={e=>setSelection(e.currentTarget.value as Selection)}><option value="outputs">Outputs only</option><option value="inputs">Inputs only</option><option value="both">Outputs and inputs</option></select></label><p>Clear the selected short addresses and discover those devices with fresh default names.</p><div class="dialog-actions"><button onClick={()=>setChoose(false)}>Cancel</button><button class="primary" disabled={!ready||!!ui.busy} onClick={()=>{setReview(new Reassignment(ui,bus.bus,selection));setChoose(false);}}>Review reassignment</button></div></Modal>}
+    {review&&<Modal title="Confirm address reassignment" close={()=>setReview(null)}><p><strong>{review.initial.identity.controller}/{review.initial.inventory.buses.find(b=>b.bus===review.bus)!.name}</strong> · {review.spaces.join(' and ')}</p><p>The saved names below will be removed. {review.spaces.includes('outputs')&&'Saved output group memberships and scene expectations will be removed. '}New devices receive default names such as {review.spaces.includes('outputs')?'Light1':'Input1'}.</p><p>Live light values, native group memberships and native scene memory stay unchanged. Use Verify groups/scenes afterward to review them.</p><details><summary>{selected.filter(r=>r.kind!=='instance').length} saved devices · {selected.filter(r=>r.kind==='instance').length} input instances</summary><ul>{selected.map(row=><li key={row.key}>{row.item.name} <span class="hint">{row.kind}</span></li>)}</ul></details><p class="hint">Selected spaces are processed one at a time. Stopping keeps completed changes. An unconfirmed step stops further work.</p><div class="dialog-actions"><button onClick={()=>setReview(null)}>Cancel</button><button class="danger" disabled={!!ui.busy||!ready} onClick={confirm}>Clear and reassign</button></div></Modal>}
+  </>;
+}
