@@ -858,7 +858,7 @@ These remain subsequent work rather than inferred from base command success.
 See [emulator colour profiles](emulator.md#colour-fixtures) and the
 [slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-emulator.md).
 
-## P4d3 — owned colour service (source review active)
+## P4d3 — owned colour service
 
 The individual output service now discovers DT8 capability (including bounded
 multiple-type enumeration), physical RGBWAF assignments and active native values.
@@ -892,7 +892,11 @@ targets before admission, retain 2 s for plain targets, and preserve the origina
 regressions and the original aggregate-clipping test pass. Their three new timing
 controls and three affected existing MQTT controls fail as intended (28 s/24 s).
 The corrected restored gate passes **353 native tests** and the same lint, Pi,
-format/whitespace, wait and doc checks. Source re-review is active. Evidence logs include
+format/whitespace, wait and doc checks. Both sequential read-only source gates
+approve corrected frozen `96424cc`, with no remaining material finding. The first
+gate narrowly re-reviewed its timing correction; the second reviewed the full
+`c050907..96424cc` change. Both were same-family, source-only, with no tests run
+by reviewers. Physical fixture/firmware validation remains outstanding. Evidence logs include
 `/tmp/dali-colour-service-controls`, `/tmp/dali-colour-service-restored-gate`,
 `/tmp/dali-colour-paced-controls` and `/tmp/dali-colour-paced-restored-gate`.
 
@@ -906,7 +910,7 @@ See [colour operations](dali-colour-contract.md#owned-service-operations) and th
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator and owned colour service implemented (source review active) | Input discovery/full-value polling/configuration/feedback, color automatic activation/MQTT and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator and owned colour service implemented | Input discovery/full-value polling/configuration/feedback, color automatic activation/MQTT and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

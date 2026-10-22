@@ -191,3 +191,10 @@ guarantee. The three regressions and the original aggregate-ceiling test pass;
 three new timing guard-removal controls and three affected existing MQTT controls
 fail behaviorally as intended. The source gate requested this minimal correction
 and found no other material defect in the completed pass.
+
+Both source gates approve corrected frozen `96424cc`. Gate 1 narrowly confirmed
+the timing correction; gate 2 reviewed the complete `c050907..96424cc` diff and
+found no material issue. Reviews were read-only/source-only/same-family and ran
+no tests. Corrected restored evidence is 353 native tests plus strict scoped
+Clippy, Pi library/all four binary compilation, format/whitespace, wait registry
+and doctests (none defined). No physical firmware/fixture validation is claimed.
