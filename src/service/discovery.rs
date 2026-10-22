@@ -372,7 +372,7 @@ pub(super) fn additions(model: &Model, probe: &mut Observation) -> Result<Vec<Ed
         _ => Ok(Vec::new()),
     }
 }
-fn unused_name<'a>(prefix: &str, names: impl Iterator<Item = &'a str>) -> String {
+pub(super) fn unused_name<'a>(prefix: &str, names: impl Iterator<Item = &'a str>) -> String {
     let names: BTreeSet<_> = names.collect();
     (1u32..)
         .map(|n| format!("{prefix}{n}"))

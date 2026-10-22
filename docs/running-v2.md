@@ -4,8 +4,9 @@ This is an unfinished development version. Its current executable serves saved
 inventory and metadata edits through BridgeKit, checks ATX I4 UART health and
 supports [base and selected-family DT8 light control](mqtt-outputs.md) plus
 [input State, current-value queries and native events](mqtt-inputs.md), plus
-[discovery of already addressed devices](discovery.md). Address assignment and
-the web interface remain in development.
+[discovery of already addressed devices](discovery.md) and
+[one-at-a-time unaddressed output assignment](commissioning.md). Input addressing,
+full readdress/restore and the web interface remain in development.
 
 Start one controller with an MQTT broker and its own writable config directory:
 
@@ -23,6 +24,11 @@ contains the saved inventory; `DALI/Version/<controller>` reports version and UT
 build time. See [metadata commands](service-development.md#mqtt-metadata-commands)
 and the [inventory contract](inventory-contract.md). Saved mappings do not prove
 that a fixture is present or that a hardware command succeeded.
+
+Address assignment additionally needs a known repeated-command completion profile:
+`--uart-repeat-terminals unverified|1|2` (default `unverified`). Ordinary control
+keeps its existing default behavior. See the commissioning guide before choosing
+a measured hardware or explicit emulator profile.
 
 The v2 file takes precedence. If it is absent, startup imports the v1 file into a
 separate private v2 file, or initializes an empty controller if neither exists.

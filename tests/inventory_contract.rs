@@ -38,6 +38,46 @@ fn input_model() -> Model {
 }
 
 #[test]
+fn commissioning_reservation_consumer_adds_unknown_item_without_replacing_existing_bindings() {
+    let first = model();
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    let old_id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
+    consumer.set_intent("Bus1.Outputs.Light1", json!({"Brightness":0.4}));
+    let reserved = first
+        .edit(
+            1,
+            &[Edit::AddOutput {
+                bus: 0,
+                output: serde_json::from_value(json!({"short_address":2,"name":"Light3"})).unwrap(),
+            }],
+        )
+        .unwrap();
+    // Reconstruct from the durable document, as after a process restart.
+    let reopened = Model::new(
+        serde_json::from_slice(&serde_json::to_vec(reserved.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    consumer.accept(&reopened.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.by_target("Bus1.Outputs.Light1").unwrap().id,
+        old_id
+    );
+    assert!(consumer
+        .by_target("Bus1.Outputs.Light1")
+        .unwrap()
+        .intent
+        .is_some());
+    let added = consumer.by_target("Bus1.Outputs.Light3").unwrap();
+    assert!(
+        added.observed.is_none(),
+        "address reservation fabricated current consumer state"
+    );
+    assert!(consumer.accepts_state("Bus1.Outputs.Light3", "0123456789abcdef0123456789abcdef.2"));
+    assert!(!consumer.accepts_state("Bus1.Outputs.Light3", "0123456789abcdef0123456789abcdef.1"));
+}
+
+#[test]
 fn input_expansion_consumer_keeps_parent_child_and_intent_continuity() {
     let first = input_model();
     let mut consumer = Consumer::default();

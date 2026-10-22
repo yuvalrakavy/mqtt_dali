@@ -252,6 +252,154 @@ impl Owner {
         }
         Ok(discovery::report(&self.model, probe, added))
     }
+    async fn commission(
+        &mut self,
+        service: &DaliService,
+        completion: &mut commissioning::Completion,
+        context: &mut ServiceContext<DaliProxy>,
+        hat: &hat::Hat,
+    ) -> Result<commissioning::Advance, ServiceError> {
+        use commissioning::{Advance, AssignmentOutcome, Step};
+        if let Some(error) = completion.error.take() {
+            return Err(error);
+        }
+        let request = &mut completion.request;
+        if request.reply.is_closed() || Instant::now() >= request.deadline {
+            return Err(ServiceError::Expired);
+        }
+        let mut observation = completion
+            .observation
+            .take()
+            .ok_or_else(|| ServiceError::Rejected("missing commissioning result".into()))?;
+        if observation.stale || !hat.evidence_current(observation.bus, observation.stamp) {
+            return Err(ServiceError::Rejected(
+                "commissioning physical evidence changed".into(),
+            ));
+        }
+        if let Some(reservation) = &request.reservation {
+            if service
+                .handle
+                .snapshot()
+                .is_none_or(|s| s.phase != Phase::Ready)
+                || self.model.inventory().revision != reservation.revision
+            {
+                return Err(ServiceError::Rejected(
+                    "reserved mapping changed before assignment completion".into(),
+                ));
+            }
+            return match observation.step {
+                Some(Step::Assigned) => Ok(Advance::Done(commissioning::report(
+                    request,
+                    AssignmentOutcome::Assigned,
+                    reservation.revision,
+                    None,
+                ))),
+                _ => Err(ServiceError::Rejected(
+                    "programming did not yield verified assignment".into(),
+                )),
+            };
+        }
+        commissioning::resolve(
+            &service.handle.snapshot().ok_or(ServiceError::Closed)?,
+            request.bus,
+            request.expected,
+            &request.context,
+        )?;
+        let (address, random) = match observation.step.take() {
+            Some(Step::NoCapacity) => {
+                return Ok(Advance::Done(commissioning::report(
+                    request,
+                    AssignmentOutcome::NoFreeAddress,
+                    self.model.inventory().revision,
+                    None,
+                )))
+            }
+            Some(Step::NoCandidate) => {
+                return Ok(Advance::Done(commissioning::report(
+                    request,
+                    AssignmentOutcome::NoUnaddressedOutput,
+                    self.model.inventory().revision,
+                    None,
+                )))
+            }
+            Some(Step::Found { address, random }) => (address, random),
+            _ => {
+                return Err(ServiceError::Rejected(
+                    "search did not yield a candidate".into(),
+                ))
+            }
+        };
+        let saved = self
+            .model
+            .inventory()
+            .buses
+            .iter()
+            .find(|b| b.bus == request.bus)
+            .ok_or(ServiceError::Closed)?;
+        if saved.outputs.iter().any(|o| o.short_address == address) {
+            return Err(ServiceError::Rejected(
+                "destination is already reserved".into(),
+            ));
+        }
+        let name = discovery::unused_name("Light", saved.outputs.iter().map(|o| o.name.as_str()));
+        let edit = Edit::AddOutput {
+            bus: request.bus,
+            output: crate::config::Output {
+                short_address: address,
+                name,
+                description: None,
+                color_representation: None,
+            },
+        };
+        service.update_snapshot(self.model.clone(), Phase::Writing);
+        // WAIT: v2-service-save
+        let outcome = tokio::select! {
+            biased;
+            result=self.store.edit(request.expected,vec![edit],request.deadline)=>result,
+            _=context.cancelled()=>Outcome::Uncertain("service stopping during address reservation".into()),
+            _=request.reply.closed()=>Outcome::Uncertain("caller canceled during address reservation".into()),
+        };
+        self.accept_save(
+            service,
+            outcome,
+            request.completion.as_ref(),
+            &request.context,
+        )?;
+        let target = self
+            .model
+            .projections()
+            .into_iter()
+            .find(|p| {
+                p.location
+                    == crate::inventory::Location::Output {
+                        bus: request.bus,
+                        short_address: address,
+                    }
+            })
+            .expect("confirmed reserved output")
+            .target;
+        request.reservation = Some(commissioning::Reservation {
+            address,
+            target: target.clone(),
+            revision: self.model.inventory().revision,
+        });
+        if request.reply.is_closed() || Instant::now() >= request.deadline {
+            return Err(ServiceError::Expired);
+        }
+        let internal = RequestContext::new(self.table.targets[&target].clone())
+            .expect("confirmed generation")
+            .with_traceparent(request.context.traceparent());
+        Ok(Advance::Program(commissioning::Route {
+            bus: request.bus,
+            controller: self.model.inventory().name.clone(),
+            context: internal,
+            plan: commissioning::Plan::Program(commissioning::Candidate {
+                address,
+                random,
+                stamp: observation.stamp,
+            }),
+        }))
+    }
     fn freeze(&self, service: &DaliService, reason: String) -> Result<Snapshot, ServiceError> {
         service.update_snapshot(self.model.clone(), Phase::Uncertain(reason.clone()));
         Err(ServiceError::Uncertain(reason))
@@ -329,6 +477,15 @@ impl ProcessService for DaliService {
                     snapshot.hardware=hat.hardware();
                     snapshot.input_listeners=hat.input_listeners();
                     let mut completion=hat.take_completed_physical();
+                    if matches!(completion,Some(physical::Completion::Commission(_))) {
+                        let Some(physical::Completion::Commission(mut commissioned))=completion.take() else {unreachable!()};
+                        match owner.commission(&self,&mut commissioned,&mut context,&hat).await {
+                            Ok(commissioning::Advance::Program(route))=>hat.enqueue_commission(commissioned.request,route),
+                            Ok(commissioning::Advance::Done(report))=>commissioning::finish(commissioned.request,Ok(report)),
+                            Err(error)=>commissioning::finish(commissioned.request,Err(error)),
+                        }
+                        snapshot=self.handle.snapshot().expect("service started");hat.sync_inputs(&owner.model);
+                    }
                     if matches!(completion,Some(physical::Completion::Discovery(_))) {
                         let Some(physical::Completion::Discovery(mut discovered))=completion.take() else {unreachable!()};
                         let result=owner.discover(&self,&mut discovered,&mut context,&hat).await;
@@ -384,6 +541,7 @@ impl ProcessService for DaliService {
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion { match completion {
+                      physical::Completion::Commission(_)=>unreachable!("commissioning advanced before cache publication"),
                       physical::Completion::Discovery(_)=>unreachable!("discovery accepted before cache publication"),
                       physical::Completion::Output(completion)=>{
                         let result=match (completion.error, completion.observation) {
@@ -413,6 +571,22 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::Commission(request) => {
+                    if request.reply.is_closed() || Instant::now() >= request.deadline {
+                        commissioning::finish(request, Err(ServiceError::Expired));
+                    } else {
+                        let snapshot = self.handle.snapshot().expect("service started");
+                        match commissioning::resolve(
+                            &snapshot,
+                            request.bus,
+                            request.expected,
+                            &request.context,
+                        ) {
+                            Ok(route) => hat.enqueue_commission(request, route),
+                            Err(error) => commissioning::finish(request, Err(error)),
+                        }
+                    }
+                }
                 Message::Discovery(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
                         let _ = request.reply.send(Err(ServiceError::Expired));
@@ -490,6 +664,9 @@ impl ProcessService for DaliService {
         self.update_snapshot(owner.model.clone(), Phase::Stopping);
         while let Ok(message) = self.receive.try_recv() {
             match message {
+                Message::Commission(request) => {
+                    commissioning::finish(request, Err(ServiceError::Closed))
+                }
                 Message::Discovery(request) => {
                     let _ = request.reply.send(Err(ServiceError::Closed));
                 }

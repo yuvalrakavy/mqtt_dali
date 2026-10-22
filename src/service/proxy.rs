@@ -19,6 +19,7 @@ impl DeviceDriver for DaliProxy {
     fn info(&self) -> DriverInfo {
         DriverInfo {
             commands: [
+                "assign_next_output",
                 "discover_address",
                 "rename",
                 "rename_bus",
@@ -65,6 +66,11 @@ impl DeviceDriver for DaliProxy {
                     .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
                 let change = parse(&snapshot, target, call)?;
                 match change {
+                    Operation::Assignment(p) => {
+                        commissioning::resolve(&snapshot, p.bus, p.expected_revision, context)
+                            .map(|_| ())
+                            .map_err(op_error)
+                    }
                     Operation::Metadata(change) => {
                         routing::admit(&snapshot, &change, context).map_err(op_error)
                     }
@@ -204,6 +210,22 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::Assignment(p) => {
+                let result = self
+                    .handle
+                    .assign(
+                        p.bus,
+                        p.expected_revision,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(18),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
             Operation::Metadata(change) => change,
             Operation::Discovery(p) => {
                 let result = self
@@ -518,7 +540,14 @@ fn decode<T: serde::de::DeserializeOwned>(call: &CommandCall) -> Result<T, OpErr
     serde_json::from_value(Value::Object(call.params.clone()))
         .map_err(|e| OpError::Rejected(e.to_string()))
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Assignment {
+    bus: u8,
+    expected_revision: u64,
+}
 enum Operation {
+    Assignment(Assignment),
     Metadata(Change),
     Discovery(Discovery),
 }
@@ -541,6 +570,14 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if call.command == "assign_next_output" {
+        if target.is_some() {
+            return Err(OpError::Rejected(
+                "assignment requires controller target".into(),
+            ));
+        }
+        return decode(call).map(Operation::Assignment);
+    }
     if call.command == "discover_address" {
         if target.is_some() {
             return Err(OpError::Rejected(

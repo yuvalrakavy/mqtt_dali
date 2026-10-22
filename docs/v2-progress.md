@@ -5,6 +5,51 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5b — one unaddressed output assignment
+
+`assign_next_output` searches only unaddressed outputs, skips saved/missing and
+physically occupied addresses, commits a fresh named reservation before PROGRAM,
+then verifies its programmed short address and fresh status. Search/save/program
+retain one permit. The continuation uses the original captured physical stamp
+and a fresh private target generation while the MQTT reply retains its original
+token/trace. Physical failure after confirmed reservation returns structured
+reserved_but_unconfirmed; disk/CAS uncertainty retains existing freeze/recover.
+No current light values or automatic retry/resume are invented.
+
+The daemon exposes existing RepeatPolicy through
+`--uart-repeat-terminals unverified|1|2`, default unchanged. Unknown profiles
+refuse commissioning before the sequence; both explicit counts are tested with
+independent literal peers. Hardware profiles remain unverified. Cleanup stays
+within active helpers; an abandoned between-phase initialization uses its standard
+timer or the next initial Terminate, without a cleanup job or UART journal.
+
+Both sequential design gates approved after clarifying structured partial
+outcomes and narrowing cleanup to the executor that can perform it. The first
+MQTT test failed with unknown command before production changes. The implemented
+test assigns a third unaddressed fixture to free address 2 while preserving
+physical 0/1, input 0, existing names/groups and one original-context reply.
+Local tests also cover the full search boundaries, both terminal counts,
+exact/range collision distinctions and invalid replies, saved/physical capacity,
+strict admission and CLI arguments, deadline/cancellation/native events,
+save failure/recovery and save-time bus cycles, programming shutdown, failed
+post-write queries and independent-consumer continuity after reopening the saved
+reservation. A CLI fixture reused retained inventory as a startup signal;
+fresh private brokers per accepted launch fixed that test race.
+All **8 new mutation controls** and **2 affected metadata controls** fail at
+their declared behavioral assertions. Logs are
+`/tmp/dali-commissioning-controls.log` and
+`/tmp/dali-commissioning-affected-controls.log`. Restored checks and frozen
+source-review evidence follow before this slice closes. The initial restored
+run passed 427 tests and failed only its wait checker: an internal `send`
+wrapper collided with the checker's channel-send method name. Renaming it to
+`exchange` preserves execution and the existing tagged leaf transaction wait;
+the corrected acceptance run is in `/tmp/dali-commissioning-final-gate`.
+
+Input addressing, full reassign/restore, identification controls, group/scene
+workflows and the protected browser UI remain unfinished. See
+[operator/API guide](commissioning.md) and the
+[slice design](superpowers/specs/2026-10-22-dali-v2-p5-unaddressed-output.md).
+
 ## P5a — addressed discovery
 
 One bounded `discover_address` operation probes an output or input module and
@@ -1125,7 +1170,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed output/input discovery and default-name adoption implemented | Unaddressed/reassign/restore, identification, group/scene workflows |
+| P5 commissioning | Addressed discovery/default adoption and one unaddressed output assignment implemented | Input assignment, full reassign/restore, identification, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

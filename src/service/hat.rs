@@ -666,6 +666,41 @@ impl Hat {
                 observed_bus,
             })
     }
+    pub(super) fn enqueue_commission(
+        &mut self,
+        request: super::commissioning::Request,
+        route: super::commissioning::Route,
+    ) {
+        if self
+            .settings
+            .as_ref()
+            .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
+        {
+            super::commissioning::finish(
+                request,
+                Err(ServiceError::Rejected(
+                    "commissioning requires --uart-repeat-terminals 1 or 2 for a known HAT profile"
+                        .into(),
+                )),
+            );
+            return;
+        }
+        self.enqueue_physical(physical::Work::Commission(request, route));
+    }
+    pub(super) fn evidence_current(&self, bus: u8, stamp: output::Stamp) -> bool {
+        self.stamp(bus) == Some(stamp)
+            && !self.closing
+            && !self.needs_quiet
+            && !self.reset
+            && self
+                .session
+                .as_ref()
+                .is_some_and(|s| s.link.status() == SessionState::Ready)
+            && self
+                .observations
+                .iter()
+                .any(|b| b.bus == bus && b.status == 2)
+    }
     pub(super) fn enqueue_discovery(
         &mut self,
         request: super::discovery::Request,
@@ -707,6 +742,15 @@ impl Hat {
             ));
             return;
         };
+        if work
+            .required_stamp()
+            .is_some_and(|expected| expected != stamp)
+        {
+            work.reject(ServiceError::Rejected(
+                "commissioning candidate physical epoch changed".into(),
+            ));
+            return;
+        }
         self.physical = Some(physical::Active {
             work,
             stamp,

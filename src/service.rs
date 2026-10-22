@@ -10,6 +10,7 @@ use tokio::{
     time::{timeout_at, Instant},
 };
 
+pub mod commissioning;
 pub mod discovery;
 mod hat;
 pub mod input;
@@ -182,6 +183,7 @@ type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations)
 #[cfg(test)]
 type OutputAcceptanceHook = Arc<dyn Fn(&mut hat::Hat) + Send + Sync>;
 enum Message {
+    Commission(commissioning::Request),
     Discovery(discovery::Request),
     Output(output::Request),
     Input(input::readback::Request),

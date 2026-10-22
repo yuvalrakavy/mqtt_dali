@@ -28,6 +28,10 @@ pub fn run() -> ExitCode {
             "UART/PTY path (default /dev/serial0; none disables hardware)",
         ),
         (
+            "uart-repeat-terminals",
+            "known repeated-command completion profile: unverified, 1 or 2 (default unverified)",
+        ),
+        (
             "uart-quiet-ms",
             "quiet recovery interval, 1..5000 ms (default 250)",
         ),
@@ -57,7 +61,14 @@ pub fn run() -> ExitCode {
                 return Err(Problem::Usage(format!("--{option} must not be empty")));
             }
         }
-        uart_quiet(settings.options.get("uart-quiet-ms").map(String::as_str)).map(|_| ())
+        uart_quiet(settings.options.get("uart-quiet-ms").map(String::as_str))?;
+        uart_repeat(
+            settings
+                .options
+                .get("uart-repeat-terminals")
+                .map(String::as_str),
+        )
+        .map(|_| ())
     });
     if let Err(problem) = parsed {
         let usage=format!("{}\nOffline: --check-config [--config <file>] [--legacy-config <file>] [--name <controller>]\n",config::usage("mqtt_dali","DALI",&declared));
@@ -94,7 +105,10 @@ pub fn run() -> ExitCode {
     let (mut service, _handle) = DaliService::new(paths, instance);
     let uart = bridge.value("uart").unwrap_or("/dev/serial0");
     if uart != "none" {
-        service = service.with_uart(uart, RepeatPolicy::Unverified);
+        service = service.with_uart(
+            uart,
+            uart_repeat(bridge.value("uart-repeat-terminals")).expect("validated repeat profile"),
+        );
         service = service
             .with_uart_quiet_period(
                 uart_quiet(bridge.value("uart-quiet-ms")).expect("validated quiet interval"),
@@ -105,6 +119,16 @@ pub fn run() -> ExitCode {
     bridge.run_managed(service)
 }
 
+fn uart_repeat(value: Option<&str>) -> Result<RepeatPolicy, Problem> {
+    match value.unwrap_or("unverified") {
+        "unverified" => Ok(RepeatPolicy::Unverified),
+        "1" => Ok(RepeatPolicy::OneTerminal),
+        "2" => Ok(RepeatPolicy::TwoTerminals),
+        _ => Err(Problem::Usage(
+            "--uart-repeat-terminals must be unverified, 1 or 2".into(),
+        )),
+    }
+}
 fn uart_quiet(value: Option<&str>) -> Result<std::time::Duration, Problem> {
     value
         .unwrap_or("250")

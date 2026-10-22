@@ -1,0 +1,76 @@
+[[control]]
+name = "search_excludes_random_address_zero"
+file = "src/service/commissioning.rs"
+anchor = "let (mut low, mut high) = (0u32, 0xffffffu32);"
+replacement = "let (mut low, mut high) = (1u32, 0xffffffu32);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_literal_search)"]
+expect_text = "inclusive search missed a valid boundary"
+
+[[control]]
+name = "search_programs_before_durable_reservation"
+file = "src/service/commissioning.rs"
+anchor = "Ok(Step::Found { address, random })"
+replacement = "self.command(frames::program(gear::ShortAddress::new(address).unwrap()),false).await?;\n        Ok(Step::Found { address, random })"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_bus_epoch_change)"]
+expect_text = "PROGRAM preceded durable reservation"
+
+[[control]]
+name = "exact_collision_is_treated_as_one_selected_fixture"
+file = "src/service/commissioning.rs"
+anchor = "BusReply::ReceiveCollision(_) if !exact => Ok(true),"
+replacement = "BusReply::ReceiveCollision(_) => Ok(true),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_exact_random_collision)"]
+expect_text = "ambiguous exact random selection was programmed"
+
+[[control]]
+name = "assignment_skips_fresh_status_confirmation"
+file = "src/service/commissioning.rs"
+anchor = '''        if !matches!(
+            self.query(address.query(gear::Query::Status)).await?,
+            BusReply::Value(_)
+        ) {'''
+replacement = "        if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_failed_post_program_query)"]
+expect_text = "failed verification claimed assignment success or lost the reservation result"
+
+[[control]]
+name = "confirmed_reservation_failure_claims_assigned"
+file = "src/service/commissioning.rs"
+anchor = "AssignmentOutcome::ReservedButUnconfirmed,"
+replacement = "AssignmentOutcome::Assigned,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_failed_post_program_query)"]
+expect_text = "failed verification claimed assignment success or lost the reservation result"
+
+[[control]]
+name = "reservation_releases_shared_permit_before_programming"
+file = "src/service/owner.rs"
+anchor = 'let name = discovery::unused_name("Light", saved.outputs.iter().map(|o| o.name.as_str()));'
+replacement = '''let name = discovery::unused_name("Light", saved.outputs.iter().map(|o| o.name.as_str()));
+        let fake=Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap();
+        drop(std::mem::replace(&mut request._permit,fake));'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_bus_epoch_change)"]
+expect_text = "reservation released the physical permit before programming handoff"
+
+[[control]]
+name = "commissioning_original_mqtt_reply_is_retired"
+file = "src/service/owner.rs"
+anchor = "reporter.replace_generations_for_command(&self.table, next.clone(), completion)"
+replacement = "reporter.replace_generations(&self.table, next.clone())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_mqtt_assigns)"]
+expect_text = "new unaddressed output was not assigned"
+
+[[control]]
+name = "unknown_repeat_profile_begins_addressing_sequence"
+file = "src/service/hat.rs"
+anchor = ".is_none_or(|s| s.repeat == RepeatPolicy::Unverified)"
+replacement = ".is_none_or(|_| false)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_unverified_profile)"]
+expect_text = "unverified commissioning started an addressing sequence"

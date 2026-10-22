@@ -6,6 +6,7 @@ use mqtt_test_broker::{FakeBroker, SendOptions};
 use serde_json::json;
 use std::time::Duration;
 mod colour;
+mod commissioning;
 mod discovery;
 
 async fn refresh(broker: &FakeBroker, topic: &str) -> Value {

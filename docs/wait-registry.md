@@ -28,6 +28,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `v2-commissioning-randomise` | bounded | DALI random-address generation timer | Wait 100 ms under the original search deadline. On expiry reject the search without reserving/programming a short address; retain physical ownership through settlement. Temporary initialization mode may expire or be terminated by the next operation. |
 | `v2-service-request` | bounded | capacity-one service operation reply | Nonwaiting permit and bounded channel admission; the caller supplies an absolute deadline. On expiry report uncertainty for mutations or reject an input read, and drop the reply receiver. Keep routing frozen if saving began; physical jobs retain service admission until their backend request settles or actual transport teardown completes under its fixed cleanup ceiling. |
 | `v2-service-attach` | bounded | inventory actor installing its first runtime Reporter | At most 2 s, independently of MQTT and UART. On expiry fail proxy connect; reconnect attachment is idempotent and cannot reopen uncertain routing. |
 | `v2-mqtt-observations` | acyclic | the managed service's snapshot watch | The service never waits for this subscriber or Reporter publication. The helper owns data only and runs on the device worker; clone the latest snapshot before synchronous projection, then await its next change. Link teardown cancels the owned helper; terminal service state or sender loss ends it and marks the link lost. |
@@ -108,7 +109,7 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, commission, search, program
 ```
 
 ## Waiters (generated)
@@ -188,6 +189,7 @@ mqtt-pump-queue src/mqtt.rs MqttDali::run_session
 mqtt-reconnect-delay src/mqtt.rs MqttDali::run
 mqtt-request src/mqtt.rs MqttDali::run_session
 mqtt-request src/mqtt.rs publish_with_trace
+v2-commissioning-randomise src/service/commissioning.rs Bus::search
 v2-config-check src/config_check.rs run
 v2-config-output src/config_check.rs output
 v2-daemon-run src/daemon.rs run
@@ -204,10 +206,12 @@ v2-physical-operation src/service/hat.rs Hat::advance_physical
 v2-service-attach src/service.rs ServiceHandle::attach
 v2-service-loop src/service/owner.rs <DaliService as ProcessService>::run
 v2-service-request src/service.rs ServiceHandle::submit
+v2-service-request src/service/commissioning.rs ServiceHandle::assign
 v2-service-request src/service/discovery.rs ServiceHandle::discover
 v2-service-request src/service/input/readback.rs ServiceHandle::read_input
 v2-service-request src/service/output.rs ServiceHandle::output
 v2-service-save src/service/owner.rs Owner::change
+v2-service-save src/service/owner.rs Owner::commission
 v2-service-save src/service/owner.rs Owner::discover
 v2-service-start src/service/owner.rs <DaliService as ProcessService>::run
 v2-store-close src/config_store.rs ConfigStore::close

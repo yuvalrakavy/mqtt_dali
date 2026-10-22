@@ -214,6 +214,18 @@ clear old merged data. Preserve full bytes/hex, strip low padding and never
 truncate to u64, treat FF as MASK or fabricate actions/units. See
 `docs/v2-input-readback-controls.toml`; physical input validation remains pending.
 
+One unaddressed output can now be assigned per `assign_next_output` request; see
+`docs/commissioning.md`. Search/save/program are concrete owned phases retaining
+the same permit and captured search stamp. A fresh default-named reservation
+commits before PROGRAM and is not removed on physical failure/cancel. Confirmed
+reservation failures return structured reserved_but_unconfirmed; disk/CAS
+uncertainty retains existing freeze/recover and never auto-programs. No fake
+fixture State or UART journal. `--uart-repeat-terminals unverified|1|2` exposes
+the existing policy, default unchanged; unknown profiles refuse the sequence
+before starting. The independent emulator and literal peers test both counts;
+neither proves physical HAT behavior. Fault controls are in
+`docs/v2-commissioning-controls.toml`.
+
 ## Architecture (legacy)
 
 ### Module Dependency Flow

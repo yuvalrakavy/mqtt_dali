@@ -170,6 +170,44 @@ async fn uart_quiet_option_rejects_invalid_intervals_before_starting_resources()
 }
 
 #[tokio::test]
+async fn repeat_profile_option_rejects_unknown_values_before_starting_resources() {
+    let broker = FakeBroker::start().await;
+    for value in ["0", "3", "auto", "one", "1.0"] {
+        let fixture = Fixture::new();
+        let mut command = fixture.command(&broker);
+        command
+            .args(["--uart-repeat-terminals", value])
+            .stderr(Stdio::piped());
+        let output = timeout(Duration::from_secs(4), command.output())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&output.stderr)
+            .contains("--uart-repeat-terminals must be unverified, 1 or 2"));
+        assert!(
+            !fixture.0.join("dali.v2.json").exists(),
+            "invalid repeat profile started resource ownership"
+        );
+        assert!(!fixture.0.join("logs").exists());
+    }
+    for value in ["unverified", "1", "2"] {
+        let broker = FakeBroker::start().await;
+        let fixture = Fixture::new();
+        let mut command = fixture.command(&broker);
+        command.args(["--uart-repeat-terminals", value]);
+        let mut child = command.spawn().unwrap();
+        inventory(&broker).await;
+        let status = stop(&mut child).await;
+        assert!(
+            status.success(),
+            "accepted repeat profile {value} failed: {status}; {}",
+            fixture.log()
+        );
+    }
+}
+
+#[tokio::test]
 async fn canonical_daemon_imports_v1_and_serves_bridgekit_inventory_without_legacy_topics() {
     let fixture = Fixture::new();
     let broker = FakeBroker::start().await;
