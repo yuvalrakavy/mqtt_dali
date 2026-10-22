@@ -53,7 +53,7 @@ try {
   await writeFile(join(artifacts,'fail-next-save'),'1');await named('Hall').fill('HallNew');await named('Hall').press('Enter');await row('Hall').getByRole('alert').waitFor();
   assert.equal(await named('Hall').inputValue(),'HallNew','failed save lost the draft');assert.ok(await page.getByRole('button',{name:'Stop blink Hall',exact:true}).isVisible(),'failed save stopped identification');
   await page.getByRole('button',{name:'Save name Hall',exact:true}).click();await named('HallNew').waitFor();
-  await page.getByRole('button',{name:'Light*',exact:true}).click();assert.equal(await page.locator('.output-grid.device-row').count(),0,'Light* filter did not hide renamed fixtures');await page.getByRole('button',{name:'All',exact:true}).click();
+  await page.getByRole('button',{name:'Light*',exact:true}).click();await until(async()=>await page.locator('.output-grid.device-row').count()===0,'Light* filter did not hide renamed fixtures');await page.getByRole('button',{name:'All',exact:true}).click();
   // Native input activity updates an existing row without replacing its dirty name.
   const input=page.locator('.input-grid.device-row').filter({hasText:'Part 301'}).first(),inputName=input.getByRole('textbox');await inputName.fill('DoorButton');await control({op:'input_event',bus:0,frame:0x008001});await until(async()=>await input.innerText().then(t=>t.includes('Pressed')),'native input state did not reach browser');assert.equal(await inputName.inputValue(),'DoorButton','native activity replaced the dirty draft');await inputName.press('Enter');await named('DoorButton').waitFor();
   // On/off and committed slider changes affect the independent physical model.

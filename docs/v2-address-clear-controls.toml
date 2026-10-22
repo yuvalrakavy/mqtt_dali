@@ -37,7 +37,7 @@ expect_text = "individual clear changed other native settings or fixtures"
 [[control]]
 name = "individual_clear_unknown_profile_admitted"
 file = "src/service/owner.rs"
-anchor = "matches!(route.plan, restoration::Plan::Unique | restoration::Plan::Clear),"
+anchor = "matches!(\n                                route.plan,\n                                restoration::Plan::Unique | restoration::Plan::Clear\n                            ),"
 replacement = "matches!(route.plan, restoration::Plan::Unique),"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(individual_clear_refuses)"]

@@ -19,6 +19,10 @@ must stop and restore successfully first; another Blink claim refuses clearing.
 The dialog freezes root, row identity/generation, connection epoch and lifetime,
 using the existing Restoration scope. Navigation/closure permanently cancels
 later submissions. No automatic rediscovery or restoration follows clearing.
+Explicit Cancel/Close handlers revoke synchronously before changing state;
+`useLayoutEffect` cleanup revokes on unmount. Passive effects cannot provide this
+guarantee. The browser regression holds a completed Stop admission, pauses passive
+timers/animation frames and exercises real Cancel, Close and route navigation.
 
 ## API and native behavior
 

@@ -121,18 +121,18 @@
   },
   "individual_clear_unknown_profile_admitted": {
    "last_real": {
-    "at": "2026-10-22T21:55:56Z",
+    "at": "2026-10-22T22:05:12Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
      "guard": "item:1ee1d4235a29ef11",
-     "row": "deb934fe708dbaab",
+     "row": "bf6fadcfaeece88f",
      "test": null
     },
     "path": "command",
-    "secs": 18.2,
-    "sha": "f2bcb4d2e7c3c06030f50103686d2a3d3b4e3516",
+    "secs": 10.8,
+    "sha": "aeac07384d6d241c0eb7862c5971f9a9a6997457",
     "verdict": "RED"
    }
   }
