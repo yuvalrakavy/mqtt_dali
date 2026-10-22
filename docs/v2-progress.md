@@ -31,7 +31,12 @@ The restored gate passes **444/444 native tests** across 11 binaries with four
 test processes, scoped strict Clippy, Pi library/all four binary compilation,
 doctests (none defined), changed-file rustfmt, wait registry and whitespace.
 Logs are `/tmp/dali-removal-controls.log`, `/tmp/dali-removal-affected-gate` and
-`/tmp/dali-removal-restored-gate`. Source gates follow before this slice closes.
+`/tmp/dali-removal-restored-gate`. Both sequential read-only source gates approve
+frozen `cc2b986` against `ff75fca`, with no material findings. Reviewers performed
+no tests or mutations. Same-family review and absent physical I4/fixture evidence
+remain explicit limits. Review learning: expose existing reducers through thin
+entry points, and prove target deletion preserves the original command completion
+while retiring every other use of that lifetime.
 
 See [operator/API guide](remove-from-list.md),
 [design](superpowers/specs/2026-10-22-dali-v2-p5-remove-from-list.md) and
