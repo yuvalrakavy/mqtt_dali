@@ -65,7 +65,7 @@ export class Client {
       if(session!==this.session||this.stopped)throw new Error('Session ended; inspect the job before retrying.');
       let job=this.views.jobBook.find(j=>j.id===id);
       // HTTP result lookup belongs only to this waiter, never to streamed views.
-      if(!job||job.status==='running')job=await this.request(`/api/jobs/${id}`);
+      if(!job||job.status==='running'||(job.status==='succeeded'&&job.result==null))job=await this.request(`/api/jobs/${id}`);
       if(job?.status==='succeeded')return job.result;
       if(job?.status==='failed')throw new Error(job.error?.message??'Operation failed. Inspect current state before retrying.');
       await this.pause(50);

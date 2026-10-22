@@ -55,6 +55,10 @@ impl DeviceDriver for DaliProxy {
                 "capture_scene_row",
                 CommandClass::Read,
             )))
+            .chain(std::iter::once(CommandSpec::new(
+                "read_scene_settings",
+                CommandClass::Read,
+            )))
             .collect(),
             timing: Timing {
                 operation: Duration::from_secs(20),
@@ -215,6 +219,18 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::SavedScene = change {
+            return serde_json::to_value(
+                scene_settings::view::read(
+                    &snapshot,
+                    target.ok_or_else(|| OpError::Rejected("named scene required".into()))?,
+                    context,
+                )
+                .map_err(op_error)?,
+            )
+            .map(Some)
+            .map_err(|e| OpError::Unusable(e.to_string()));
+        }
         if let Operation::SceneSettings(action) = &change {
             if !action.writing() {
                 let result = self
@@ -308,6 +324,9 @@ impl DeviceDriver for DaliProxy {
             }
             Operation::Scenes(_) => {
                 unreachable!("scene operations dispatched before metadata completion")
+            }
+            Operation::SavedScene => {
+                unreachable!("saved scene dispatched before metadata completion")
             }
             Operation::Identify(_) => {
                 unreachable!("identification dispatched before metadata completion")
@@ -663,6 +682,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    SavedScene,
     SceneSettings(scene_settings::Action),
     Scenes(scenes::Action),
     Identify(bool),
@@ -679,6 +699,12 @@ impl Operation {
         context: &RequestContext,
     ) -> Result<(), ServiceError> {
         match self {
+            Self::SavedScene => scene_settings::view::read(
+                snapshot,
+                target.ok_or_else(|| ServiceError::Rejected("named scene required".into()))?,
+                context,
+            )
+            .map(|_| ()),
             Self::SceneSettings(action) => scene_settings::resolve(
                 snapshot,
                 target.ok_or_else(|| {
@@ -753,7 +779,7 @@ impl Operation {
                 }
             }
             Self::Identify(_) => 4,
-            Self::Metadata(_) | Self::Groups(groups::Action::Read, _) => 2,
+            Self::SavedScene | Self::Metadata(_) | Self::Groups(groups::Action::Read, _) => 2,
             Self::Discovery(_) => 10,
             Self::Groups(_, _) | Self::Assignment(_, _) => 18,
         })
@@ -976,6 +1002,13 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::SavedScene => value(scene_settings::view::read(
+                &handle.snapshot().ok_or(ServiceError::Closed)?,
+                target
+                    .as_deref()
+                    .ok_or_else(|| ServiceError::Rejected("named scene required".into()))?,
+                &context,
+            )?),
             Operation::SceneSettings(action) => value(
                 handle
                     .scene_setting(
@@ -1126,6 +1159,14 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if call.command == "read_scene_settings" {
+        if target.is_none() || !call.params.is_empty() {
+            return Err(OpError::Rejected(
+                "saved scene read requires a scene target and no parameters".into(),
+            ));
+        }
+        return Ok(Operation::SavedScene);
+    }
     if matches!(
         call.command.as_str(),
         "set_scene_row" | "adopt_scene_row" | "repair_scene_row" | "capture_scene_row"

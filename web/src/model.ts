@@ -1,11 +1,15 @@
-export interface Projection { target:string; binding_revision:number; location:{kind:string;bus:number;short_address?:number;group_address?:number;instance?:number}; members?:unknown[] }
+export interface Projection { target:string; binding_revision:number; location:{kind:string;bus:number;short_address?:number;group_address?:number;instance?:number;slot?:number}; members?:unknown[] }
 export interface Ledger { baseline:Projection[]; batches:{revision:number;transitions:{from?:Projection|null;to?:Projection|null}[]}[] }
-export interface Item { name:string;target:string;binding_revision:number;short_address:number;description?:string;color_representation?:string;number?:number;instance_type?:number;instances?:Item[];group_address?:number;members?:number[] }
-export interface Bus {bus:number;name:string;enabled:boolean;outputs:Item[];inputs?:Item[];groups?:Item[]}
+export interface IdentityItem { name:string;target:string;binding_revision:number;description?:string }
+export interface Item extends IdentityItem { short_address:number;color_representation?:string;number?:number;instance_type?:number;instances?:Item[];group_address?:number;members?:number[] }
+export interface SceneItem extends IdentityItem { slot:number }
+export interface Bus {bus:number;name:string;enabled:boolean;outputs:Item[];inputs?:Item[];groups?:Item[];scenes?:SceneItem[]}
 export interface Inventory {inventory_epoch:string;revision:number;name:string;description?:string;buses:Bus[];identity_ledger:Ledger}
 export interface Snapshot {identity:{controller:string;version:string;build_utc:string};phase:string;hardware:{state:string;buses?:{bus:number;status:number}[]};inventory:Inventory;states:{target:string;generation:string;values:Record<string,unknown>}[];identification?:{target:string;generation:string;phase:string;actual_level:number|null}|null}
 export interface Job {id:string;status:string;command?:string;target?:string|null;result?:any;error?:{code?:string;message?:string}|null}
-export interface Row {key:string;kind:'output'|'input'|'instance'|'group';bus:Bus;item:Item;parent?:Item;generation:string}
+export interface PhysicalRow {key:string;kind:'output'|'input'|'instance'|'group';bus:Bus;item:Item;parent?:Item;generation:string}
+export interface SceneRow {key:string;kind:'scene';bus:Bus;item:SceneItem;generation:string}
+export type Row=PhysicalRow|SceneRow;
 
 export function itemGeneration(epoch:string,revision:number):string {
   if (!/^[a-f0-9]{32}$/.test(epoch)||!Number.isSafeInteger(revision)||revision<1) throw new Error('Invalid inventory authority; refresh the controller.');
@@ -37,12 +41,13 @@ export function rows(snapshot:Snapshot):Row[] {
   const origins=rowOrigins(inventory.identity_ledger,inventory.inventory_epoch);
   const result:Row[]=[];
   for(const bus of inventory.buses) {
-    const add=(kind:Row['kind'],item:Item,parent?:Item)=>{
+    const add=(kind:PhysicalRow['kind'],item:Item,parent?:Item)=>{
       const key=origins.get(item.target);if(!key)throw new Error('Saved device has no identity history');
       result.push({key,kind,bus,item,parent,generation:itemGeneration(inventory.inventory_epoch,item.binding_revision)});
     };
     for(const item of bus.outputs)add('output',item);
     for(const item of bus.groups??[])add('group',item);
+    for(const item of bus.scenes??[]){const key=origins.get(item.target);if(!key)throw new Error('Saved scene has no identity history');result.push({key,kind:'scene',bus,item,generation:itemGeneration(inventory.inventory_epoch,item.binding_revision)});}
     for(const item of bus.inputs??[]){add('input',item);for(const instance of item.instances??[])add('instance',instance,item);}
   }
   return result;

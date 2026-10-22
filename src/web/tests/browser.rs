@@ -16,8 +16,8 @@ async fn browser_functional_phone_and_desktop() {
     fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
     let emulator=pty::spawn(serde_json::from_value(json!({"version":1,"buses":[{"number":0,"outputs":[
         {"id":"white","short_address":0,"level":91,"groups":8,"device_type":8,"colour":{"active":"temperature","temperature":{"value":300,"coolest":200,"warmest":500,"physical_coolest":150,"physical_warmest":550}}},
-        {"id":"plain","short_address":1,"level":120},
-        {"id":"new","short_address":null,"level":0,"groups":4}
+        {"id":"plain","short_address":1,"level":120,"scenes":[255,42,255,255,255,255,255,255,255,255,255,255,255,255,255,255]},
+        {"id":"new","short_address":null,"level":0,"groups":4,"device_type":8,"colour":{"active":"rgbwaf","xy":[10000,20000],"rgbwaf":[80,90,100,110]}}
     ],"inputs":[{"id":"buttons","short_address":0,"instances":[1,1,2,4],"values":[{"instance":0,"resolution":1,"bytes":[0]},{"instance":1,"resolution":1,"bytes":[0]},{"instance":2,"resolution":12,"bytes":[255,255]},{"instance":3,"resolution":64,"bytes":[254,220,186,152,118,84,50,16]}]}]}]})).unwrap()).await.unwrap();
     let socket = path.join("control.sock");
     let endpoint = Endpoint::bind(socket.clone()).await.unwrap();

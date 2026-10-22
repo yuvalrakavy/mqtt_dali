@@ -111,7 +111,7 @@ expect_text = "HTTP job leaked a private service error"
 [[control]]
 name = "web_jobs_ignore_encoded_result_bound"
 file = "src/web/jobs.rs"
-anchor = "bytes.len() <= RESULT_BYTES"
+anchor = "bytes.len() <= limit"
 replacement = "bytes.len() <= usize::MAX"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_results_preserve)"]

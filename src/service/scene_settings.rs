@@ -16,6 +16,7 @@ use crate::{
 };
 use serde::Serialize;
 pub(super) mod execute;
+pub(super) mod view;
 use scenes::settings_value::{self, Comparison};
 
 #[derive(Debug, Clone, PartialEq, Eq)]

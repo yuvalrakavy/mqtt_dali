@@ -1,5 +1,6 @@
 use super::*;
 mod observations;
+mod scene_saved_view;
 mod scene_settings;
 mod scenes;
 use crate::config_store::test_hooks::{Hooks, Stage, Step};

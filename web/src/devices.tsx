@@ -1,9 +1,9 @@
 import { useState } from 'preact/hooks';
-import { busReady, glob, inputType, inputDisplay, values, type Bus, type Row } from './model.ts';
+import { busReady, glob, inputType, inputDisplay, values, type Bus, type PhysicalRow as Row } from './model.ts';
 import { Modal, NameField, Progress, useUi } from './ui.tsx';
 
 function Colour({row,close}:{row:Row;close:()=>void}){
-  const ui=useUi(),current=ui.current(row.key),state=values(ui.snapshot,current);
+  const ui=useUi(),current=ui.physical(row.key),state=values(ui.snapshot,current);
   const representation=current.item.color_representation??'';
   const capabilities=state.ColorCapabilities as {supported_representations?:string[]|null;rgbwaf_channel_count?:number|null;temperature_limits?:{coolest_kelvin?:number|null;warmest_kelvin?:number|null}|null}|null;
   const supported=capabilities?.supported_representations,limits=capabilities?.temperature_limits;
@@ -20,7 +20,7 @@ function Colour({row,close}:{row:Row;close:()=>void}){
     <p class="hint">{state.ColorQuality===undefined?'Read the fixture to discover colour support.':`Colour status: ${state.ColorQuality}`}</p><div class="dialog-actions"><button disabled={!!ui.busy} onClick={()=>void ui.run(()=>ui.read(current))}>Read values</button><button class="primary" disabled={!!ui.busy||!fields.length} onClick={apply}>Apply colour</button></div></Modal>;
 }
 function FixtureGroups({row,close}:{row:Row;close:()=>void}){
-  const ui=useUi(),current=ui.current(row.key);
+  const ui=useUi(),current=ui.physical(row.key);
   return <Modal title={`Groups · ${current.item.name}`} close={close}><p class="hint">Saved membership. Verify groups to compare with hardware.</p><div class="checklist">{(current.bus.groups??[]).map(group=><label key={group.group_address}><input type="checkbox" checked={group.members?.includes(current.item.short_address)??false} disabled={!!ui.busy} onChange={e=>{const checked=e.currentTarget.checked;void ui.run(()=>ui.group(current,group.group_address!,checked));}}/>{group.name} <span class="hint">{group.group_address}</span></label>)}{!current.bus.groups?.length&&<p>No groups are saved. Open the Groups tab to create one.</p>}</div></Modal>;
 }
 function DeviceRow({row}:{row:Row}){
@@ -48,7 +48,7 @@ function DeviceRow({row}:{row:Row}){
 }
 export function Devices({bus}:{bus:Bus}){
   const ui=useUi(),[filter,setFilter]=useState('');
-  const all=ui.currentRows.filter(r=>r.bus.bus===bus.bus);
+  const all=ui.currentRows.filter((r):r is Row=>r.kind!=='scene'&&r.bus.bus===bus.bus);
   const visible=(row:Row)=>glob(filter,row.item.name)||!!ui.drafts.get(row.key)?.dirty||!!ui.drafts.get(row.key)?.error;
   const outputs=all.filter(r=>r.kind==='output'&&visible(r)),inputs=all.filter(r=>(r.kind==='input'||r.kind==='instance')&&visible(r));
   const ready=busReady(ui.snapshot,bus)&&ui.client.views.ready;

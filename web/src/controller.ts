@@ -13,6 +13,7 @@ export class Controller {
   get snapshot(){const value=this.client.snapshot;if(!value)throw new Error('Wait for the controller inventory.');return value;}
   get currentRows(){return rows(this.snapshot);}
   current(key:string){const row=this.currentRows.find(r=>r.key===key);if(!row)throw new Error('This fixture was removed or replaced.');return row;}
+  physical(key:string){const row=this.current(key);if(row.kind==='scene')throw new Error('A physical device is required.');return row;}
   async run(action:()=>Promise<void>){if(this.busy){this.error='Wait for the current operation to finish.';this.touch();return;}this.busy++;this.error='';this.notice='';this.touch();try{await action();}catch(error){this.error=(error as Error).message;}finally{this.busy--;this.touch();}}
   async changed(revision:number){return this.client.atRevision(revision);}
   async metadata(command:string,target:string|null,generation:string,params:Record<string,unknown>){

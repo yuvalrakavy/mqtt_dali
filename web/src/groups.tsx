@@ -1,11 +1,11 @@
 import { useState } from 'preact/hooks';
-import { busReady, glob, type Bus, type Row } from './model.ts';
+import { busReady, glob, type Bus, type Row, type PhysicalRow } from './model.ts';
 import { continuation } from './client.ts';
 import { Modal, NameField, Progress, useUi } from './ui.tsx';
 
 export function Groups({bus}:{bus:Bus}){
   const ui=useUi(),[slot,setSlot]=useState(0),[pattern,setPattern]=useState(''),[mode,setMode]=useState('add'),[preview,setPreview]=useState<any|null>(null),[reports,setReports]=useState<any[]|null>(null),[createName,setCreateName]=useState('');
-  const group=bus.groups?.find(g=>g.group_address===slot),outputs=ui.currentRows.filter(r=>r.kind==='output'&&r.bus.bus===bus.bus);
+  const group=bus.groups?.find(g=>g.group_address===slot),outputs=ui.currentRows.filter((r):r is PhysicalRow=>r.kind==='output'&&r.bus.bus===bus.bus);
   const groupRow=ui.currentRows.find(r=>r.kind==='group'&&r.bus.bus===bus.bus&&r.item.group_address===slot);
   const ready=busReady(ui.snapshot,bus)&&ui.client.views.ready;
   function previewPattern(){const changes=outputs.map(row=>({key:row.key,generation:row.generation,name:row.item.name,before:group?.members?.includes(row.item.short_address)??false,after:mode==='add'?(group?.members?.includes(row.item.short_address)??false)||glob(pattern,row.item.name):glob(pattern,row.item.name)})).filter(row=>row.before!==row.after);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { glob, rowOrigins, itemGeneration, inputDisplay, Draft, Views } from './model.ts';
+import { glob, rowOrigins, itemGeneration, inputDisplay, Draft, Views, rows } from './model.ts';
 test('query input display preserves full-resolution raw bits and does not invent sensor units',()=>{
   assert.equal(inputDisplay({InputValueRaw:'FEDCBA9876543210',ValueResolution:64}),'0xFEDCBA9876543210 / 64 bit','queried sensor value lost exact raw bits');
   assert.equal(inputDisplay({InputValueRaw:'0FFF',ValueResolution:12,Position:1}),'100% · 0x0FFF / 12 bit');
@@ -39,4 +39,11 @@ test('retired stream epochs cannot overwrite the current view',()=>{
   const views=new Views();const epoch=views.begin();views.snapshot(epoch,{value:'new'});views.jobs(epoch,[{id:'one',status:'succeeded'}]);
   const next=views.begin();views.snapshot(next,{value:'new session'});views.snapshot(epoch,{value:'old callback'});
   assert.deepEqual(views.value,{value:'new session'},'retired connection callback overwrote new stream state');
+});
+
+test('scene rows use ledger slot identity without an invented short address',()=>{
+  const epoch='0123456789abcdef0123456789abcdef',scene={name:'Evening',slot:3,target:'Bus.Scenes.Evening',binding_revision:1};
+  const initial:any={inventory:{inventory_epoch:epoch,revision:1,buses:[{bus:0,name:'Bus',enabled:true,outputs:[],scenes:[scene]}],identity_ledger:{baseline:[{target:scene.target,binding_revision:1,location:{kind:'scene',bus:0,slot:3}}],batches:[]}}};
+  const found=rows(initial).find(row=>row.kind==='scene');
+  assert.ok(found,'named scene missing from browser ledger rows');assert.equal(found.item.slot,3);assert.equal('short_address' in found.item,false);assert.equal(found.generation,`${epoch}.1`);
 });

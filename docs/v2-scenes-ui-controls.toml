@@ -1,0 +1,143 @@
+[[control]]
+name = "scene_view_retired_read_token"
+file = "src/service/scene_settings/view.rs"
+anchor = ".is_some_and(|supplied| supplied != generation)"
+replacement = ".is_some_and(|_| false)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_saved_view_rechecks_optional)"]
+expect_text = "saved view accepted retired supplied token"
+
+[[control]]
+name = "scene_view_frozen_routing"
+file = "src/service/scene_settings/view.rs"
+anchor = "if snapshot.phase != Phase::Ready {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_saved_view_rechecks_optional)"]
+expect_text = "saved view exposed frozen routing"
+
+[[control]]
+name = "scene_view_drops_outputs"
+file = "src/service/scene_settings/view.rs"
+anchor = "(output_bus == bus).then(|| Fixture {"
+replacement = "(output_bus == bus && short_address == 0).then(|| Fixture {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_saved_view_reads_private)"]
+expect_text = "saved view truncated configured outputs"
+
+[[control]]
+name = "scene_view_http_budget"
+file = "src/web/jobs.rs"
+anchor = "const SCENE_RESULT_BYTES: usize = 1024 * 1024;"
+replacement = "const SCENE_RESULT_BYTES: usize = RESULT_BYTES;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_saved_view_job_summaries)"]
+expect_text = "saved-view job lost bounded large reply"
+
+[[control]]
+name = "scene_view_summary_inflation"
+file = "src/web/jobs.rs"
+anchor = "result: None,\n                error: record.error.clone(),"
+replacement = "result: record.result.clone(),\n                error: record.error.clone(),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_saved_view_job_summaries)"]
+expect_text = "job summaries retained full results"
+
+[[control]]
+name = "scene_draft_clamps_untouched_codes"
+file = "web/src/scene-settings.ts"
+anchor = "if(!(field in this.fields))return prior;"
+replacement = "if(!(field in this.fields))return prior===null?null:Math.max(1,prior);"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene drafts preserve", "web/src/scene-settings.test.ts"]
+expect_text = "display roundtrip changed native scene values"
+
+[[control]]
+name = "scene_draft_duplicate_commit"
+file = "web/src/scene-settings.ts"
+anchor = "if(this.pending)return this.pending;"
+replacement = ""
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene row check", "web/src/scene-settings.test.ts"]
+expect_text = "scene blur/check duplicated a physical save"
+
+[[control]]
+name = "scene_view_incomplete_becomes_unmanaged"
+file = "web/src/scene-controller.ts"
+anchor = "if(found.size!==outputs.length)"
+replacement = "if(false)"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=saved scene replies require", "web/src/scene-settings.test.ts"]
+expect_text = "partial/stale saved scene became unmanaged data"
+
+[[control]]
+name = "scene_batch_external_revision"
+file = "web/src/scene-controller.ts"
+anchor = "after.revision!==this.revision||"
+replacement = ""
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene batch freezes", "web/src/scene-settings.test.ts"]
+expect_text = "external edit was silently rebased"
+
+[[control]]
+name = "scene_batch_retired_epoch"
+file = "web/src/scene-controller.ts"
+anchor = "hardware&&this.ui.cancelled||this.ui.signingOut||this.epoch!==this.ui.client.views.epoch"
+replacement = "hardware&&this.ui.cancelled||this.ui.signingOut||false"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=retired scene scope refuses", "web/src/scene-settings.test.ts"]
+expect_text = "retired scene scope submitted work"
+
+[[control]]
+name = "scene_batch_retired_lifetime"
+file = "web/src/scene-controller.ts"
+anchor = "this.cancelled||hardware&&this.ui.cancelled"
+replacement = "false||hardware&&this.ui.cancelled"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=retired scene scope refuses", "web/src/scene-settings.test.ts"]
+expect_text = "retired scene scope submitted work"
+
+[[control]]
+name = "scene_batch_mutable_review"
+file = "web/src/scene-controller.ts"
+anchor = "freezeChanges(changes:Change[]):Change[]{return structuredClone(changes);}"
+replacement = "freezeChanges(changes:Change[]):Change[]{return changes;}"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene batch freezes", "web/src/scene-settings.test.ts"]
+expect_text = "copy/capture candidate changed after review"
+
+[[control]]
+name = "scene_partial_native_adoption"
+file = "web/src/scene-settings.ts"
+anchor = "if(!stored||stored.quality!=='complete'||stored.stale)return null;"
+replacement = "if(!stored||stored.stale)return null;"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene adoption candidates", "web/src/scene-settings.test.ts"]
+expect_text = "partial native scene became an adoption candidate"
+
+[[control]]
+name = "scene_batch_unconfirmed_continues"
+file = "web/src/scene-controller.ts"
+anchor = "if(result.outcome!=='verified'&&result.outcome!=='adopted')throw"
+replacement = "if(false)throw"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=scene unconfirmed save", "web/src/scene-settings.test.ts"]
+expect_text = "unconfirmed scene continued programming later rows"
+
+[[control]]
+name = "scene_summary_missing_result_fetch"
+file = "web/src/client.ts"
+anchor = "||(job.status==='succeeded'&&job.result==null)"
+replacement = ""
+target = "command"
+argv = ["node", "--test", "--test-timeout=2500", "--test-name-pattern=a completed summary", "web/src/client.test.ts"]
+expect_text = "summary was mistaken for a complete command result"
+
+[[control]]
+name = "scene_creation_late_reply"
+file = "web/src/scenes.tsx"
+anchor = "if(s.cancelled||s.epoch!==ui.client.views.epoch)return;"
+replacement = "if(false)return;"
+target = "command"
+argv = ["bash", "-c", "npm --prefix web run build && cargo test --offline --target aarch64-apple-darwin --lib browser_functional_phone_and_desktop -- --ignored --nocapture"]
+expect_text = "late creation erased the next scene name draft"

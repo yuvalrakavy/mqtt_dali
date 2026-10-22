@@ -14,6 +14,7 @@ use tracing::Instrument;
 const ACTIVE: usize = 4;
 const HISTORY: usize = 32;
 const RESULT_BYTES: usize = 32 * 1024;
+const SCENE_RESULT_BYTES: usize = 1024 * 1024;
 
 #[derive(Clone, Serialize)]
 pub(super) struct Record {
@@ -63,7 +64,14 @@ impl Jobs {
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .iter()
-            .cloned()
+            .map(|record| Record {
+                id: record.id.clone(),
+                command: record.command.clone(),
+                target: record.target.clone(),
+                status: record.status,
+                result: None,
+                error: record.error.clone(),
+            })
             .collect()
     }
     pub(super) fn get(&self, id: &str) -> Option<Record> {
@@ -127,7 +135,11 @@ impl Jobs {
         // WAIT: web-jobs-book
         let mut records = self.records.lock().unwrap_or_else(|p| p.into_inner());
         if let Some(record) = records.iter_mut().find(|r| r.id == id) {
-            let (result, error) = public_result(result);
+            let (result, error) = if record.command == "read_scene_settings" {
+                public_result_with_budget(result, SCENE_RESULT_BYTES)
+            } else {
+                public_result(result)
+            };
             record.status = if error.is_none() {
                 "succeeded"
             } else {
@@ -142,6 +154,12 @@ impl Jobs {
     }
 }
 pub(super) fn public_result(result: Result<Value, ServiceError>) -> (Option<Value>, Option<Value>) {
+    public_result_with_budget(result, RESULT_BYTES)
+}
+fn public_result_with_budget(
+    result: Result<Value, ServiceError>,
+    limit: usize,
+) -> (Option<Value>, Option<Value>) {
     let code = match result {
         Ok(mut value) => {
             // Reports, revisions and accepted scalar states reach here. A
@@ -149,7 +167,7 @@ pub(super) fn public_result(result: Result<Value, ServiceError>) -> (Option<Valu
             if value.get("reason").is_some_and(|r| !r.is_null()) {
                 value["reason"] = json!("Operation was not fully confirmed; inspect configuration and hardware before retrying.");
             }
-            if serde_json::to_vec(&value).is_ok_and(|bytes| bytes.len() <= RESULT_BYTES) {
+            if serde_json::to_vec(&value).is_ok_and(|bytes| bytes.len() <= limit) {
                 return (Some(value), None);
             }
             "result_unavailable"

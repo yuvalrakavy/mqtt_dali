@@ -147,9 +147,19 @@ impl Fixture {
         Self::configured(|service| service).await
     }
     async fn configured(configure: impl FnOnce(DaliService) -> DaliService) -> Self {
+        Self::with_inventory(json!({"schema_version":2,"revision":1,"inventory_epoch":"0123456789abcdef0123456789abcdef","name":"Controller","buses":[{"bus":0,"name":"PrivateBus","enabled":true,"outputs":[{"short_address":0,"name":"PrivateLight"}]}]}), configure).await
+    }
+    async fn with_inventory(
+        inventory: Value,
+        configure: impl FnOnce(DaliService) -> DaliService,
+    ) -> Self {
         let path = std::env::temp_dir().join(format!("dali-web-{:032x}", rand::random::<u128>()));
         fs::create_dir(&path).unwrap();
-        fs::write(path.join("dali.v2.json"),serde_json::to_vec(&json!({"schema_version":2,"revision":1,"inventory_epoch":"0123456789abcdef0123456789abcdef","name":"Controller","buses":[{"bus":0,"name":"PrivateBus","enabled":true,"outputs":[{"short_address":0,"name":"PrivateLight"}]}]})).unwrap()).unwrap();
+        fs::write(
+            path.join("dali.v2.json"),
+            serde_json::to_vec(&inventory).unwrap(),
+        )
+        .unwrap();
         let broker = FakeBroker::start().await;
         let (service, handle) =
             DaliService::new(ConfigPaths::in_directory(&path), "Controller".into());

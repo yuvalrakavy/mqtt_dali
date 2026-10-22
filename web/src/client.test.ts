@@ -76,3 +76,11 @@ test('a session reply arriving after close cannot restore CSRF or reconnect',asy
     assert.equal(client.csrf,'','retired session reply restored authentication');assert.equal(client.views.ready,false);
   }finally{client.close();globalThis.fetch=priorFetch;}
 });
+
+test('a completed summary fetches its full result without changing streamed views',async()=>{
+  const priorFetch=globalThis.fetch;const client=new Client();let gets=0;
+  client.views.ready=true;client.views.value={marker:'stream'};
+  client.views.jobBook=[{id:'summary',status:'succeeded',result:null}];
+  globalThis.fetch=async(input:any)=>{if(input==='/api/jobs')return Response.json({id:'summary'});if(input==='/api/jobs/summary'){gets++;return Response.json({id:'summary',status:'succeeded',result:{fixtures:[{saved:42}]}});}throw new Error(`Unexpected request ${input}`);};
+  try{assert.deepEqual(await client.job('epoch.1','Scene','read_scene_settings'),{fixtures:[{saved:42}]},'summary was mistaken for a complete command result');assert.equal(gets,1);assert.equal((client.snapshot as any).marker,'stream');assert.equal(client.jobs[0].result,null);}finally{client.close();globalThis.fetch=priorFetch;}
+});

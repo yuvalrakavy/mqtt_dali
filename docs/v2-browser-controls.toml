@@ -64,8 +64,8 @@ expect_text = "Unexpected HTTP bootstrap/read: /api/jobs/job"
 [[control]]
 name = "browser_get_cannot_downgrade"
 file = "web/src/client.ts"
-anchor = "if(!job||job.status==='running')job=await this.request(`/api/jobs/${id}`);"
-replacement = "if(!job||job.status==='running'){job=await this.request(`/api/jobs/${id}`);this.views.jobBook=[job!];}"
+anchor = "if(!job||job.status==='running'||(job.status==='succeeded'&&job.result==null))job=await this.request(`/api/jobs/${id}`);"
+replacement = "if(!job||job.status==='running'||(job.status==='succeeded'&&job.result==null)){job=await this.request(`/api/jobs/${id}`);this.views.jobBook=[job!];}"
 target = "command"
 argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=a delayed GET", "web/src/client.test.ts"]
 expect_text = "late job GET downgraded the terminal stream book"

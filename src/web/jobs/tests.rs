@@ -148,3 +148,40 @@ fn web_jobs_results_preserve_partial_outcomes_but_hide_private_reasons_and_limit
     assert!(result.is_none(), "HTTP job retained an oversized result");
     assert_eq!(error.unwrap()["code"], "result_unavailable");
 }
+
+#[test]
+fn scene_saved_view_job_summaries_exclude_results_and_only_reader_gets_large_budget() {
+    let (jobs, mut receiver) = Jobs::new();
+    let big = json!({"fixtures":"x".repeat(40000)});
+    let reader = jobs
+        .admit("read_scene_settings".into(), None, prepared())
+        .unwrap();
+    let request = receiver.0.try_recv().unwrap();
+    jobs.finish(request.id, Ok(big.clone()));
+    assert_eq!(
+        jobs.get(&reader.id).unwrap().result,
+        Some(big.clone()),
+        "saved-view job lost bounded large reply"
+    );
+    assert!(
+        jobs.list()[0].result.is_none(),
+        "job summaries retained full results"
+    );
+    let ordinary = admit(&jobs).unwrap();
+    let request = receiver.0.try_recv().unwrap();
+    jobs.finish(request.id, Ok(big));
+    assert_eq!(
+        jobs.get(&ordinary.id).unwrap().error.unwrap()["code"],
+        "result_unavailable",
+        "ordinary command gained large result budget"
+    );
+    let (_, error) = public_result_with_budget(
+        Ok(json!({"fixtures":"x".repeat(SCENE_RESULT_BYTES)})),
+        SCENE_RESULT_BYTES,
+    );
+    assert_eq!(
+        error.unwrap()["code"],
+        "result_unavailable",
+        "saved-view result lost its upper bound"
+    );
+}
