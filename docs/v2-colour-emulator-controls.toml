@@ -1,0 +1,97 @@
+[[control]]
+name = "dt8_enable_is_not_consumed"
+file = "src/emulator/model.rs"
+anchor = "bus.enabled_type.take()"
+replacement = "bus.enabled_type"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_dt8_enable)"]
+expect_text = "DT8 selection survived its command"
+
+[[control]]
+name = "input_frame_clears_dt8_selection"
+file = "src/emulator/model.rs"
+anchor = "bus.repeat = None;"
+replacement = "bus.repeat = None; bus.enabled_type = None;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_dt8_enable)"]
+expect_text = "input traffic incorrectly cancelled DT8 selection"
+
+[[control]]
+name = "dt8_commands_ignore_enable_type"
+file = "src/emulator/model.rs"
+anchor = "if enabled_type == Some(8) {"
+replacement = "if true {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_dt8_enable)"]
+expect_text = "assertion `left == right` failed"
+
+[[control]]
+name = "tc_ignores_configured_limits"
+file = "src/emulator/colour.rs"
+anchor = "let clamped = staged.temperature.clamp(tc.coolest, tc.warmest);"
+replacement = "let clamped = staged.temperature;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_tc_stages)"]
+expect_text = "Tc was not clamped to configured limits"
+
+[[control]]
+name = "tc_setter_changes_actual_before_activate"
+file = "src/emulator/colour.rs"
+anchor = "self.temporary.temperature = word;"
+replacement = "self.temporary.temperature = word; self.actual.temperature.as_mut().unwrap().value = word;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_tc_stages)"]
+expect_text = "temporary Tc changed actual value before ACTIVATE"
+
+[[control]]
+name = "activate_retains_temporary_values"
+file = "src/emulator/colour.rs"
+anchor = "let staged = std::mem::take(&mut self.temporary);"
+replacement = "let staged = Temporary { kind: self.temporary.kind, xy: self.temporary.xy, temperature: self.temporary.temperature, rgbwaf: self.temporary.rgbwaf };"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_tc_stages)"]
+expect_text = "ACTIVATE retained the temporary colour type"
+
+[[control]]
+name = "rgb_mask_overwrites_actual_channel"
+file = "src/emulator/colour.rs"
+anchor = "if proposed != 255 {"
+replacement = "if true {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_rgbwaf_masks)"]
+expect_text = "RGBWAF activation changed a MASK channel or byte width"
+
+[[control]]
+name = "rgb_mask_retains_old_staged_value"
+file = "src/emulator/colour.rs"
+anchor = "self.temporary.rgbwaf[offset..offset + 3].copy_from_slice(dtr);"
+replacement = "for i in 0..3 { if dtr[i] != 255 { self.temporary.rgbwaf[offset + i] = dtr[i]; } }"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_rgbwaf_masks)"]
+expect_text = "MASK retained an earlier staged RGB value"
+
+[[control]]
+name = "unsupported_rgb_erases_supported_staging"
+file = "src/emulator/colour.rs"
+anchor = "if self.actual.rgbwaf.is_some() {\n                    self.select(ColourType::Rgbwaf);"
+replacement = "if true {\n                    self.select(ColourType::Rgbwaf);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_rgbwaf_masks)"]
+expect_text = "unsupported RGB setter erased a supported pending Tc"
+
+[[control]]
+name = "colour_word_reply_reverses_bytes"
+file = "src/emulator/colour.rs"
+anchor = "let [high, low] = word.to_be_bytes();"
+replacement = "let [high, low] = word.to_le_bytes();"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_xy_words)"]
+expect_text = "xy query did not return the literal MSB"
+[[control]]
+name = "colour_byte_reply_mutates_low_register"
+file = "src/emulator/colour.rs"
+anchor = "return if self.actual.active != ColourType::Rgbwaf {"
+replacement = "dtr[0] = 255; return if self.actual.active != ColourType::Rgbwaf {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_rgb_only_fixture)"]
+expect_text = "byte value query overwrote DTR0 as a word low byte"

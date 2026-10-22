@@ -156,7 +156,13 @@ The regression controls are `docs/v2-mqtt-output-controls.toml`.
 see `docs/dali-colour-contract.md`. Whole-plan DTR/enable ownership remains the
 future executor's responsibility. Never share the codec with emulator semantics,
 treat a high byte FF as full-word MASK, clear unrequested WAF channels, or infer
-RGB support from DT8 alone. No color execution/MQTT path is claimed yet.
+RGB support from DT8 alone. No bridge color execution/MQTT path is claimed yet.
+The independent emulator's optional strict colour profile covers selected DT8
+staging/activation/current values and limits; see `docs/emulator.md`. Staged MASK
+overwrites earlier staged numeric values; ACTIVATE clears temporaries. Standard
+16-bit commands consume DT8 selection; special DTR/24-bit input traffic preserve
+it. Physical/alternate-mode/reset/settings/scene behavior remains unverified or
+unsupported as explicitly listed. Never use emulator agreement as certification.
 
 `dali::input` decodes standard Part 103 source schemes and native Part 301–304
 data, and builds individual read-query frames; see `docs/dali-input-contract.md`.

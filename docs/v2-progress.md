@@ -816,6 +816,41 @@ representation properties, independent emulator semantics and colour scenes
 remain subsequent implementation work. See [colour protocol](dali-colour-contract.md)
 and the [slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-codec.md).
 
+## P4d2 — independent DT8 HAT emulator
+
+The existing standalone emulator now accepts optional strict colour profiles and
+models selected Tc/xy/RGBWAF staging, activation, capability/status/value queries,
+Tc limits and MASK. Whole triples retain unchanged actual channels; staged MASK
+replaces earlier pending numeric values and activation clears temporaries. Base
+master brightness stays independent. Existing addressing, group selection, reply
+collision aggregation and DTR storage remain the one physical model path.
+
+Primary gear-source inspection corrected the draft's overly broad frame rule:
+the modeled DT8 selection is consumed by standard 16-bit commands before address
+filtering/repeat-first return, while special DTR/24-bit input traffic preserve it.
+No input-event invalidation hook was added. The combined design gate approved the
+amended MASK lifecycle/selection contract. This uncertified reference is a
+cross-check, not formal standards/firmware proof. The emulator remains independent
+of the production codec. `colour-i4.json` supplies a separate four-bus example.
+
+Four literal semantic tests failed first against the old unsupported path; valid
+profile validation already passed. Six new model tests plus one real standalone
+PTY process test now cover capabilities, unsupported modes, staged/actual state,
+clamping, byte widths, group/broadcast selection, native input traffic and master
+brightness. A missing generic parameter in the new process-test helper was fixed
+before the passing run. All **11 new controls** and **2 affected existing base
+controls** failed at their intended assertions. The restored gate passes **338
+native tests**, strict scoped Clippy, Pi library/all four binary compilation,
+changed-file format/whitespace, wait registry and doctests (none defined).
+Fresh source review follows the frozen implementation commit.
+
+No service/MQTT/SDK/Store or recovery behavior changed. The emulator explicitly
+does not yet model alternate RGBWAF control modes/channel assignment, physical
+gamut/photometry, fades, colour scenes, automatic activation or DT8 reset/settings.
+These remain subsequent work rather than inferred from base command success.
+See [emulator colour profiles](emulator.md#colour-fixtures) and the
+[slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-emulator.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -823,7 +858,7 @@ and the [slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-co
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events and pure DT8 colour codec implemented | Input discovery/full-value polling/configuration/feedback, color integration and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, pure DT8 colour codec and independent DT8 emulator implemented | Input discovery/full-value polling/configuration/feedback, bridge color discovery/execution/MQTT and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

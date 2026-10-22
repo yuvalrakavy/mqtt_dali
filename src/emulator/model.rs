@@ -20,6 +20,8 @@ struct Gear {
     power_on_level: u8,
     failure_level: u8,
     fade: u8,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    colour_state: Option<super::colour::State>,
 }
 #[derive(Serialize)]
 struct Bus {
@@ -29,6 +31,8 @@ struct Bus {
     inputs: Vec<Input>,
     #[serde(skip)]
     repeat: Option<(u16, u64)>,
+    #[serde(skip)]
+    enabled_type: Option<u8>,
 }
 pub struct Model {
     buses: Vec<Bus>,
@@ -54,6 +58,7 @@ impl Model {
                 number: bus.number,
                 powered: bus.powered,
                 repeat: None,
+                enabled_type: None,
                 inputs: bus.inputs,
                 outputs: bus
                     .outputs
@@ -63,6 +68,7 @@ impl Model {
                             .random_address
                             .get_or_insert_with(|| random(&mut rng));
                         Gear {
+                            colour_state: config.colour.clone().map(super::colour::State::new),
                             config,
                             dtr: [0; 3],
                             initialize_until: None,
@@ -147,6 +153,13 @@ impl Model {
             return Reply::None;
         };
         let [address, opcode] = frame.to_be_bytes();
+        // One shared broadcast latch suffices: all gear on a modeled bus hears
+        // the same C1 special. Consume standard commands before repeat/selection.
+        let enabled_type = if address <= 0x9f || address >= 0xfc {
+            bus.enabled_type.take()
+        } else {
+            None
+        };
         let repeat_required = matches!(address, 0xa5 | 0xa7)
             || ((address <= 0x9f || address >= 0xfc)
                 && address & 1 == 1
@@ -158,6 +171,9 @@ impl Model {
         if repeat_required && !repeated {
             bus.repeat = Some((frame, self.now_ms));
             return Reply::None;
+        }
+        if address == 0xc1 {
+            bus.enabled_type = Some(opcode);
         }
         let special = matches!(
             address,
@@ -272,7 +288,7 @@ impl Model {
                     }
                     _ => None,
                 };
-                known |= address != 0xc1; // Device-type extensions are added with P4.
+                known = true;
                 if let Some(value) = value {
                     replies.push(value);
                 }
@@ -285,6 +301,21 @@ impl Model {
                 _ => false,
             };
             if !selected {
+                continue;
+            }
+            if address & 1 == 1 && opcode >= 0xe0 {
+                if enabled_type == Some(8) {
+                    if let Some(colour) = &mut gear.colour_state {
+                        if let Some(reply) = colour.command(opcode, &mut gear.dtr) {
+                            known = true;
+                            if let Some(value) = reply {
+                                replies.push(value);
+                            }
+                            continue;
+                        }
+                    }
+                }
+                self.unsupported += 1;
                 continue;
             }
             if address & 1 == 0 {
@@ -460,5 +491,7 @@ impl Model {
         }
     }
 }
+#[cfg(test)]
+mod colour_tests;
 #[cfg(test)]
 mod tests;

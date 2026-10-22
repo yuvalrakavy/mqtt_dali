@@ -155,6 +155,116 @@ async fn standalone_process_exposes_a_real_pty_and_private_mutable_physical_mode
     );
 }
 
+async fn literal_frame(link: &Transactions<Serial>, frame: u16) -> BusReply {
+    let response = link
+        .execute(
+            Command::Send {
+                bus: 0,
+                frame: DaliFrame::Bits16(frame),
+                repeat: false,
+            },
+            Duration::from_secs(1),
+        )
+        .await
+        .unwrap();
+    let Response::Dali(mut replies) = response else {
+        panic!("literal frame had a non-DALI response");
+    };
+    assert_eq!(replies.len(), 1);
+    replies.pop().unwrap()
+}
+
+#[tokio::test]
+async fn standalone_dt8_pty_activates_native_colour_with_input_traffic() {
+    use mqtt_dali::atx::{
+        monitor::Event,
+        wire::{Kind, Packet},
+    };
+    let fixture = Fixture::new();
+    fs::write(
+        fixture.0.join("physical.json"),
+        include_str!("../examples/emulator/colour-i4.json"),
+    )
+    .unwrap();
+    let mut child = fixture.command().spawn().unwrap();
+    let ready = ready(&mut child).await;
+    let (link, mut events) = Transactions::start(
+        Serial::open(ready["pty"].as_str().unwrap()).await.unwrap(),
+        RepeatPolicy::OneTerminal,
+    );
+    tokio::time::timeout(Duration::from_secs(1), events.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    link.initialize(Duration::from_secs(1)).await.unwrap();
+
+    assert_eq!(literal_frame(&link, 0xc108).await, BusReply::NoResponse);
+    assert_eq!(
+        request(
+            &fixture,
+            serde_json::json!({"op":"input_event","bus":0,"frame":32769})
+        )
+        .await["result"]["ok"],
+        true
+    );
+    assert_eq!(
+        literal_frame(&link, 0x07f9).await,
+        BusReply::Value(0xc3),
+        "native input traffic cancelled the DT8 command through PTY"
+    );
+    tokio::time::timeout(Duration::from_secs(1), async {
+        loop {
+            if matches!(
+                events.recv().await.unwrap(),
+                Event::Packet {
+                    packet: Ok(Packet {
+                        bus: 0,
+                        kind: Kind::Dali(DaliFrame::Bits24(0x008001))
+                    }),
+                    ..
+                }
+            ) {
+                break;
+            }
+        }
+    })
+    .await
+    .expect("native input event was lost during colour work");
+    for frame in [
+        0xa3c2, 0xc301, 0xc108, 0x07e7, 0xc108, 0x07e2, 0xa302, 0xc108,
+    ] {
+        assert_eq!(literal_frame(&link, frame).await, BusReply::NoResponse);
+    }
+    assert_eq!(literal_frame(&link, 0x07fa).await, BusReply::Value(1));
+    assert_eq!(
+        literal_frame(&link, 0x0798).await,
+        BusReply::Value(144),
+        "standalone Tc readback did not reflect configured clamp"
+    );
+
+    for frame in [
+        0xa3fe, 0xc300, 0xc57f, 0xc108, 0x07eb, 0xa3ff, 0xc3ff, 0xc5ff, 0xc108, 0x07ec, 0xc108,
+        0x07e2,
+    ] {
+        assert_eq!(literal_frame(&link, frame).await, BusReply::NoResponse);
+    }
+    let snapshot = request(&fixture, serde_json::json!({"op":"snapshot"})).await;
+    let output = &snapshot["result"]["buses"][0]["outputs"][0];
+    assert_eq!(
+        output["colour_state"]["actual"]["rgbwaf"],
+        serde_json::json!([254, 0, 127, 4, 5, 6]),
+        "standalone RGB cleared unrequested WAF values"
+    );
+    assert_eq!(output["colour_state"]["actual"]["active"], "rgbwaf");
+    assert!(output["colour_state"]["temporary"]["kind"].is_null());
+    assert_eq!(
+        output["level"], 100,
+        "standalone colour altered master brightness"
+    );
+    link.close().await.unwrap();
+    terminate(&mut child).await;
+}
+
 #[tokio::test]
 async fn existing_control_path_is_never_replaced() {
     let fixture = Fixture::new();

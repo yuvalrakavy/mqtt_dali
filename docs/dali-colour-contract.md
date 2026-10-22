@@ -3,7 +3,9 @@
 `dali::colour` provides typed Part 209 values and complete 16-bit frame plans.
 It performs no UART, MQTT, persistence, discovery or emulator operations. The
 canonical daemon currently still exposes the base output and live input paths;
-colour service execution and capability discovery are subsequent work.
+colour service execution and capability discovery are subsequent work. The
+[independent HAT emulator](emulator.md#colour-fixtures) now provides selected
+physical DT8 semantics for later integration tests; it does not import this codec.
 
 ## Values and independent representations
 
