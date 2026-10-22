@@ -241,8 +241,8 @@ above. Owner's standing implementation approval applies.
 - [x] Set/Adopt/Repair retained request and ConfigStore continuation, failure/no-op/reopen tests.
 - [x] Nonactivating native row program with cleared masked report and independent sequence/readback tests.
 - [x] Shared strict MQTT/authenticated HTTP commands and original authority/review/stamp tests.
-- [ ] Intentional fault controls, restored scoped checks, final source reviews and native regressions.
-- [ ] Scene/service/web guides, support matrix, progress/catalog; assess relevant skill updates.
+- [x] Intentional fault controls, restored scoped checks, final source reviews and native regressions.
+- [x] Scene/service/web guides, support matrix, progress/catalog; assess relevant skill updates.
 
 Browser composition remains P5h3; checked boxes here do not imply that the visible
 screen is implemented.
@@ -261,3 +261,10 @@ test-only runtime hook was introduced.
 Relevant skill assessment: no new generic workflow or Store authoring surface;
 bridge-local scene gotchas and API names belong in CLAUDE.md and the scene/service
 guides updated by this phase. Shared user/Store skills are not modified.
+
+Accepted locally at frozen source `33ea901`: both sequential source reviewers
+approve; 579/579 native tests pass across eleven binaries (one opt-in browser test
+skipped). Scoped strict lint/Pi/format/affected control-plan/wait/whitespace checks
+pass. See `docs/v2-progress.md` for logs and the source reviewers' two nonblocking
+coverage-granularity limits. No physical fixture or browser scene acceptance is
+claimed by this backend phase.

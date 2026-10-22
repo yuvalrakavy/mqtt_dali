@@ -7,8 +7,9 @@ The approved architecture and phase acceptance criteria are in
 
 ## P5h2b2 — private scene rows and nonactivating settings
 
-Implementation and local verification are in progress; no acceptance claim yet.
-Both sequential source-only design reviews approve (same model family).
+Accepted locally at frozen source `33ea901`: **579 native tests** and both
+sequential frozen-source reviews pass. Both design reviews also approve.
+Reviewers are source-only and same-family; no cross-family review is claimed.
 Private rows use strict native Setting values and continuing output Origins in
 the existing v2 file. Public Inventory/history/HTTP/SSE remain opaque. Bounded
 Set/Adopt/Repair/Capture use the existing service/physical owner and save before
@@ -50,7 +51,15 @@ still produces the intended RED. All fourteen current scene controls have intend
 RED evidence (`/tmp/dali-scene-settings-controls-final` plus
 `/tmp/dali-scene-settings-control-refinements`). Self-review also aligned capture's
 final deadline fence with existing reads; the final restored check includes that
-small correction. Frozen-source reviews and full native regressions remain pending.
+small correction. Full native acceptance passes **579/579** across eleven
+binaries, with the opt-in browser case skipped; doctests contain no cases. Final
+base-to-source whitespace and clean-tree checks pass
+(`/tmp/dali-scene-settings-acceptance`). Both sequential frozen-source reviewers
+approve without blocking findings. They note two proof granularity limits:
+private reopen reconstructs Model from serialized Inventory rather than restarting
+ConfigStore, and MQTT privacy asserts central state_bytes rather than an emitted
+packet. Authenticated HTTP privacy is exercised end to end; source tracing confirms
+all public publishers use the stripped central reader.
 Browser scene composition stays in P5h3; no physical
 HAT or Store integration claim is made. See the
 [slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scene-editing.md) and
@@ -1883,7 +1892,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene codec/model, named slots, stored reads and bus/group recall accepted locally | Full reassign/restore, private scene editing/capture/verify/copy/clear and Scenes UI |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification; native scenes, named slots, stored reads/recall and private Set/Adopt/Repair/Capture accepted locally | Full reassign/restore and P5h3 Scenes UI with reviewed multi-row capture/copy/clear/verification |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
