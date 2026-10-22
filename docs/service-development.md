@@ -7,8 +7,8 @@ operations, selected-family DT8 MQTT controls and native input observations/acti
 `--check-config` remains an explicit offline operation. See
 [running the development daemon](running-v2.md). MQTT base fixture properties
 use [the output wire contract](mqtt-outputs.md). Optional authenticated HTTP status,
-sessions and SSE use [web access](web-access.md); physical/configuration handlers
-and browser assets are subsequent work. Embedders can use the
+sessions, SSE and configuration/commissioning jobs use [web access](web-access.md);
+output apply/read routes and browser assets are subsequent work. Embedders can use the
 [single-output service API](output-service.md).
 
 `DaliService::new(paths, instance)` returns a resource-free service and a
@@ -27,6 +27,13 @@ HTTP/HAT/config cleanup share the existing absolute deadline. Axum's outer task
 is not the whole connection owner: cancellable accepted IO holds permits until
 actual drop; clean teardown includes an all-permits barrier. Session/rate locks
 never span await. Use `v2-web-controls.toml` for auth/lifecycle fault controls.
+HTTP command jobs use a crate-private prepared façade around the same strict
+command parser and concrete service resolvers. They supply no SDK command
+completion and never publish around its worker. The original context/deadline
+survives the bounded mailbox. At most four futures are polled inside the existing
+Server task, with 32 process-local result records; no detached job task or new
+physical owner. Stop drops receiver futures under the existing lifecycle ceiling.
+Use `v2-web-job-controls.toml` for this boundary.
 
 The first proxy connection attaches the runtime Reporter independently of UART
 setup and MQTT availability. Inventory and metadata editing therefore

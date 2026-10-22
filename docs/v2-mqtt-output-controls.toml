@@ -24,7 +24,9 @@ expect_text = "answered MASK became usable MQTT availability"
 [[control]]
 name = "unknown_atomic_properties_are_ignored"
 file = "src/service/proxy/state.rs"
-anchor = '''.find(|name| !matches!(name.as_str(), "PowerState" | "Brightness"))'''
+anchor = '''.find(|name| {
+        !matches!(name.as_str(), "PowerState" | "Brightness") && !super::colour::is_property(name)
+    })'''
 replacement = '''.find(|_| false)'''
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(mqtt_output_intent_rejects_the_whole_invalid_map)"]

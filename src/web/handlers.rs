@@ -2,9 +2,9 @@ use super::{
     auth::{Access, Refusal, COOKIE},
     server::State,
 };
-use crate::service::{Hardware, Phase, Snapshot};
+use crate::service::{Hardware, Phase, PreparationError, PreparedCommand, Snapshot};
 use axum::{
-    extract::{DefaultBodyLimit, Request, State as AxumState},
+    extract::{DefaultBodyLimit, Path, Request, State as AxumState},
     http::{header, HeaderMap, HeaderValue, Method, StatusCode},
     middleware::{self, Next},
     response::{
@@ -37,6 +37,8 @@ pub(super) fn router(state: Arc<State>) -> Router {
         .route("/api/logout", post(logout))
         .route("/api/snapshot", get(snapshot))
         .route("/api/events", get(events))
+        .route("/api/jobs", get(jobs).post(command))
+        .route("/api/jobs/{id}", get(job))
         .fallback(missing)
         .layer(middleware::from_fn_with_state(state.clone(), protect));
     Router::new()
@@ -157,6 +159,7 @@ async fn protect(
         .map(|s| s.model.inventory().name.clone())
         .unwrap_or_default();
     let span = context.operation_span(&name, "http_request");
+    request.extensions_mut().insert(context);
     request.extensions_mut().insert(session);
     // WAIT: web-handler
     next.run(request).instrument(span).await
@@ -255,6 +258,84 @@ async fn logout(
         .headers_mut()
         .insert(header::SET_COOKIE, set_cookie(&state, "", true));
     response
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Command {
+    generation: String,
+    target: Option<String>,
+    command: String,
+    params: mqtt_bridge_kit::PropertyMap,
+}
+async fn command(
+    AxumState(state): AxumState<Arc<State>>,
+    axum::Extension(session): axum::Extension<Session>,
+    axum::Extension(cause): axum::Extension<mqtt_bridge_kit::RequestContext>,
+    body: Result<Json<Command>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    let Ok(Json(body)) = body else {
+        return error(StatusCode::BAD_REQUEST, "invalid command JSON");
+    };
+    // Body extraction may have waited while this session expired or was revoked.
+    // There is no await from this recheck through preparation and job admission.
+    // WAIT: web-auth
+    if !state
+        .auth
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .activity(&session.token, Instant::now())
+    {
+        return error(StatusCode::UNAUTHORIZED, "sign in required");
+    }
+    let Ok(context) = mqtt_bridge_kit::RequestContext::new(body.generation) else {
+        return error(StatusCode::BAD_REQUEST, "invalid command generation");
+    };
+    let Some(snapshot) = state.handle.snapshot() else {
+        return error(StatusCode::SERVICE_UNAVAILABLE, "service is starting");
+    };
+    let call = mqtt_bridge_kit::CommandCall {
+        command: body.command.clone(),
+        params: body.params,
+    };
+    let prepared = match PreparedCommand::new(
+        &snapshot,
+        body.target.clone(),
+        &call,
+        context.with_traceparent(cause.traceparent()),
+    ) {
+        Ok(prepared) => prepared,
+        Err(PreparationError::Invalid) => {
+            return error(StatusCode::BAD_REQUEST, "invalid command or parameters")
+        }
+        Err(PreparationError::Conflict) => {
+            return error(
+                StatusCode::CONFLICT,
+                "configuration or selection changed; refresh before retrying",
+            )
+        }
+    };
+    if state.stop.is_cancelled() {
+        return error(StatusCode::SERVICE_UNAVAILABLE, "web access is stopping");
+    }
+    let Some(record) = state.jobs.admit(body.command, body.target, prepared) else {
+        return error(StatusCode::SERVICE_UNAVAILABLE, "too many active commands");
+    };
+    let location = format!("/api/jobs/{}", record.id);
+    (
+        StatusCode::ACCEPTED,
+        [(header::LOCATION, location)],
+        Json(record),
+    )
+        .into_response()
+}
+async fn jobs(AxumState(state): AxumState<Arc<State>>) -> Json<Value> {
+    Json(json!({"jobs":state.jobs.list()}))
+}
+async fn job(AxumState(state): AxumState<Arc<State>>, Path(id): Path<String>) -> Response {
+    match state.jobs.get(&id) {
+        Some(record) => Json(record).into_response(),
+        None => error(StatusCode::NOT_FOUND, "job not found"),
+    }
 }
 fn snapshot_value(snapshot: &Snapshot) -> Value {
     let phase = match snapshot.phase {

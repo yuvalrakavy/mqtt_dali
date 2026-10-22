@@ -5,6 +5,55 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P6b — authenticated configuration and commissioning jobs
+
+Add strict POST `/api/jobs` and protected list/result routes. Preparation reuses
+the MQTT command parser and shared concrete resolvers, preserving the client's
+generation/revision and original 2/10/18-second deadline. Execution calls typed
+service paths without an SDK command completion or publication bypass. Explicit
+HTTP trace metadata, including absence, crosses the queue. Reauthorize after
+JSON upload before preparation/admission; polling never renews a session.
+
+Four bounded command futures live inside the existing Server task; no detached
+job task, retry, UART journal, SDK change or new physical owner. Keep 32 admission-
+ordered process-local records, evicting completed entries only, with safe codes,
+sanitized free-text reasons and a 32 KiB whole-result limit. HTTP disconnect/logout
+does not cancel admitted work. Service stop drops its receivers under the existing
+shared deadline, preserving interrupted-save uncertainty. Existing structured
+partial outcomes remain visible; 202 and a succeeded report do not promise full
+physical success. Output apply/read, observations/events and Preact screens follow.
+
+Both sequential design reviews approve (77 and about 40 seconds, same-family,
+source-only). The first review's explicit trace-extension detail is incorporated.
+The first HTTP metadata regression fails with missing route before production;
+the companion absent-route upload setup timeout is not counted as auth evidence.
+Initial compilation needed an owned String result annotation; one emulator test
+corrected its expected existing group outcome from programmed to verified.
+Twenty-eight focused web/facade tests pass; the final suite also exercises a
+command with a broker endpoint that never sends CONNACK. Real socket/emulator
+tests exercise metadata persistence/shared
+MQTT publication, stale authority/revision, strict parameters, slow-upload logout,
+input/output assignment, real-instance discovery, physical groups, safe save
+failure/uncertainty/recovery, trace continuity, bounded records/futures and stop
+while an incomplete HTTP upload drains. No >5-second physical timing measurement
+is claimed; original-deadline and disconnected-request ownership are tested
+independently using the current emulator's available timing seams.
+
+All **13 new fault controls** detect their declared behavioral failures (2m36s),
+then restore source. The affected control-plan sweep found one preexisting stale
+unknown-property anchor after colour parsing moved; re-anchor its actual guard
+and its repaired row is RED (12 s). Other existing rows pass plan checks.
+Restored acceptance passes **505/505 native tests** across 11 binaries (four
+processes; 92 s wall clock), scoped strict Clippy (10 s), Pi library/all four
+binaries (3 s), doctests (none), changed-file formatting, affected control plans,
+whitespace and wait validation (zero findings). Wait lint initially identified
+the test observer's inline lock and the prepared-operation await; isolate the
+test-only observer and explicitly register the existing request deadline.
+No production timing/policy changed. Logs: `/tmp/dali-web-job-controls.log`,
+`/tmp/dali-web-job-reanchored-control.log`, `/tmp/dali-web-job-acceptance`.
+Frozen source reviews follow. See [web access](web-access.md) and
+[slice design](superpowers/specs/2026-10-22-dali-v2-p6b-web-commands.md).
+
 ## P6a — authenticated HTTP foundation
 
 Implement the independent API/lifecycle foundation while remaining P4/P5 actions
@@ -1442,7 +1491,7 @@ no verification. Physical hardware validation remains outstanding.
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
 | P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal and per-fixture group membership implemented | Full reassign/restore, identification, browser/pattern group workflows and native scenes |
-| P6 authenticated HTTP | Session/lifecycle/status API foundation implemented and locally verified | Shared-service mutations/job routes and complete protected frontend integration |
+| P6 authenticated HTTP | Session/lifecycle/status foundation accepted; existing-command jobs implemented, final verification in progress | Output apply/read, observation/native-event routes and complete protected frontend integration |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |

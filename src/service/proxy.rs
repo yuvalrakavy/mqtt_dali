@@ -76,44 +76,7 @@ impl DeviceDriver for DaliProxy {
                     .snapshot()
                     .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
                 let change = parse(&snapshot, target, call)?;
-                match change {
-                    Operation::Groups(action, expected) => groups::resolve(
-                        &snapshot,
-                        target.ok_or_else(|| OpError::Rejected("output target required".into()))?,
-                        action,
-                        expected,
-                        context,
-                    )
-                    .map(|_| ())
-                    .map_err(op_error),
-                    Operation::Assignment(p, space) => match space {
-                        discovery::Space::Outputs => {
-                            commissioning::resolve(&snapshot, p.bus, p.expected_revision, context)
-                        }
-                        discovery::Space::Inputs => commissioning::resolve_space(
-                            &snapshot,
-                            p.bus,
-                            space,
-                            p.expected_revision,
-                            context,
-                        ),
-                    }
-                    .map(|_| ())
-                    .map_err(op_error),
-                    Operation::Metadata(change) => {
-                        routing::admit(&snapshot, &change, context).map_err(op_error)
-                    }
-                    Operation::Discovery(p) => discovery::resolve(
-                        &snapshot,
-                        p.bus,
-                        p.space,
-                        p.address,
-                        p.expected_revision,
-                        context,
-                    )
-                    .map(|_| ())
-                    .map_err(op_error),
-                }
+                change.admit(&snapshot, target, context).map_err(op_error)
             }
             _ => Err(OpError::Unsupported("target configuration pending".into())),
         }
@@ -629,6 +592,153 @@ enum Operation {
     Assignment(Assignment, discovery::Space),
     Metadata(Change),
     Discovery(Discovery),
+}
+impl Operation {
+    fn admit(
+        &self,
+        snapshot: &Snapshot,
+        target: Option<&str>,
+        context: &RequestContext,
+    ) -> Result<(), ServiceError> {
+        match self {
+            Self::Groups(action, expected) => groups::resolve(
+                snapshot,
+                target.ok_or_else(|| ServiceError::Rejected("output target required".into()))?,
+                *action,
+                *expected,
+                context,
+            )
+            .map(|_| ()),
+            Self::Assignment(p, space) => match space {
+                discovery::Space::Outputs => {
+                    commissioning::resolve(snapshot, p.bus, p.expected_revision, context)
+                }
+                discovery::Space::Inputs => commissioning::resolve_space(
+                    snapshot,
+                    p.bus,
+                    *space,
+                    p.expected_revision,
+                    context,
+                ),
+            }
+            .map(|_| ()),
+            Self::Metadata(change) => routing::admit(snapshot, change, context),
+            Self::Discovery(p) => discovery::resolve(
+                snapshot,
+                p.bus,
+                p.space,
+                p.address,
+                p.expected_revision,
+                context,
+            )
+            .map(|_| ()),
+        }
+    }
+    fn budget(&self) -> Duration {
+        Duration::from_secs(match self {
+            Self::Metadata(_) | Self::Groups(groups::Action::Read, _) => 2,
+            Self::Discovery(_) => 10,
+            Self::Groups(_, _) | Self::Assignment(_, _) => 18,
+        })
+    }
+}
+
+/// HTTP composition uses typed service calls, never an SDK worker completion.
+pub(crate) struct PreparedCommand {
+    operation: Operation,
+    target: Option<String>,
+    pub(crate) context: RequestContext,
+    deadline: Instant,
+}
+pub(crate) enum PreparationError {
+    Invalid,
+    Conflict,
+}
+impl PreparedCommand {
+    pub(crate) fn new(
+        snapshot: &Snapshot,
+        target: Option<String>,
+        call: &CommandCall,
+        context: RequestContext,
+    ) -> Result<Self, PreparationError> {
+        let table = routing::generations(&snapshot.model);
+        let token = match target.as_deref() {
+            Some("__inventory") => return Err(PreparationError::Invalid),
+            Some(target) => table
+                .targets
+                .get(target)
+                .ok_or(PreparationError::Conflict)?,
+            None => &table.instance,
+        };
+        if context.generation() != Some(token.as_str()) {
+            return Err(PreparationError::Conflict);
+        }
+        let operation =
+            parse(snapshot, target.as_deref(), call).map_err(|_| PreparationError::Invalid)?;
+        operation
+            .admit(snapshot, target.as_deref(), &context)
+            .map_err(|_| PreparationError::Conflict)?;
+        let deadline = Instant::now() + operation.budget();
+        Ok(Self {
+            operation,
+            target,
+            context,
+            deadline,
+        })
+    }
+    pub(crate) async fn run(self, handle: ServiceHandle) -> Result<Value, ServiceError> {
+        let Self {
+            operation,
+            target,
+            context,
+            deadline,
+        } = self;
+        if Instant::now() >= deadline {
+            return Err(ServiceError::Expired);
+        }
+        fn value<T: serde::Serialize>(value: T) -> Result<Value, ServiceError> {
+            serde_json::to_value(value)
+                .map_err(|_| ServiceError::Uncertain("result encoding failed".into()))
+        }
+        match operation {
+            Operation::Metadata(change) => {
+                let snapshot = handle.submit(change, context, deadline, None).await?;
+                Ok(serde_json::json!({"revision":snapshot.model.inventory().revision}))
+            }
+            Operation::Assignment(p, space) => value(
+                handle
+                    .assign_space(p.bus, space, p.expected_revision, context, deadline, None)
+                    .await?,
+            ),
+            Operation::Discovery(p) => value(
+                handle
+                    .discover(
+                        p.bus,
+                        p.space,
+                        p.address,
+                        p.expected_revision,
+                        context,
+                        deadline,
+                        None,
+                    )
+                    .await?,
+            ),
+            Operation::Groups(action, expected) => value(
+                handle
+                    .groups(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("output target required".into())
+                        })?,
+                        action,
+                        expected,
+                        context,
+                        deadline,
+                        None,
+                    )
+                    .await?,
+            ),
+        }
+    }
 }
 struct Discovery {
     bus: u8,

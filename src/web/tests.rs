@@ -13,6 +13,7 @@ use tokio::{
     net::TcpStream,
     time::{timeout, Instant},
 };
+mod jobs;
 
 #[test]
 fn web_settings_validate_credentials_and_canonical_origin_without_resources() {
@@ -141,6 +142,9 @@ struct Fixture {
 }
 impl Fixture {
     async fn new() -> Self {
+        Self::configured(|service| service).await
+    }
+    async fn configured(configure: impl FnOnce(DaliService) -> DaliService) -> Self {
         let path = std::env::temp_dir().join(format!("dali-web-{:032x}", rand::random::<u128>()));
         fs::create_dir(&path).unwrap();
         fs::write(path.join("dali.v2.json"),serde_json::to_vec(&json!({"schema_version":2,"revision":1,"inventory_epoch":"0123456789abcdef0123456789abcdef","name":"Controller","buses":[{"bus":0,"name":"PrivateBus","enabled":true,"outputs":[{"short_address":0,"name":"PrivateLight"}]}]})).unwrap()).unwrap();
@@ -150,7 +154,7 @@ impl Fixture {
         let running = Bridge::new("DALI")
             .instance("Controller")
             .broker(&broker.address())
-            .start_managed(service)
+            .start_managed(configure(service))
             .await
             .unwrap();
         timeout(Duration::from_secs(2), async {
@@ -617,6 +621,65 @@ async fn web_managed_owner_serves_without_broker_and_closes_with_retained_handle
         .split(';')
         .next()
         .unwrap();
+    let csrf = login.json()["csrf"].as_str().unwrap().to_owned();
+    let initial = handle.snapshot().unwrap();
+    let generation = format!(
+        "{}.{}",
+        initial.model.inventory().inventory_epoch,
+        initial.model.inventory().revision
+    );
+    let command = json!({"generation":generation,"command":"describe","target":null,
+        "params":{"expected_revision":initial.model.inventory().revision,"description":"saved without broker"}});
+    let admitted = request(
+        address,
+        "POST",
+        "/api/jobs",
+        &[
+            ("Cookie", cookie),
+            ("Origin", "http://dali.test"),
+            ("X-CSRF-Token", &csrf),
+            ("Content-Type", "application/json"),
+        ],
+        &command.to_string(),
+    )
+    .await;
+    assert_eq!(
+        admitted.status, 202,
+        "HTTP command admission depended on a connected MQTT broker"
+    );
+    timeout(Duration::from_secs(2), async {
+        loop {
+            let result = request(
+                address,
+                "GET",
+                admitted.header("location").unwrap(),
+                &[("Cookie", cookie)],
+                "",
+            )
+            .await
+            .json();
+            if result["status"] != "running" {
+                assert_eq!(
+                    result["status"], "succeeded",
+                    "HTTP save waited for MQTT command completion: {result}"
+                );
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("broker-absent HTTP command never completed");
+    assert_eq!(
+        handle
+            .snapshot()
+            .unwrap()
+            .model
+            .inventory()
+            .description
+            .as_deref(),
+        Some("saved without broker")
+    );
     let (_, mut stream) = open(address, "GET", "/api/events", &[("Cookie", cookie)], "").await;
     assert!(chunk(&mut stream).await.is_some());
     let clean = timeout(Duration::from_secs(6), running.stop())

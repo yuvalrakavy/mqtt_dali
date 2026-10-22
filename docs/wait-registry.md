@@ -28,6 +28,9 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `web-jobs-book` | acyclic | bounded process-local result book | At most 32 records; synchronous list/admission/completion only. Admission takes a nonwaiting channel reservation; no await, service call or other mutex under this guard. Each sanitized result is at most 32 KiB. |
+| `web-jobs-loop` | acyclic | bounded command mailbox, owned service futures or stop | Parent stop independently ends the idle loop and synchronously drops all reply receivers/permits. At most four requests/futures retain their original 2/10/18-second service deadlines. No per-job task survives the Server task; unexpected loop end fails that owner. |
+| `web-job-request` | bounded | one prepared typed service operation | Keeps the captured absolute 2/10/18-second deadline through nonwaiting service admission and bounded reply. On expiry retain a safe failure/uncertain outcome; parent stop drops this future and its reply receiver. No deadline renewal or retry. |
 | `web-bind` | bounded | optional HTTP listener startup | Inside the original five-second service opening ceiling, before proxy readiness. On expiry reject and drop the listener; close the config owner on failure. No listener exists when web is disabled. |
 | `web-auth` | acyclic | bounded session/rate mutex | Holds at most 16 sessions and 10 attempt timestamps for synchronous checks/updates only. No await, Reporter call or service operation occurs under the guard; no other lock is taken. |
 | `web-accept` | acyclic | Axum/Tokio accepting a TCP client | Owns only the optional listener; no service caller waits for it. Parent cancellation drops accept through the server signal. At most 64 accepted IO wrappers retain permits; excess connections close. Each wrapper's pending polls also wake on forced cancellation. |
@@ -231,6 +234,7 @@ v2-store-worker src/config_store/worker.rs run
 web-accept src/web/transport.rs <Listener as Listener>::accept
 web-auth src/web/handlers.rs access
 web-auth src/web/handlers.rs activity
+web-auth src/web/handlers.rs command
 web-auth src/web/handlers.rs login
 web-auth src/web/handlers.rs logout
 web-bind src/web/server.rs Server::start
@@ -239,6 +243,12 @@ web-close src/web/server.rs Server::close
 web-events src/web/handlers.rs events
 web-handler src/web/handlers.rs limits
 web-handler src/web/handlers.rs protect
+web-job-request src/web/jobs.rs run
+web-jobs-book src/web/jobs.rs Jobs::admit
+web-jobs-book src/web/jobs.rs Jobs::finish
+web-jobs-book src/web/jobs.rs Jobs::get
+web-jobs-book src/web/jobs.rs Jobs::list
+web-jobs-loop src/web/jobs.rs run
 web-serve src/web/server.rs Server::finished
 web-serve src/web/server.rs Server::start
 web-serve src/web/server.rs changed

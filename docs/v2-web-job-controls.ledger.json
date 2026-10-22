@@ -1,0 +1,226 @@
+{
+ "rows": {
+  "web_jobs_accept_unknown_envelope_fields": {
+   "last_real": {
+    "at": "2026-10-22T08:37:20Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:e634d37c83dee843",
+     "row": "b741e3f951fd7fee",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.3,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_drop_original_http_trace": {
+   "last_real": {
+    "at": "2026-10-22T08:38:13Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7bed613bb271807f",
+     "row": "05d6682f36db1069",
+     "test": null
+    },
+    "path": "command",
+    "secs": 21.1,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_error_leaks_private_service_text": {
+   "last_real": {
+    "at": "2026-10-22T08:39:16Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5f0ba66a13a35aba",
+     "row": "5c39e60317427f31",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.2,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_history_evicts_running_job": {
+   "last_real": {
+    "at": "2026-10-22T08:38:53Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cccd28abcb93d815",
+     "row": "845b63d7cd38e56b",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.8,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_history_ignores_result_count_bound": {
+   "last_real": {
+    "at": "2026-10-22T08:38:46Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cccd28abcb93d815",
+     "row": "85440751365f015f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.8,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_ignore_active_mailbox_capacity": {
+   "last_real": {
+    "at": "2026-10-22T08:38:38Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cccd28abcb93d815",
+     "row": "9df91bdc4adac7e9",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.7,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_ignore_encoded_result_bound": {
+   "last_real": {
+    "at": "2026-10-22T08:39:25Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5f0ba66a13a35aba",
+     "row": "e8dc884cc9d1620a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.7,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_ignore_stop_while_http_drains": {
+   "last_real": {
+    "at": "2026-10-22T08:39:37Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6d6d6c8e6777096c",
+     "row": "0d32ce294d29d873",
+     "test": null
+    },
+    "path": "command",
+    "secs": 12.3,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_renew_deadline_at_execution": {
+   "last_real": {
+    "at": "2026-10-22T08:38:26Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:9123652b22607786",
+     "row": "ccb7aa351e71acde",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.3,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_replace_original_generation_with_current": {
+   "last_real": {
+    "at": "2026-10-22T08:37:39Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e3ea9badd449a325",
+     "row": "1d67072bf8c6d91e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.6,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_report_leaks_private_reason": {
+   "last_real": {
+    "at": "2026-10-22T08:39:02Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5f0ba66a13a35aba",
+     "row": "9f055a3d0b0c4343",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.4,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_skip_post_body_authentication": {
+   "last_real": {
+    "at": "2026-10-22T08:37:09Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7bed613bb271807f",
+     "row": "a9ebf6ac66a033e4",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.9,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  },
+  "web_jobs_skip_revision_preparation": {
+   "last_real": {
+    "at": "2026-10-22T08:37:52Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e3ea9badd449a325",
+     "row": "597817cf211df625",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.0,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

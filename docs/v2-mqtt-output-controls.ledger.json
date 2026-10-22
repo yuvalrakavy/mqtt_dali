@@ -223,18 +223,18 @@
   },
   "unknown_atomic_properties_are_ignored": {
    "last_real": {
-    "at": "2026-10-21T23:10:24Z",
+    "at": "2026-10-22T08:40:18Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:0c908c69bde4cc63",
-     "row": "970edda4add07916",
+     "guard": "item:a8123b63903caf97",
+     "row": "c9b605e925731536",
      "test": null
     },
     "path": "command",
-    "secs": 7.4,
-    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "secs": 12.1,
+    "sha": "df3e924f2a9577e96412e602e31ef87bb411d4ef",
     "verdict": "RED"
    }
   },

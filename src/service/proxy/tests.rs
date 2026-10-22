@@ -1114,3 +1114,4 @@ async fn mqtt_output_brightness_changes_independent_physical_state() {
     assert!(running.stop().await);
     emulator.emulator.close().await.unwrap();
 }
+mod web_commands;

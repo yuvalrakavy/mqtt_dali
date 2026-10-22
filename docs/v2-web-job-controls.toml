@@ -1,0 +1,127 @@
+[[control]]
+name = "web_jobs_skip_post_body_authentication"
+file = "src/web/handlers.rs"
+anchor = '''    if !state
+        .auth'''
+replacement = '''    if false && !state
+        .auth'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_authentication_csrf)"]
+expect_text = "session revoked during body upload admitted a command"
+
+[[control]]
+name = "web_jobs_accept_unknown_envelope_fields"
+file = "src/web/handlers.rs"
+anchor = '''#[serde(deny_unknown_fields)]
+struct Command {'''
+replacement = "struct Command {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_save_metadata)"]
+expect_text = "HTTP envelope accepted unknown fields"
+
+[[control]]
+name = "web_jobs_replace_original_generation_with_current"
+file = "src/service/proxy.rs"
+anchor = '''        if context.generation() != Some(token.as_str()) {
+            return Err(PreparationError::Conflict);'''
+replacement = '''        let context=RequestContext::new(token.clone()).unwrap();
+        if context.generation() != Some(token.as_str()) {
+            return Err(PreparationError::Conflict);'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_save_metadata)"]
+expect_text = "stale controller generation admitted HTTP work"
+
+[[control]]
+name = "web_jobs_skip_revision_preparation"
+file = "src/service/proxy.rs"
+anchor = '''        operation
+            .admit(snapshot, target.as_deref(), &context)
+            .map_err(|_| PreparationError::Conflict)?;'''
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_save_metadata)"]
+expect_text = "stale HTTP revision admitted work"
+
+[[control]]
+name = "web_jobs_drop_original_http_trace"
+file = "src/web/handlers.rs"
+anchor = "context.with_traceparent(cause.traceparent()),"
+replacement = "context.with_traceparent(None),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_capture_header_trace)"]
+expect_text = "HTTP queue lost its original trace header"
+
+[[control]]
+name = "web_jobs_renew_deadline_at_execution"
+file = "src/service/proxy.rs"
+anchor = '''        } = self;
+        if Instant::now() >= deadline {'''
+replacement = '''        } = self;
+        let deadline=Instant::now()+Duration::from_secs(20);
+        if Instant::now() >= deadline {'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(local_command_keeps_the_original_deadline)"]
+expect_text = "queued HTTP command renewed its original deadline"
+
+[[control]]
+name = "web_jobs_ignore_active_mailbox_capacity"
+file = "src/web/jobs.rs"
+anchor = "let permit = self.slots.clone().try_acquire_owned().ok()?;"
+replacement = "let permit=self.slots.clone().try_acquire_owned().or_else(|_|Arc::new(Semaphore::new(1)).try_acquire_owned()).ok()?;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_capacity_and_passive)"]
+expect_text = "HTTP job admission ignored active capacity"
+
+[[control]]
+name = "web_jobs_history_ignores_result_count_bound"
+file = "src/web/jobs.rs"
+anchor = "if records.len() >= HISTORY {"
+replacement = "if false && records.len() >= HISTORY {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_history_evicts)"]
+expect_text = "HTTP result history exceeded its bound"
+
+[[control]]
+name = "web_jobs_history_evicts_running_job"
+file = "src/web/jobs.rs"
+anchor = 'records.iter().position(|r| r.status != "running")?'
+replacement = "records.iter().position(|_| true)?"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_history_evicts)"]
+expect_text = "HTTP history evicted a running job"
+
+[[control]]
+name = "web_jobs_report_leaks_private_reason"
+file = "src/web/jobs.rs"
+anchor = 'if value.get("reason").is_some_and(|r| !r.is_null()) {'
+replacement = 'if false && value.get("reason").is_some_and(|r| !r.is_null()) {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_results_preserve)"]
+expect_text = "HTTP report leaked a private save reason"
+
+[[control]]
+name = "web_jobs_error_leaks_private_service_text"
+file = "src/web/jobs.rs"
+anchor = 'Err(ServiceError::Uncertain(_)) => "uncertain",'
+replacement = 'Err(ServiceError::Uncertain(reason)) => return (None,Some(json!({"code":"uncertain","message":reason}))),'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_results_preserve)"]
+expect_text = "HTTP job leaked a private service error"
+
+[[control]]
+name = "web_jobs_ignore_encoded_result_bound"
+file = "src/web/jobs.rs"
+anchor = "bytes.len() <= RESULT_BYTES"
+replacement = "bytes.len() <= usize::MAX"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_results_preserve)"]
+expect_text = "HTTP job retained an oversized result"
+
+[[control]]
+name = "web_jobs_ignore_stop_while_http_drains"
+file = "src/web/jobs.rs"
+anchor = "_ = stop.cancelled() => return,"
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(web_jobs_server_close_drops)"]
+expect_text = "web stop did not cancel command futures while HTTP was draining"

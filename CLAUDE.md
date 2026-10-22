@@ -140,7 +140,11 @@ Optional HTTP uses `src/web` and the existing managed owner; see
 sessions, CSRF and live stream expiry/revocation. Strip CLI credentials before
 shared Debug Settings. Clean stop includes actual accepted-IO drop, not just
 Axum's outer task. `docs/v2-web-controls.toml` tests these guards. Browser assets
-and typed mutation routes remain subsequent work.
+remain subsequent work. Configuration/commissioning command jobs reuse the strict
+proxy parser and typed service APIs with original context/deadline and no MQTT
+completion. Bound job futures inside the Server task, never detached; results
+are process-local, with private free-text reasons sanitized. See
+`docs/v2-web-job-controls.toml`. Output apply/read/observations follow separately.
 
 Managed v2 group membership uses `dali::groups`, `service::groups` and concrete
 `physical::Work::Groups`; see `docs/groups.md`. Ordinary assignment saves desired

@@ -21,6 +21,7 @@ mod physical;
 mod proxy;
 mod routing;
 pub use proxy::DaliProxy;
+pub(crate) use proxy::{PreparationError, PreparedCommand};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Phase {
@@ -243,6 +244,14 @@ struct Request {
     _permit: OwnedSemaphorePermit,
 }
 impl DaliService {
+    #[cfg(test)]
+    pub(crate) fn with_config_test_hooks(
+        mut self,
+        hooks: crate::config_store::test_hooks::Hooks,
+    ) -> Self {
+        self.hooks = hooks;
+        self
+    }
     /// Enable authenticated HTTP inside the managed lifetime; opens no listener.
     pub fn with_web(mut self, settings: crate::web::Settings) -> Self {
         self.web = Some(settings);

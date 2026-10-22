@@ -1,9 +1,10 @@
 use super::{
     auth::{Auth, Policy},
-    handlers, transport, Settings,
+    handlers, jobs, transport, Settings,
 };
 use crate::service::ServiceHandle;
 use std::{
+    future::IntoFuture,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -23,6 +24,7 @@ pub(super) struct State {
     pub revoked: watch::Sender<u64>,
     pub streams: Arc<Semaphore>,
     pub handlers: Arc<Semaphore>,
+    pub jobs: Arc<jobs::Jobs>,
 }
 pub(crate) struct Server {
     task: Option<JoinHandle<std::io::Result<()>>>,
@@ -62,6 +64,7 @@ impl Server {
         if Instant::now() >= deadline {
             return Err("web listener startup expired".into());
         }
+        let (jobs, receiver) = jobs::Jobs::new();
         let state = Arc::new(State {
             auth: Mutex::new(Auth::new(settings.password, Policy::default())),
             settings,
@@ -70,6 +73,7 @@ impl Server {
             revoked: watch::channel(0).0,
             streams: Arc::new(Semaphore::new(8)),
             handlers: Arc::new(Semaphore::new(32)),
+            jobs: Arc::new(jobs),
         });
         let force = CancellationToken::new();
         let connections = Arc::new(Semaphore::new(transport::CONNECTIONS as usize));
@@ -80,11 +84,30 @@ impl Server {
         };
         let router = handlers::router(state.clone());
         let stop = state.stop.clone();
+        let job_loop = jobs::run(
+            state.jobs.clone(),
+            receiver,
+            state.handle.clone(),
+            stop.clone(),
+        );
         let task = tokio::spawn(async move {
+            let http = axum::serve(listener, router)
+                .with_graceful_shutdown(stop.clone().cancelled_owned())
+                .into_future();
+            tokio::pin!(http, job_loop);
+            // Both futures belong to this one task. Dropping/aborting it also
+            // drops every command receiver; no job task survives HTTP ownership.
             // WAIT: web-serve
-            axum::serve(listener, router)
-                .with_graceful_shutdown(stop.cancelled_owned())
-                .await
+            tokio::select! {
+                result = &mut http => result,
+                _ = &mut job_loop => {
+                    if !stop.is_cancelled() {
+                        return Err(std::io::Error::other("web command owner ended unexpectedly"));
+                    }
+                    // WAIT: web-serve
+                    http.await
+                }
+            }
         });
         tracing::info!(listen_address=%address,"Web access enabled");
         Ok(Self {

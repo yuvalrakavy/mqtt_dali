@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 
 mod auth;
 mod handlers;
+mod jobs;
 pub(crate) mod server;
 mod transport;
 pub(crate) use server::Server;
