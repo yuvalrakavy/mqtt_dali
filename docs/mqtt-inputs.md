@@ -70,14 +70,59 @@ invalidated UART/bus evidence uses false/unobserved or false/stale and nulls.
 Unavailable does not mean off or released. A quiet sensor is not declared absent
 merely because no new event occurs.
 
-Raw position is not automatically a Boolean maintained-switch value. Relative
-light is not universally lux. Full-resolution polling, resolution metadata and
-verified device-specific conversions remain separate work.
+Raw native position is not automatically a Boolean maintained-switch value.
+Relative light is not universally lux. Verified device-specific unit conversions
+remain separate work.
 
-An instance `refresh` returns its latest observed projection; it does not query
-the hardware in this boundary. Aggregate reads include the latest input snapshot
-after their final output read. Input modules themselves remain inventory metadata
-targets. Input Desired values are unsupported.
+## Query current values
+
+An instance `refresh` queries physical type, resolution and the complete input
+value. It works before the first event and when event delivery is disabled.
+Send this Command with an MQTT v5 response topic to `DALI/Command/Controller`:
+
+```json
+{"command":"refresh","target":"Bus1.Inputs.WallPanel.Instances.Door"}
+```
+
+A pressed one-bit button then has State including:
+
+```json
+{"Available":true,"Quality":"current","Status":true,"ValueSource":"query","ValueResolution":1,"InputValueRaw":"01","EventInformation":null}
+```
+
+InputValueRaw is an exact uppercase hexadecimal integer, big-endian and padded
+to ceil(ValueResolution/8) bytes. Repeated low padding bits are removed: one-bit
+FF becomes `01`; ten-bit ABC0 becomes `02AF`. Resolution can be 1..255 bits.
+Hex avoids JSON number precision loss. Missing/colliding replies or incomplete
+latches never become a fabricated zero or partly accumulated measurement.
+
+| Queried type | Additional current properties |
+|---|---|
+| Button, resolution 1 | Status Boolean |
+| Absolute input | Position normalized 0..1; InputState Boolean only at resolution 1 |
+| Occupancy, resolution 2 | Occupied and Movement Booleans |
+| Relative light | Exact raw value and resolution, without invented lux |
+
+Position is approximate for wide values; InputValueRaw stays exact. PositionRaw
+and LightLevelRaw retain their existing ten-bit event meaning and are null for
+queries. ValueSource is query/event/null. A native event clears old query-only
+values and resolution metadata; absolute event State remains raw until refreshed.
+A newer native observation wins over an in-flight query's older latched value.
+Polling never produces a button action.
+
+Query Available requires a complete supported/type-matched current value.
+Metadata-only replies use false/partial, no type reply false/unavailable, and a
+changed physical type false/type_mismatch. Unknown types and incompatible button/
+occupancy resolutions use false/unsupported, preserving any exact raw diagnostic
+value. Stale evidence clears query fields with explicit nulls. Query State keeps
+the original request trace; newer unsolicited native evidence has no trace.
+
+Aggregate refresh includes enabled input instances alongside outputs under the
+existing fair cursor and 15 s total ceiling. Each input gets at most 4 s without
+renewing deadlines per byte. Both operation kinds share one UART owner/permit;
+caller cancellation does not release active physical work early. Project the
+latest same-generation snapshot after the final await. Input modules remain
+inventory metadata targets, and input Desired values remain unsupported.
 
 ## Native actions
 

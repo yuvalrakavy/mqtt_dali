@@ -7,12 +7,21 @@ use serde_json::{json, Value};
 use std::collections::{BTreeMap, VecDeque};
 
 pub const EVENT_CAPACITY: usize = 64;
+pub mod readback;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Evidence {
+    Event {
+        frame: protocol::Event,
+        payload: Payload,
+    },
+    Query(readback::ReadValue),
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Observation {
     pub context: RequestContext,
-    pub frame: protocol::Event,
-    pub payload: Payload,
+    pub evidence: Evidence,
     pub(super) bus: u8,
     pub(super) stamp: Stamp,
     pub(super) stale: bool,
@@ -70,6 +79,7 @@ struct Route {
     projection: Projection,
     context: RequestContext,
     floor: Option<(Stamp, u64)>,
+    native_sequence: u64,
 }
 #[derive(Clone)]
 pub(super) struct Cut {
@@ -118,6 +128,7 @@ impl Router {
                     projection: projection.clone(),
                     context,
                     floor: None,
+                    native_sequence: 0,
                 });
             self.routes.insert(projection.target, route);
         }
@@ -173,6 +184,9 @@ impl Router {
                 if route.context.generation() == cut.context.generation()
                     && ready(bus) == Some(cut.stamp)
                 {
+                    if route.floor.is_none_or(|(stamp, _)| stamp != cut.stamp) {
+                        route.native_sequence = 0;
+                    }
                     // A redundant old completion must not move an installed floor backwards.
                     route.floor = Some((
                         cut.stamp,
@@ -237,13 +251,16 @@ impl Router {
             target.clone(),
             Observation {
                 context: context.clone(),
-                frame: event,
-                payload,
+                evidence: Evidence::Event {
+                    frame: event,
+                    payload,
+                },
                 bus,
                 stamp,
                 stale: false,
             },
         );
+        self.routes.get_mut(&target).unwrap().native_sequence = sequence;
         if self.notices.len() >= crate::atx::monitor::EVENT_CAPACITY {
             self.notices.pop_front();
             self.dropped = self.dropped.saturating_add(1);
@@ -261,6 +278,27 @@ impl Router {
             if ready(observation.bus) != Some(observation.stamp) {
                 observation.stale = true;
             }
+        }
+    }
+    pub fn native_sequence(&self, target: &str) -> u64 {
+        self.routes
+            .get(target)
+            .map_or(0, |route| route.native_sequence)
+    }
+    pub fn accept_query(&mut self, target: &str, sequence: u64, observation: &mut Observation) {
+        let Some(route) = self
+            .routes
+            .get(target)
+            .filter(|r| r.context.generation() == observation.context.generation())
+        else {
+            return;
+        };
+        if route.native_sequence > sequence {
+            if let Some(native) = self.observations.get(target) {
+                *observation = native.clone();
+            }
+        } else {
+            self.observations.insert(target.into(), observation.clone());
         }
     }
     pub fn take_notices(&mut self) -> (Vec<Notice>, u64) {
@@ -321,26 +359,42 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
         let quality = match observation {
             None => "unobserved",
             Some(o) if o.stale || !live => "stale",
-            Some(o) => match o.payload {
-                Payload::Unknown { .. } | Payload::Unresolved => "unsupported",
-                Payload::Button(ButtonAction::Pressed | ButtonAction::Released) => "current",
-                Payload::Button(_) => "partial",
-                _ => "current",
+            Some(o) => match &o.evidence {
+                Evidence::Query(value) => value.quality.label(),
+                Evidence::Event { payload, .. } => match payload {
+                    Payload::Unknown { .. } | Payload::Unresolved => "unsupported",
+                    Payload::Button(ButtonAction::Pressed | ButtonAction::Released) => "current",
+                    Payload::Button(_) => "partial",
+                    _ => "current",
+                },
             },
         };
         let current = observation.filter(|_| !matches!(quality, "stale" | "unobserved"));
         let mut values = PropertyMap::from_iter([
             (
                 "Available".into(),
-                Value::Bool(matches!(quality, "current" | "partial")),
+                Value::Bool(
+                    quality == "current"
+                        || quality == "partial"
+                            && matches!(
+                                observation.map(|o| &o.evidence),
+                                Some(Evidence::Event { .. })
+                            ),
+                ),
             ),
             ("Quality".into(), Value::from(quality)),
             (
                 "EventInformation".into(),
-                current.map_or(Value::Null, |o| Value::from(o.frame.information())),
+                current.map_or(Value::Null, |o| match o.evidence {
+                    Evidence::Event { frame, .. } => Value::from(frame.information()),
+                    _ => Value::Null,
+                }),
             ),
         ]);
-        let payload = current.map(|o| o.payload);
+        let payload = current.and_then(|o| match o.evidence {
+            Evidence::Event { payload, .. } => Some(payload),
+            _ => None,
+        });
         match projection.instance_type.unwrap() {
             1 => {
                 values.insert(
@@ -382,6 +436,7 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
             }
             _ => {}
         }
+        project_query(&mut values, projection.instance_type.unwrap(), current);
         let context = current.map_or_else(
             || {
                 RequestContext::new(token.clone())
@@ -396,6 +451,60 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
         ));
     }
     states
+}
+
+fn project_query(values: &mut PropertyMap, kind: u8, observation: Option<&Observation>) {
+    let query = observation.and_then(|o| match &o.evidence {
+        Evidence::Query(q) => Some(q),
+        _ => None,
+    });
+    let value = query.and_then(|q| q.value.as_ref());
+    values.insert(
+        "ValueSource".into(),
+        observation.map_or(Value::Null, |o| {
+            Value::from(match o.evidence {
+                Evidence::Event { .. } => "event",
+                Evidence::Query(_) => "query",
+            })
+        }),
+    );
+    values.insert(
+        "ValueResolution".into(),
+        query
+            .and_then(|q| q.resolution)
+            .map_or(Value::Null, |r| Value::from(r.bits())),
+    );
+    values.insert(
+        "InputValueRaw".into(),
+        value.map_or(Value::Null, |v| Value::from(v.hex())),
+    );
+    if kind == 2 {
+        values.insert("Position".into(), Value::Null);
+        values.insert("InputState".into(), Value::Null);
+    }
+    if !query.is_some_and(|q| q.quality == readback::Quality::Current) {
+        return;
+    }
+    let Some(value) = value else {
+        return;
+    };
+    match kind {
+        1 => {
+            values.insert("Status".into(), Value::Bool(value.as_u64() == Some(1)));
+        }
+        2 => {
+            values.insert("Position".into(), Value::from(value.normalized()));
+            if value.resolution().bits() == 1 {
+                values.insert("InputState".into(), Value::Bool(value.as_u64() == Some(1)));
+            }
+        }
+        3 => {
+            let flags = value.as_u64().expect("current two-bit occupancy value");
+            values.insert("Occupied".into(), Value::Bool(flags & 2 != 0));
+            values.insert("Movement".into(), Value::Bool(flags & 1 != 0));
+        }
+        _ => {}
+    }
 }
 
 pub(super) async fn events(

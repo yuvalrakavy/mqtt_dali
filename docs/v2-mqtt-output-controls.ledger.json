@@ -138,18 +138,18 @@
   },
   "per_fixture_deadline_extends_aggregate_ceiling": {
    "last_real": {
-    "at": "2026-10-22T00:45:20Z",
+    "at": "2026-10-22T03:38:41Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:3d1b341a7dfea48f",
-     "row": "9ec7913d8ce768fc",
+     "guard": "item:2b85d33fc8d0708a",
+     "row": "4e2dcdd4aeda0f68",
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "cf241b258b68c84c3a1c237ef1f8a1d8df18db8d",
+    "secs": 8.1,
+    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
     "verdict": "RED"
    }
   },
@@ -172,18 +172,18 @@
   },
   "physical_write_loses_its_original_trace": {
    "last_real": {
-    "at": "2026-10-21T23:11:32Z",
+    "at": "2026-10-22T03:38:49Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:dc390e50cb24d894",
-     "row": "40c38c19b3651e82",
+     "guard": "item:95bebcd8ac7a831f",
+     "row": "d26a4d0fe4ca0a3a",
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "secs": 7.5,
+    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
     "verdict": "RED"
    }
   },

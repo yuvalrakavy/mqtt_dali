@@ -48,6 +48,20 @@ impl Peer {
                             b"h01A0\n"=>Some(format!("J{level:02X}\n").into_bytes()),
                             b"h0190\n"=>Some(b"J04\n".to_vec()),
                             b"h0040\n"=>{level=64;signal.notify_one();None},
+                            b"l010080\n"=>Some(b"J01\n".to_vec()),
+                            b"l010081\n"=>Some(b"J01\n".to_vec()),
+                            b"l01008C\n"=>Some(b"JFF\n".to_vec()),
+                            b"l010180\n"=>Some(b"J02\n".to_vec()),
+                            b"l010181\n"=>Some(b"J0A\n".to_vec()),
+                            b"l01018C\n"=>Some(b"JAB\n".to_vec()),
+                            b"l01018D\n"=>Some(b"JC0\n".to_vec()),
+                            b"l010280\n"=>Some(b"J03\n".to_vec()),
+                            b"l010281\n"=>Some(b"J02\n".to_vec()),
+                            b"l01028C\n"=>Some(b"JAA\n".to_vec()),
+                            b"l010380\n"=>Some(b"J04\n".to_vec()),
+                            b"l010381\n"=>Some(b"J10\n".to_vec()),
+                            b"l01038C\n"=>Some(b"J12\n".to_vec()),
+                            b"l01038D\n"=>Some(b"J34\n".to_vec()),
                             other=>panic!("unexpected independent input-test HAT request: {other:?}"),
                         };
                         line.clear();
@@ -72,6 +86,57 @@ impl Peer {
             .unwrap()
             .unwrap();
     }
+}
+
+#[tokio::test]
+async fn input_readback_refresh_queries_a_quiet_button_without_synthesizing_actions() {
+    let fixture = input_fixture();
+    let mut peer = Peer::start();
+    let broker = FakeBroker::start().await;
+    let (service, handle) = fixture.service();
+    let running = start(
+        service.with_uart(peer.path.clone(), RepeatPolicy::Unverified),
+        &handle,
+        &broker,
+    )
+    .await;
+    let target = "Bus1.Inputs.Panel.Instances.First";
+    listening(&handle, &peer, target).await;
+    state(&broker, target, |v| v["Quality"] == "unobserved").await;
+    assert!(broker.send_with(
+        "DALI/Command/Controller",
+        r#"{"command":"refresh","target":"Bus1.Inputs.Panel.Instances.First"}"#,
+        &SendOptions::default()
+            .response_topic("test/input-query")
+            .user_property(
+                "traceparent",
+                "00-11111111111111111111111111111111-2222222222222222-01"
+            ),
+    ));
+    assert!(
+        broker
+            .wait_until(Duration::from_secs(2), |b| {
+                b.received_on(&format!("DALI/State/Controller/{target}"))
+                    .iter()
+                    .any(|r| {
+                        let v: serde_json::Value = serde_json::from_slice(&r.payload).unwrap();
+                        v["Status"] == true && v["ValueSource"] == "query"
+                    })
+            })
+            .await,
+        "quiet button refresh never queried its physical state"
+    );
+    let value = state(&broker, target, |v| v["ValueSource"] == "query").await;
+    assert_eq!(value["InputValueRaw"], "01");
+    assert_eq!(value["ValueResolution"], 1);
+    assert_eq!(value["EventInformation"], serde_json::Value::Null);
+    assert!(
+        actions(&broker, target).is_empty(),
+        "polling manufactured a native button action"
+    );
+    assert!(running.stop().await);
+    peer.task.abort();
+    assert!((&mut peer.task).await.unwrap_err().is_cancelled());
 }
 fn input_fixture() -> Fixture {
     let fixture = Fixture::new();
@@ -256,7 +321,7 @@ async fn live_input_mqtt_actions_survive_a_pending_light_command_and_publish_tru
         serde_json::from_slice(&broker.received_on("test/input-refresh")[0].payload).unwrap();
     assert!(
         reply.get("error").is_none(),
-        "cached input refresh failed: {reply}"
+        "physical input refresh failed: {reply}"
     );
     assert_eq!(
         peer.commands
@@ -268,8 +333,9 @@ async fn live_input_mqtt_actions_survive_a_pending_light_command_and_publish_tru
         commands
             .iter()
             .filter(|b| b.starts_with(b"h") || b.starts_with(b"l"))
-            .count(),
-        "input refresh sent a hardware query"
+            .count()
+            + 3,
+        "input refresh did not send its complete type/resolution/value query"
     );
     assert!(running.stop().await);
     peer.task.abort();

@@ -1,5 +1,81 @@
 use super::*;
 
+#[test]
+fn literal_input_queries_latch_restart_and_output_address_space_are_independent() {
+    let scenario: Scenario =
+        serde_json::from_value(serde_json::json!({"version":1,"buses":[{"number":0,
+        "outputs":[{"id":"lamp","short_address":0,"level":99}],
+        "inputs":[{"id":"panel","short_address":0,"instances":[2],
+        "values":[{"instance":0,"resolution":10,"bytes":[171,192]}]}]}]}))
+        .unwrap();
+    let mut model = Model::new(scenario).unwrap();
+    assert_eq!(model.transmit_input(0, 0x01fe35, 0), Reply::Value(1));
+    assert_eq!(model.transmit_input(0, 0x010080, 1), Reply::Value(2));
+    assert_eq!(model.transmit_input(0, 0x010081, 2), Reply::Value(10));
+    assert_eq!(model.transmit_input(0, 0x01008d, 3), Reply::None);
+    assert_eq!(model.transmit_input(0, 0x01008c, 4), Reply::Value(171));
+    model.set_input_value("panel", 0, vec![0x12, 0x34]).unwrap();
+    assert_eq!(
+        model.transmit_input(0, 0x01008d, 5),
+        Reply::Value(192),
+        "latch read a newer sample instead of the captured value"
+    );
+    assert_eq!(model.transmit_input(0, 0x01008d, 6), Reply::None);
+    assert_eq!(model.transmit_input(0, 0x01008c, 7), Reply::Value(0x12));
+    assert_eq!(
+        model.transmit_input(0, 0x01008d, 8),
+        Reply::Value(0x34),
+        "new full read did not restart its latch"
+    );
+    assert_eq!(model.transmit(0, 0x01a0, 9), Reply::Value(99));
+    assert_eq!(model.transmit_input(0, 0x010180, 10), Reply::None);
+    assert_eq!(model.transmit_input(0, 0x030080, 11), Reply::None);
+    assert!(model.set_input_value("panel", 0, vec![1]).is_err());
+}
+
+#[test]
+fn input_profiles_reject_invalid_widths_duplicates_and_conflicting_addresses_collide() {
+    let profile = serde_json::json!({"id":"first","short_address":0,"instances":[1],"values":[{"instance":0,"resolution":1,"bytes":[255]}]});
+    let mut second = profile.clone();
+    second["id"] = serde_json::json!("second");
+    second["values"][0]["bytes"] = serde_json::json!([0]);
+    let value = serde_json::json!({"version":1,"buses":[{"number":0,"inputs":[profile,second]}]});
+    let scenario: Scenario = serde_json::from_value(value.clone()).unwrap();
+    let mut model = Model::new(scenario).unwrap();
+    assert_eq!(model.transmit_input(0, 0x010080, 0), Reply::Value(1));
+    assert_eq!(
+        model.transmit_input(0, 0x01008c, 1),
+        Reply::Collision,
+        "conflicting physical inputs did not collide"
+    );
+    for (field, bad) in [
+        ("resolution", serde_json::json!(0)),
+        ("bytes", serde_json::json!([])),
+        ("bytes", serde_json::json!([0, 0])),
+        ("instance", serde_json::json!(1)),
+    ] {
+        let mut bad_scenario = value.clone();
+        bad_scenario["buses"][0]["inputs"][0]["values"][0][field] = bad;
+        assert!(
+            serde_json::from_value::<Scenario>(bad_scenario)
+                .unwrap()
+                .validate()
+                .is_err(),
+            "invalid input profile was accepted"
+        );
+    }
+    let mut duplicate = value;
+    let extra = duplicate["buses"][0]["inputs"][0]["values"][0].clone();
+    duplicate["buses"][0]["inputs"][0]["values"]
+        .as_array_mut()
+        .unwrap()
+        .push(extra);
+    assert!(serde_json::from_value::<Scenario>(duplicate)
+        .unwrap()
+        .validate()
+        .is_err());
+}
+
 fn scenario() -> Scenario {
     serde_json::from_str(
         r#"{"version":1,"seed":9,"clock":"frozen","buses":[

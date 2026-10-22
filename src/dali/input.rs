@@ -1,5 +1,7 @@
 //! Part 103 input addresses, query frames and native Part 301–304 event data.
 //! This pure codec performs no I/O and does not assign an event to a named target.
+mod value;
+pub use value::{InputValue, Resolution, ValueError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum Error {

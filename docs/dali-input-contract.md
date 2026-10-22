@@ -50,8 +50,7 @@ The codec preserves native short/double/long actions. It does not run another
 gesture recognizer or infer a physical held/released state from action-only
 events. Raw absolute/light values do not establish calibration, physical units
 or availability. Relative light is not universally lux; use a verified device
-conversion when one exists. Discovery supplies the resolution needed for later
-full-value reads and interpretation.
+conversion when one exists. Full-value reads query resolution independently.
 
 ## Read-query frames
 
@@ -67,6 +66,26 @@ instance 31 is `7F1F8C`. Wrap these in the existing ATX Bits24/`l` command; repe
 
 Building a query is not a device response or proof of presence. No response and
 collisions must remain unavailable evidence in the executing service.
+
+## Exact full-resolution values
+
+`Resolution::new` accepts 1..255 bits and rejects zero. `InputValue::decode`
+requires exactly ceil(bits/8) bytes, MSB first, from INPUT VALUE followed by INPUT
+VALUE LATCH. Strip unused repeated low bits after accumulating all bytes. Do not
+discard FF as MASK or truncate to u64. The type keeps canonical big-endian bytes
+and fixed-width uppercase hex; `as_u64` returns None on overflow and `normalized`
+is an approximate fraction. Examples: one-bit FF -> 01, two-bit 55/AA/FF ->
+01/02/03, ten-bit ABC0 -> 02AF, 255-bit all-FF -> 7F followed by 31 FF bytes.
+The managed service uses Query evidence and never invents an Event for polling.
+
+The [general variables](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/6113524875.html)
+define 1..255-bit resolution; the PLC [value query](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5634238347.html)
+documents value/latch but separately limits its own LWORD result to 64 bits.
+The pinned python-dali sequence supplies the low-padding cross-check.
+[Button](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5908386187.html)
+and [occupancy](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5908388107.html)
+variables define their one-bit and two-bit resolutions. Status/configuration,
+calibration and feedback are separate operations.
 
 The independent literal tests cover source schemes, native action values,
 command/event distinction, contextual type resolution, unknown data, raw sensor

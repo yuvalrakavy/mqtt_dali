@@ -14,6 +14,7 @@ mod hat;
 pub mod input;
 pub mod output;
 mod owner;
+mod physical;
 mod proxy;
 mod routing;
 pub use proxy::DaliProxy;
@@ -181,6 +182,7 @@ type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations)
 type OutputAcceptanceHook = Arc<dyn Fn(&mut hat::Hat) + Send + Sync>;
 enum Message {
     Output(output::Request),
+    Input(input::readback::Request),
     Attach(
         mqtt_bridge_kit::Reporter,
         oneshot::Sender<Result<(), String>>,

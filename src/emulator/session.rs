@@ -32,6 +32,11 @@ pub enum Control {
         bus: u8,
         frame: u32,
     },
+    SetInputValue {
+        id: String,
+        instance: u8,
+        bytes: Vec<u8>,
+    },
     Raw {
         bytes: Vec<u8>,
     },
@@ -288,6 +293,8 @@ impl State {
                     let now = self.model_time();
                     let reply = if header == b'H' {
                         self.model.transmit(bus, value as u16, now)
+                    } else if header == b'L' {
+                        self.model.transmit_input(bus, value, now)
                     } else {
                         self.model.intervening_frame(bus);
                         Reply::None
@@ -345,6 +352,13 @@ impl State {
             }
             Control::SetAddress { id, short_address } => {
                 self.model.set_address(&id, short_address)?
+            }
+            Control::SetInputValue {
+                id,
+                instance,
+                bytes,
+            } => {
+                self.model.set_input_value(&id, instance, bytes)?;
             }
             Control::BusPower { bus, powered } => {
                 self.model.set_power(bus, powered)?;

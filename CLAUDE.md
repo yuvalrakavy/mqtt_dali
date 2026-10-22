@@ -198,6 +198,14 @@ receive-only per-route cutover. Sync routes before draining frames after metadat
 activation. State comes from latest snapshots after awaits; notices carry native
 actions rather than historical State. Preserve the existing bounded SDK event
 queue across broker outages; never reconstruct actions from retained State.
+`read_input` and MQTT instance/aggregate refresh query exact 1..255-bit values.
+`Evidence` separates Event/Query; input reads share the existing physical owner,
+permit and fixed settlement through `physical::Work`. Newer native observations
+win over latched queries; receive boundaries reset sequence tracking. Query
+availability requires complete supported/type-matched values. Explicit nulls
+clear old merged data. Preserve full bytes/hex, strip low padding and never
+truncate to u64, treat FF as MASK or fabricate actions/units. See
+`docs/v2-input-readback-controls.toml`; physical input validation remains pending.
 
 ## Architecture (legacy)
 

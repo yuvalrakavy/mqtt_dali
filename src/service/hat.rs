@@ -1,5 +1,5 @@
 //! UART lifecycle only. Fixture operations must join the service admission path.
-use super::{input, output, ServiceError};
+use super::{input, output, physical, ServiceError};
 use super::{BusHealth, Hardware};
 use crate::atx::{
     monitor::{CloseReason, Event},
@@ -54,7 +54,7 @@ enum JobKind {
     Recover,
     Query,
     Close,
-    Output,
+    Physical,
     InputBoundary,
     Settle,
 }
@@ -70,7 +70,7 @@ enum Done {
     Boundary(Result<u64, TransactionError>),
     Recover(Result<(), TransactionError>),
     Close(Result<(), TransactionError>, bool),
-    Output(output::Outcome),
+    Physical(physical::Outcome),
     InputBoundary(Vec<input::Cut>, Result<u64, TransactionError>),
     Settled(Result<(), TransactionError>),
 }
@@ -101,8 +101,8 @@ pub(super) struct Hat {
     error: String,
     session_generation: u64,
     bus_generations: [u64; 4],
-    physical: Option<output::Active>,
-    completed: Option<output::Completion>,
+    physical: Option<physical::Active>,
+    completed: Option<physical::Completion>,
     inputs: input::Router,
 }
 enum Wake {
@@ -197,7 +197,7 @@ impl Hat {
             // WAIT: v2-hat-loop
             return pending().await;
         }
-        let mut progressed = self.expire_output();
+        let mut progressed = self.expire_physical();
         // Preserve queued transport evidence without allowing renewed input to
         // postpone an actual helper join indefinitely. Each lag also uses budget.
         for _ in 0..=crate::atx::monitor::EVENT_CAPACITY {
@@ -252,9 +252,10 @@ impl Hat {
                 // EOF that reaches this receiver after a Closed result/status.
                 biased;
                 _=async { match physical.as_mut() {
-                    Some(p) if p.stage==output::Stage::Pending=>{
+                    Some(p) if p.stage==physical::Stage::Pending=>{
+                        let deadline=p.work.deadline();
                         // WAIT: v2-hat-loop
-                        tokio::select! { biased; _=p.request.reply.closed()=>{},_=tokio::time::sleep_until(p.request.deadline)=>{} }
+                        tokio::select! { biased; _=p.work.wait_for_receiver_close()=>{},_=tokio::time::sleep_until(deadline)=>{} }
                     },_=>dormant().await
                 }}=>Wake::OutputExpired,
                 event=async { match events { Some(events) if !closing => {
@@ -290,7 +291,7 @@ impl Hat {
             }
             Wake::Timer => {}
             Wake::OutputExpired => {
-                self.expire_output();
+                self.expire_physical();
             }
         }
         self.advance()?;
@@ -331,7 +332,7 @@ impl Hat {
         self.cancel_job();
         self.closing = true;
         if let Some(physical) = &mut self.physical {
-            physical.stage = output::Stage::Closing;
+            physical.stage = physical::Stage::Closing;
             physical
                 .cleanup
                 .get_or_insert_with(|| Instant::now() + Duration::from_secs(1));
@@ -363,7 +364,7 @@ impl Hat {
             });
             return Ok(());
         }
-        if self.advance_output()? {
+        if self.advance_physical()? {
             return Ok(());
         }
         if self.session.is_none() {
@@ -567,18 +568,20 @@ impl Hat {
                 self.closing = false;
                 self.next = Instant::now() + retry;
                 if self.physical.is_some() {
-                    self.complete_output(Some("transport closed before output settlement".into()));
+                    self.complete_physical(Some(
+                        "transport closed before operation settlement".into(),
+                    ));
                 }
             }
-            Done::Output(outcome) => {
-                let physical = self.physical.as_mut().expect("owned output result");
+            Done::Physical(outcome) => {
+                let physical = self.physical.as_mut().expect("owned physical result");
                 physical.outcome = Some(outcome);
-                physical.stage = output::Stage::Settling;
+                physical.stage = physical::Stage::Settling;
                 physical
                     .cleanup
                     .get_or_insert_with(|| Instant::now() + Duration::from_secs(1));
             }
-            Done::Settled(Ok(())) => self.complete_output(None),
+            Done::Settled(Ok(())) => self.complete_physical(None),
             Done::Settled(Err(_)) => self.begin_close(),
             Done::InputBoundary(cuts, Ok(minimum)) => {
                 let stamps = self.input_stamps();
@@ -664,6 +667,16 @@ impl Hat {
             })
     }
     pub(super) fn enqueue_output(&mut self, request: output::Request, route: output::Route) {
+        self.enqueue_physical(physical::Work::Output(request, route));
+    }
+    pub(super) fn enqueue_input(
+        &mut self,
+        request: input::readback::Request,
+        route: input::readback::Route,
+    ) {
+        self.enqueue_physical(physical::Work::Input(request, route));
+    }
+    fn enqueue_physical(&mut self, work: physical::Work) {
         let error = if self.physical.is_some() || self.completed.is_some() {
             Some(ServiceError::Busy)
         } else if !matches!(self.hardware(), Hardware::Ready { .. })
@@ -671,117 +684,110 @@ impl Hat {
             || !self
                 .observations
                 .iter()
-                .any(|bus| bus.bus == route.bus && bus.status == 2)
+                .any(|bus| bus.bus == work.bus() && bus.status == 2)
         {
             Some(ServiceError::Rejected("UART or bus is not ready".into()))
         } else {
             None
         };
         if let Some(error) = error {
-            let _ = request.reply.send(Err(error));
+            work.reject(error);
             return;
         }
-        let Some(stamp) = self.stamp(route.bus) else {
-            let _ = request.reply.send(Err(ServiceError::Rejected(
+        let Some(stamp) = self.stamp(work.bus()) else {
+            work.reject(ServiceError::Rejected(
                 "UART evidence is exhausted or unavailable".into(),
-            )));
+            ));
             return;
         };
-        self.physical = Some(output::Active {
-            request,
-            route,
+        self.physical = Some(physical::Active {
+            work,
             stamp,
-            stage: output::Stage::Pending,
+            stage: physical::Stage::Pending,
             outcome: None,
             cleanup: None,
         });
     }
-    fn advance_output(&mut self) -> Result<bool, String> {
+    fn advance_physical(&mut self) -> Result<bool, String> {
         let Some(physical) = self.physical.as_ref() else {
             return Ok(false);
         };
         match physical.stage {
-            output::Stage::Pending => {
-                let reason = if physical.request.reply.is_closed()
-                    || Instant::now() >= physical.request.deadline
-                {
-                    Some("output request expired before hardware admission")
-                } else if self.stamp(physical.route.bus) != Some(physical.stamp)
-                    || !self.can_query()
-                    || self
-                        .session
-                        .as_ref()
-                        .is_none_or(|s| s.link.status() != SessionState::Ready)
-                    || !self
-                        .observations
-                        .iter()
-                        .any(|bus| bus.bus == physical.route.bus && bus.status == 2)
-                {
-                    Some("output request's captured UART or bus epoch is no longer ready")
-                } else {
-                    None
-                };
+            physical::Stage::Pending => {
+                let reason =
+                    if physical.work.is_closed() || Instant::now() >= physical.work.deadline() {
+                        Some("request expired before hardware admission")
+                    } else if self.stamp(physical.work.bus()) != Some(physical.stamp)
+                        || !self.can_query()
+                        || self
+                            .session
+                            .as_ref()
+                            .is_none_or(|s| s.link.status() != SessionState::Ready)
+                        || !self
+                            .observations
+                            .iter()
+                            .any(|bus| bus.bus == physical.work.bus() && bus.status == 2)
+                    {
+                        Some("request's captured UART or bus epoch is no longer ready")
+                    } else {
+                        None
+                    };
                 if let Some(reason) = reason {
                     let physical = self.physical.take().unwrap();
-                    self.completed = Some(output::Completion {
-                        request: physical.request,
-                        observation: None,
-                        error: Some(ServiceError::Rejected(reason.into())),
-                    });
+                    self.completed = Some(
+                        physical
+                            .work
+                            .finish(None, Some(ServiceError::Rejected(reason.into()))),
+                    );
                     return Ok(false);
                 }
                 let physical = self.physical.as_mut().unwrap();
-                physical.stage = output::Stage::Running;
+                physical.stage = physical::Stage::Running;
+                if let physical::Work::Input(request, _) = &mut physical.work {
+                    request.native_sequence = self.inputs.native_sequence(&request.target);
+                }
                 let link = self.session.as_ref().unwrap().link.clone();
-                let route = physical.route.clone();
-                let span = route.context.operation_span(&route.controller, "output");
-                let stamp = physical.stamp;
-                let intent = physical.request.intent;
-                let include_colour = physical.request.include_colour;
-                let deadline = physical.request.deadline;
+                let span = physical.work.span();
+                let execution = physical.work.execution(link, physical.stamp);
                 self.spawn(
-                    JobKind::Output,
+                    JobKind::Physical,
                     async move {
-                        Done::Output(
-                            output::execute(link, route, stamp, intent, include_colour, deadline)
-                                .await,
-                        )
+                        // WAIT: v2-physical-operation
+                        Done::Physical(execution.await)
                     }
                     .instrument(span),
                 );
             }
-            output::Stage::Settling => {
+            physical::Stage::Settling => {
                 let link = self.session.as_ref().unwrap().link.clone();
-                let deadline = physical.cleanup.expect("one output cleanup ceiling");
+                let deadline = physical.cleanup.expect("one physical cleanup ceiling");
                 self.spawn(JobKind::Settle, async move {
                     Done::Settled(link.settle_until(deadline).await)
                 });
             }
-            output::Stage::Running => return Err("output helper ownership disappeared".into()),
-            output::Stage::Closing => return Err("output teardown ownership disappeared".into()),
+            physical::Stage::Running => return Err("physical helper ownership disappeared".into()),
+            physical::Stage::Closing => {
+                return Err("physical teardown ownership disappeared".into())
+            }
         }
         Ok(true)
     }
-    fn expire_output(&mut self) -> bool {
+    fn expire_physical(&mut self) -> bool {
         if self.physical.as_ref().is_some_and(|p| {
-            p.stage == output::Stage::Pending
-                && (p.request.reply.is_closed() || Instant::now() >= p.request.deadline)
+            p.stage == physical::Stage::Pending
+                && (p.work.is_closed() || Instant::now() >= p.work.deadline())
         }) {
             let physical = self.physical.take().unwrap();
-            self.completed = Some(output::Completion {
-                request: physical.request,
-                observation: None,
-                error: Some(ServiceError::Expired),
-            });
+            self.completed = Some(physical.work.finish(None, Some(ServiceError::Expired)));
             true
         } else {
             false
         }
     }
-    fn complete_output(&mut self, reason: Option<String>) {
+    fn complete_physical(&mut self, reason: Option<String>) {
         let physical = self.physical.take().expect("owned physical completion");
         let stale = reason.or_else(|| {
-            (self.stamp(physical.route.bus) != Some(physical.stamp)
+            (self.stamp(physical.work.bus()) != Some(physical.stamp)
                 || self.closing
                 || self.needs_quiet
                 || self.reset
@@ -792,37 +798,46 @@ impl Hat {
                 || !self
                     .observations
                     .iter()
-                    .any(|bus| bus.bus == physical.route.bus && bus.status == 2))
+                    .any(|bus| bus.bus == physical.work.bus() && bus.status == 2))
             .then(|| "UART or bus observation epoch changed".into())
         });
-        let (observation, mut error) = match physical.outcome {
+        let (mut sample, mut error) = match physical.outcome {
             Some(mut outcome) => {
                 if outcome.recovery {
                     self.needs_quiet = true;
                     self.next = Instant::now();
                 }
                 if let Some(reason) = &stale {
-                    outcome.observation.invalidate(reason);
+                    outcome.sample.invalidate(reason);
                 }
-                (Some(outcome.observation), outcome.error)
+                (Some(outcome.sample), outcome.error)
             }
             None => (None, None),
         };
         if let Some(reason) = stale {
-            error = Some(if physical.request.intent.is_some() {
+            error = Some(if physical.work.mutating() {
                 ServiceError::Uncertain(reason)
             } else {
                 ServiceError::Rejected(reason)
             });
         }
-        self.completed = Some(output::Completion {
-            request: physical.request,
-            observation,
-            error,
-        });
+        if let (physical::Work::Input(request, _), Some(physical::Sample::Input(observation))) =
+            (&physical.work, &mut sample)
+        {
+            self.inputs
+                .accept_query(&request.target, request.native_sequence, observation);
+        }
+        self.completed = Some(physical.work.finish(sample, error));
     }
-    pub(super) fn take_completed_output(&mut self) -> Option<output::Completion> {
+    pub(super) fn take_completed_physical(&mut self) -> Option<physical::Completion> {
         self.completed.take()
+    }
+    #[cfg(test)]
+    fn take_completed_output(&mut self) -> Option<output::Completion> {
+        self.take_completed_physical().map(|value| match value {
+            physical::Completion::Output(output) => output,
+            _ => panic!("output fixture received an input completion"),
+        })
     }
     #[cfg(test)]
     pub(super) fn power_cycle_output_samples_for_test(&mut self) {
@@ -963,10 +978,10 @@ impl Hat {
         }
         self.session = None;
         if let Some(physical) = self.physical.take() {
-            let _ = physical.request.reply.send(Err(ServiceError::Closed));
+            physical.work.reject(ServiceError::Closed);
         }
         if let Some(completed) = self.completed.take() {
-            let _ = completed.request.reply.send(Err(ServiceError::Closed));
+            completed.reject();
         }
         self.closed = true;
         self.terminal = true;

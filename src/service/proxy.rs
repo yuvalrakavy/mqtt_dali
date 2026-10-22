@@ -274,16 +274,14 @@ impl DaliProxy {
             }
             Scope::Target(target) => {
                 let snapshot = self.snapshot()?;
-                if let Some(state) = super::input::projections(&snapshot)
-                    .into_iter()
-                    .find(|s| s.state.target == target)
-                {
-                    if cause
-                        .generation()
-                        .is_some_and(|g| Some(g) != state.context.generation())
-                    {
-                        return Err(OpError::Rejected("retired input generation".into()));
-                    }
+                if snapshot.model.projections().iter().any(|p| {
+                    p.target == target
+                        && matches!(p.location, crate::inventory::Location::InputInstance { .. })
+                }) {
+                    let deadline = Instant::now() + Duration::from_secs(4);
+                    let state = self
+                        .read_input_observation(&target, cause.clone(), deadline)
+                        .await?;
                     return Ok(vec![state]);
                 }
                 let deadline = Instant::now() + Self::output_budget(&snapshot, &target, false);
@@ -303,6 +301,40 @@ impl DaliProxy {
             }
             Scope::All => self.read_all(cause).await,
         }
+    }
+    async fn read_input_observation(
+        &self,
+        target: &str,
+        cause: RequestContext,
+        deadline: Instant,
+    ) -> Result<ContextualState, OpError> {
+        let observed = self
+            .handle
+            .read_input(target, cause, deadline)
+            .await
+            .map_err(op_error)?;
+        #[cfg(test)]
+        if let Some(pause) = &self.read_pause {
+            pause.point().await;
+        }
+        let snapshot = self.snapshot()?;
+        super::input::readback::resolve(&snapshot, target, &observed.context).map_err(op_error)?;
+        if Instant::now() >= deadline
+            || !snapshot.inputs.get(target).is_some_and(|value| {
+                !value.stale && value.context.generation() == observed.context.generation()
+            })
+            || !matches!(&snapshot.hardware,Hardware::Ready{buses,..} if buses.iter().any(|b|b.bus==observed.bus && b.status==2))
+        {
+            return Err(OpError::Rejected(
+                "input evidence changed before MQTT completion".into(),
+            ));
+        }
+        super::input::projections(&snapshot)
+            .into_iter()
+            .find(|s| {
+                s.state.target == target && s.context.generation() == observed.context.generation()
+            })
+            .ok_or_else(|| OpError::Rejected("input mapping changed before MQTT completion".into()))
     }
     async fn read_observation(
         &self,
@@ -326,10 +358,10 @@ impl DaliProxy {
         let snapshot = self.snapshot()?;
         let inventory = Self::inventory(&snapshot, cause)?;
         let table = routing::generations(&snapshot.model);
-        let targets: Vec<String> = snapshot.model.projections().into_iter()
-            .filter(|value| matches!(value.location, crate::inventory::Location::Output { bus, .. }
+        let targets: Vec<(String,bool)> = snapshot.model.projections().into_iter()
+            .filter(|value| matches!(value.location, crate::inventory::Location::Output { bus, .. } | crate::inventory::Location::InputInstance { bus, .. }
                 if snapshot.model.inventory().buses.iter().any(|value| value.bus == bus && value.enabled)))
-            .map(|value| value.target).collect();
+            .map(|value| {let input=matches!(value.location,crate::inventory::Location::InputInstance{..});(value.target,input)}).collect();
         if targets.is_empty() {
             let mut states = vec![inventory];
             states.extend(state::projections(&snapshot));
@@ -343,6 +375,7 @@ impl DaliProxy {
         let start = self.read_cursor % targets.len();
         let deadline = Instant::now() + Duration::from_secs(15);
         let mut observed = Vec::new();
+        let mut observed_inputs = Vec::new();
         let mut failed = 0;
         for offset in 0..targets.len() {
             if Instant::now() >= deadline {
@@ -353,15 +386,26 @@ impl DaliProxy {
             // Persist before the first await: runtime cancellation/reconnect
             // must not keep restarting at the same fixture.
             self.read_cursor = (index + 1) % targets.len();
-            let target = &targets[index];
+            let (target, input) = &targets[index];
             let context = RequestContext::new(table.targets[target].clone())
                 .map_err(OpError::Unusable)?
                 .with_traceparent(cause.traceparent());
-            let until = deadline
-                .min(Instant::now() + Self::output_budget(&self.snapshot()?, target, false));
-            match self.read_observation(target, context, until).await {
-                Ok(value) => observed.push((target.clone(), value)),
-                Err(_) => failed += 1,
+            let budget = if *input {
+                Duration::from_secs(4)
+            } else {
+                Self::output_budget(&self.snapshot()?, target, false)
+            };
+            let until = deadline.min(Instant::now() + budget);
+            if *input {
+                match self.read_input_observation(target, context, until).await {
+                    Ok(state) => observed_inputs.push((target.clone(), state.context)),
+                    Err(_) => failed += 1,
+                }
+            } else {
+                match self.read_observation(target, context, until).await {
+                    Ok(value) => observed.push((target.clone(), value)),
+                    Err(_) => failed += 1,
+                }
             }
         }
         let latest = self.snapshot()?;
@@ -375,6 +419,13 @@ impl DaliProxy {
             ));
         }
         let mut states = vec![inventory];
+        for (target, context) in observed_inputs {
+            let valid=latest.inputs.get(&target).is_some_and(|value|!value.stale && value.context.generation()==context.generation()
+                && matches!(&latest.hardware,Hardware::Ready{buses,..} if buses.iter().any(|b|b.bus==value.bus && b.status==2)));
+            if !valid {
+                failed += 1;
+            }
+        }
         let mut projected: std::collections::BTreeMap<_, _> = state::projections(&latest)
             .into_iter()
             .map(|value| (value.state.target.clone(), value))
@@ -387,7 +438,7 @@ impl DaliProxy {
         }
         if failed != 0 {
             return Err(OpError::Rejected(format!(
-                "readback incomplete for {failed} output(s); inspect current state"
+                "readback incomplete for {failed} endpoint(s); inspect current state"
             )));
         }
         states.extend(projected.into_values());

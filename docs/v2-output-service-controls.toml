@@ -234,8 +234,8 @@ expect_text = '''transport event released physical admission before backend tear
 [[control]]
 name = "queued_output_adopts_a_new_bus_epoch"
 file = "src/service/hat.rs"
-anchor = '''} else if self.stamp(physical.route.bus) != Some(physical.stamp)'''
-replacement = '''} else if false && self.stamp(physical.route.bus) != Some(physical.stamp)'''
+anchor = '''} else if self.stamp(physical.work.bus()) != Some(physical.stamp)'''
+replacement = '''} else if false && self.stamp(physical.work.bus()) != Some(physical.stamp)'''
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(queued_output_refuses_a_power_cycle_even_when_health_completed_successfully)"]
 expect_text = '''queued output bypassed its captured bus epoch before hardware admission'''
@@ -243,8 +243,8 @@ expect_text = '''queued output bypassed its captured bus epoch before hardware a
 [[control]]
 name = "completed_output_ignores_bus_epoch_loss"
 file = "src/service/hat.rs"
-anchor = '''(self.stamp(physical.route.bus) != Some(physical.stamp)'''
-replacement = '''(false && self.stamp(physical.route.bus) != Some(physical.stamp)'''
+anchor = '''(self.stamp(physical.work.bus()) != Some(physical.stamp)'''
+replacement = '''(false && self.stamp(physical.work.bus()) != Some(physical.stamp)'''
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(completed_readback_before_a_power_cycle_is_partial_evidence_not_current_state)"]
 expect_text = '''post-sample power cycle became a fresh readback'''
@@ -252,8 +252,12 @@ expect_text = '''post-sample power cycle became a fresh readback'''
 [[control]]
 name = "caller_uses_earlier_acceptance_sample"
 file = "src/service/owner.rs"
-anchor = '''                                *observation=accepted.clone();'''
-replacement = '''                                let _ = accepted;'''
+anchor = '''if let Some(accepted)=snapshot.outputs.get(&completion.request.target)
+                                .filter(|sample| sample.context.generation()==observation.context.generation()) {
+                                *observation=accepted.clone();'''
+replacement = '''if let Some(accepted)=snapshot.outputs.get(&completion.request.target)
+                                .filter(|sample| sample.context.generation()==observation.context.generation()) {
+                                let _=accepted;'''
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(output_reply_and_cache_share_the_final_acceptance_sample)"]
 expect_text = '''caller accepted current output while the final cached sample was stale'''
@@ -309,8 +313,8 @@ expect_text = '''write completion echoed requested brightness'''
 [[control]]
 name = "pending_output_waits_for_health_before_expiring"
 file = "src/service/hat.rs"
-anchor = '''Some(p) if p.stage==output::Stage::Pending=>{'''
-replacement = '''Some(p) if false && p.stage==output::Stage::Pending=>{'''
+anchor = '''Some(p) if p.stage==physical::Stage::Pending=>{'''
+replacement = '''Some(p) if false && p.stage==physical::Stage::Pending=>{'''
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(canceled_or_expired_queued_output_retires_while_health_is_still_pending)"]
 expect_text = '''queued output waited for the independent health reply'''

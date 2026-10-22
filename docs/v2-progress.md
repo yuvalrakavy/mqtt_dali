@@ -5,6 +5,44 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4c4 — current input readback
+
+Saved input instances now query physical type, resolution and all value/latch
+bytes through the same UART owner/permit as light operations. Exact 1..255-bit
+values use canonical bytes/hex; contact/button/occupancy values are interpreted
+only with compatible resolution/type. Missing/colliding/changed-type evidence
+clears old State rather than inventing released/off. Instance and aggregate MQTT
+refresh now query inputs, retaining the original aggregate ceiling/fair cursor.
+Native events remain distinct; polling generates no actions, and a newer native
+observation wins over a latched query. The independent emulator has optional
+current-value profiles and explicit value controls without changing old scenarios.
+
+Verified locally on 2026-10-22:
+
+- The first real MQTT quiet-button refresh test failed before production changes.
+  **399 native tests passed**, including 17 added cases for exact/padded/wide
+  values, common types, independent latches, collision/missing/type mismatch,
+  merged State clearing, original traces, newer native events, cancellation,
+  rename, ready-reply expiry, final acceptance and managed shutdown.
+- A 255-bit literal peer paced at 80 ms/reply passes the fixed 4 s MQTT budget;
+  changing it to 2 s fails the intended completion assertion.
+- **12 new fault controls and 8 affected existing controls** all fail at their
+  declared behavioral assertions. Old anchors now reference shared operation
+  names and the current aggregate budget path. No recovery behavior changed.
+- Scoped strict Clippy, Pi library/all four binary compilation, changed-file
+  rustfmt/whitespace, wait registry and doctests (none defined) pass. Logs:
+  `/tmp/dali-input-readback-controls`, `/tmp/dali-input-readback-restored-gate`
+  and `/tmp/dali-input-readback-final-gate`. The registry's missing explicit
+  expiry wording was corrected before the final full-suite pass.
+- Both sequential design gates approved; source acceptance follows the frozen
+  implementation commit. Available reviewers are same-family.
+
+Remaining input work: hardware discovery/addressing, event configuration,
+feedback, unresolved group/source routing, calibrated units and physical device
+validation. Native absolute/light events retain their existing ten-bit raw
+meaning; full-resolution/Boolean contact projection comes from a query. No live
+UART, production broker, Store, physical fixture or firmware validation is claimed.
+
 ## P0 — configuration boundary implemented
 
 The library `src/config.rs` and development binary `mqtt_dali_v2 --check-config`

@@ -260,10 +260,9 @@ impl ProcessService for DaliService {
                     if let Err(error)=result { failure=Some(error);break; }
                     let mut snapshot=self.handle.snapshot().expect("service started");
                     snapshot.hardware=hat.hardware();
-                    snapshot.inputs=hat.input_observations();
                     snapshot.input_listeners=hat.input_listeners();
-                    let mut completion=hat.take_completed_output();
-                    if let Some(completion)=&mut completion {
+                    let mut completion=hat.take_completed_physical();
+                    if let Some(physical::Completion::Output(completion))=&mut completion {
                         if let Some(observation)=&mut completion.observation {
                             if owner.table.targets.get(&completion.request.target).map(String::as_str)==observation.context.generation() {
                                 snapshot.outputs.insert(completion.request.target.clone(), observation.clone());
@@ -277,7 +276,7 @@ impl ProcessService for DaliService {
                     hat.invalidate_outputs(&mut snapshot.outputs);
                     // Cache and reply share the final validated sample. A second
                     // independent validation could otherwise change only one.
-                    if let Some(completion)=&mut completion {
+                    if let Some(physical::Completion::Output(completion))=&mut completion {
                         if let Some(observation)=&mut completion.observation {
                             if let Some(accepted)=snapshot.outputs.get(&completion.request.target)
                                 .filter(|sample| sample.context.generation()==observation.context.generation()) {
@@ -288,13 +287,26 @@ impl ProcessService for DaliService {
                             }
                         }
                     }
+                    snapshot.inputs=hat.input_observations();
+                    if let Some(physical::Completion::Input(completion))=&mut completion {
+                        if let Some(observation)=&mut completion.observation {
+                            if let Some(accepted)=snapshot.inputs.get(&completion.request.target)
+                                .filter(|sample|sample.context.generation()==observation.context.generation()) {
+                                *observation=accepted.clone();
+                            }
+                            if observation.stale && completion.error.is_none() {
+                                completion.error=Some(ServiceError::Rejected("input evidence changed before acceptance".into()));
+                            }
+                        }
+                    }
                     let input_actions_allowed=snapshot.phase==Phase::Ready;
                     self.state.send_replace(Some(snapshot.clone()));
                     let _=self.handle.updates.send(snapshot);
                     let (notices,dropped)=hat.take_input_notices();
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
-                    if let Some(completion)=completion {
+                    if let Some(completion)=completion { match completion {
+                      physical::Completion::Output(completion)=>{
                         let result=match (completion.error, completion.observation) {
                             (Some(error),_)=>Err(error),
                             (None,Some(observation)) if owner.table.targets.get(&completion.request.target).map(String::as_str)==observation.context.generation()=>Ok(observation),
@@ -303,7 +315,18 @@ impl ProcessService for DaliService {
                         let output::Request {reply,_permit,..}=completion.request;
                         drop(_permit);
                         let _=reply.send(result);
-                    }
+                      },
+                      physical::Completion::Input(completion)=>{
+                        let result=match (completion.error,completion.observation) {
+                            (Some(error),_)=>Err(error),
+                            (None,Some(observation)) if owner.table.targets.get(&completion.request.target).map(String::as_str)==observation.context.generation()=>Ok(observation),
+                            _=>Err(ServiceError::Rejected("input mapping changed before completion".into())),
+                        };
+                        let input::readback::Request{reply,_permit,..}=completion.request;
+                        drop(_permit);
+                        let _=reply.send(result);
+                      },
+                    } }
                     None
                 },
             };
@@ -311,6 +334,20 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::Input(request) => {
+                    if request.reply.is_closed() || Instant::now() >= request.deadline {
+                        let _ = request.reply.send(Err(ServiceError::Expired));
+                    } else {
+                        let snapshot = self.handle.snapshot().expect("service started");
+                        match input::readback::resolve(&snapshot, &request.target, &request.context)
+                        {
+                            Ok(route) => hat.enqueue_input(request, route),
+                            Err(error) => {
+                                let _ = request.reply.send(Err(error));
+                            }
+                        }
+                    }
+                }
                 Message::Output(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
                         let _ = request.reply.send(Err(ServiceError::Expired));
@@ -354,6 +391,9 @@ impl ProcessService for DaliService {
         self.update_snapshot(owner.model.clone(), Phase::Stopping);
         while let Ok(message) = self.receive.try_recv() {
             match message {
+                Message::Input(request) => {
+                    let _ = request.reply.send(Err(ServiceError::Closed));
+                }
                 Message::Output(request) => {
                     let _ = request.reply.send(Err(ServiceError::Closed));
                 }

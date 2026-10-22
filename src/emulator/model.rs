@@ -1,4 +1,4 @@
-use super::scenario::{Input, Output, Scenario};
+use super::scenario::{Output, Scenario};
 use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,7 +28,7 @@ struct Bus {
     number: u8,
     powered: bool,
     outputs: Vec<Gear>,
-    inputs: Vec<Input>,
+    inputs: Vec<super::input::State>,
     #[serde(skip)]
     repeat: Option<(u16, u64)>,
     #[serde(skip)]
@@ -59,7 +59,11 @@ impl Model {
                 powered: bus.powered,
                 repeat: None,
                 enabled_type: None,
-                inputs: bus.inputs,
+                inputs: bus
+                    .inputs
+                    .into_iter()
+                    .map(super::input::State::new)
+                    .collect(),
                 outputs: bus
                     .outputs
                     .into_iter()
@@ -116,8 +120,8 @@ impl Model {
                 gear.config.short_address = address;
                 return Ok(());
             }
-            if let Some(input) = bus.inputs.iter_mut().find(|i| i.id == id) {
-                input.short_address = address;
+            if let Some(input) = bus.inputs.iter_mut().find(|i| i.config.id == id) {
+                input.config.short_address = address;
                 return Ok(());
             }
         }
@@ -131,6 +135,47 @@ impl Model {
             .ok_or("bus does not exist")?;
         bus.powered = powered;
         Ok(())
+    }
+    pub fn set_input_value(
+        &mut self,
+        id: &str,
+        instance: u8,
+        bytes: Vec<u8>,
+    ) -> Result<(), String> {
+        let input = self
+            .buses
+            .iter_mut()
+            .flat_map(|b| b.inputs.iter_mut())
+            .find(|i| i.config.id == id)
+            .ok_or("input ID does not exist")?;
+        input.set_value(instance, bytes)
+    }
+    pub fn transmit_input(&mut self, number: u8, frame: u32, now_ms: u64) -> Reply {
+        self.advance_to(now_ms);
+        self.intervening_frame(number);
+        let Some(bus) = self
+            .buses
+            .iter_mut()
+            .find(|b| b.number == number && b.powered)
+        else {
+            return Reply::None;
+        };
+        let [high, address, instance, opcode] = frame.to_be_bytes();
+        if high != 0 || address & 1 == 0 || address > 0x7f || (instance > 31 && instance != 0xfe) {
+            self.unsupported += 1;
+            return Reply::None;
+        }
+        let replies: Vec<_> = bus
+            .inputs
+            .iter_mut()
+            .filter(|i| i.config.short_address == Some(address >> 1))
+            .filter_map(|i| i.query(instance, opcode))
+            .collect();
+        match replies.first() {
+            None => Reply::None,
+            Some(value) if replies.iter().all(|r| r == value) => Reply::Value(*value),
+            Some(_) => Reply::Collision,
+        }
     }
     pub fn powered(&self, number: u8) -> bool {
         self.buses.iter().any(|b| b.number == number && b.powered)

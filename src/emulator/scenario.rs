@@ -130,6 +130,16 @@ pub struct Input {
     pub id: String,
     pub short_address: Option<u8>,
     pub instances: Vec<u8>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub values: Vec<InputValue>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct InputValue {
+    pub instance: u8,
+    pub resolution: u8,
+    /// Full value response bytes, including low repeated padding bits.
+    pub bytes: Vec<u8>,
 }
 impl Scenario {
     pub fn validate(&self) -> Result<(), String> {
@@ -182,6 +192,21 @@ impl Scenario {
                     || i.instances.iter().any(|t| *t > 31)
             }) {
                 return Err("input requires 1–32 valid instance types".into());
+            }
+            for input in &bus.inputs {
+                let mut instances = HashSet::new();
+                for value in &input.values {
+                    if usize::from(value.instance) >= input.instances.len()
+                        || !instances.insert(value.instance)
+                        || value.resolution == 0
+                        || value.bytes.len() != usize::from(value.resolution).div_ceil(8)
+                    {
+                        return Err(
+                            "invalid/duplicate input value profile, resolution or byte count"
+                                .into(),
+                        );
+                    }
+                }
             }
         }
         Ok(())

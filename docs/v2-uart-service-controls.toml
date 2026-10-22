@@ -1,7 +1,7 @@
 [[control]]
 name = "fresh_boot_discards_completed_boundary"
 file = "src/service/hat.rs"
-anchor = ".is_some_and(|job| job.1 == JobKind::Query)"
+anchor = ".is_some_and(|job| matches!(job.1, JobKind::Query | JobKind::InputBoundary))"
 replacement = ".is_some_and(|_| true)"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(fresh_boot_keeps_a_completed_receive_boundary_instead_of_requiring_another_reboot)"]

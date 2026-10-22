@@ -25,6 +25,7 @@ the next. Available requests include:
 ```json
 {"op":"snapshot"}
 {"op":"input_event","bus":0,"frame":32769}
+{"op":"set_input_value","id":"panel","instance":0,"bytes":[255]}
 {"op":"set_address","id":"new-fixture","short_address":null}
 {"op":"bus_power","bus":1,"powered":false}
 {"op":"next_fault","effect":{"kind":"delay","millis":250}}
@@ -39,8 +40,8 @@ the next. Available requests include:
 
 32769 is 0x008001, a device/instance button press at input address 0, instance 0;
 command-bit frames are rejected. With matching saved input metadata, the bridge
-now publishes [native input State/events](mqtt-inputs.md). Discovery and semantic
-emulator controls remain in development. One next-response fault may
+now publishes [native input State/events](mqtt-inputs.md). Input value profiles
+are described below. Discovery/configuration remain in development. One next-response fault may
 be armed at once. It affects the next J/N/X/Z terminal, excluding echoes, status
 and input events; in the two-terminal profile it affects the first terminal.
 
@@ -63,9 +64,33 @@ explicit dispatcher policy. Physical repeat cardinality remains unverified.
 Base coverage includes addressing, DTRs, direct level/MASK, off/steps/max/min,
 groups/scenes and selected queries/configuration. Levels currently change
 immediately. The DT8 colour profile below adds selected colour operations.
-Fade timing, timed UP/DOWN, input-device commands, emergency and memory/data
+Fade timing, timed UP/DOWN, input configuration, emergency and memory/data
 models remain P4 extensions. Unsupported operations never fabricate a
 positive device reply. N proves HAT transmission, not device support.
+
+## Input current-value profiles
+
+Keep numeric instance types; add optional value profiles to a module:
+
+```json
+{"id":"panel","short_address":0,"instances":[1,2,3,4],"values":[
+  {"instance":0,"resolution":1,"bytes":[255]},
+  {"instance":1,"resolution":10,"bytes":[171,192]},
+  {"instance":2,"resolution":2,"bytes":[170]},
+  {"instance":3,"resolution":16,"bytes":[18,52]}
+]}
+```
+
+Bytes are wire responses including low padding. Profiles require 1..255-bit
+resolution, exactly ceil(bits/8) bytes and a unique existing instance number.
+Without a profile the model answers type/count but invents no value/resolution.
+Existing scenarios remain valid. Independent 24-bit commands answer individual
+type, resolution, module status/count and value/latch queries. INPUT VALUE
+captures all bytes; subsequent latch queries retain them even if `set_input_value`
+changes live data. A new INPUT VALUE restarts the latch. Input/output address
+spaces are independent; conflicting duplicate replies collide. `input_event`
+changes no query value, and `set_input_value` emits no native event. Tests select
+both explicitly. This models data rather than gestures or input configuration.
 
 ## Colour fixtures
 

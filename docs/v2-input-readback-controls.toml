@@ -1,0 +1,119 @@
+# Exact values, freshness and shared ownership. Run sequentially; restore per row.
+
+[[control]]
+name = "emulator_latch_changes_with_live_input"
+file = "src/emulator/input.rs"
+anchor = "value.bytes = bytes;"
+replacement = "if let Some((latched,_))=self.latches.get_mut(&instance) { *latched=bytes.clone(); }\n        value.bytes = bytes;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_input_queries_latch)"]
+expect_text = "latch read a newer sample instead of the captured value"
+
+[[control]]
+name = "input_padding_is_kept_as_measurement_bits"
+file = "src/dali/input/value.rs"
+anchor = "let shift = (8 - resolution.bits() % 8) % 8;"
+replacement = "let shift = 0;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(full_input_values_keep_literal)"]
+expect_text = "full input value lost significant bits or kept padding"
+
+[[control]]
+name = "input_width_is_limited_to_64_bits"
+file = "src/dali/input/value.rs"
+anchor = "usize::from(self.0).div_ceil(8)"
+replacement = "usize::from(self.0).div_ceil(8).min(8)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(full_input_values_keep_literal)"]
+expect_text = "called `Result::unwrap()` on an `Err` value: Length"
+
+[[control]]
+name = "native_event_loses_to_older_latched_query"
+file = "src/service/input.rs"
+anchor = "if route.native_sequence > sequence {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_newer_native_event)"]
+expect_text = "latched query overwrote a newer native event"
+
+[[control]]
+name = "new_transport_keeps_old_native_sequence"
+file = "src/service/input.rs"
+anchor = "route.native_sequence = 0;"
+replacement = "let _ = &route.native_sequence;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_native_sequence_restarts)"]
+expect_text = "new transport retained an old native sequence"
+
+[[control]]
+name = "saved_input_type_overrides_physical_type"
+file = "src/service/input/readback.rs"
+anchor = "if kind != route.kind {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_missing_collision)"]
+expect_text = "saved type overrode physical input type"
+
+[[control]]
+name = "query_metadata_only_claims_available"
+file = "src/service/input.rs"
+anchor = '''&& matches!(
+                                observation.map(|o| &o.evidence),
+                                Some(Evidence::Event { .. })
+                            )'''
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_missing_collision)"]
+expect_text = "metadata-only query advertised an available input"
+
+[[control]]
+name = "missing_input_latch_becomes_zero"
+file = "src/service/input/readback.rs"
+anchor = '''            let Some(byte) = query(&link, &route, stamp, deadline, command).await? else {
+                return Ok(());
+            };'''
+replacement = "            let byte = query(&link, &route, stamp, deadline, command).await?.unwrap_or(0);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_zero_resolution)"]
+expect_text = "assertion `left == right` failed"
+
+[[control]]
+name = "merged_query_raw_value_is_not_cleared"
+file = "src/service/input.rs"
+anchor = '''    values.insert(
+        "InputValueRaw".into(),
+        value.map_or(Value::Null, |v| Value::from(v.hex())),
+    );'''
+replacement = '    if let Some(value)=value {values.insert("InputValueRaw".into(),Value::from(value.hex()));}'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_aggregate_reads)"]
+expect_text = "stale merged input query data survived bus loss"
+
+[[control]]
+name = "wide_input_refresh_keeps_short_output_budget"
+file = "src/service/proxy.rs"
+anchor = "let deadline = Instant::now() + Duration::from_secs(4);"
+replacement = "let deadline = Instant::now() + Duration::from_secs(2);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_paced_255_bit)"]
+expect_text = "paced full-resolution input refresh failed its original deadline"
+
+[[control]]
+name = "input_read_admits_a_retired_generation"
+file = "src/service/input/readback.rs"
+anchor = "if cause.generation().is_some_and(|g| g != token) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_mapping_change)"]
+expect_text = "old generation admitted a renamed input read"
+
+[[control]]
+name = "ready_input_reply_bypasses_caller_expiry"
+file = "src/service/input/readback.rs"
+anchor = '''        if Instant::now() >= deadline {
+            return Err(ServiceError::Rejected("input read caller deadline".into()));
+        }'''
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_ready_reply)"]
+expect_text = "ready input reply bypassed original caller expiry"

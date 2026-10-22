@@ -111,6 +111,18 @@ to recreate button actions. Only the LinkContext-owned SDK worker helper reports
 MQTT events. Device-link helper recreation starts a fresh receiver; broker
 outages retain BridgeKit's existing bounded queued-event delivery policy.
 
+`read_input(target, context, deadline)` queries a saved instance's physical type,
+resolution and complete value through the shared physical owner. `Evidence`
+distinguishes native Event from Query; polling never enters the Notice stream.
+`physical::Work` pairs typed input/output requests and routes under the existing
+Active/Stage, single permit/helper and fixed settlement ceiling. Frontend
+cancellation does not prove backend retirement. Input caller expiry rejects a
+read; generations and transport/bus stamps are rechecked at admission and final
+acceptance. A newer native observation wins over a latched query; new receive
+boundaries reset sequence tracking. MQTT selects a 4 s input budget within the
+existing 15 s aggregate ceiling. See [input queries](mqtt-inputs.md#query-current-values)
+and `v2-input-readback-controls.toml`.
+
 Writing/Uncertain phases reject new edits. A lost response cannot undo a save:
 inspect the latest owned snapshot before retrying. If it is Uncertain, explicitly
 recover using the prior controller token; the owner reloads recognized bytes and

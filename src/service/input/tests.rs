@@ -36,6 +36,53 @@ fn router() -> Router {
 }
 
 #[test]
+fn input_native_sequence_restarts_at_a_new_transport_boundary() {
+    let mut router = router();
+    let target = "Bus1.Inputs.Panel.Instances.First";
+    router.observe(0, 100, 0x008001, Some(stamp()));
+    assert_eq!(router.native_sequence(target), 100);
+    let next = Stamp {
+        session: 2,
+        ..stamp()
+    };
+    let cuts = router.pending(|_| Some(next));
+    router.install(&cuts, 1, |_| Some(next));
+    assert_eq!(
+        router.native_sequence(target),
+        0,
+        "new transport retained an old native sequence"
+    );
+    router.observe(0, 2, 0x008000, Some(next));
+    let mut query = Observation {
+        context: router.observations[target].context.clone(),
+        evidence: Evidence::Query(readback::ReadValue {
+            reported_type: Some(1),
+            resolution: Some(protocol::Resolution::new(1).unwrap()),
+            value: Some(
+                protocol::InputValue::decode(protocol::Resolution::new(1).unwrap(), &[255])
+                    .unwrap(),
+            ),
+            quality: readback::Quality::Current,
+            reason: None,
+        }),
+        bus: 0,
+        stamp: next,
+        stale: false,
+    };
+    router.accept_query(target, 0, &mut query);
+    assert!(
+        matches!(
+            query.evidence,
+            Evidence::Event {
+                payload: Payload::Button(ButtonAction::Released),
+                ..
+            }
+        ),
+        "old sequence epoch hid a newer release"
+    );
+}
+
+#[test]
 fn live_input_routes_exact_instances_and_preserves_ambiguous_sources() {
     let mut router = router();
     for raw in [0x000401, 0x828801, 0x860401, 0xC60401, 0x010080] {

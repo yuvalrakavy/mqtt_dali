@@ -36,18 +36,18 @@
   },
   "fresh_boot_discards_completed_boundary": {
    "last_real": {
-    "at": "2026-10-21T22:36:25Z",
+    "at": "2026-10-22T03:39:07Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:fc675ba1daa7a07d",
-     "row": "8bb8437756b04fed",
+     "guard": "item:298d58b0a9370d67",
+     "row": "31a2179a9ccc7d7b",
      "test": null
     },
     "path": "command",
-    "secs": 4.3,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 7.8,
+    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
     "verdict": "RED"
    }
   },

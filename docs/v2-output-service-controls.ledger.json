@@ -19,18 +19,18 @@
   },
   "caller_uses_earlier_acceptance_sample": {
    "last_real": {
-    "at": "2026-10-22T00:40:14Z",
+    "at": "2026-10-22T03:38:24Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:2bba8deace7ae36b",
-     "row": "32edcb6782edd985",
+     "guard": "item:5b4cece81f995085",
+     "row": "d3d1a3bb728e4cff",
      "test": null
     },
     "path": "command",
-    "secs": 7.5,
-    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "secs": 8.3,
+    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
     "verdict": "RED"
    }
   },
@@ -70,18 +70,18 @@
   },
   "completed_output_ignores_bus_epoch_loss": {
    "last_real": {
-    "at": "2026-10-22T00:40:06Z",
+    "at": "2026-10-22T03:38:16Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:06a827d6fe2fd7d3",
-     "row": "40b09235b216a001",
+     "guard": "item:12db45f193360cd6",
+     "row": "5e9d990435abc629",
      "test": null
     },
     "path": "command",
-    "secs": 7.9,
-    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "secs": 9.6,
+    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
     "verdict": "RED"
    }
   },
@@ -155,35 +155,35 @@
   },
   "pending_output_waits_for_health_before_expiring": {
    "last_real": {
-    "at": "2026-10-21T22:35:08Z",
+    "at": "2026-10-22T03:38:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:41a04e540a91bb97",
-     "row": "d29b1531d77f81d3",
+     "guard": "item:82be035387a750ca",
+     "row": "00b7f7a9378b8d6b",
      "test": null
     },
     "path": "command",
-    "secs": 8.4,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 8.9,
+    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
     "verdict": "RED"
    }
   },
   "queued_output_adopts_a_new_bus_epoch": {
    "last_real": {
-    "at": "2026-10-22T00:39:58Z",
+    "at": "2026-10-22T03:38:06Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:48e9d05ec4a34d16",
-     "row": "2cb1581778d0a312",
+     "guard": "item:19b1e69a3ac8a6b0",
+     "row": "71677277a08216ea",
      "test": null
     },
     "path": "command",
-    "secs": 8.7,
-    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "secs": 9.2,
+    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
     "verdict": "RED"
    }
   },

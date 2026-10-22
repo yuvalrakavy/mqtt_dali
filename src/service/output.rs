@@ -120,21 +120,6 @@ pub(super) struct Route {
     pub address: ShortAddress,
     pub context: RequestContext,
 }
-pub(super) struct Active {
-    pub request: Request,
-    pub route: Route,
-    pub stamp: Stamp,
-    pub stage: Stage,
-    pub outcome: Option<Outcome>,
-    pub cleanup: Option<Instant>,
-}
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum Stage {
-    Pending,
-    Running,
-    Settling,
-    Closing,
-}
 pub(super) struct Outcome {
     pub observation: Observation,
     pub error: Option<ServiceError>,
