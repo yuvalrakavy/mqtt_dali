@@ -168,3 +168,7 @@ common types, native precedence, traces, merged-null clearing, missing/collision
 changed type, mapping/caller expiry, cancellation, final validation and shutdown
 are covered. The source gates review the frozen implementation next; hardware
 certification, input configuration and live systems remain outside this evidence.
+
+Both sequential source gates approve frozen `5c485172` against `b3a72b9`, with no
+material findings. Reviews were read-only/source-only and same-family; they ran
+no verification commands or mutations. Physical validation remains outstanding.

@@ -34,8 +34,9 @@ Verified locally on 2026-10-22:
   `/tmp/dali-input-readback-controls`, `/tmp/dali-input-readback-restored-gate`
   and `/tmp/dali-input-readback-final-gate`. The registry's missing explicit
   expiry wording was corrected before the final full-suite pass.
-- Both sequential design gates approved; source acceptance follows the frozen
-  implementation commit. Available reviewers are same-family.
+- Both sequential design and source gates approve frozen `5c485172` against
+  `b3a72b9`, with no material source findings. Reviews inspected source/tests
+  without running verification or mutating files; same-family limits apply.
 
 Remaining input work: hardware discovery/addressing, event configuration,
 feedback, unresolved group/source routing, calibrated units and physical device
