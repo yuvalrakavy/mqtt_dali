@@ -58,6 +58,23 @@ complete map finishes before submitting the next, and assert both errors from th
 first two-property rejection. No SDK or output-routing code changes. Repeated
 focused and restored results follow before source acceptance.
 
+The corrected atomic-intent test passes **20/20 stress iterations**. Final
+restored acceptance passes **462/462 native tests** across 11 binaries with four
+test processes, scoped strict Clippy, Pi library/all four binary compilation,
+doctests (none defined), changed-file formatting, wait registry and whitespace.
+All **12 new behavioral controls** and **3 affected activation/reply/input controls**
+are RED at their declared assertions. Logs: `/tmp/dali-group-controls.log`,
+`/tmp/dali-group-additional-controls`, `/tmp/dali-group-collision-control.log`,
+`/tmp/dali-groups-restored-gate`, `/tmp/dali-groups-final-gate` and
+`/tmp/dali-groups-acceptance-gate`. The middle final-gate log retains the
+461/462 test-synchronization failure; the acceptance log is the corrected result.
+Both sequential read-only source gates approve frozen **88656fe** against
+**c9fc2b3**, with no material findings. Reviewers ran no tests or mutations;
+same-family review and absent physical I4/fixture validation remain explicit
+limits. Review learning: distinguish per-property errors from whole-request
+completion, preserve bus collision versus UART-loss scope, and isolate an
+authority guard when another guard masks its removal.
+
 See [operator/API guide](groups.md),
 [design](superpowers/specs/2026-10-22-dali-v2-p5-groups.md) and
 `v2-group-controls.toml`.
