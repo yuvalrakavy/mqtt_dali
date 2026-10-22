@@ -26,7 +26,9 @@ async fn reassignment_retires_selected_rows_prunes_refs_and_reuses_names_with_fr
     for two in [false, true] {
         let fixture = Fixture::new();
         fixture.add_button();
+        fixture.add_output(63, "Missing");
         let mut disk = serde_json::to_value(fixture.disk()).unwrap();
+        disk["buses"].as_array_mut().unwrap().push(json!({"bus":1,"name":"OtherBus","enabled":false,"outputs":[{"short_address":4,"name":"Untouched"}]}));
         disk["buses"][0]["scenes"] = json!([{"slot":0,"name":"Evening","contents":[{"output_origin":{"target":"Bus1.Outputs.Light1","revision":1},"setting":{"level":{"kind":"value","value":42},"color":{"kind":"mask"}}}]}]);
         fs::write(&fixture.paths.current, serde_json::to_vec(&disk).unwrap()).unwrap();
         let emulator = bus(two).await;
@@ -55,7 +57,10 @@ async fn reassignment_retires_selected_rows_prunes_refs_and_reuses_names_with_fr
         assert_eq!(report.outcome, ResetOutcome::Cleared);
         assert_eq!(report.revision, 2);
         assert_eq!(report.checked_addresses, 64);
-        assert_eq!(report.retired_devices, 1);
+        assert_eq!(
+            report.retired_devices, 2,
+            "reset omitted a saved missing fixture"
+        );
         let disk = fixture.disk();
         assert!(disk.buses[0].outputs.is_empty());
         assert!(disk.buses[0].groups[0].members.is_empty());
@@ -70,6 +75,10 @@ async fn reassignment_retires_selected_rows_prunes_refs_and_reuses_names_with_fr
                 bus: 0,
                 short_address: 0,
                 instance: 0,
+            },
+            Location::Output {
+                bus: 1,
+                short_address: 4,
             },
         ] {
             assert_eq!(old.origin(location), now.origin(location));
@@ -262,12 +271,15 @@ async fn reassignment_save_failure_or_uncertainty_never_clears_and_held_save_kee
         physical(&emulator.emulator).await["buses"][0]["outputs"][0]["short_address"],
         0
     );
-    assert!(matches!(
-        handle
-            .read_output("Bus1.Outputs.Light1", context(1), deadline())
-            .await,
-        Err(ServiceError::Busy)
-    ));
+    assert!(
+        matches!(
+            handle
+                .read_output("Bus1.Outputs.Light1", context(1), deadline())
+                .await,
+            Err(ServiceError::Busy)
+        ),
+        "reassignment save released physical permit"
+    );
     for powered in [false, true] {
         emulator
             .emulator

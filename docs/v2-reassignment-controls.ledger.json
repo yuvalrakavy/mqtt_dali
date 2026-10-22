@@ -1,0 +1,243 @@
+{
+ "rows": {
+  "reassignment_ignores_final_stamp": {
+   "last_real": {
+    "at": "2026-10-22T15:59:06Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:351f6baf9c97283c",
+     "row": "a8f1ad2a7aa58935",
+     "test": null
+    },
+    "path": "command",
+    "secs": 12.4,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_ignores_status_presence": {
+   "last_real": {
+    "at": "2026-10-22T15:59:25Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:616ecd9565fd5264",
+     "row": "a801da94e0331223",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.6,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_releases_permit_during_save": {
+   "last_real": {
+    "at": "2026-10-22T16:01:23Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:bf010c08634bbd2a",
+     "row": "5a7cfa8123b2a4e6",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.2,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_replaces_original_stamp": {
+   "last_real": {
+    "at": "2026-10-22T15:58:54Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6bc608f1ab28e930",
+     "row": "46cc956975941c55",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.1,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_sends_one_input_setting": {
+   "last_real": {
+    "at": "2026-10-22T15:59:42Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:f25d09059d3ffb0c",
+     "row": "e4c64475ee7576ee",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.4,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_shifted_input_address": {
+   "last_real": {
+    "at": "2026-10-22T16:00:10Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:de13de34a70aa51f",
+     "row": "9434121167bacd28",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.4,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_skips_durable_activation": {
+   "last_real": {
+    "at": "2026-10-22T15:58:23Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:bf010c08634bbd2a",
+     "row": "91bfc620514db0a2",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.6,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_ui_capacity_demands_extra_slot": {
+   "last_real": {
+    "at": "2026-10-22T16:00:11Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:17c5c42cd2759b33",
+     "guard": "file:d2ce1aa647498664",
+     "row": "471b48a2058b7ed1",
+     "test": "test:8e994fc327003ff4"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_ui_continues_uncertain_clear": {
+   "last_real": {
+    "at": "2026-10-22T16:00:11Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:17c5c42cd2759b33",
+     "guard": "file:d2ce1aa647498664",
+     "row": "e256c6323f24cc06",
+     "test": "test:8e994fc327003ff4"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_ui_implicit_latest_root": {
+   "last_real": {
+    "at": "2026-10-22T16:00:10Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:17c5c42cd2759b33",
+     "guard": "file:d2ce1aa647498664",
+     "row": "0d26f54c97fe9820",
+     "test": "test:8e994fc327003ff4"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_ui_preview_is_live": {
+   "last_real": {
+    "at": "2026-10-22T16:00:11Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:17c5c42cd2759b33",
+     "guard": "file:d2ce1aa647498664",
+     "row": "2baba6ed5dd9d86b",
+     "test": "test:8e994fc327003ff4"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_ui_rebases_external_edit": {
+   "last_real": {
+    "at": "2026-10-22T16:00:11Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:17c5c42cd2759b33",
+     "guard": "file:d2ce1aa647498664",
+     "row": "853405db5c34e89f",
+     "test": "test:8e994fc327003ff4"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_ui_refreshes_both_spaces": {
+   "last_real": {
+    "at": "2026-10-22T16:00:11Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:17c5c42cd2759b33",
+     "guard": "file:d2ce1aa647498664",
+     "row": "c18942dc31444dcb",
+     "test": "test:8e994fc327003ff4"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  },
+  "reassignment_unknown_profile_retires_names": {
+   "last_real": {
+    "at": "2026-10-22T15:59:57Z",
+    "dirty": false,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3db73a003c015949",
+     "row": "f6bd1c6b9f410fc6",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.9,
+    "sha": "dbc4f84250b6f7686d8ac14c2134e9de0621c3c1",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}
