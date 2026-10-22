@@ -215,14 +215,14 @@ the resulting saved reservations. No destructive full reassign is implied.
   group slots/pattern preview/assignment/verification/adoption/repair, Settings and
   Diagnostics operate through existing jobs. Discovery, pattern assignment and
   verification expose progress and stop future steps on explicit cancellation.
-- Real Chrome/Playwright passes at 390×844 and 1440×1024 with **303 actual owned
+- Real Chrome/Playwright passes at 390×844 and 1440×1024 with **308 actual owned
   commands**, private MQTT/PTy/disk evidence and inspected screenshots. Includes
   initial addressed-before-unaddressed allocation, three fixture names, failed
   save, Blink restoration, dirty input/native events, actual power/brightness/DT8,
   group drift adoption/repair, removal, rediscovery preserving other names, export
   and logout. No runtime/CSP console errors. The emulator does not hot-add fixtures;
   rediscovery covers a newly reintroduced saved address, not a physical hotplug claim.
-- Twelve frontend tests pass. Eleven current controls have intended RED evidence.
+- Fourteen frontend tests pass. Thirteen current controls have intended RED evidence.
   The first broad decoder mutation stranded an unrelated race-test setup; interrupt
   restored the tree, then target each row at its named test. An old-source guard
   initially stayed GREEN because snapshot epochs independently protected snapshots;
@@ -233,10 +233,19 @@ the resulting saved reservations. No destructive full reassign is implied.
   native dialog opening/enabled slider and inspect actual DT8 colour state rather
   than its immutable setup profile. None expands UART recovery.
 
-Logs: `/tmp/dali-browser-functional.log`, artifacts
-`/tmp/dali-browser-ae7a7c47b606ce190c4bcfb475301ef2`,
+Logs: `/tmp/dali-browser-review-fix-functional-final.log`, artifacts
+`/tmp/dali-browser-c5976b6a2974c740cfd0f272e0f118d7`,
 `/tmp/dali-browser-controls-final.log`,
 `/tmp/dali-browser-controls-client-final.log` and
 `/tmp/dali-browser-acceptance`. Restored native/Pi/lint checks and the two sequential
 frozen-source verdicts are recorded in the progress entry when complete.
 No hardware timing, HTTPS proxy, live Store or production deployment acceptance.
+
+First frozen-source review (about 90 s) requests two corrections: query-only
+multi-bit input display and Sign out during foreground work. Both real-browser
+regressions fail first. The fixes render exact query hex/resolution without
+inventing units and route logout outside the busy gate, stopping later batch
+steps while reporting revocation failure honestly. Browser coverage now includes
+12-bit Part 302, 64-bit Part 304 and logout with an admitted discovery job held.
+The full phone/desktop run passes 308 commands and fourteen frontend tests pass.
+Two additional behavioral controls are RED. Updated frozen-source verdicts follow.

@@ -11,6 +11,7 @@ const page=await context.newPage();page.setDefaultTimeout(15000);
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('401 (Unauthorized)'))errors.push(m.text());});
 page.on('pageerror',error=>console.log('PAGE ERROR',error.stack));
 const commands=[];page.on('request',request=>{if(request.url()===`${origin}/api/jobs`&&request.method()==='POST')commands.push(request.postDataJSON());});
+let releaseAdmission=()=>{};
 async function until(probe,message,ms=20000){const start=Date.now();while(Date.now()-start<ms){if(await probe())return;await new Promise(r=>setTimeout(r,40));}throw new Error(message);}
 async function control(action){return new Promise((resolve,reject)=>{const client=connect(socket),timer=setTimeout(()=>{client.destroy();reject(new Error('Emulator control expired'));},2000);let data='';client.on('connect',()=>client.end(`${JSON.stringify(action)}\n`));client.on('data',chunk=>data+=chunk);client.on('error',reject);client.on('end',()=>{clearTimeout(timer);try{const reply=JSON.parse(data);if(reply.error)reject(new Error(reply.error));else resolve(reply.result);}catch(e){reject(e);}});});}
 const inventory=async()=>JSON.parse(await readFile(join(artifacts,'dali.v2.json'),'utf8'));
@@ -32,6 +33,8 @@ try {
   assert.equal((await inventory()).buses[0].outputs.length,3,'discovery omitted existing or unaddressed fixtures');
   await named('Light1').waitFor();await named('Light2').waitFor();await named('Light3').waitFor();
   const physical=await control({op:'snapshot'});assert.deepEqual(physical.buses[0].outputs.map(o=>o.short_address).sort(),[0,1,2],'unaddressed commissioning overwrote an existing address');
+  assert.ok((await page.locator('.input-grid.device-row').filter({hasText:'Part 302'}).innerText()).includes('0x0FFF'),'queried Part 302 value is missing before any native event');
+  assert.ok((await page.locator('.input-grid.device-row').filter({hasText:'Part 304'}).innerText()).includes('0xFEDCBA9876543210'),'queried Part 304 value lost exact bits before any native event');
   await page.screenshot({path:join(artifacts,'phone-devices.png'),fullPage:true});await noOverflow();
   // Checkmark, Enter and moving focus persist through the real owned job path.
   const before=commands.filter(c=>c.command==='rename').length;
@@ -66,6 +69,12 @@ try {
   await row('HallNew').getByRole('button',{name:'Actions HallNew',exact:true}).click();await page.getByRole('button',{name:'Remove from list',exact:true}).click();await page.getByRole('button',{name:'Remove from list',exact:true}).click();await until(async()=>(await inventory()).buses[0].outputs.length===2,'remove did not persist');assert.equal((await control({op:'snapshot'})).buses[0].outputs.length,3,'remove altered physical fixtures');
   await page.getByRole('button',{name:'Refresh addressed',exact:true}).click();await until(async()=>!await page.getByRole('button',{name:'Refresh addressed',exact:true}).isDisabled(),'rediscovery did not finish',90000);assert.deepEqual((await inventory()).buses[0].outputs.map(o=>o.name),['KitchenMain','KitchenSide','Light1'],'rediscovery failed to preserve existing names and add the removed address');
   await page.getByRole('link',{name:'Settings',exact:true}).click();const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Download inventory report',exact:true}).click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'dali-inventory-report.json');await page.getByRole('link',{name:'Diagnostics',exact:true}).click();await page.getByRole('heading',{name:'Recent commands',exact:true}).waitFor();await page.screenshot({path:join(artifacts,'desktop-diagnostics.png'),fullPage:true});
-  await page.getByRole('button',{name:'Sign out',exact:true}).click();await until(()=>Promise.resolve(page.url().endsWith('/login')),'logout did not return to sign-in');assert.equal((await context.request.get(`${origin}/assets/app.js`,{maxRedirects:0})).status(),303,'logout left app assets accessible');
+  await page.goto(`${origin}/buses/0`);await named('KitchenMain').waitFor();
+  let entered;const admitted=new Promise(resolve=>entered=resolve),held=new Promise(resolve=>releaseAdmission=resolve);let hold=true;
+  await page.route(`${origin}/api/jobs`,async route=>{if(hold&&route.request().postDataJSON().command==='discover_address'){hold=false;const response=await route.fetch();entered();await held;await route.fulfill({response}).catch(()=>{});}else await route.continue();});
+  await page.getByRole('button',{name:'Refresh addressed',exact:true}).click();await admitted;const beforeLogout=commands.length;
+  const logout=page.waitForRequest(`${origin}/api/logout`,{timeout:3000});await page.getByRole('button',{name:'Sign out',exact:true}).click();
+  try{await logout;}catch{throw new Error('logout was blocked by an active discovery job');}releaseAdmission();
+  await until(()=>Promise.resolve(page.url().endsWith('/login')),'logout did not return to sign-in');await page.unroute(`${origin}/api/jobs`);await new Promise(r=>setTimeout(r,100));assert.equal(commands.length,beforeLogout,'batch submitted another command after logout');assert.equal((await context.request.get(`${origin}/assets/app.js`,{maxRedirects:0})).status(),303,'logout left app assets accessible');
   assert.deepEqual(errors,[],'browser reported runtime or CSP errors');console.log(`PASS phone/desktop: ${commands.length} real owned commands; screenshots ${artifacts}`);
-} catch(error){await page.screenshot({path:join(artifacts,'failure.png'),fullPage:true}).catch(()=>{});console.error('LAST COMMANDS',JSON.stringify(commands.slice(-12),null,2));console.error(await page.locator('body').innerText());throw error;} finally{await context.close();await browser.close();}
+} catch(error){await page.screenshot({path:join(artifacts,'failure.png'),fullPage:true}).catch(()=>{});console.error('LAST COMMANDS',JSON.stringify(commands.slice(-12),null,2));console.error(await page.locator('body').innerText());throw error;} finally{releaseAdmission();await context.close();await browser.close();}

@@ -501,7 +501,11 @@ var Oe = (e) => ({
 	2: "Part 302 · input",
 	3: "Part 303 · occupancy",
 	4: "Part 304 · light sensor"
-})[e ?? 0] ?? `Type ${e ?? "unknown"}`, ke = class {
+})[e ?? 0] ?? `Type ${e ?? "unknown"}`;
+function ke(e) {
+	return typeof e.Status == "boolean" ? e.Status ? "Pressed" : "Released" : typeof e.InputState == "boolean" ? e.InputState ? "On" : "Off" : typeof e.Occupied == "boolean" ? e.Occupied ? "Occupied" : "Vacant" : typeof e.InputValueRaw == "string" ? `${typeof e.Position == "number" ? `${Math.round(e.Position * 100)}% · ` : ""}0x${e.InputValueRaw} / ${e.ValueResolution} bit` : typeof e.PositionRaw == "number" ? `${e.PositionRaw} raw` : typeof e.LightLevelRaw == "number" ? `${e.LightLevelRaw} raw` : "Unknown";
+}
+var Ae = class {
 	constructor(e, t, n) {
 		this.error = "", this.text = this.saved = e, this.baseline = {
 			target: t,
@@ -523,7 +527,7 @@ var Oe = (e) => ({
 			this.pending = void 0;
 		}), this.pending) : (this.error = "A name is required.", Promise.reject(Error(this.error)));
 	}
-}, Ae = class {
+}, je = class {
 	constructor() {
 		this.epoch = 0, this.value = null, this.jobBook = [], this.ready = !1;
 	}
@@ -541,7 +545,7 @@ var Oe = (e) => ({
 	}
 };
 // src/client.ts
-function je(e) {
+function Me(e) {
 	let t = {
 		...e,
 		inventory: e.inventory.Inventory
@@ -552,13 +556,13 @@ function Y(e, t, n, r) {
 	let i = e.inventory.buses.find((e) => e.bus === r), a = t.inventory.buses.find((e) => e.bus === r);
 	return e.inventory.inventory_epoch === t.inventory.inventory_epoch && t.inventory.revision === n && !!i && !!a && i.name === a.name && a.enabled;
 }
-var Me = class extends Error {
+var Ne = class extends Error {
 	constructor(e, t) {
 		super(t), this.status = e;
 	}
-}, Ne = class {
+}, Pe = class {
 	constructor() {
-		this.views = new Ae(), this.csrf = "", this.error = "", this.events = [], this.lost = 0, this.stopped = !1, this.session = 0, this.activeAt = 0, this.requests = /* @__PURE__ */ new Set(), this.sleepers = /* @__PURE__ */ new Map(), this.listeners = /* @__PURE__ */ new Set();
+		this.views = new je(), this.csrf = "", this.error = "", this.events = [], this.lost = 0, this.stopped = !1, this.session = 0, this.activeAt = 0, this.requests = /* @__PURE__ */ new Set(), this.sleepers = /* @__PURE__ */ new Map(), this.listeners = /* @__PURE__ */ new Set();
 	}
 	subscribe(e) {
 		return this.listeners.add(e), () => this.listeners.delete(e);
@@ -596,10 +600,10 @@ var Me = class extends Error {
 				body: t === void 0 ? void 0 : JSON.stringify(t)
 			});
 			if (n !== this.session || this.stopped) throw Error("Session ended.");
-			if (i.status === 401) throw this.expired(), new Me(401, "Sign in required.");
+			if (i.status === 401) throw this.expired(), new Ne(401, "Sign in required.");
 			let a = i.status === 204 ? null : await i.json();
 			if (n !== this.session || this.stopped) throw Error("Session ended.");
-			if (!i.ok) throw new Me(i.status, a?.error ?? "The controller refused this request.");
+			if (!i.ok) throw new Ne(i.status, a?.error ?? "The controller refused this request.");
 			return a;
 		} finally {
 			clearTimeout(i), this.requests.delete(r);
@@ -618,7 +622,7 @@ var Me = class extends Error {
 		let r = () => !this.stopped && this.session === t && this.views.epoch === e && this.source === n;
 		n.addEventListener("snapshot", (t) => {
 			if (r()) try {
-				this.views.snapshot(e, je(JSON.parse(t.data))), this.error = "", this.notify();
+				this.views.snapshot(e, Me(JSON.parse(t.data))), this.error = "", this.notify();
 			} catch {
 				this.error = "Invalid controller snapshot.", this.views.ready = !1, this.notify();
 			}
@@ -707,12 +711,24 @@ var Me = class extends Error {
 		for (let [e, t] of this.sleepers) clearTimeout(e), t(/* @__PURE__ */ Error("Session ended."));
 		this.sleepers.clear(), this.views.clear(), this.csrf = "", this.events = [], this.notify();
 	}
-}, Pe = class {
+}, Fe = class {
 	constructor() {
-		this.client = new Ne(), this.drafts = /* @__PURE__ */ new Map(), this.hints = /* @__PURE__ */ new Map(), this.error = "", this.notice = "", this.busy = 0, this.progress = "", this.cancelled = !1, this.edits = Promise.resolve();
+		this.client = new Pe(), this.drafts = /* @__PURE__ */ new Map(), this.hints = /* @__PURE__ */ new Map(), this.error = "", this.notice = "", this.busy = 0, this.progress = "", this.cancelled = !1, this.signingOut = !1, this.edits = Promise.resolve();
 	}
 	touch() {
 		this.client.notify();
+	}
+	async logout() {
+		if (!this.signingOut) {
+			this.signingOut = !0, this.cancelled = !0, this.error = "", this.notice = "", this.touch();
+			try {
+				await this.client.logout(), this.drafts.clear();
+			} catch (e) {
+				this.error = e.message;
+			} finally {
+				this.signingOut = !1, this.touch();
+			}
+		}
 	}
 	get snapshot() {
 		let e = this.client.snapshot;
@@ -883,7 +899,7 @@ var Me = class extends Error {
 		let r = this.current(e.key);
 		return this.metadata(t, r.item.target, r.generation, { reviewed_mask: n });
 	}
-}, Fe = 0;
+}, Ie = 0;
 Array.isArray;
 function X(t, n, r, i, a, o) {
 	n || (n = {});
@@ -900,20 +916,20 @@ function X(t, n, r, i, a, o) {
 		__e: null,
 		__c: null,
 		constructor: void 0,
-		__v: --Fe,
+		__v: --Ie,
 		__i: -1,
 		__u: 0
 	};
 	return (a || o) && (u.__source = a, u.__self = o), e.vnode && e.vnode(u), u;
 }
 // src/ui.tsx
-var Ie = I(null);
+var Le = I(null);
 function Z() {
-	let e = ge(Ie);
+	let e = ge(Le);
 	if (!e) throw Error("Controller is unavailable.");
 	return e;
 }
-function Le() {
+function Re() {
 	let e = Z();
 	return e.progress ? /* @__PURE__ */ X("div", {
 		class: "progress",
@@ -927,7 +943,7 @@ function Le() {
 		})]
 	}) : null;
 }
-function Re(e) {
+function ze(e) {
 	history.pushState(null, "", e), dispatchEvent(new PopStateEvent("popstate"));
 }
 function Q(e) {
@@ -935,7 +951,7 @@ function Q(e) {
 		href: e.href,
 		class: e.class,
 		onClick: (t) => {
-			t.metaKey || t.ctrlKey || t.shiftKey || t.altKey || (t.preventDefault(), Re(e.href));
+			t.metaKey || t.ctrlKey || t.shiftKey || t.altKey || (t.preventDefault(), ze(e.href));
 		},
 		children: e.children
 	});
@@ -969,7 +985,7 @@ function $(e) {
 		})
 	});
 }
-function ze({ row: e }) {
+function Be({ row: e }) {
 	let t = Z(), n = t.drafts.get(e.key), r = () => {
 		let n = t.drafts.get(e.key);
 		n && (n.commit((n, r) => t.rename(e.key, n, r)).catch(() => {}).finally(() => t.touch()), t.touch());
@@ -990,7 +1006,7 @@ function ze({ row: e }) {
 					spellcheck: !1,
 					onInput: (n) => {
 						let r = t.drafts.get(e.key);
-						r || (r = new ke(e.item.name, e.item.target, e.generation), t.drafts.set(e.key, r)), r.text = n.currentTarget.value, r.error = "", t.touch();
+						r || (r = new Ae(e.item.name, e.item.target, e.generation), t.drafts.set(e.key, r)), r.text = n.currentTarget.value, r.error = "", t.touch();
 					},
 					onBlur: r,
 					onKeyDown: (n) => {
@@ -1030,7 +1046,7 @@ function ze({ row: e }) {
 	});
 }
 // src/devices.tsx
-function Be({ row: e, close: t }) {
+function Ve({ row: e, close: t }) {
 	let n = Z(), r = n.current(e.key), i = De(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
 		"ColorRed",
 		"ColorGreen",
@@ -1156,7 +1172,7 @@ function Be({ row: e, close: t }) {
 		]
 	});
 }
-function Ve({ row: e, close: t }) {
+function He({ row: e, close: t }) {
 	let n = Z(), r = n.current(e.key);
 	return /* @__PURE__ */ X($, {
 		title: `Groups · ${r.item.name}`,
@@ -1186,12 +1202,12 @@ function Ve({ row: e, close: t }) {
 		})]
 	});
 }
-function He({ row: e }) {
+function Ue({ row: e }) {
 	let t = Z(), n = t.snapshot, r = De(n, e), [i, a] = G(!1), [o, s] = G(!1), [c, l] = G(!1), [u, d] = G(!1), [f, p] = G(null), m = J(n, e.bus) && t.client.views.ready, h = n.identification?.target === e.item.target ? n.identification : null, g = !!h && [
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(h.phase), _ = t.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), v = t.hints.get(e.key), b = e.kind === "output" ? v?.length ? v.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Oe(e.item.instance_type), x = typeof r.Status == "boolean" ? r.Status ? "Pressed" : "Released" : typeof r.InputState == "boolean" ? r.InputState ? "On" : "Off" : typeof r.Occupied == "boolean" ? r.Occupied ? "Occupied" : "Vacant" : typeof r.PositionRaw == "number" ? String(r.PositionRaw) : typeof r.LightLevelRaw == "number" ? String(r.LightLevelRaw) : "Unknown", S = typeof r.Brightness == "number" ? Math.round(r.Brightness * 100) : null;
+	].includes(h.phase), _ = t.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), v = t.hints.get(e.key), b = e.kind === "output" ? v?.length ? v.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Oe(e.item.instance_type), x = ke(r), S = typeof r.Brightness == "number" ? Math.round(r.Brightness * 100) : null;
 	return /* @__PURE__ */ X("div", {
 		class: `device-row ${e.kind === "output" ? "output-grid" : "input-grid"} ${g ? "identifying" : ""} ${_ && Date.now() - _.received < 5e3 ? "active-input" : ""}`,
 		"data-device-key": e.key,
@@ -1200,7 +1216,7 @@ function He({ row: e }) {
 				class: "address",
 				children: e.parent ? `${e.parent.short_address} / ${e.item.number}` : e.item.short_address
 			}),
-			/* @__PURE__ */ X(ze, { row: e }),
+			/* @__PURE__ */ X(Be, { row: e }),
 			/* @__PURE__ */ X("span", {
 				class: "device-type",
 				children: b
@@ -1298,11 +1314,11 @@ function He({ row: e }) {
 					]
 				})
 			}),
-			o && /* @__PURE__ */ X(Be, {
+			o && /* @__PURE__ */ X(Ve, {
 				row: e,
 				close: () => s(!1)
 			}),
-			c && /* @__PURE__ */ X(Ve, {
+			c && /* @__PURE__ */ X(He, {
 				row: e,
 				close: () => l(!1)
 			}),
@@ -1335,7 +1351,7 @@ function He({ row: e }) {
 		]
 	});
 }
-function Ue({ bus: e }) {
+function We({ bus: e }) {
 	let t = Z(), [n, r] = G(""), i = t.currentRows.filter((t) => t.bus.bus === e.bus), a = (e) => Ee(n, e.item.name) || !!t.drafts.get(e.key)?.dirty || !!t.drafts.get(e.key)?.error, o = i.filter((e) => e.kind === "output" && a(e)), s = i.filter((e) => (e.kind === "input" || e.kind === "instance") && a(e)), c = J(t.snapshot, e) && t.client.views.ready, l = [...t.drafts].filter(([e, n]) => n.dirty && !t.currentRows.some((t) => t.key === e));
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X("div", {
@@ -1358,7 +1374,7 @@ function Ue({ bus: e }) {
 				})
 			]
 		}),
-		/* @__PURE__ */ X(Le, {}),
+		/* @__PURE__ */ X(Re, {}),
 		/* @__PURE__ */ X("div", {
 			class: "toolbar filter",
 			children: [
@@ -1413,7 +1429,7 @@ function Ue({ bus: e }) {
 						/* @__PURE__ */ X("span", {})
 					]
 				}),
-				o.map((e) => /* @__PURE__ */ X(He, { row: e }, e.key)),
+				o.map((e) => /* @__PURE__ */ X(Ue, { row: e }, e.key)),
 				!o.length && /* @__PURE__ */ X("p", {
 					class: "empty",
 					children: n ? "No matching outputs." : "No outputs are saved. Start discovery to find the fixtures on this bus."
@@ -1441,7 +1457,7 @@ function Ue({ bus: e }) {
 						/* @__PURE__ */ X("span", {})
 					]
 				}),
-				s.map((e) => /* @__PURE__ */ X(He, { row: e }, e.key)),
+				s.map((e) => /* @__PURE__ */ X(Ue, { row: e }, e.key)),
 				!s.length && /* @__PURE__ */ X("p", {
 					class: "empty",
 					children: n ? "No matching inputs." : "No input modules are saved."
@@ -1471,7 +1487,7 @@ function Ue({ bus: e }) {
 	] });
 }
 // src/groups.tsx
-function We({ bus: e }) {
+function Ge({ bus: e }) {
 	let t = Z(), [n, r] = G(0), [i, a] = G(""), [o, s] = G("add"), [c, l] = G(null), [u, d] = G(null), [f, p] = G(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = J(t.snapshot, e) && t.client.views.ready;
 	function v() {
 		let e = h.map((e) => ({
@@ -1540,7 +1556,7 @@ function We({ bus: e }) {
 			revision: t.snapshot.inventory.revision
 		} : n) ?? null), t.notice = n === "adopt_groups" ? "Hardware membership adopted." : "Saved membership repaired and re-read.";
 	}
-	return /* @__PURE__ */ X(y, { children: [/* @__PURE__ */ X(Le, {}), /* @__PURE__ */ X("div", {
+	return /* @__PURE__ */ X(y, { children: [/* @__PURE__ */ X(Re, {}), /* @__PURE__ */ X("div", {
 		class: "groups-layout",
 		children: [/* @__PURE__ */ X("aside", {
 			class: "slots",
@@ -1566,7 +1582,7 @@ function We({ bus: e }) {
 			m && g ? /* @__PURE__ */ X(y, { children: [
 				/* @__PURE__ */ X("div", {
 					class: "card group-title",
-					children: [/* @__PURE__ */ X(ze, { row: g }), /* @__PURE__ */ X("span", {
+					children: [/* @__PURE__ */ X(Be, { row: g }), /* @__PURE__ */ X("span", {
 						class: "hint",
 						children: [
 							m.members?.length ?? 0,
@@ -1726,7 +1742,7 @@ function We({ bus: e }) {
 	})] });
 }
 // src/app.tsx
-function Ge({ number: e, bus: t, close: n }) {
+function Ke({ number: e, bus: t, close: n }) {
 	let r = Z(), [i, a] = G(t?.name ?? `Bus${e + 1}`), [o, s] = G(t?.enabled ?? !0);
 	return /* @__PURE__ */ X($, {
 		title: `Bus ${e + 1} settings`,
@@ -1775,7 +1791,7 @@ function Ge({ number: e, bus: t, close: n }) {
 		})
 	});
 }
-function Ke() {
+function qe() {
 	let e = Z(), [t, n] = G(null), r = e.snapshot;
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X("header", {
@@ -1865,14 +1881,14 @@ function Ke() {
 				}, t);
 			})
 		}),
-		t !== null && /* @__PURE__ */ X(Ge, {
+		t !== null && /* @__PURE__ */ X(Ke, {
 			number: t,
 			bus: r.inventory.buses.find((e) => e.bus === t),
 			close: () => n(null)
 		})
 	] });
 }
-function qe({ number: e, tab: t }) {
+function Je({ number: e, tab: t }) {
 	let n = Z(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = G(!1);
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X("header", {
@@ -1908,13 +1924,13 @@ function qe({ number: e, tab: t }) {
 				href: `/buses/${e}${n}`,
 				children: r
 			}))
-		}), t === "/groups" ? /* @__PURE__ */ X(We, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ X("div", {
+		}), t === "/groups" ? /* @__PURE__ */ X(Ge, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ X("div", {
 			class: "card",
 			children: [/* @__PURE__ */ X("h2", { children: "Native DALI scenes" }), /* @__PURE__ */ X("p", {
 				class: "muted",
 				children: "Scene commissioning and recall are not available in this development build."
 			})]
-		}) : /* @__PURE__ */ X(Ue, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ X("div", {
+		}) : /* @__PURE__ */ X(We, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ X("div", {
 			class: "card",
 			children: [
 				/* @__PURE__ */ X("h2", { children: "Set up this bus" }),
@@ -1929,14 +1945,14 @@ function qe({ number: e, tab: t }) {
 				})
 			]
 		}),
-		i && /* @__PURE__ */ X(Ge, {
+		i && /* @__PURE__ */ X(Ke, {
 			number: e,
 			bus: r,
 			close: () => a(!1)
 		})
 	] });
 }
-function Je() {
+function Ye() {
 	let e = Z().snapshot;
 	function t() {
 		let t = URL.createObjectURL(new Blob([JSON.stringify(e.inventory, null, 2)], { type: "application/json" })), n = document.createElement("a");
@@ -1989,7 +2005,7 @@ function Je() {
 		})
 	] });
 }
-function Ye() {
+function Xe() {
 	let e = Z(), t = e.snapshot;
 	return /* @__PURE__ */ X(y, { children: [
 		/* @__PURE__ */ X("header", {
@@ -2078,8 +2094,8 @@ function Ye() {
 		})
 	] });
 }
-function Xe() {
-	let [e] = G(() => new Pe()), [, t] = G(0), [n, r] = G(location.pathname), [i, a] = G(!1);
+function Ze() {
+	let [e] = G(() => new Fe()), [, t] = G(0), [n, r] = G(location.pathname), [i, a] = G(!1);
 	pe(() => {
 		let n = e.client.subscribe(() => t((e) => e + 1));
 		e.client.start().catch((t) => {
@@ -2093,7 +2109,7 @@ function Xe() {
 		};
 	}, []);
 	let o = e.client.snapshot, s = /^\/buses\/([0-3])(\/groups|\/scenes)?$/.exec(n);
-	return /* @__PURE__ */ X(Ie.Provider, {
+	return /* @__PURE__ */ X(Le.Provider, {
 		value: e,
 		children: /* @__PURE__ */ X("div", {
 			class: "layout",
@@ -2183,8 +2199,9 @@ function Xe() {
 								children: e.client.views.ready ? "Live" : "Connecting"
 							}),
 							/* @__PURE__ */ X("button", {
-								onClick: () => void e.run(() => e.client.logout()),
-								children: "Sign out"
+								disabled: e.signingOut,
+								onClick: () => void e.logout(),
+								children: e.signingOut ? "Signing out…" : "Sign out"
 							})
 						]
 					}),
@@ -2199,10 +2216,10 @@ function Xe() {
 							role: "status",
 							children: e.notice
 						}),
-						o ? s ? /* @__PURE__ */ X(qe, {
+						o ? s ? /* @__PURE__ */ X(Je, {
 							number: Number(s[1]),
 							tab: s[2] ?? ""
-						}, s[1]) : n === "/settings" ? /* @__PURE__ */ X(Je, {}) : n === "/diagnostics" ? /* @__PURE__ */ X(Ye, {}) : n === "/" ? /* @__PURE__ */ X(Ke, {}) : /* @__PURE__ */ X("div", {
+						}, s[1]) : n === "/settings" ? /* @__PURE__ */ X(Ye, {}) : n === "/diagnostics" ? /* @__PURE__ */ X(Xe, {}) : n === "/" ? /* @__PURE__ */ X(qe, {}) : /* @__PURE__ */ X("div", {
 							class: "card",
 							children: [/* @__PURE__ */ X("h1", { children: "Page not found" }), /* @__PURE__ */ X(Q, {
 								href: "/",
@@ -2228,4 +2245,4 @@ function Xe() {
 		})
 	});
 }
-F(/* @__PURE__ */ X(Xe, {}), document.getElementById("app"));
+F(/* @__PURE__ */ X(Ze, {}), document.getElementById("app"));

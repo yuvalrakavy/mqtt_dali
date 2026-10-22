@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { busReady, glob, inputType, values, type Bus, type Row } from './model.ts';
+import { busReady, glob, inputType, inputDisplay, values, type Bus, type Row } from './model.ts';
 import { Modal, NameField, Progress, useUi } from './ui.tsx';
 
 function Colour({row,close}:{row:Row;close:()=>void}){
@@ -31,7 +31,7 @@ function DeviceRow({row}:{row:Row}){
   const blinking=!!identified&&['starting','blinking','restoring'].includes(identified.phase);
   const activity=ui.client.events.find(e=>e.target===row.item.target&&e.generation===row.generation);
   const hints=ui.hints.get(row.key),type=row.kind==='output'?(hints?.length?hints.map(t=>`DT${t}`).join(', '):'Output'):row.kind==='input'?'Input module':inputType(row.item.instance_type);
-  const inputState=typeof state.Status==='boolean'?(state.Status?'Pressed':'Released'):typeof state.InputState==='boolean'?(state.InputState?'On':'Off'):typeof state.Occupied==='boolean'?(state.Occupied?'Occupied':'Vacant'):typeof state.PositionRaw==='number'?String(state.PositionRaw):typeof state.LightLevelRaw==='number'?String(state.LightLevelRaw):'Unknown';
+  const inputState=inputDisplay(state);
   const percent=typeof state.Brightness==='number'?Math.round(state.Brightness*100):null;
   return <div class={`device-row ${row.kind==='output'?'output-grid':'input-grid'} ${blinking?'identifying':''} ${activity&&Date.now()-activity.received<5000?'active-input':''}`} data-device-key={row.key}>
     <span class="address">{row.parent?`${row.parent.short_address} / ${row.item.number}`:row.item.short_address}</span><NameField row={row}/><span class="device-type">{type}</span>

@@ -3,9 +3,13 @@ import { Draft, rows, itemGeneration, type Snapshot, type Row, type Bus, type It
 
 export class Controller {
   client=new Client();drafts=new Map<string,Draft>();hints=new Map<string,number[]>();
-  error='';notice='';busy=0;progress='';cancelled=false;
+  error='';notice='';busy=0;progress='';cancelled=false;signingOut=false;
   private edits:Promise<void>=Promise.resolve();
   touch(){this.client.notify();}
+  async logout(){
+    if(this.signingOut)return;this.signingOut=true;this.cancelled=true;this.error='';this.notice='';this.touch();
+    try{await this.client.logout();this.drafts.clear();}catch(error){this.error=(error as Error).message;}finally{this.signingOut=false;this.touch();}
+  }
   get snapshot(){const value=this.client.snapshot;if(!value)throw new Error('Wait for the controller inventory.');return value;}
   get currentRows(){return rows(this.snapshot);}
   current(key:string){const row=this.currentRows.find(r=>r.key===key);if(!row)throw new Error('This fixture was removed or replaced.');return row;}

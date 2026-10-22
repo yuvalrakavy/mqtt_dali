@@ -4,6 +4,14 @@ import { Controller } from './controller.ts';
 import type { Snapshot } from './model.ts';
 
 const epoch='0123456789abcdef0123456789abcdef';
+test('logout bypasses busy work, stops later batch steps and deduplicates its request',async()=>{
+  const ui=new Controller();ui.busy=1;ui.progress='Discovering';let calls=0,release!:()=>void;
+  ui.client.logout=async()=>{calls++;await new Promise<void>(r=>release=r);};
+  const first=ui.logout(),second=ui.logout();assert.equal(calls,1,'logout was blocked or duplicated during an active command');
+  assert.equal(ui.cancelled,true,'logout did not stop later batch submissions');release();await Promise.all([first,second]);
+  ui.client.logout=async()=>{throw new Error('revocation failed');};await ui.logout();
+  assert.equal(ui.error,'revocation failed','failed logout falsely reported success');ui.client.close();
+});
 test('queued inline commits preserve original item authority and prepare revisions serially',async()=>{
   const ui=new Controller(),a={target:'Bus.Outputs.A',binding_revision:1,location:{kind:'output',bus:0,short_address:0}},b={target:'Bus.Outputs.B',binding_revision:1,location:{kind:'output',bus:0,short_address:1}};
   const initial={inventory:{inventory_epoch:epoch,revision:1,buses:[{bus:0,name:'Bus',enabled:true,outputs:[{name:'A',short_address:0,target:a.target,binding_revision:1},{name:'B',short_address:1,target:b.target,binding_revision:1}]}],identity_ledger:{baseline:[a,b],batches:[]}}} as unknown as Snapshot;

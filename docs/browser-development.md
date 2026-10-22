@@ -47,6 +47,9 @@ real DOM interactions and checks resulting disk/physical state, including failed
 save injection, live inputs, DT8 and group drift review. Inspect screenshots and
 console errors; a successful compile alone is not UI acceptance. Routine Rust
 suites skip this explicitly ignored browser dependency.
+Query-before-event cases include multi-bit Part 302 inputs and exact 64-bit
+Part 304 sensor data. The logout case holds a real job admission while discovery
+is busy, then verifies session revocation and absence of later batch commands.
 
 Run `docs/v2-browser-controls.toml` with the existing Store negative-control runner
 to prove the frontend authority/race guards and protected embedded routes detect

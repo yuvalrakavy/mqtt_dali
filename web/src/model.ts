@@ -59,6 +59,15 @@ export function values(snapshot:Snapshot,row:Row):Record<string,unknown> {
   return snapshot.states.find(s=>s.target===row.item.target&&s.generation===row.generation)?.values??{};
 }
 export const inputType=(type?:number)=>(({1:'Part 301 · button',2:'Part 302 · input',3:'Part 303 · occupancy',4:'Part 304 · light sensor'} as Record<number,string>)[type??0]??`Type ${type??'unknown'}`);
+export function inputDisplay(state:Record<string,unknown>):string {
+  if(typeof state.Status==='boolean')return state.Status?'Pressed':'Released';
+  if(typeof state.InputState==='boolean')return state.InputState?'On':'Off';
+  if(typeof state.Occupied==='boolean')return state.Occupied?'Occupied':'Vacant';
+  if(typeof state.InputValueRaw==='string')return `${typeof state.Position==='number'?`${Math.round(state.Position*100)}% · `:''}0x${state.InputValueRaw} / ${state.ValueResolution} bit`;
+  if(typeof state.PositionRaw==='number')return `${state.PositionRaw} raw`;
+  if(typeof state.LightLevelRaw==='number')return `${state.LightLevelRaw} raw`;
+  return 'Unknown';
+}
 
 export class Draft {
   text:string;saved:string;error='';pending?:Promise<void>;

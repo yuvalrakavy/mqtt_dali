@@ -80,6 +80,24 @@ argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=actual cli
 expect_text = "retired stream delivered an old input action"
 
 [[control]]
+name = "browser_input_query_exact_bits"
+file = "web/src/model.ts"
+anchor = "0x${state.InputValueRaw} /"
+replacement = "0x${Number.parseInt(String(state.InputValueRaw),16).toString(16).toUpperCase()} /"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=query input display", "web/src/model.test.ts"]
+expect_text = "queried sensor value lost exact raw bits"
+
+[[control]]
+name = "browser_logout_bypasses_busy"
+file = "web/src/controller.ts"
+anchor = "    if(this.signingOut)return;"
+replacement = "    if(this.busy||this.signingOut)return;"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=logout bypasses", "web/src/controller.test.ts"]
+expect_text = "logout was blocked or duplicated during an active command"
+
+[[control]]
 name = "browser_embedded_assets_protected"
 file = "src/web/handlers.rs"
 anchor = "    let authenticated = cookie(request.headers())"

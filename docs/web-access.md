@@ -110,6 +110,10 @@ or RGBWAF channel percentages. The form shows observed support and limits; it
 does not infer a physical colour mode or convert between representations.
 Unknown/stale values remain unknown. Operate an input to see its current state
 and native action; a live update does not replace an unsaved name.
+Queried sensor values retain exact hexadecimal data and bit resolution; dimmer
+inputs also show their normalized position. Raw light-sensor data is not labelled
+as calibrated lux. Sign out remains available while a command or batch is active;
+it stops later browser submissions and revokes the session when successful.
 
 Groups contains all 16 slots. Create/name a slot, assign fixtures individually,
 or preview Add/Replace using a name pattern. Replace changes that group's members

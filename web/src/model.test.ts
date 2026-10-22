@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { glob, rowOrigins, itemGeneration, Draft, Views } from './model.ts';
+import { glob, rowOrigins, itemGeneration, inputDisplay, Draft, Views } from './model.ts';
+test('query input display preserves full-resolution raw bits and does not invent sensor units',()=>{
+  assert.equal(inputDisplay({InputValueRaw:'FEDCBA9876543210',ValueResolution:64}),'0xFEDCBA9876543210 / 64 bit','queried sensor value lost exact raw bits');
+  assert.equal(inputDisplay({InputValueRaw:'0FFF',ValueResolution:12,Position:1}),'100% · 0x0FFF / 12 bit');
+  assert.equal(inputDisplay({LightLevelRaw:711}),'711 raw');
+  assert.equal(inputDisplay({InputValueRaw:null,LightLevelRaw:null}),'Unknown');
+});
 
 const p=(target:string,revision:number,address=0)=>({target,binding_revision:revision,location:{kind:'output',bus:0,short_address:address},members:[]});
 test('origin replay applies rename swaps atomically and replacement retires the old draft key',()=>{

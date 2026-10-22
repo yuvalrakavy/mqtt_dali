@@ -31,15 +31,15 @@ Rust route test fails before asset serving. Real browser acceptance first finds
 the actual Inventory envelope mismatch; decode it and pin the Rust/TS contract.
 Fixture corrections use managed stop, short private macOS socket paths, native
 dialog/enabled-control waits and actual DT8 state rather than its setup profile.
-Chrome/Playwright passes phone 390×844 and desktop 1440×1024 through **303 real
+Chrome/Playwright passes phone 390×844 and desktop 1440×1024 through **308 real
 owned commands** with private MQTT/PTy/disk checks and inspected screenshots.
 Includes naming/Blink restoration, failed-save retry, live input during drafting,
 power/brightness/DT8, patterns, group drift adoption/repair, removal/rediscovery,
 inventory export and logout. No runtime/CSP console errors. Emulator hotplug and
 physical/HTTPS/live Store deployment remain unverified.
 
-Twelve frontend tests pass, including delayed POST/GET, retired stream/session,
-safe metadata, atomic rename swaps/replacement and queued item authority. Eleven
+Fourteen frontend tests pass, including delayed POST/GET, retired stream/session,
+safe metadata, atomic rename swaps/replacement and queued item authority. Thirteen
 current controls have intended RED evidence. One broad decoder mutation stranded
 an unrelated setup; the runner was interrupted and restored source, then rows were
 targeted individually. One old-source guard stayed GREEN because snapshot epochs
@@ -48,14 +48,27 @@ five affected controls, all RED. Logs: `/tmp/dali-browser-controls-final.log` an
 `/tmp/dali-browser-controls-client-final.log`.
 
 Restored acceptance passes **531/531 native tests** across 11 binaries, with the
-explicitly opt-in browser test skipped (execution 51 s, command wall 94 s), all
-twelve frontend tests, build/reproducible dist, scoped strict Clippy, Pi library
+explicitly opt-in browser test skipped (execution 51 s, command wall 90 s), all
+fourteen frontend tests, build/reproducible dist, scoped strict Clippy, Pi library
 and all four binaries, doctests (none), changed-file format, all affected control
 plans, whitespace and wait validation (zero findings). Logs are in
 `/tmp/dali-browser-acceptance` and `/tmp/dali-browser-wait-final.log`.
+The first source gate requested two practical corrections (about 90 s): queried
+Part 302/304 sensors used different fields from native events, and Sign out was
+incorrectly blocked by foreground busy state. Both reproduce in real browser
+tests before fixes. Render exact hex/resolution (plus normalized Part 302 position)
+and give logout its own deduplicated path with later-batch cancellation and honest
+failure reporting. Fourteen frontend tests and the 308-command browser run pass;
+new query-bit and busy-logout controls have intended REDs. The first query mutation
+hit the earlier leading-zero assertion; order the wide-value assertion first and
+rerun the five model controls, all RED. Logs:
+`/tmp/dali-browser-sensors-red.log`, `/tmp/dali-browser-logout-red.log`,
+`/tmp/dali-browser-review-fix-functional-final.log`,
+`/tmp/dali-browser-review-fix-controls.log` and
+`/tmp/dali-browser-sensor-controls-final.log`.
 Frozen-source reviews are being finalized. Browser evidence is recorded separately in
-`/tmp/dali-browser-functional.log`, with screenshots under
-`/tmp/dali-browser-ae7a7c47b606ce190c4bcfb475301ef2`. See
+`/tmp/dali-browser-review-fix-functional-final.log`, with screenshots under
+`/tmp/dali-browser-c5976b6a2974c740cfd0f272e0f118d7`. See
 [operator guide](web-access.md), [build/test guide](browser-development.md) and
 [slice design](superpowers/specs/2026-10-22-dali-v2-p7-browser.md).
 
