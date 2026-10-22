@@ -1,8 +1,9 @@
 # Native scene protocol and emulator
 
 This contributor guide covers the native scene codec and physical emulator.
-Named-slot metadata is available through MQTT/HTTP jobs. Physical scene jobs
-and the Scenes screen are pending.
+Named-slot metadata, stored-scene reads and native recall are available through
+MQTT/HTTP jobs. Editing/capture/verification/copy/clear and the Scenes screen
+are pending.
 No scene operation here has been validated on a physical HAT.
 
 ## Named-slot metadata
@@ -32,8 +33,57 @@ edit does not replace the scene generation. Both transports use the existing
 durable metadata owner; HTTP requires its normal session and CSRF protection.
 
 The [inventory contract](inventory-contract.md) explains replay and compatibility.
-Behavioral controls are in `v2-scene-identity-controls.toml`. Read, capture,
-program, verify, recall, copy and hardware-clear jobs remain pending.
+Behavioral controls are in `v2-scene-identity-controls.toml`. Capture, program,
+verify, copy and hardware-clear jobs remain pending.
+
+## Stored reads and native recall
+
+| Command | Target | Parameters | Result |
+|---|---|---|---|
+| `read_scene` | Individual output | `slot` (0..15) | Stored configuration evidence, including unnamed slots |
+| `recall_scene` | Named scene | `expected_revision`, optional `group` (0..15) | `outcome: sent` after a current correlated command terminal |
+
+Read uses the usual optional-generation MQTT read convention; a supplied token
+must match. HTTP requires its normal generation envelope and session/CSRF.
+Recall requires the original scene generation and exact complete inventory
+revision. Omitting `group` broadcasts on that scene's bus; a numeric group scopes
+the same slot to physical group members. Null, malformed or out-of-range group
+values are refused. The group need not have a saved name. Recall is momentary;
+it does not save or clear scene contents, change inventory or publish a trigger.
+
+The read report identifies target/generation, revision, bus/address and slot.
+`stored` contains `level`, nullable `dt8`/`color_type`, a `values` map, `quality`,
+`stale` and an optional reason. Reading tags preserve transport evidence:
+`value`/`mask` have `raw`; `no_response` has no value; `receive_collision` and
+`transmit_collision` retain an optional code. Off is `{"kind":"value","raw":0}`;
+Leave unchanged is `{"kind":"mask","raw":255}` for brightness. Word MASK is
+65535, while a word with only its high byte FF remains numeric.
+
+Confirmed DT8 reads preserve the stored colour type and selected supported
+Tc/xy/RGBWAF attributes. Raw temperature is the native reciprocal-temperature
+code; xy and RGBWAF values are native DALI codes, not converted display units.
+A masked type differs from a selected family containing masked attributes.
+Primary-N and unknown/contradictory types remain explicitly unsupported.
+Unknown capability or missing/collided data remains partial. `complete` describes
+query completeness, not physical certification, calibration or a writable setting.
+Scene query plans own all DTR/report steps and stop on missing/collided word
+parts. Capability/actual probes finish before selecting the stored report.
+Stored reads neither activate lights nor replace their actual State.
+
+`sent` does not confirm participation, resulting levels/colour or completed fades.
+Recall invalidates cached actual values across the bus, including for group scope
+because physical membership may differ from saved groups. Failed/cancelled recalls
+that might have reached the wire also invalidate them. State then follows the
+existing Available=false/Quality=stale contract; stale colour fields are null.
+Base PowerState/Brightness may remain merged last-known values, gated by
+availability. Refresh obtains actual readback; no old desired command is replayed.
+Recall is refused while a continuing fixture on that bus is being identified,
+including Blink dwell/restoration. Stop identification before recall.
+
+Contributors use `ServiceHandle::read_scene`/`recall_scene` and the existing
+physical owner. Original context, one admission permit, deadline, settlement and
+final mapping/physical-stamp checks apply. No additional UART client or scene
+cache exists. Controls: `v2-scene-operation-controls.toml`.
 
 ## Storage and participation
 

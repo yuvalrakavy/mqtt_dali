@@ -193,8 +193,14 @@ shared MQTT/HTTP jobs. Creation requires controller authority; rename/describe/
 removal require the original scene authority. Description preserves its token;
 removal/recreation replaces its lifetime. Metadata removal never clears hardware.
 Scene history remains after removal: do not erase it for an older reader.
-Physical scene jobs and the Scenes screen remain pending. Controls:
-`docs/v2-scene-controls.toml` and `docs/v2-scene-identity-controls.toml`.
+Stored reads and native bus/group recall use `service::scenes` under the same
+physical owner, original context/deadline and final stamp acceptance. Discover
+capabilities before selecting stored reports; stored data never becomes actual
+State. Recall says sent, invalidates all cached actual values on its bus even
+after failed/cancelled possible sends, and refuses continuing Blink claims there.
+Editing/capture/verification/copy/clear and the Scenes screen remain pending.
+Controls: `docs/v2-scene-controls.toml`, `docs/v2-scene-identity-controls.toml` and
+`docs/v2-scene-operation-controls.toml`.
 
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`

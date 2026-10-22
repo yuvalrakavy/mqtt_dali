@@ -11,6 +11,7 @@ mod input_assignment;
 mod live_input;
 mod readback;
 mod removal;
+mod scene_operations;
 mod scenes;
 
 #[derive(Default)]

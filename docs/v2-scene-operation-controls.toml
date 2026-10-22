@@ -1,0 +1,108 @@
+[[control]]
+name = "scene_read_swaps_word_bytes"
+file = "src/service/scenes/read.rs"
+anchor = "colour_codec::word_reply(high, low)"
+replacement = "colour_codec::word_reply(low, high)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_literal_stored)"]
+expect_text = "decoded wrong evidence"
+
+[[control]]
+name = "scene_read_missing_is_mask"
+file = "src/service/scenes/read.rs"
+anchor = "return Ok(Reading::byte(reply, false));"
+replacement = "return Ok(Reading::Mask { raw:65535 });"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_literal_stored)"]
+expect_text = "decoded wrong evidence"
+
+[[control]]
+name = "scene_read_unknown_capability_is_absent"
+file = "src/service/scenes/read.rs"
+anchor = "dt8: capabilities.dt8,"
+replacement = "dt8: Some(false),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_unknown_capability)"]
+expect_text = "unknown DT8 evidence was changed into known absence"
+
+[[control]]
+name = "scene_read_masked_type_is_unresolved"
+file = "src/service/scenes/read.rs"
+anchor = "if matches!(kind, Reading::Mask { .. }) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_masked_type)"]
+expect_text = "masked or unsupported stored type was confused with actual colour"
+
+[[control]]
+name = "scene_recall_keeps_cached_actual"
+file = "src/service/owner.rs"
+anchor = "if completed.request.action.writing() {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_failed_and_canceled)"]
+expect_text = "failed recall left cached actual values current"
+
+[[control]]
+name = "scene_operations_skip_final_stamp"
+file = "src/service/scenes.rs"
+anchor = "observed.stale |= !hat.evidence_current(r.bus, observed.stamp);"
+replacement = "observed.stale |= false;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_final_physical_stamp)"]
+expect_text = "stored scene evidence was accepted after physical stamp changed"
+
+[[control]]
+name = "scene_recall_group_becomes_broadcast"
+file = "src/service/scenes.rs"
+anchor = "group.map_or(Destination::Broadcast, Destination::Group)"
+replacement = "Destination::Broadcast"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_mqtt_reads)"]
+expect_text = "group recall reached an unselected fixture"
+
+[[control]]
+name = "scene_recall_collision_is_sent"
+file = "src/service/scenes.rs"
+anchor = "if !matches!(reply, BusReply::NoResponse) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_failed_and_canceled)"]
+expect_text = "nonterminal recall evidence was accepted"
+
+[[control]]
+name = "scene_recall_accepts_unknown_fields"
+file = "src/service/proxy.rs"
+anchor = "#[serde(deny_unknown_fields)]\nstruct SceneRecall"
+replacement = "struct SceneRecall"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_http_jobs)"]
+expect_text = "HTTP scene operation accepted invalid parameters or authority"
+
+[[control]]
+name = "scene_recall_ignores_blink"
+file = "src/service/scenes.rs"
+anchor = "if route.action.writing() && identification::blocks_bus(handle, route.bus) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_http_jobs)"]
+expect_text = "scene recall overwrote active identification"
+
+[[control]]
+name = "scene_read_is_mutation"
+file = "src/service/proxy.rs"
+anchor = "\"read_scene\",\n                CommandClass::Read,"
+replacement = "\"read_scene\",\n                CommandClass::WithReply,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_mqtt_reads)"]
+expect_text = "read_scene was classified as a mutation requiring a token"
+
+[[control]]
+name = "scene_recall_uses_latest_root_authority"
+file = "src/service/scenes.rs"
+anchor = "Some(table.targets[target].as_str())"
+replacement = "Some(table.instance.as_str())"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_operations_mqtt_reads)"]
+expect_text = "native group recall failed"
+

@@ -5,6 +5,40 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5h2b1 — owned stored-scene reads and native recall
+
+Implementation is in verification; source acceptance is pending. Named scenes
+can be recalled on their bus or a native numeric group. Individual outputs can
+read any stored slot, including unnamed ones, with explicit Off/MASK/missing/
+collision and stored-colour evidence. Queries do not activate the scene or
+replace actual State. Recall says sent, invalidates bus cached actual values,
+including failed/cancelled possible sends, and refuses continuing Blink claims.
+All work reuses the existing service/physical owner and quiet recovery.
+
+Both sequential source-only design reviews APPROVE (same family). The initial
+real MQTT case fails on unsupported read_scene before implementation. Eight new
+cases now pass: native group/bus scope, original scene authority after unrelated
+controller edits, tokenless Read classification, independent literal stored
+Tc/xy/RGBWAF and word/MASK/collision handling, unknown/unsupported types, canceled
+recall ownership/cache invalidation, final stale-stamp handling, authenticated
+HTTP/Blink conflict and a real canonical daemon plus standalone emulator.
+Scoped strict Clippy also passes. Logs: `/tmp/dali-scene-operations-red`,
+`/tmp/dali-scene-operations-expanded`, `/tmp/dali-scene-operations-cases-final`.
+The first standalone harness compile exposed an owned String where SendOptions
+expects a borrowed string; that test-only error and snapshot control spelling
+were corrected before the passing run. All twelve scene controls produce intended
+behavioral REDs (196 s), as does the existing headerless group-read classification
+control (12 s). The restored eight-case run passes before mutations. Logs:
+`/tmp/dali-scene-operations-controls`. Restored eight-case checks, scoped strict
+Clippy, Pi library/four-bin check, changed-file formatting, affected control plans,
+wait validation and whitespace pass (`/tmp/dali-scene-operations-check`). The
+wait scan first required declaring the local `scene` async method; the corrected
+validation passes with zero findings (`/tmp/dali-scene-operations-wait-check`). The
+stored-colour case additionally verifies every returned attribute after mutation
+runs. Full native regressions and frozen-source gates remain pending; no physical
+HAT or browser acceptance is implied.
+See the [slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scene-operations.md).
+
 ## P5h2a — durable named scene slots
 
 Accepted locally at frozen source `a03ffee`: **555 native tests** and both

@@ -121,18 +121,18 @@
   },
   "groups_read_requires_mutation_completion_capability": {
    "last_real": {
-    "at": "2026-10-22T06:58:20Z",
+    "at": "2026-10-22T13:23:29Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:41940e250ba97378",
+     "guard": "item:5a340d48b37fc55f",
      "row": "99a13958fc10e038",
      "test": null
     },
     "path": "command",
-    "secs": 9.1,
-    "sha": "c9fc2b3442eeb11267fd81be60359f7723ae1b53",
+    "secs": 12.1,
+    "sha": "0780df27ca7f260286552bf9a21a0ff92aa7518c",
     "verdict": "RED"
    }
   },

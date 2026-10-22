@@ -244,7 +244,7 @@ async fn query(
             .remove(0),
     ))
 }
-pub(super) async fn discover(
+pub(in crate::service) async fn discover(
     sample: &mut Observation,
     link: &Transactions<Serial>,
     route: &Route,

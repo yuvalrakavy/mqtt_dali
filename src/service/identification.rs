@@ -72,6 +72,20 @@ pub(super) fn blocks(handle: &ServiceHandle, target: &str) -> bool {
             && snapshot.model.origin(p.location) == Some(&claim.origin)
     })
 }
+pub(super) fn blocks_bus(handle: &ServiceHandle, bus: u8) -> bool {
+    let Some(snapshot) = handle.snapshot() else {
+        return false;
+    };
+    handle
+        .identification
+        .borrow()
+        .as_ref()
+        .is_some_and(|claim| {
+            claim.status.active()
+                && matches!(claim.location,Location::Output{bus:index,..} if index==bus)
+                && snapshot.model.origin(claim.location) == Some(&claim.origin)
+        })
+}
 pub(super) fn admit(
     snapshot: &Snapshot,
     target: &str,

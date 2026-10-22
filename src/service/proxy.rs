@@ -23,6 +23,7 @@ impl DeviceDriver for DaliProxy {
                 "stop_blink",
                 "create_group",
                 "create_scene",
+                "recall_scene",
                 "assign_group",
                 "adopt_groups",
                 "repair_groups",
@@ -41,6 +42,10 @@ impl DeviceDriver for DaliProxy {
             .map(|name| CommandSpec::new(name, CommandClass::WithReply))
             .chain(std::iter::once(CommandSpec::new(
                 "read_groups",
+                CommandClass::Read,
+            )))
+            .chain(std::iter::once(CommandSpec::new(
+                "read_scene",
                 CommandClass::Read,
             )))
             .collect(),
@@ -203,6 +208,24 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::Scenes(action) = change {
+            let budget = if action.writing() { 3 } else { 8 };
+            let result = self
+                .handle
+                .scene(
+                    target.ok_or_else(|| {
+                        OpError::Rejected("scene operation target required".into())
+                    })?,
+                    action,
+                    context.clone(),
+                    Instant::now() + Duration::from_secs(budget),
+                )
+                .await
+                .map_err(op_error)?;
+            return serde_json::to_value(result)
+                .map(Some)
+                .map_err(|e| OpError::Unusable(e.to_string()));
+        }
         if let Operation::Identify(stop) = change {
             let result = self
                 .handle
@@ -238,6 +261,9 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::Scenes(_) => {
+                unreachable!("scene operations dispatched before metadata completion")
+            }
             Operation::Identify(_) => {
                 unreachable!("identification dispatched before metadata completion")
             }
@@ -592,6 +618,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    Scenes(scenes::Action),
     Identify(bool),
     Groups(groups::Action, Option<u64>),
     Assignment(Assignment, discovery::Space),
@@ -606,6 +633,15 @@ impl Operation {
         context: &RequestContext,
     ) -> Result<(), ServiceError> {
         match self {
+            Self::Scenes(action) => scenes::resolve(
+                snapshot,
+                target.ok_or_else(|| {
+                    ServiceError::Rejected("scene operation target required".into())
+                })?,
+                *action,
+                context,
+            )
+            .map(|_| ()),
             Self::Identify(_) => identification::admit(
                 snapshot,
                 target.ok_or_else(|| ServiceError::Rejected("output target required".into()))?,
@@ -646,6 +682,13 @@ impl Operation {
     }
     fn budget(&self) -> Duration {
         Duration::from_secs(match self {
+            Self::Scenes(action) => {
+                if action.writing() {
+                    3
+                } else {
+                    8
+                }
+            }
             Self::Identify(_) => 4,
             Self::Metadata(_) | Self::Groups(groups::Action::Read, _) => 2,
             Self::Discovery(_) => 10,
@@ -870,6 +913,18 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::Scenes(action) => value(
+                handle
+                    .scene(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("scene operation target required".into())
+                        })?,
+                        action,
+                        context,
+                        deadline,
+                    )
+                    .await?,
+            ),
             Operation::Identify(stop) => value(
                 handle
                     .identify_output(
@@ -965,11 +1020,51 @@ struct SceneCreation {
     description: Option<String>,
     expected_revision: u64,
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SceneRead {
+    slot: u8,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SceneRecall {
+    group: Option<u8>,
+    expected_revision: u64,
+}
 fn parse(
     snapshot: &Snapshot,
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if call.command == "read_scene" || call.command == "recall_scene" {
+        if target.is_none() {
+            return Err(OpError::Rejected("scene operation target required".into()));
+        }
+        let action = if call.command == "read_scene" {
+            let p: SceneRead = decode(call)?;
+            scenes::Action::Read {
+                slot: crate::dali::scenes::Slot::new(p.slot)
+                    .map_err(|e| OpError::Rejected(e.to_string()))?,
+            }
+        } else {
+            let p: SceneRecall = decode(call)?;
+            if call.params.contains_key("group") && p.group.is_none() {
+                return Err(OpError::Rejected(
+                    "group must be an integer in 0..15".into(),
+                ));
+            }
+            let group = p
+                .group
+                .map(crate::dali::gear::GroupAddress::new)
+                .transpose()
+                .map_err(|e| OpError::Rejected(e.to_string()))?;
+            scenes::Action::Recall {
+                group,
+                expected_revision: p.expected_revision,
+            }
+        };
+        return Ok(Operation::Scenes(action));
+    }
     if matches!(call.command.as_str(), "blink" | "stop_blink") {
         if target.is_none() || !call.params.is_empty() {
             return Err(OpError::Rejected(

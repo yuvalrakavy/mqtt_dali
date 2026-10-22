@@ -669,6 +669,13 @@ impl Hat {
                 observed_bus,
             })
     }
+    pub(super) fn enqueue_scene(
+        &mut self,
+        request: super::scenes::Request,
+        route: super::scenes::Route,
+    ) {
+        self.enqueue_physical(physical::Work::Scenes(request, route));
+    }
     pub(super) fn enqueue_groups(
         &mut self,
         request: super::groups::Request,

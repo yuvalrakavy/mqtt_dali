@@ -319,6 +319,153 @@ async fn scene_steps(
 }
 
 #[tokio::test]
+async fn scene_operations_canonical_process_reads_and_recalls_standalone_hat() {
+    use mqtt_test_broker::{FakeBroker, SendOptions};
+    use serde_json::json;
+    let fixture = Fixture::new();
+    let mut slots = vec![255; 16];
+    slots[0] = 42;
+    fs::write(fixture.0.join("physical.json"),serde_json::to_vec(&json!({"version":1,"buses":[{"number":0,"outputs":[{"id":"lamp","short_address":0,"level":100,"scenes":slots}]}]})).unwrap()).unwrap();
+    fs::write(fixture.0.join("dali.json"),br#"{"name":"Controller","buses":[{"bus":0,"description":"Bus1","status":"Active","channels":[{"short_address":0,"description":"Light1"}]}]}"#).unwrap();
+    fs::write(
+        fixture.0.join("logging.toml"),
+        "[logging]\ndestination=\"\"\n",
+    )
+    .unwrap();
+    let mut emulator = fixture.command().spawn().unwrap();
+    let hat = ready(&mut emulator).await;
+    let broker = FakeBroker::start().await;
+    let mut command = Process::new(env!("CARGO_BIN_EXE_mqtt_dali"));
+    command
+        .current_dir(&fixture.0)
+        .args([
+            "--instance",
+            "Controller",
+            "--broker",
+            &broker.address(),
+            "--uart",
+            hat["pty"].as_str().unwrap(),
+            "--log-config",
+        ])
+        .arg(fixture.0.join("logging.toml"))
+        .env("LOG_DESTINATION", "")
+        .env_remove("LOG_CONFIG")
+        .env_remove("MQTT_BRIDGE_TEST_LOGGING_GATE")
+        .env_remove("MQTT_DALI_V2_TEST_CONFIG_GATE")
+        .env_remove("MQTT_DALI_V2_TEST_SAVE_GATE")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .kill_on_drop(true);
+    let mut daemon = command.spawn().unwrap();
+    assert!(
+        broker
+            .wait_until(Duration::from_secs(5), |b| !b
+                .received_on("DALI/State/Controller/__inventory")
+                .is_empty())
+            .await
+    );
+    let first: Value = serde_json::from_slice(
+        &broker
+            .received_on("DALI/State/Controller/__inventory")
+            .last()
+            .unwrap()
+            .payload,
+    )
+    .unwrap();
+    let epoch = first["Inventory"]["inventory_epoch"].as_str().unwrap();
+    let root = format!("{epoch}.1");
+    // Startup inventory is available before UART initialization. Retry a read,
+    // never a recall, until actual stored evidence proves the PTY is ready.
+    tokio::time::timeout(Duration::from_secs(8), async {
+        for attempt in 0.. {
+            let topic = format!("test/standalone-scene/read/{attempt}");
+            assert!(broker.publish(
+                "DALI/Command/Controller",
+                json!({"command":"read_scene","target":"Bus1.Outputs.Light1","slot":0}).to_string(),
+                &SendOptions::default()
+                    .response_topic(&topic)
+                    .user_property("target-generation", &root)
+            ));
+            assert!(
+                broker
+                    .wait_until(Duration::from_secs(2), |b| !b
+                        .received_on(&topic)
+                        .is_empty())
+                    .await
+            );
+            let reply: Value =
+                serde_json::from_slice(&broker.received_on(&topic)[0].payload).unwrap();
+            if reply.get("error").is_none() {
+                assert_eq!(
+                    reply["value"]["stored"]["level"],
+                    json!({"kind":"value","raw":42}),
+                    "canonical process did not read standalone stored scene"
+                );
+                break;
+            }
+            assert!(
+                reply["error"]
+                    .as_str()
+                    .unwrap()
+                    .contains("UART or bus is not ready"),
+                "unexpected startup scene read error: {reply}"
+            );
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    let physical = request(&fixture, json!({"op":"snapshot"})).await;
+    assert_eq!(physical["result"]["buses"][0]["outputs"][0]["level"], 100);
+    assert!(broker.publish(
+        "DALI/Command/Controller",
+        json!({"command":"create_scene","bus":0,"slot":0,"name":"Evening","expected_revision":1})
+            .to_string(),
+        &SendOptions::default()
+            .response_topic("test/standalone-scene/create")
+            .user_property("target-generation", &root)
+    ));
+    assert!(
+        broker
+            .wait_until(Duration::from_secs(3), |b| !b
+                .received_on("test/standalone-scene/create")
+                .is_empty())
+            .await
+    );
+    let created: Value =
+        serde_json::from_slice(&broker.received_on("test/standalone-scene/create")[0].payload)
+            .unwrap();
+    assert_eq!(created["value"]["revision"], 2);
+    assert!(broker.publish(
+        "DALI/Command/Controller",
+        json!({"command":"recall_scene","target":"Bus1.Scenes.Evening","expected_revision":2})
+            .to_string(),
+        &SendOptions::default()
+            .response_topic("test/standalone-scene/recall")
+            .user_property("target-generation", &format!("{epoch}.2"))
+    ));
+    assert!(
+        broker
+            .wait_until(Duration::from_secs(3), |b| !b
+                .received_on("test/standalone-scene/recall")
+                .is_empty())
+            .await
+    );
+    let recalled: Value =
+        serde_json::from_slice(&broker.received_on("test/standalone-scene/recall")[0].payload)
+            .unwrap();
+    assert_eq!(
+        recalled["value"]["outcome"], "sent",
+        "canonical process did not recall standalone scene: {recalled}"
+    );
+    let physical = request(&fixture, json!({"op":"snapshot"})).await;
+    assert_eq!(physical["result"]["buses"][0]["outputs"][0]["level"], 42);
+    terminate(&mut daemon).await;
+    terminate(&mut emulator).await;
+}
+
+#[tokio::test]
 async fn standalone_native_scene_codec_programs_and_queries_physical_colour_over_pty() {
     use mqtt_dali::dali::{
         colour,

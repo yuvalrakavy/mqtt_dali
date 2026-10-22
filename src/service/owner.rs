@@ -608,6 +608,16 @@ impl ProcessService for DaliService {
                             }
                         }
                     }
+                    let scene_result=if let Some(physical::Completion::Scenes(completed))=&mut completion {
+                        // A canceled/failed recall may have reached hardware even
+                        // when no usable helper sample survives settlement.
+                        if completed.request.action.writing() {
+                            for sample in snapshot.outputs.values_mut().filter(|s|s.bus==completed.request.bus) {
+                                sample.invalidate("native scene recall requires fresh actual readback");
+                            }
+                        }
+                        Some(scenes::accept(&snapshot,completed,&hat))
+                    } else {None};
                     let input_actions_allowed=snapshot.phase==Phase::Ready;
                     self.state.send_replace(Some(snapshot.clone()));
                     let _=self.handle.updates.send(snapshot);
@@ -615,6 +625,7 @@ impl ProcessService for DaliService {
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion { match completion {
+                      physical::Completion::Scenes(completion)=>scenes::finish(completion.request,scene_result.expect("scene accepted before publication")),
                       physical::Completion::Groups(_)=>unreachable!("groups accepted before cache publication"),
                       physical::Completion::Commission(_)=>unreachable!("commissioning advanced before cache publication"),
                       physical::Completion::Discovery(_)=>unreachable!("discovery accepted before cache publication"),
@@ -646,6 +657,27 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::Scene(request) => {
+                    let result = if request.reply.is_closed() || Instant::now() >= request.deadline
+                    {
+                        Err(ServiceError::Expired)
+                    } else {
+                        scenes::resolve(
+                            &self.handle.snapshot().expect("service started"),
+                            &request.target,
+                            request.action,
+                            &request.context,
+                        )
+                        .and_then(|route| {
+                            scenes::admit(&self.handle, &route)?;
+                            Ok(route)
+                        })
+                    };
+                    match result {
+                        Ok(route) => hat.enqueue_scene(request, route),
+                        Err(error) => scenes::finish(request, Err(error)),
+                    }
+                }
                 Message::Identify(request) => identification.command(request),
                 Message::Groups(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
@@ -782,6 +814,7 @@ impl ProcessService for DaliService {
                 Message::Identify(request) => {
                     let _ = request.reply.send(Err(ServiceError::Closed));
                 }
+                Message::Scene(request) => scenes::finish(request, Err(ServiceError::Closed)),
                 Message::Groups(request) => groups::finish(request, Err(ServiceError::Closed)),
                 Message::Commission(request) => {
                     commissioning::finish(request, Err(ServiceError::Closed))

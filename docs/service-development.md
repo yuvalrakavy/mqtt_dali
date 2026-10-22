@@ -141,6 +141,15 @@ edits preserve the scene binding. Creation/removal does not program/clear native
 fixture contents. MQTT and authenticated HTTP jobs share the same strict parser
 and save path; see [scene metadata](dali-scenes-contract.md#named-slot-metadata).
 
+`read_scene` inspects one output's native slot; `recall_scene` sends a saved scene
+to broadcast or a numeric group through `physical::Work::Scenes`. They retain
+original context, deadline and permit through settlement and final acceptance.
+Stored reports never enter actual output State. Every possibly-sent recall,
+including a failed/cancelled one without a sample, invalidates bus cached actual
+values before completing; the request retains its bus independently of the sample.
+Recall refuses continuing Blink claims on that bus at submission and owner
+admission. See [scene operations](dali-scenes-contract.md#stored-reads-and-native-recall).
+
 `Snapshot.inputs` contains typed observed input data; `input_listeners` contains
 routes with installed receive boundaries, not a device-presence claim.
 `subscribe_inputs()` supplies a bounded capacity-64 native action stream; handle
