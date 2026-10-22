@@ -5,6 +5,7 @@ use crate::service::tests::{context, start, wait_for, Fixture};
 use mqtt_test_broker::{FakeBroker, SendOptions};
 use serde_json::json;
 use std::time::Duration;
+mod colour;
 
 async fn refresh(broker: &FakeBroker, topic: &str) -> Value {
     assert!(broker.send_with(
@@ -527,7 +528,7 @@ fn mqtt_output_intent_rejects_the_whole_invalid_map() {
     ] {
         let values: PropertyMap = serde_json::from_str(payload).unwrap();
         assert!(
-            state::intent(&values).is_err(),
+            state::intent(&values, None).is_err(),
             "invalid output map was partially accepted: {payload}"
         );
     }

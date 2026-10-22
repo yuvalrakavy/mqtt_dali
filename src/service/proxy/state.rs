@@ -1,11 +1,13 @@
 //! Physical projections are published only on the BridgeKit worker thread.
 use super::*;
 
-pub(super) fn intent(values: &PropertyMap) -> Result<crate::dali::gear::Intent, OpError> {
-    if let Some(name) = values
-        .keys()
-        .find(|name| !matches!(name.as_str(), "PowerState" | "Brightness"))
-    {
+pub(super) fn intent(
+    values: &PropertyMap,
+    representation: Option<crate::config::ColorRepresentation>,
+) -> Result<output::WriteIntent, OpError> {
+    if let Some(name) = values.keys().find(|name| {
+        !matches!(name.as_str(), "PowerState" | "Brightness") && !super::colour::is_property(name)
+    }) {
         return Err(OpError::Unsupported(format!(
             "unknown output property: {name}"
         )));
@@ -26,8 +28,22 @@ pub(super) fn intent(values: &PropertyMap) -> Result<crate::dali::gear::Intent, 
                 .ok_or_else(|| OpError::Rejected("Brightness must be a JSON number".into()))
         })
         .transpose()?;
-    crate::dali::gear::Intent::new(power, brightness)
-        .map_err(|error| OpError::Rejected(error.to_string()))
+    let base = if power.is_some() || brightness.is_some() {
+        Some(
+            crate::dali::gear::Intent::new(power, brightness)
+                .map_err(|error| OpError::Rejected(error.to_string()))?,
+        )
+    } else {
+        None
+    };
+    match (base, super::colour::intent(values, representation)?) {
+        (Some(base), Some(colour)) => Ok(output::WriteIntent::Combined(base, colour)),
+        (Some(base), None) => Ok(output::WriteIntent::Base(base)),
+        (None, Some(colour)) => Ok(output::WriteIntent::Colour(colour)),
+        (None, None) => Err(OpError::Rejected(
+            "at least one output property is required".into(),
+        )),
+    }
 }
 
 fn lifecycle(snapshot: &Snapshot, bus: u8) -> bool {
@@ -80,6 +96,12 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
                 values.insert("PowerState".into(), Value::Bool(power));
                 values.insert("Brightness".into(), Value::from(brightness));
             }
+            super::colour::project(
+                &mut values,
+                projection.color_representation,
+                observation,
+                lifecycle(snapshot, bus),
+            );
             let context = match observation.filter(|_| quality != "stale") {
                 Some(value) => value.context.clone(),
                 None => RequestContext::new(token.clone())

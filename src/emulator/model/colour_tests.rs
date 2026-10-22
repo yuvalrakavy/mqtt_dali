@@ -37,6 +37,27 @@ fn automatic() -> Model {
     profile["buses"][0]["outputs"][0]["colour"]["auto_activation"] = json!(true);
     model(profile)
 }
+
+#[test]
+fn emulator_partial_xy_mask_overwrites_earlier_pending_coordinate() {
+    let mut m = model(physical());
+    send(&mut m, &[0xa377, 0xc377, 0xc108, 0x07e1]); // An earlier interrupted Y setter.
+    send(
+        &mut m,
+        &[
+            0xa300, 0xc340, 0xc108, 0x07e0, 0xa3ff, 0xc3ff, 0xc108, 0x07e1, 0xc108, 0x07e2,
+        ],
+    );
+    assert_eq!(value(&mut m, 0), Reply::Value(0x40));
+    assert_eq!(m.transmit(0, 0x0798, 0), Reply::Value(0));
+    assert_eq!(value(&mut m, 1), Reply::Value(0x23));
+    assert_eq!(
+        m.transmit(0, 0x0798, 0),
+        Reply::Value(0x45),
+        "partial xy replayed an earlier staged Y instead of preserving actual Y"
+    );
+    assert_eq!(m.transmit(0, 0x07a0, 0), Reply::Value(100));
+}
 #[test]
 fn emulator_automatic_activation_reports_the_actual_feature_bit() {
     let mut m = automatic();

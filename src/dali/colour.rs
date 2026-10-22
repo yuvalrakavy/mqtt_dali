@@ -13,7 +13,7 @@ pub enum Error {
     Coordinate,
     #[error("RGBWAF channel must be within 0..254 (normalized 0..1)")]
     Channel,
-    #[error("RGBWAF intent must change at least one channel")]
+    #[error("colour intent must change at least one channel or coordinate")]
     Empty,
     #[error("RGBWAF physical channel index {0} is outside 0..5")]
     ChannelIndex(u8),
@@ -92,7 +92,7 @@ impl Channel {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Drive {
     Temperature(Temperature),
-    Xy(Coordinate, Coordinate),
+    Xy(Option<Coordinate>, Option<Coordinate>),
     Rgbwaf([Option<Channel>; 6]),
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -115,7 +115,14 @@ impl Intent {
         Self(Drive::Temperature(value))
     }
     pub fn xy(x: Coordinate, y: Coordinate) -> Self {
-        Self(Drive::Xy(x, y))
+        Self(Drive::Xy(Some(x), Some(y)))
+    }
+    /// An omitted coordinate is explicitly loaded as MASK before ACTIVATE.
+    pub fn xy_parts(x: Option<Coordinate>, y: Option<Coordinate>) -> Result<Self, Error> {
+        if x.is_none() && y.is_none() {
+            return Err(Error::Empty);
+        }
+        Ok(Self(Drive::Xy(x, y)))
     }
     /// Channel order is red, green, blue, white, amber, free. None is MASK.
     pub fn rgbwaf(channels: [Option<Channel>; 6]) -> Result<Self, Error> {
@@ -130,8 +137,8 @@ impl Intent {
         match self.0 {
             Drive::Temperature(value) => load_word(&mut frames, target, value.raw(), 0xe7),
             Drive::Xy(x, y) => {
-                load_word(&mut frames, target, x.raw(), 0xe0);
-                load_word(&mut frames, target, y.raw(), 0xe1);
+                load_word(&mut frames, target, x.map_or(65535, Coordinate::raw), 0xe0);
+                load_word(&mut frames, target, y.map_or(65535, Coordinate::raw), 0xe1);
             }
             Drive::Rgbwaf(channels) => {
                 let values = channels.map(|channel| channel.map_or(255, Channel::raw));

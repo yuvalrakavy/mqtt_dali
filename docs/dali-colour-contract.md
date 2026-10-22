@@ -2,8 +2,8 @@
 
 `dali::colour` provides typed Part 209 values and complete 16-bit frame plans.
 It performs no UART, MQTT, persistence, discovery or emulator operations. The
-canonical daemon currently exposes the base output and live input MQTT paths;
-the library service also supports owned colour operations described below. The
+canonical daemon exposes base output, selected-family DT8 colour and live input
+MQTT paths; the library service supports owned colour operations described below. The
 [independent HAT emulator](emulator.md#colour-fixtures) now provides selected
 physical DT8 semantics for later integration tests; it does not import this codec.
 
@@ -33,6 +33,11 @@ select a new RGBWAF control mode, alter power or master brightness, or convert
 RGB into xy. The service discovers capability, active mode and limits before
 accepting an operation. DT8 alone does not imply RGB support.
 
+`Intent::xy_parts` accepts one or both optional coordinates and rejects both
+absent. Both setters are always sent, with word MASK for an omitted coordinate;
+this overwrites earlier pending temporary values while preserving actual values.
+`Intent::xy` remains the paired-coordinate convenience.
+
 ## Public representation selection
 
 Saved outputs can select optional `color_representation`: `temperature`, `xy`
@@ -41,10 +46,11 @@ metadata service and `set_color_representation` command persist it with the
 identity ledger; see [metadata commands](service-development.md#mqtt-metadata-commands).
 Only one public family is selected per physical fixture. Changing it preserves
 the fixture lifetime but retires the old binding generation and contract intent.
-The future scalar MQTT colour path uses this selection, rather than allowing
+The scalar MQTT colour path uses this selection, rather than allowing
 retained requests for competing families or silently changing the contract when
-another DALI master changes the physical mode. Supported-format reporting and
-scalar colour properties remain pending. Library typed intents still support all
+another DALI master changes the physical mode. See the
+[MQTT output guide](mqtt-outputs.md#colour-controls) for scalar properties, actual
+values and supported-format State. Library typed intents still support all
 their explicit families independently of this public metadata choice.
 
 ## Owned service operations
@@ -54,7 +60,7 @@ owner as base output operations. `apply_colour_with_output` additionally accepts
 a validated base intent within that same owned operation. Supply the named
 individual output, original
 request context and absolute deadline. Writes require the current target
-generation. These library APIs do not add MQTT properties or browser controls.
+generation. The MQTT proxy uses these same APIs; browser controls are pending.
 A whole operation owns DTRs and device-type selection through actual helper
 settlement, including when its frontend is cancelled. Native input events keep
 flowing through the existing UART reader. No UART recovery behavior is added.
@@ -71,8 +77,8 @@ manual or automatic activation. Unknown/missing/collided features reject before
 setters; persistent gear settings are never changed implicitly. RGBWAF writes
 additionally require normalized control mode and a
 confirmed assignment for every requested logical colour. Unsupported modes and
-representations are rejected with actual base evidence retained. MQTT colour
-properties remain subsequent work; public selection is persisted as above.
+representations are rejected with actual base evidence retained. Public selection
+is persisted as above and governs MQTT family validation before physical admission.
 
 A combined operation validates all colour capabilities before either mutation.
 It sends an off intent before the colour plan, or the colour plan (including
@@ -104,14 +110,16 @@ and (for a successful word high) low byte. No missing byte becomes zero. The
 diagnostics under their recorded quality. The outer observation carries the one
 original context and UART/bus stamp for the entire sample.
 
-Once colour has been sampled at a target, subsequent base reads/writes include
+Configured colour targets include discovery from their first ordinary read/write.
+Once colour has been sampled at another target, subsequent base reads/writes include
 fresh colour samples instead of copying old fields under a new trace. A normal
 missing/collided incidental colour reply degrades colour independently and does
 not fail a successful observed on/off or brightness write. Transport uncertainty
 still uses existing whole-output invalidation. Rename/address reuse retires the
 old sample and token, and epoch loss marks colour stale with its base observation.
-The MQTT proxy selects a 6 s per-target budget before admission for known colour
-mappings, retaining 2 s for plain mappings and the unchanged 15 s aggregate cap.
+The MQTT proxy selects 6 s before admission for configured/known-colour reads
+and base-only writes, or 8 s for colour/combined writes. It retains 2 s for plain
+mappings and the unchanged 15 s aggregate read cap.
 This accounts for the extra correlated exchanges; it is not a hardware timing
 guarantee or a renewed per-frame deadline. Explicit service deadlines are unchanged.
 

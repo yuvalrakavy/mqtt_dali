@@ -2,7 +2,7 @@
 
 This is an unfinished development version. Its current executable serves saved
 inventory and metadata edits through BridgeKit, checks ATX I4 UART health and
-supports [base light control](mqtt-outputs.md) plus
+supports [base and selected-family DT8 light control](mqtt-outputs.md) plus
 [native input State/events](mqtt-inputs.md). Commissioning, input discovery and
 the web interface remain in development.
 

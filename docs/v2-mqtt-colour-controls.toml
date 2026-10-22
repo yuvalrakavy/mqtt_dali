@@ -1,0 +1,118 @@
+# Selected-family MQTT requests and actual/capability State boundaries.
+
+[[control]]
+name = "mixed_color_family_is_silently_ignored"
+file = "src/service/proxy/colour.rs"
+anchor = "if values.contains_key(field) && !belongs(query, representation) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_invalid_combined)"]
+expect_text = "invalid complete color request partially changed base power"
+
+[[control]]
+name = "combined_mqtt_map_discards_color"
+file = "src/service/proxy.rs"
+anchor = ".apply_colour_with_output(target, colour, base, context.clone(), deadline)"
+replacement = ".apply_output(target, base, context.clone(), deadline)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_first_refresh_discovers)"]
+expect_text = "selected-family MQTT color state never became current"
+
+[[control]]
+name = "color_only_mqtt_map_invents_power_on"
+file = "src/service/proxy.rs"
+anchor = ".apply_colour(target, colour, context.clone(), deadline)"
+replacement = ".apply_colour_with_output(\ntarget, colour, crate::dali::gear::Intent::new(Some(true),None).unwrap(), context.clone(), deadline\n)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_scalar_xy)"]
+expect_text = "color-only xy changed master brightness"
+
+[[control]]
+name = "partial_xy_unspecified_x_becomes_zero"
+file = "src/dali/colour.rs"
+anchor = "x.map_or(65535, Coordinate::raw)"
+replacement = "x.map_or(0, Coordinate::raw)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(partial_xy_plans)"]
+expect_text = "partial xy did not overwrite the omitted X with MASK"
+
+[[control]]
+name = "partial_xy_unspecified_y_becomes_zero"
+file = "src/dali/colour.rs"
+anchor = "y.map_or(65535, Coordinate::raw)"
+replacement = "y.map_or(0, Coordinate::raw)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(partial_xy_plans)"]
+expect_text = "partial xy did not overwrite the omitted Y with MASK"
+
+[[control]]
+name = "mqtt_merged_color_values_are_not_cleared"
+file = "src/service/proxy/colour.rs"
+anchor = "values.insert(field.into(), actual.map(Value::from).unwrap_or(Value::Null));"
+replacement = "if let Some(actual) = actual { values.insert(field.into(), Value::from(actual)); }"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_bus_invalidation)"]
+expect_text = "stale MQTT color data survived merged State invalidation"
+
+[[control]]
+name = "mqtt_capabilities_keep_stale_evidence"
+file = "src/service/proxy/colour.rs"
+anchor = "let fresh = sample.filter(|_| !stale);"
+replacement = "let fresh = sample;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_bus_invalidation)"]
+expect_text = "stale MQTT color data survived merged State invalidation"
+
+[[control]]
+name = "inactive_family_becomes_current_color"
+file = "src/service/proxy/colour.rs"
+anchor = "Quality::Current if s.active() != representation.map(kind)"
+replacement = "Quality::Current if false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_projection_never)"]
+expect_text = "incorrect color quality for mismatch"
+
+[[control]]
+name = "non_normalized_rgb_is_reported_as_normalized"
+file = "src/service/proxy/colour.rs"
+anchor = "&& !matches!(s.control, Some(Reply::Value(raw)) if raw >> 6 == 2)"
+replacement = "&& false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_projection_never)"]
+expect_text = "incorrect color quality for mode"
+
+[[control]]
+name = "malformed_color_features_are_advertised"
+file = "src/service/proxy/colour.rs"
+anchor = "Some(Reply::Value(f)) if f.counts_valid() => Some(f),"
+replacement = "Some(Reply::Value(f)) => Some(f),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_projection_never)"]
+expect_text = "invalid feature counts fabricated supported formats"
+
+[[control]]
+name = "first_configured_read_omits_color_discovery"
+file = "src/service/output.rs"
+anchor = ".any(|p| p.target == target && p.color_representation.is_some())"
+replacement = ".any(|_| false)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_first_refresh_discovers)"]
+expect_text = "selected-family MQTT color state never became current"
+
+[[control]]
+name = "first_configured_read_uses_plain_budget"
+file = "src/service/proxy.rs"
+anchor = "known_colour || colour::configured(snapshot, target).is_some()"
+replacement = "known_colour"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_first_paced_refresh)"]
+expect_text = "paced known-colour base read expired"
+
+[[control]]
+name = "complete_color_write_uses_too_short_budget"
+file = "src/service/proxy.rs"
+anchor = "if colour_write {\n            8"
+replacement = "if colour_write {\n            6"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_colour_complete_paced_write)"]
+expect_text = "complete paced color write expired or echoed intent instead of actual readback"

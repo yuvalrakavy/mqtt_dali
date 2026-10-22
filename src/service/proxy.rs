@@ -2,6 +2,7 @@ use super::*;
 use mqtt_bridge_kit::*;
 use std::time::Duration;
 
+mod colour;
 mod state;
 
 pub struct DaliProxy {
@@ -49,11 +50,11 @@ impl DeviceDriver for DaliProxy {
         }
         match kind {
             RequestKind::Apply(values) => {
-                state::intent(values)?;
                 let target =
                     target.ok_or_else(|| OpError::Rejected("output target required".into()))?;
                 let snapshot = self.snapshot()?;
                 Self::output_route(&snapshot, target, context, true)?;
+                state::intent(values, colour::configured(&snapshot, target))?;
                 Ok(())
             }
             RequestKind::Command(call) => {
@@ -121,15 +122,33 @@ impl DeviceDriver for DaliProxy {
         values: &PropertyMap,
         context: &RequestContext,
     ) -> Result<(), OpError> {
-        let intent = state::intent(values)?;
         let snapshot = self.snapshot()?;
         Self::output_route(&snapshot, target, context, true)?;
-        let deadline = Instant::now() + Self::output_budget(&snapshot, target);
-        let observed = self
-            .handle
-            .apply_output(target, intent, context.clone(), deadline)
-            .await
-            .map_err(op_error)?;
+        let intent = state::intent(values, colour::configured(&snapshot, target))?;
+        let deadline = Instant::now()
+            + Self::output_budget(
+                &snapshot,
+                target,
+                !matches!(intent, output::WriteIntent::Base(_)),
+            );
+        let observed = match intent {
+            output::WriteIntent::Base(base) => {
+                self.handle
+                    .apply_output(target, base, context.clone(), deadline)
+                    .await
+            }
+            output::WriteIntent::Colour(colour) => {
+                self.handle
+                    .apply_colour(target, colour, context.clone(), deadline)
+                    .await
+            }
+            output::WriteIntent::Combined(base, colour) => {
+                self.handle
+                    .apply_colour_with_output(target, colour, base, context.clone(), deadline)
+                    .await
+            }
+        }
+        .map_err(op_error)?;
         if Instant::now() >= deadline {
             return Err(OpError::Rejected(
                 "write completion exceeded its original deadline; inspect state before retrying"
@@ -184,7 +203,7 @@ impl DeviceDriver for DaliProxy {
 }
 
 impl DaliProxy {
-    fn output_budget(snapshot: &Snapshot, target: &str) -> Duration {
+    fn output_budget(snapshot: &Snapshot, target: &str, colour_write: bool) -> Duration {
         let known_colour = snapshot.outputs.get(target).is_some_and(|sample| {
             sample.colour.is_some()
                 && routing::generations(&snapshot.model)
@@ -193,7 +212,13 @@ impl DaliProxy {
                     .map(String::as_str)
                     == sample.context.generation()
         });
-        Duration::from_secs(if known_colour { 6 } else { 2 })
+        Duration::from_secs(if colour_write {
+            8
+        } else if known_colour || colour::configured(snapshot, target).is_some() {
+            6
+        } else {
+            2
+        })
     }
     fn output_route(
         snapshot: &Snapshot,
@@ -261,7 +286,7 @@ impl DaliProxy {
                     }
                     return Ok(vec![state]);
                 }
-                let deadline = Instant::now() + Self::output_budget(&snapshot, &target);
+                let deadline = Instant::now() + Self::output_budget(&snapshot, &target, false);
                 let observed = self
                     .read_observation(&target, cause.clone(), deadline)
                     .await?;
@@ -332,8 +357,8 @@ impl DaliProxy {
             let context = RequestContext::new(table.targets[target].clone())
                 .map_err(OpError::Unusable)?
                 .with_traceparent(cause.traceparent());
-            let until =
-                deadline.min(Instant::now() + Self::output_budget(&self.snapshot()?, target));
+            let until = deadline
+                .min(Instant::now() + Self::output_budget(&self.snapshot()?, target, false));
             match self.read_observation(target, context, until).await {
                 Ok(value) => observed.push((target.clone(), value)),
                 Err(_) => failed += 1,

@@ -165,13 +165,18 @@ rollback after partial writes. Controls are in `docs/v2-colour-service-controls.
 and `docs/v2-combined-colour-controls.toml`.
 Never share the codec with emulator semantics,
 treat a high byte FF as full-word MASK, clear unrequested WAF channels, or infer
-RGB support from DT8 alone. No MQTT colour path is claimed yet.
+RGB support from DT8 alone. MQTT scalar colour uses the configured family only,
+with independent ColorAvailable/ColorQuality and actual supported-format State;
+see `docs/mqtt-outputs.md` and `docs/v2-mqtt-colour-controls.toml`.
 Outputs can persist optional `color_representation` (`temperature`, `xy`, `rgbwaf`)
 through `MetadataEdit::OutputColorRepresentation` / `set_color_representation`.
 This is component metadata, not hardware configuration or capability evidence.
 Changes preserve Origin and rotate the binding token, including combined renames;
 consumers retire old contract intent. See `docs/inventory-contract.md` and
-`docs/v2-colour-selection-controls.toml`. Scalar colour MQTT remains pending.
+`docs/v2-colour-selection-controls.toml`. First reads discover configured colour;
+read/base-write budgets are 6 s, colour/combined writes 8 s, plain outputs 2 s,
+and All retains its original 15 s ceiling. Partial xy sends numeric/MASK setters
+for both coordinates. Explicit null colour properties clear stale merged State.
 The independent emulator's optional strict colour profile covers selected DT8
 staging/activation/current values and limits; see `docs/emulator.md`. Staged MASK
 overwrites earlier staged numeric values; ACTIVATE clears temporaries. Standard

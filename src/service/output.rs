@@ -475,6 +475,11 @@ impl ServiceHandle {
                 target: target.into(),
                 intent,
                 include_colour: include_colour
+                    || snapshot
+                        .model
+                        .projections()
+                        .iter()
+                        .any(|p| p.target == target && p.color_representation.is_some())
                     || snapshot.outputs.get(target).is_some_and(|sample| {
                         sample.context.generation() == route.context.generation()
                             && sample.colour.is_some()

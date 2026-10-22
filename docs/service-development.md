@@ -2,7 +2,7 @@
 
 This guide is for bridge contributors and embedders. The service library owns
 durable configuration, runtime routing, optional UART health, individual-output
-operations and native input observations/actions. The canonical
+operations, selected-family DT8 MQTT controls and native input observations/actions. The canonical
 `mqtt_dali` executable now runs it through BridgeKit; `mqtt_dali_v2` is an alias.
 `--check-config` remains an explicit offline operation. See
 [running the development daemon](running-v2.md). MQTT base fixture properties
@@ -146,8 +146,9 @@ For example,
 saves the public colour format and retires old requests without replacing the
 fixture's physical identity. The field is required; null clears it. This metadata
 command performs no UART operation and does not configure a physical colour mode.
-The setting alone does not enable MQTT colour values in this increment; those
-properties and supported-format reporting are the next integration boundary.
+The selected-family MQTT properties use the same owned physical service; see
+[colour controls](mqtt-outputs.md#colour-controls). A setting alone does not prove
+hardware capability or change persistent operating modes.
 
 Optional MQTT v5 `traceparent` follows each command through BridgeKit's worker
 and the metadata actor. Inventory publication uses the committed generation
@@ -158,8 +159,9 @@ spans, rather than only an ingress span.
 
 `__inventory` is read-only and returns the complete observed saved inventory.
 Individual PowerState/Brightness writes and reads use the owned physical service.
-Groups, color and other unsupported properties return explicit Unsupported errors
-in this slice. Saved inventory does not prove physical state.
+Selected-family colour properties also use that service with fresh capability
+preflight and actual readback. Groups and unsupported properties return explicit
+errors. Saved inventory does not prove physical state.
 Consumers can be any MQTT implementation; no Store service is required. Follow
 the [inventory contract](inventory-contract.md), especially replay buffering and
 consumer-owned intent continuity.

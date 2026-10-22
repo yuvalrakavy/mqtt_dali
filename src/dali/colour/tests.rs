@@ -6,6 +6,25 @@ fn short(raw: u8) -> Destination {
 }
 
 #[test]
+fn partial_xy_plans_explicitly_mask_each_omitted_coordinate() {
+    assert_eq!(Intent::xy_parts(None, None), Err(Error::Empty));
+    assert_eq!(
+        Intent::xy_parts(Some(Coordinate::new(16384).unwrap()), None)
+            .unwrap()
+            .frames(short(0)),
+        [0xa300, 0xc340, 0xc108, 0x01e0, 0xa3ff, 0xc3ff, 0xc108, 0x01e1, 0xc108, 0x01e2],
+        "partial xy did not overwrite the omitted Y with MASK"
+    );
+    assert_eq!(
+        Intent::xy_parts(None, Some(Coordinate::new(49152).unwrap()))
+            .unwrap()
+            .frames(short(0)),
+        [0xa3ff, 0xc3ff, 0xc108, 0x01e0, 0xa300, 0xc3c0, 0xc108, 0x01e1, 0xc108, 0x01e2],
+        "partial xy did not overwrite the omitted X with MASK"
+    );
+}
+
+#[test]
 fn physical_channel_queries_keep_assignment_separate_from_channel_count() {
     assert_eq!(
         ChannelIndex::new(5)

@@ -990,6 +990,42 @@ Corrected frozen `1a2a472` is approved by both sequential source gates against
 `dfd10de`, with no remaining material findings. Reviewers inspected source/tests/
 controls only and ran no verification; same-model-family limitation applies.
 
+## P4d6 — selected-family scalar MQTT colour
+
+Saved individual DT8 outputs now accept Kelvin temperature, scalar xy and
+normalized RGBWAF channels for their one configured public family. Requests can
+combine colour with PowerState/Brightness through the existing owned combined
+operation; all validation/preflight precedes mutation. Colour-only requests leave
+master power/brightness unchanged. Partial xy explicitly masks its other setter,
+and RGB subsets preserve other channels. No new SDK, gear settings or UART
+recovery policy was introduced.
+
+State reports actual selected-family values, separate availability/quality,
+active format and nullable supported-format/channel/limit capabilities. Inactive,
+invalid, missing or stale colour values are explicit nulls, including in actual
+merged MQTT State; base availability remains independent. Initial configured
+reads discover colour immediately. Budgets are 2 s plain, 6 s colour read/base
+write and 8 s colour/combined write, inside unchanged 15 s All/20 s SDK limits.
+
+Three initial MQTT/emulator tests failed behaviorally before enabling the path.
+All twelve focused cases now pass, including clamping, original traces, partial
+channels/coordinates, malformed requests/evidence, native assignment order,
+invalidation and retained-family retirement through reconnect. A test sent an
+invalid and valid request in one coalescing window; actual broker errors proved
+the expected whole-batch refusal, so it now waits for rejection before testing
+the next valid scalar. No runtime workaround was needed.
+
+All **13 new controls** and **3 affected old timing controls** detect their
+declared faults. The paced six-channel+Tc MQTT write proves 8 s success and 6 s
+failure; first configured reads also detect 2 s regression. Restored native
+suite: **382 passed**. Scoped strict Clippy, Pi library/all four binary compile,
+changed-file format/whitespace, wait registry and doctests (none defined) pass.
+Logs: `/tmp/dali-mqtt-colour-controls` and `/tmp/dali-mqtt-colour-restored-gate`.
+Both sequential design reviews approved; frozen source reviews follow. Review
+coverage is same-family/source-only; physical firmware and live deployment remain
+unverified. See the [MQTT guide](mqtt-outputs.md#colour-controls) and
+[slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-mqtt-colour.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -997,7 +1033,7 @@ controls only and ran no verification; same-model-family limitation applies.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator and owned colour service including automatic activation/combined writes and durable public representation selection implemented | Input discovery/full-value polling/configuration/feedback, scalar color MQTT/supported-format State and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input discovery/full-value polling/configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

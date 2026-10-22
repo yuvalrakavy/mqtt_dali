@@ -13,6 +13,81 @@ mod peer;
 use crate::service::{ServiceError, ServiceHandle};
 use peer::{Peer, Profile};
 const TARGET: &str = "Bus1.Outputs.Light1";
+
+#[tokio::test]
+async fn mqtt_colour_complete_paced_write_uses_original_eight_second_budget() {
+    use crate::config::ColorRepresentation;
+    use mqtt_test_broker::SendOptions;
+    let fixture = Fixture::new();
+    let peer = Peer::start(Profile {
+        features: 0xc2,
+        status: 0x80,
+        assignments: vec![1, 2, 3, 4, 5, 6],
+        ..Profile::default()
+    });
+    let broker = mqtt_test_broker::FakeBroker::start().await;
+    let (service, handle) = fixture.service();
+    let running = start(
+        service.with_uart(peer.path.clone(), RepeatPolicy::Unverified),
+        &handle,
+        &broker,
+    )
+    .await;
+    wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+    assert!(
+        broker
+            .wait_for_subscription("DALI/Desired/Controller/+", Duration::from_secs(2))
+            .await
+    );
+    handle
+        .edit(
+            1,
+            crate::service::MetadataEdit::OutputColorRepresentation {
+                bus: 0,
+                address: 0,
+                representation: Some(ColorRepresentation::Rgbwaf),
+            },
+            context(1),
+            deadline(),
+        )
+        .await
+        .unwrap();
+    peer.profile.lock().unwrap().pace = Duration::from_millis(50);
+    let started = tokio::time::Instant::now();
+    assert!(broker.publish(
+        "DALI/Desired/Controller/Bus1.Outputs.Light1",
+        r#"{"PowerState":true,"ColorRed":1}"#,
+        &SendOptions::default()
+            .user_property("target-generation", context(2).generation().unwrap())
+    ));
+    assert!(
+        broker
+            .wait_until(Duration::from_secs(12), |b| b
+                .received_on("DALI/State/Controller/Bus1.Outputs.Light1")
+                .last()
+                .is_some_and(|m| {
+                    serde_json::from_slice::<serde_json::Value>(&m.payload).is_ok_and(|v| {
+                        v["ColorAvailable"] == true
+                            && v["ColorRed"] == serde_json::json!(7.0 / 254.0)
+                            && v["PowerState"] == true
+                            && v["Brightness"] == 1.0
+                    })
+                }))
+            .await,
+        "complete paced color write expired or echoed intent instead of actual readback"
+    );
+    assert!(
+        started.elapsed() > Duration::from_secs(6),
+        "paced color path did not exercise the six-second budget boundary"
+    );
+    let frames = peer.commands.lock().unwrap();
+    assert!(
+        frames.contains(&0x01eb) && frames.contains(&0x0105),
+        "paced test did not execute both color and power mutations"
+    );
+    drop(frames);
+    stop(running, peer).await;
+}
 fn tc_intent() -> codec::Intent {
     codec::Intent::temperature(codec::Temperature::new(300).unwrap())
 }
@@ -450,6 +525,7 @@ enum PacedOperation {
     Write,
     TargetRead,
     AllRead,
+    ConfiguredRead,
 }
 async fn paced_base(operation: PacedOperation) {
     use mqtt_test_broker::SendOptions;
@@ -479,11 +555,31 @@ async fn paced_base(operation: PacedOperation) {
             .wait_for_subscription("DALI/Desired/Controller/+", Duration::from_secs(2))
             .await
     );
-    let sample = handle
-        .read_colour(TARGET, context(1), deadline())
-        .await
-        .unwrap();
-    assert_eq!(sample.colour.unwrap().quality, Quality::Current);
+    if matches!(operation, PacedOperation::ConfiguredRead) {
+        handle
+            .edit(
+                1,
+                crate::service::MetadataEdit::OutputColorRepresentation {
+                    bus: 0,
+                    address: 0,
+                    representation: Some(crate::config::ColorRepresentation::Rgbwaf),
+                },
+                context(1),
+                deadline(),
+            )
+            .await
+            .unwrap();
+        assert!(
+            handle.snapshot().unwrap().outputs.get(TARGET).is_none(),
+            "configured-read test already had color evidence"
+        );
+    } else {
+        let sample = handle
+            .read_colour(TARGET, context(1), deadline())
+            .await
+            .unwrap();
+        assert_eq!(sample.colour.unwrap().quality, Quality::Current);
+    }
     // A realistic bounded response pace, not a claim about every HAT/fixture.
     // This profile needs 73 exchanges, so its complete sample exceeds 2 s.
     peer.profile.lock().unwrap().pace = Duration::from_millis(40);
@@ -515,9 +611,9 @@ async fn paced_base(operation: PacedOperation) {
                 "paced known-colour base write reported an error"
             );
         }
-        PacedOperation::TargetRead | PacedOperation::AllRead => {
+        PacedOperation::TargetRead | PacedOperation::AllRead | PacedOperation::ConfiguredRead => {
             let payload = match operation {
-                PacedOperation::TargetRead => {
+                PacedOperation::TargetRead | PacedOperation::ConfiguredRead => {
                     r#"{"command":"refresh","target":"Bus1.Outputs.Light1"}"#
                 }
                 _ => r#"{"command":"refresh"}"#,
@@ -568,6 +664,11 @@ async fn colour_service_paced_target_read_keeps_actual_colour() {
 #[tokio::test]
 async fn colour_service_paced_all_read_keeps_actual_colour() {
     paced_base(PacedOperation::AllRead).await;
+}
+
+#[tokio::test]
+async fn mqtt_colour_first_paced_refresh_uses_configured_read_budget() {
+    paced_base(PacedOperation::ConfiguredRead).await;
 }
 
 #[tokio::test]
