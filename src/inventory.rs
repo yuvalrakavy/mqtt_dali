@@ -88,6 +88,11 @@ pub enum Edit {
         instance: u8,
         name: String,
     },
+    AddInputInstance {
+        bus: u8,
+        address: u8,
+        instance: crate::config::InputInstance,
+    },
     AddInput {
         bus: u8,
         input: crate::config::Input,

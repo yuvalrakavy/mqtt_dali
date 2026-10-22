@@ -1,9 +1,10 @@
 //! One concrete owner for input reads and output operations on the same HAT.
-use super::{input::readback, output, ServiceError};
+use super::{discovery, input::readback, output, ServiceError};
 use crate::atx::{serial::Serial, transactions::Transactions};
 use tokio::time::Instant;
 
 pub(super) enum Work {
+    Discovery(discovery::Request, discovery::Route),
     Output(output::Request, output::Route),
     Input(readback::Request, readback::Route),
 }
@@ -12,18 +13,21 @@ impl Work {
         match self {
             Self::Output(_, r) => r.bus,
             Self::Input(_, r) => r.bus,
+            Self::Discovery(_, r) => r.bus,
         }
     }
     pub fn deadline(&self) -> Instant {
         match self {
             Self::Output(q, _) => q.deadline,
             Self::Input(q, _) => q.deadline,
+            Self::Discovery(q, _) => q.deadline,
         }
     }
     pub fn is_closed(&self) -> bool {
         match self {
             Self::Output(q, _) => q.reply.is_closed(),
             Self::Input(q, _) => q.reply.is_closed(),
+            Self::Discovery(q, _) => q.reply.is_closed(),
         }
     }
     pub fn mutating(&self) -> bool {
@@ -33,10 +37,15 @@ impl Work {
         match self {
             Self::Output(_, r) => r.context.operation_span(&r.controller, "output"),
             Self::Input(_, r) => r.context.operation_span(&r.controller, "input_read"),
+            Self::Discovery(_, r) => r.context.operation_span(&r.controller, "discover_address"),
         }
     }
     pub async fn wait_for_receiver_close(&mut self) {
         match self {
+            Self::Discovery(q, _) => {
+                // WAIT: v2-hat-loop
+                q.reply.closed().await
+            }
             Self::Output(q, _) => {
                 // WAIT: v2-hat-loop
                 q.reply.closed().await
@@ -56,9 +65,22 @@ impl Work {
         let run = match self {
             Self::Output(q, r) => Run::Output(r.clone(), q.intent, q.include_colour, q.deadline),
             Self::Input(q, r) => Run::Input(r.clone(), q.deadline),
+            Self::Discovery(q, r) => Run::Discovery(
+                r.clone(),
+                q.deadline
+                    .min(Instant::now() + std::time::Duration::from_secs(8)),
+            ),
         };
         async move {
             match run {
+                Run::Discovery(route, deadline) => {
+                    let value = discovery::execute(link, route, stamp, deadline).await;
+                    Outcome {
+                        sample: Sample::Discovery(value.observation),
+                        error: value.error,
+                        recovery: value.recovery,
+                    }
+                }
                 Run::Output(route, intent, include_colour, deadline) => {
                     let value =
                         output::execute(link, route, stamp, intent, include_colour, deadline).await;
@@ -81,6 +103,14 @@ impl Work {
     }
     pub fn finish(self, sample: Option<Sample>, error: Option<ServiceError>) -> Completion {
         match (self, sample) {
+            (Self::Discovery(request, _), sample) => Completion::Discovery(discovery::Completion {
+                request,
+                observation: sample.map(|s| match s {
+                    Sample::Discovery(o) => o,
+                    _ => unreachable!("physical result kind"),
+                }),
+                error,
+            }),
             (Self::Output(request, _), sample) => Completion::Output(output::Completion {
                 request,
                 observation: sample.map(|s| match s {
@@ -104,10 +134,12 @@ impl Work {
     }
 }
 enum Run {
+    Discovery(discovery::Route, Instant),
     Output(output::Route, Option<output::WriteIntent>, bool, Instant),
     Input(readback::Route, Instant),
 }
 pub(super) enum Sample {
+    Discovery(discovery::Observation),
     Output(output::Observation),
     Input(super::input::Observation),
 }
@@ -116,6 +148,7 @@ impl Sample {
         match self {
             Self::Output(value) => value.invalidate(reason),
             Self::Input(value) => value.stale = true,
+            Self::Discovery(value) => value.stale = true,
         }
     }
 }
@@ -125,12 +158,19 @@ pub(super) struct Outcome {
     pub recovery: bool,
 }
 pub(super) enum Completion {
+    Discovery(discovery::Completion),
     Output(output::Completion),
     Input(readback::Completion),
 }
 impl Completion {
     pub fn reject(self) {
         match self {
+            Self::Discovery(q) => {
+                let _ = q
+                    .request
+                    .reply
+                    .send(Err(q.error.unwrap_or(ServiceError::Closed)));
+            }
             Self::Output(q) => {
                 let _ = q
                     .request

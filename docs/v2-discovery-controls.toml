@@ -1,0 +1,62 @@
+[[control]]
+name = "discovery_uses_multiple_marker_as_terminator"
+file = "src/service/discovery.rs"
+anchor = "BusReply::Value(254) => {"
+replacement = "BusReply::Value(255) => {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(discovery_literal_multi_type)"]
+expect_text = "discovery used an invalid type-list terminator"
+
+[[control]]
+name = "discovery_reuses_colour_type_prefix_bound"
+file = "src/service/discovery.rs"
+anchor = "for _ in 0..255 {"
+replacement = "for _ in 0..9 {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(discovery_literal_multi_type)"]
+expect_text = "discovery lost its verified type prefix"
+
+[[control]]
+name = "discovery_incomplete_inputs_are_adopted"
+file = "src/service/discovery.rs"
+anchor = "Space::Inputs if probe.instances_complete => {"
+replacement = "Space::Inputs => {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(discovery_literal_missing_collision)"]
+expect_text = "incomplete discovery fabricated saved inventory"
+
+[[control]]
+name = "discovery_saved_input_type_is_ignored"
+file = "src/service/discovery.rs"
+anchor = ".is_some_and(|kind| *kind != i.instance_type)"
+replacement = ".is_some_and(|_| false)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(discovery_input_mismatch)"]
+expect_text = "assertion `left == right` failed"
+
+[[control]]
+name = "discovery_expansion_retires_parent"
+file = "src/inventory/edit.rs"
+anchor = "input.instances.push(instance.clone());"
+replacement = "input.instances.push(instance.clone());\n            fresh_input(origins,*index,input,revision);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(input_expansion_consumer)"]
+expect_text = "input expansion replaced the parent identity"
+
+[[control]]
+name = "discovery_admits_wrong_revision"
+file = "src/service/discovery.rs"
+anchor = "if expected != snapshot.model.inventory().revision {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(discovery_retired_authority)"]
+expect_text = "invalid discovery reached UART"
+
+[[control]]
+name = "discovery_original_mqtt_reply_is_retired"
+file = "src/service/owner.rs"
+anchor = "reporter.replace_generations_for_command(&self.table, next.clone(), completion)"
+replacement = "reporter.replace_generations(&self.table, next.clone())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(discovery_mqtt_adopts)"]
+expect_text = "new addressed light was not discovered/adopted"

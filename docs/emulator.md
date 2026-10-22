@@ -70,6 +70,13 @@ positive device reply. N proves HAT transmission, not device support.
 
 ## Input current-value profiles
 
+An input module may have an empty `instances` list, representing module metadata
+without an input instance. Status/count/type queries support bridge addressed
+discovery independently of saved bridge inventory. Nonempty lists contain at
+most 32 types in 0..31; explicit value profiles still require an existing instance.
+The complete multi-type output enumeration regression uses a separate literal
+UART peer, rather than assuming emulator agreement proves protocol correctness.
+
 Keep numeric instance types; add optional value profiles to a module:
 
 ```json

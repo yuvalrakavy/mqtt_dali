@@ -155,6 +155,20 @@ impl Owner {
             _=context.cancelled()=>Outcome::Uncertain("service stopping during save".into()),
             _=request.reply.closed()=>Outcome::Uncertain("caller canceled during save".into()),
         };
+        self.accept_save(
+            service,
+            outcome,
+            request.completion.as_ref(),
+            &request.context,
+        )
+    }
+    fn accept_save(
+        &mut self,
+        service: &DaliService,
+        outcome: Outcome,
+        completion: Option<&mqtt_bridge_kit::CommandCompletion>,
+        cause: &RequestContext,
+    ) -> Result<Snapshot, ServiceError> {
         match outcome {
             Outcome::Committed { .. } => {
                 let disk = self.store.snapshot();
@@ -163,12 +177,7 @@ impl Owner {
                 }
                 // Recovery may report changed:false for a different mapping.
                 // Activate the entire confirmed model, never that flag.
-                self.activate(
-                    service,
-                    disk.model,
-                    request.completion.as_ref(),
-                    &request.context,
-                )
+                self.activate(service, disk.model, completion, cause)
             }
             Outcome::NotCommitted(reason) => {
                 let disk = self.store.snapshot();
@@ -184,6 +193,64 @@ impl Owner {
             }
             Outcome::Uncertain(reason) => self.freeze(service, reason),
         }
+    }
+    async fn discover(
+        &mut self,
+        service: &DaliService,
+        completion: &mut discovery::Completion,
+        context: &mut ServiceContext<DaliProxy>,
+        hat: &hat::Hat,
+    ) -> Result<discovery::Report, ServiceError> {
+        if let Some(error) = completion.error.take() {
+            return Err(error);
+        }
+        let request = &mut completion.request;
+        if request.reply.is_closed() || Instant::now() >= request.deadline {
+            return Err(ServiceError::Expired);
+        }
+        discovery::resolve(
+            &service.handle.snapshot().ok_or(ServiceError::Closed)?,
+            request.bus,
+            request.space,
+            request.address,
+            request.expected,
+            &request.context,
+        )?;
+        let mut probe = completion
+            .observation
+            .take()
+            .ok_or_else(|| ServiceError::Rejected("missing discovery result".into()))?;
+        hat.invalidate_discovery(&mut probe);
+        if probe.stale {
+            return Err(ServiceError::Rejected(
+                "discovery evidence changed before save".into(),
+            ));
+        }
+        let edits = discovery::additions(&self.model, &mut probe)?;
+        let added = edits
+            .iter()
+            .map(|edit| match edit {
+                Edit::AddInput { input, .. } => 1 + input.instances.len(),
+                _ => 1,
+            })
+            .sum();
+        if !edits.is_empty() {
+            service.update_snapshot(self.model.clone(), Phase::Writing);
+            // WAIT: v2-service-save
+            let outcome = tokio::select! {
+                biased;
+                result=self.store.edit(request.expected,edits,request.deadline)=>result,
+                _=context.cancelled()=>Outcome::Uncertain("service stopping during discovery save".into()),
+                _=request.reply.closed()=>Outcome::Uncertain("caller canceled during discovery save".into()),
+            };
+            self.accept_save(
+                service,
+                outcome,
+                request.completion.as_ref(),
+                &request.context,
+            )?;
+        }
+        Ok(discovery::report(&self.model, probe, added))
     }
     fn freeze(&self, service: &DaliService, reason: String) -> Result<Snapshot, ServiceError> {
         service.update_snapshot(self.model.clone(), Phase::Uncertain(reason.clone()));
@@ -262,6 +329,17 @@ impl ProcessService for DaliService {
                     snapshot.hardware=hat.hardware();
                     snapshot.input_listeners=hat.input_listeners();
                     let mut completion=hat.take_completed_physical();
+                    if matches!(completion,Some(physical::Completion::Discovery(_))) {
+                        let Some(physical::Completion::Discovery(mut discovered))=completion.take() else {unreachable!()};
+                        let result=owner.discover(&self,&mut discovered,&mut context,&hat).await;
+                        let discovery::Request{reply,_permit,..}=discovered.request;
+                        drop(_permit);
+                        let _=reply.send(result);
+                        snapshot=self.handle.snapshot().expect("service started");
+                        hat.sync_inputs(&owner.model);
+                    }
+                    snapshot.hardware=hat.hardware();
+                    snapshot.input_listeners=hat.input_listeners();
                     if let Some(physical::Completion::Output(completion))=&mut completion {
                         if let Some(observation)=&mut completion.observation {
                             if owner.table.targets.get(&completion.request.target).map(String::as_str)==observation.context.generation() {
@@ -306,6 +384,7 @@ impl ProcessService for DaliService {
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion { match completion {
+                      physical::Completion::Discovery(_)=>unreachable!("discovery accepted before cache publication"),
                       physical::Completion::Output(completion)=>{
                         let result=match (completion.error, completion.observation) {
                             (Some(error),_)=>Err(error),
@@ -334,6 +413,26 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::Discovery(request) => {
+                    if request.reply.is_closed() || Instant::now() >= request.deadline {
+                        let _ = request.reply.send(Err(ServiceError::Expired));
+                    } else {
+                        let snapshot = self.handle.snapshot().expect("service started");
+                        match discovery::resolve(
+                            &snapshot,
+                            request.bus,
+                            request.space,
+                            request.address,
+                            request.expected,
+                            &request.context,
+                        ) {
+                            Ok(route) => hat.enqueue_discovery(request, route),
+                            Err(error) => {
+                                let _ = request.reply.send(Err(error));
+                            }
+                        }
+                    }
+                }
                 Message::Input(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
                         let _ = request.reply.send(Err(ServiceError::Expired));
@@ -391,6 +490,9 @@ impl ProcessService for DaliService {
         self.update_snapshot(owner.model.clone(), Phase::Stopping);
         while let Ok(message) = self.receive.try_recv() {
             match message {
+                Message::Discovery(request) => {
+                    let _ = request.reply.send(Err(ServiceError::Closed));
+                }
                 Message::Input(request) => {
                     let _ = request.reply.send(Err(ServiceError::Closed));
                 }

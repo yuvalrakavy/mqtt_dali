@@ -3,7 +3,8 @@
 This is an unfinished development version. Its current executable serves saved
 inventory and metadata edits through BridgeKit, checks ATX I4 UART health and
 supports [base and selected-family DT8 light control](mqtt-outputs.md) plus
-[input State, current-value queries and native events](mqtt-inputs.md). Commissioning, input discovery and
+[input State, current-value queries and native events](mqtt-inputs.md), plus
+[discovery of already addressed devices](discovery.md). Address assignment and
 the web interface remain in development.
 
 Start one controller with an MQTT broker and its own writable config directory:

@@ -186,12 +186,12 @@ impl Scenario {
                     return Err("invalid output level, scenes or random address".into());
                 }
             }
-            if bus.inputs.iter().any(|i| {
-                i.instances.is_empty()
-                    || i.instances.len() > 32
-                    || i.instances.iter().any(|t| *t > 31)
-            }) {
-                return Err("input requires 1–32 valid instance types".into());
+            if bus
+                .inputs
+                .iter()
+                .any(|i| i.instances.len() > 32 || i.instances.iter().any(|t| *t > 31))
+            {
+                return Err("input requires at most 32 valid instance types".into());
             }
             for input in &bus.inputs {
                 let mut instances = HashSet::new();

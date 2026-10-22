@@ -19,6 +19,7 @@ impl DeviceDriver for DaliProxy {
     fn info(&self) -> DriverInfo {
         DriverInfo {
             commands: [
+                "discover_address",
                 "rename",
                 "rename_bus",
                 "describe",
@@ -63,7 +64,21 @@ impl DeviceDriver for DaliProxy {
                     .snapshot()
                     .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
                 let change = parse(&snapshot, target, call)?;
-                routing::admit(&snapshot, &change, context).map_err(op_error)
+                match change {
+                    Operation::Metadata(change) => {
+                        routing::admit(&snapshot, &change, context).map_err(op_error)
+                    }
+                    Operation::Discovery(p) => discovery::resolve(
+                        &snapshot,
+                        p.bus,
+                        p.space,
+                        p.address,
+                        p.expected_revision,
+                        context,
+                    )
+                    .map(|_| ())
+                    .map_err(op_error),
+                }
             }
             _ => Err(OpError::Unsupported("target configuration pending".into())),
         }
@@ -188,6 +203,27 @@ impl DeviceDriver for DaliProxy {
             .as_ref()
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
+        let change = match change {
+            Operation::Metadata(change) => change,
+            Operation::Discovery(p) => {
+                let result = self
+                    .handle
+                    .discover(
+                        p.bus,
+                        p.space,
+                        p.address,
+                        p.expected_revision,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(10),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+        };
         let result = self
             .handle
             .submit(change, context.clone(), deadline, Some(completion))
@@ -482,7 +518,55 @@ fn decode<T: serde::de::DeserializeOwned>(call: &CommandCall) -> Result<T, OpErr
     serde_json::from_value(Value::Object(call.params.clone()))
         .map_err(|e| OpError::Rejected(e.to_string()))
 }
-fn parse(snapshot: &Snapshot, target: Option<&str>, call: &CommandCall) -> Result<Change, OpError> {
+enum Operation {
+    Metadata(Change),
+    Discovery(Discovery),
+}
+struct Discovery {
+    bus: u8,
+    space: discovery::Space,
+    address: u8,
+    expected_revision: u64,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DiscoveryParams {
+    bus: u8,
+    space: String,
+    address: u8,
+    expected_revision: u64,
+}
+fn parse(
+    snapshot: &Snapshot,
+    target: Option<&str>,
+    call: &CommandCall,
+) -> Result<Operation, OpError> {
+    if call.command == "discover_address" {
+        if target.is_some() {
+            return Err(OpError::Rejected(
+                "discovery requires controller target".into(),
+            ));
+        }
+        let p: DiscoveryParams = decode(call)?;
+        let space = match p.space.as_str() {
+            "outputs" => discovery::Space::Outputs,
+            "inputs" => discovery::Space::Inputs,
+            _ => return Err(OpError::Rejected("space must be outputs or inputs".into())),
+        };
+        return Ok(Operation::Discovery(Discovery {
+            bus: p.bus,
+            space,
+            address: p.address,
+            expected_revision: p.expected_revision,
+        }));
+    }
+    parse_metadata(snapshot, target, call).map(Operation::Metadata)
+}
+fn parse_metadata(
+    snapshot: &Snapshot,
+    target: Option<&str>,
+    call: &CommandCall,
+) -> Result<Change, OpError> {
     let edit = match (call.command.as_str(), target) {
         ("set_color_representation", Some(target)) => {
             let params: ColorSelection = decode(call)?;

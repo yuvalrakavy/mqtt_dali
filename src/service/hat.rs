@@ -666,6 +666,13 @@ impl Hat {
                 observed_bus,
             })
     }
+    pub(super) fn enqueue_discovery(
+        &mut self,
+        request: super::discovery::Request,
+        route: super::discovery::Route,
+    ) {
+        self.enqueue_physical(physical::Work::Discovery(request, route));
+    }
     pub(super) fn enqueue_output(&mut self, request: output::Request, route: output::Route) {
         self.enqueue_physical(physical::Work::Output(request, route));
     }
@@ -862,6 +869,19 @@ impl Hat {
         for observation in outputs.values_mut() {
             self.invalidate_output(observation);
         }
+    }
+    pub(super) fn invalidate_discovery(&self, observation: &mut super::discovery::Observation) {
+        observation.stale |= self.stamp(observation.bus) != Some(observation.stamp)
+            || self.closing
+            || self.needs_quiet
+            || self
+                .session
+                .as_ref()
+                .is_none_or(|s| s.link.status() != SessionState::Ready)
+            || !self
+                .observations
+                .iter()
+                .any(|b| b.bus == observation.bus && b.status == 2);
     }
     pub(super) fn invalidate_output(&self, observation: &mut output::Observation) {
         if self.stamp(observation.bus) != Some(observation.stamp)

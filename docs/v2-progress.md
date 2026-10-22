@@ -5,6 +5,39 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5a — addressed discovery
+
+One bounded `discover_address` operation probes an output or input module and
+durably adopts verified additions with default names. Existing names, Origin,
+binding generations, missing items and smaller saved input lists are preserved.
+New input instances receive their own child lifetimes. Full output multi-type
+enumeration uses 254 termination and preserves incomplete prefixes. Input
+discovery retains unknown valid types and empty-module metadata.
+
+The physical permit spans queued work, actual settlement and durable save.
+Original MQTT completion survives controller generation rotation; repeat scans
+are no-ops. Captured `probe` reports never create current fixture availability.
+Save-time hardware disappearance leaves confirmed additions reserved. Existing
+uncertain-save recovery is reused; no UART journal, outage retry or SDK change.
+
+Both sequential design gates approved after clarifying the 254/255 distinction
+and explicitly historical probe semantics. The first real MQTT regression failed
+with unknown command before production changes and passes after implementation.
+Focused local tests cover literal full/malformed type sequences (including more
+than nine types), missing/collision/partial input evidence, both address spaces,
+common/unknown/zero input instances, child expansion and independent-consumer
+continuity, type mismatch/smaller counts, strict requests/retired authority,
+native events during cancellation, permit retention, physical epoch loss and
+held/noncommitted/uncertain saves. A literal peer initially lost its PTY slave
+through Rust field capture; retaining the whole PTY fixed that test fixture.
+Final gate and frozen-source review evidence follows before this slice closes.
+
+This is discovery of already addressed devices. Unaddressed assignment, complete
+readdress/restore, identification controls, group/scene workflows and the approved
+web UI remain future increments. No physical I4 or fixture evidence is claimed.
+See [operator/API guide](discovery.md) and the
+[slice design](superpowers/specs/2026-10-22-dali-v2-p5-addressed-discovery.md).
+
 ## P4c4 — current input readback
 
 Saved input instances now query physical type, resolution and all value/latch
@@ -1076,8 +1109,8 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input discovery/full-value polling/configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
+| P5 commissioning | Addressed output/input discovery and default-name adoption implemented | Unaddressed/reassign/restore, identification, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

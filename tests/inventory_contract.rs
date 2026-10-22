@@ -37,6 +37,67 @@ fn input_model() -> Model {
     Model::new(inventory).unwrap()
 }
 
+#[test]
+fn input_expansion_consumer_keeps_parent_child_and_intent_continuity() {
+    let first = input_model();
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    let parent = "Bus1.Inputs.Panel";
+    let child = "Bus1.Inputs.Panel.Instances.Key";
+    let parent_id = consumer.by_target(parent).unwrap().id;
+    let child_id = consumer.by_target(child).unwrap().id;
+    consumer.set_intent(child, json!({"Status":true}));
+    let expanded = first
+        .edit(
+            1,
+            &[Edit::AddInputInstance {
+                bus: 0,
+                address: 0,
+                instance: serde_json::from_value(
+                    json!({"number":1,"name":"Contact","instance_type":2}),
+                )
+                .unwrap(),
+            }],
+        )
+        .unwrap();
+    consumer.accept(&expanded.state_bytes().unwrap()).unwrap();
+    assert_eq!(
+        consumer.by_target(parent).unwrap().id,
+        parent_id,
+        "input expansion replaced the parent identity"
+    );
+    assert_eq!(
+        consumer.by_target(child).unwrap().id,
+        child_id,
+        "input expansion replaced the existing child identity"
+    );
+    assert!(
+        consumer.by_target(child).unwrap().intent.is_some(),
+        "input expansion retired continuing child intent"
+    );
+    let added = "Bus1.Inputs.Panel.Instances.Contact";
+    assert!(
+        consumer.by_target(added).is_some(),
+        "expanded child did not reach the independent consumer"
+    );
+    assert!(consumer.accepts_state(child, "0123456789abcdef0123456789abcdef.1"));
+    assert!(consumer.accepts_state(added, "0123456789abcdef0123456789abcdef.2"));
+    assert!(!consumer.accepts_state(added, "0123456789abcdef0123456789abcdef.1"));
+    let repeated = expanded.edit(
+        2,
+        &[Edit::AddInputInstance {
+            bus: 0,
+            address: 0,
+            instance: serde_json::from_value(json!({"number":1,"name":"Other","instance_type":2}))
+                .unwrap(),
+        }],
+    );
+    assert!(
+        repeated.is_err(),
+        "duplicate input instance overwrote a reserved child"
+    );
+}
+
 // Deliberately construct the new wire contract without producer edit/replay helpers.
 fn color_document() -> Value {
     let mut value: Value = serde_json::from_slice(&model().state_bytes().unwrap()).unwrap();

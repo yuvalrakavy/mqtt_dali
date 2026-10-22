@@ -91,6 +91,10 @@ Eviction leaves state unknown and calls for a read, never an assumed off value.
 Button events must not enter this retained replay cache.
 
 Missing hardware stays in saved inventory. Only explicit removal retires it.
+Addressed [discovery](discovery.md) creates default-named additions through this
+same ledger. `AddInputInstance` gives only the new child a fresh Origin; its
+continuing parent and siblings retain their identities and binding generations.
+Neither a smaller instance count nor missing hardware removes a saved item.
 Device State/events will carry generation tags, and consumers must accept only
 the generation in their current complete inventory. Retired State uses BridgeKit
 contextual retirement/removal; each consumer owns cleanup of its own retained

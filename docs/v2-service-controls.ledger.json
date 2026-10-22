@@ -36,7 +36,7 @@
   },
   "mqtt_edits_retire_their_own_final_reply": {
    "last_real": {
-    "at": "2026-10-22T02:50:20Z",
+    "at": "2026-10-22T05:36:39Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,8 +46,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 4.3,
-    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "secs": 6.5,
+    "sha": "af3648cb7a33da6acfb0a3a289e490dbe1d36cc5",
     "verdict": "RED"
    }
   },
@@ -87,18 +87,18 @@
   },
   "recovery_skips_runtime_activation_for_changed_false": {
    "last_real": {
-    "at": "2026-10-21T23:12:15Z",
+    "at": "2026-10-22T05:36:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:fe28c9490675edef",
-     "row": "5f7d7d7558ec5011",
+     "guard": "item:6533b57cb7bb0719",
+     "row": "d92655248663aea2",
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "secs": 6.8,
+    "sha": "af3648cb7a33da6acfb0a3a289e490dbe1d36cc5",
     "verdict": "RED"
    }
   },

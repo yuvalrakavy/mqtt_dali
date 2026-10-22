@@ -23,17 +23,8 @@ expect_text = "recovery left retired generation routable"
 [[control]]
 name = "recovery_skips_runtime_activation_for_changed_false"
 file = "src/service/owner.rs"
-anchor = '''self.activate(
-                    service,
-                    disk.model,
-                    request.completion.as_ref(),
-                    &request.context,
-                )'''
-replacement = '''if matches!(request.change, Change::Recover) {
-                    Ok(service.update_snapshot(self.model.clone(), Phase::Ready))
-                } else {
-                    self.activate(service, disk.model, request.completion.as_ref(), &request.context)
-                }'''
+anchor = "self.activate(service, disk.model, completion, cause)"
+replacement = "Ok(service.update_snapshot(self.model.clone(), Phase::Ready))"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(canceled_save_stays_frozen_until_recovery_retires_the_mapping_even_when_changed_is_false)"]
 expect_text = "recovery lost durable mapping"

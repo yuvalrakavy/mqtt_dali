@@ -191,7 +191,14 @@ and durable metadata rename path; see `docs/inventory-contract.md`. Module
 replacement retires every child lifetime; ordinary rename preserves them. Replay
 validates hierarchy and continuing parent origins at every batch, and the
 independent consumer verifies this without producer replay helpers. Hardware
-input discovery and configuration remain subsequent work. Live observed State
+address assignment and input configuration remain subsequent work. Addressed
+discovery is documented in `docs/discovery.md`: one short address per bounded
+operation, captured probe evidence, durable additions only, preserved existing
+lifetimes and original command completion. Output/input address spaces are
+independent. Input expansion mints only new child Origins. `physical::Work` owns
+the probe through settlement; the service retains its permit through save.
+No fixture availability is inferred from a probe after disk awaits. Use
+`docs/v2-discovery-controls.toml` for behavioral controls. Live observed State
 and native events now use `docs/mqtt-inputs.md`: nullable unknown properties,
 separate bounded event notices, original source generations/absent traces and
 receive-only per-route cutover. Sync routes before draining frames after metadata

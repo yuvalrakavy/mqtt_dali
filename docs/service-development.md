@@ -132,6 +132,11 @@ adopted. A persistent runtime authority conflict requires restart.
 
 ## MQTT metadata commands
 
+Addressed hardware discovery uses the same durable owner and original-command
+completion but queries hardware before adopting additions. See
+[addressed discovery](discovery.md) for the typed API, MQTT command, captured-probe
+report and cancellation/save contract. It does not fabricate fixture State.
+
 Commands use `DALI/Command/<controller>` and exactly one MQTT v5
 `target-generation` property. They are momentary WithReply commands; provide a
 response topic and correlation data when awaiting the result.

@@ -151,6 +151,30 @@ fn apply(
                 .ok_or("unknown input instance")?
                 .name = name.clone();
         }
+        Edit::AddInputInstance {
+            bus: index,
+            address,
+            instance,
+        } => {
+            let input = bus(inventory, *index)?
+                .inputs
+                .iter_mut()
+                .find(|i| i.short_address == *address)
+                .ok_or("unknown input")?;
+            if input.instances.iter().any(|i| i.number == instance.number) {
+                return Err("input instance already reserved".into());
+            }
+            input.instances.push(instance.clone());
+            fresh(
+                origins,
+                Location::InputInstance {
+                    bus: *index,
+                    short_address: *address,
+                    instance: instance.number,
+                },
+                revision,
+            );
+        }
         Edit::AddInput { bus: index, input } => {
             let bus = bus(inventory, *index)?;
             if bus

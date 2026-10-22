@@ -1,6 +1,7 @@
 use super::*;
 use crate::{config::Inventory, inventory::Location};
 use serde_json::json;
+mod discovery;
 mod input;
 mod live_input;
 mod readback;
