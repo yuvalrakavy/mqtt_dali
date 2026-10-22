@@ -164,3 +164,15 @@ memory writes. Self-review checked existing output readdress and ledger before
 selecting this shape; the failure/neighbor pass checked child parent lifetimes,
 candidate reference pruning, own token rotation, old-address reuse and refresh
 at the resulting address. Owner clarification authorizes this revised behavior.
+
+## Acceptance follow-up: discovery admission
+
+The longer combined browser run exposed an existing interaction: a periodic
+state read can hold the shared permit when the next addressed-discovery step
+arrives. Nonwaiting discovery returned Busy and stopped full reassignment.
+Discovery now queues once for that permit within its original absolute deadline,
+then validates the original root/generation against the latest snapshot. It does
+not retry an operation or renew authority. Expired/canceled waiters submit no UART
+work. Other commands retain their existing admission policy. A fail-first literal
+peer test covers contention, cancellation, expiry and a root retired during the
+wait; an intentional-fault control restores nonwaiting admission.

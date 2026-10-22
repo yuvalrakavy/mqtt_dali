@@ -1,4 +1,13 @@
 [[control]]
+name = "discovery_busy_owner_aborts_scan"
+file = "src/service/discovery.rs"
+anchor = "let permit = timeout_at(deadline, self.permit.clone().acquire_owned())\n            .await\n            .map_err(|_| ServiceError::Expired)?\n            .map_err(|_| ServiceError::Closed)?;"
+replacement = "let permit = self.permit.clone().try_acquire_owned().map_err(|_| ServiceError::Busy)?;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(discovery_waits_for_busy_owner)"]
+expect_text = "discovery aborted instead of waiting for the busy owner"
+
+[[control]]
 name = "discovery_uses_multiple_marker_as_terminator"
 file = "src/service/discovery.rs"
 anchor = "BusReply::Value(254) => {"

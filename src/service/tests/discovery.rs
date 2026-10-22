@@ -83,6 +83,115 @@ impl Peer {
 }
 
 #[tokio::test]
+async fn discovery_waits_for_busy_owner_without_renewing_deadline_or_sending_canceled_work() {
+    let fixture = Fixture::new();
+    let peer = Peer::start(vec![("h0390\n", vec!["N\n"])]);
+    let broker = FakeBroker::start().await;
+    let hold = Hold::new(Step::BeforeRename(Stage::Mapping));
+    let (mut service, handle) = fixture.service();
+    service.hooks = hold.hooks.clone();
+    let running = start(
+        service.with_uart(peer.path.clone(), RepeatPolicy::Unverified),
+        &handle,
+        &broker,
+    )
+    .await;
+    wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+    // The same permit is held during an ordinary background state read.
+    let busy = handle.permit.clone().try_acquire_owned().unwrap();
+    let client = handle.clone();
+    let waiting = tokio::spawn(async move { probe(&client, Space::Outputs, 1, 1).await });
+    tokio::time::sleep(Duration::from_millis(20)).await;
+    assert!(
+        !waiting.is_finished(),
+        "discovery aborted instead of waiting for the busy owner"
+    );
+    waiting.abort();
+    let _ = waiting.await;
+    let until = Instant::now() + Duration::from_millis(30);
+    let expired = handle
+        .discover_address(0, Space::Outputs, 1, 1, context(1), until)
+        .await;
+    assert!(
+        matches!(expired, Err(ServiceError::Expired)),
+        "waiting discovery renewed its deadline or returned Busy"
+    );
+    assert!(
+        !peer
+            .commands
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|c| c == b"h0390\n"),
+        "unadmitted discovery reached UART"
+    );
+    let client = handle.clone();
+    let waiting = tokio::spawn(async move { probe(&client, Space::Outputs, 1, 1).await });
+    tokio::time::sleep(Duration::from_millis(20)).await;
+    assert!(
+        !waiting.is_finished(),
+        "discovery aborted instead of waiting for the busy owner"
+    );
+    drop(busy);
+    let report = tokio::time::timeout(Duration::from_secs(1), waiting)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(report.probe.quality, Quality::Missing);
+    assert_eq!(
+        peer.commands
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|c| c.as_slice() == b"h0390\n")
+            .count(),
+        1,
+        "canceled or expired discovery ran later"
+    );
+    // Waiting does not grant permission to replace the request's original root.
+    let client = handle.clone();
+    let edit = tokio::spawn(async move {
+        client
+            .edit(
+                1,
+                MetadataEdit::Description(Some("changed".into())),
+                context(1),
+                deadline(),
+            )
+            .await
+    });
+    hold.entered().await;
+    let client = handle.clone();
+    let stale = tokio::spawn(async move {
+        client
+            .discover_address(0, Space::Outputs, 1, 1, context(1), deadline())
+            .await
+    });
+    tokio::time::sleep(Duration::from_millis(20)).await;
+    assert!(
+        !stale.is_finished(),
+        "discovery aborted instead of waiting for the busy owner"
+    );
+    hold.release.store(true, Ordering::SeqCst);
+    edit.await.unwrap().unwrap();
+    assert!(
+        matches!(stale.await.unwrap(), Err(ServiceError::Rejected(_))),
+        "waiting discovery accepted retired authority"
+    );
+    assert_eq!(
+        peer.commands
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|c| c.as_slice() == b"h0390\n")
+            .count(),
+        1,
+        "retired queued discovery reached UART"
+    );
+    assert!(running.stop().await);
+}
+
+#[tokio::test]
 async fn discovery_canceled_caller_keeps_owner_until_settlement_and_accepts_native_input() {
     let fixture = Fixture::new();
     fixture.add_button();

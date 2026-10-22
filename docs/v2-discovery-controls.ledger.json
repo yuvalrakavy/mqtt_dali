@@ -17,6 +17,23 @@
     "verdict": "RED"
    }
   },
+  "discovery_busy_owner_aborts_scan": {
+   "last_real": {
+    "at": "2026-10-22T17:18:18Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:bdc73e48b4b9b61b",
+     "row": "10c2a14e921b0da0",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.3,
+    "sha": "f53e4bc787026f2d9d657225a2f561968f933bd5",
+    "verdict": "RED"
+   }
+  },
   "discovery_expansion_retires_parent": {
    "last_real": {
     "at": "2026-10-22T05:35:53Z",

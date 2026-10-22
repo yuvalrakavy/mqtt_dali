@@ -59,9 +59,11 @@ still receives exactly one reply under its original token. To scan a bus, iterat
 the wanted addresses/spaces and stop sending requests when cancelled. Automatic
 browser iteration belongs to the upcoming UI.
 
-MQTT discovery has one 10 s budget, including a maximum 8 s hardware probe and
-durable save. All query steps share that deadline and the physical owner. Button
-events continue arriving. Cancelling before save skips adoption; a cancellation
+MQTT discovery has one 10 s budget, including admission, a maximum 8 s hardware probe
+and durable save. A busy state read delays admission within that same deadline;
+discovery then rechecks its original revision/generation before any UART query.
+Cancelled or expired waiters send no work. All query steps share that deadline
+and the physical owner. Button events continue arriving. Cancelling before save skips adoption; a cancellation
 or uncertain save response may require inspecting inventory and explicit
 `recover`. An already committed addition is not undone if the device disappears
 while saving. No automatic replacement, retry or address reassignment is implied.

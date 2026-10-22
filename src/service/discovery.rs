@@ -442,11 +442,16 @@ impl ServiceHandle {
         if self.permit.is_closed() {
             return Err(ServiceError::Closed);
         }
-        let permit = self
-            .permit
-            .clone()
-            .try_acquire_owned()
-            .map_err(|_| ServiceError::Busy)?;
+        // A background state read must not abort a bus scan. Queue once under
+        // the original deadline, then validate authority against the latest view.
+        // WAIT: v2-discovery-permit
+        let permit = timeout_at(deadline, self.permit.clone().acquire_owned())
+            .await
+            .map_err(|_| ServiceError::Expired)?
+            .map_err(|_| ServiceError::Closed)?;
+        if Instant::now() >= deadline {
+            return Err(ServiceError::Expired);
+        }
         let snapshot = self
             .snapshot()
             .ok_or_else(|| ServiceError::Rejected("service is starting".into()))?;

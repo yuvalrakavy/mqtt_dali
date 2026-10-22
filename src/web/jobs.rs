@@ -132,6 +132,11 @@ impl Jobs {
         Some(record)
     }
     fn finish(&self, id: String, result: Result<Value, ServiceError>) {
+        // Preserve the private cause in test output before public sanitization.
+        #[cfg(test)]
+        if let Err(error) = &result {
+            eprintln!("web job {id} failed: {error:?}");
+        }
         // WAIT: web-jobs-book
         let mut records = self.records.lock().unwrap_or_else(|p| p.into_inner());
         if let Some(record) = records.iter_mut().find(|r| r.id == id) {

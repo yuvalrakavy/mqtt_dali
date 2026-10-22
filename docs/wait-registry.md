@@ -28,6 +28,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 | Key | Kind | Waits on | Argument |
 |---|---|---|---|
+| `v2-discovery-permit` | bounded | shared physical semaphore | One fair admission within the original discovery deadline (MQTT/HTTP 10 s). Expiry refuses before UART; cancellation removes the waiter. Revalidate original authority after acquisition. Never retry or renew the deadline. |
 | `v2-identification-permit` | bounded | shared physical semaphore | Fair admission under the original metadata deadline or two-second internal step/four-second start ceiling. On expiry refuse the request without renewing authority or deadline; parent stop drops the owned future. |
 | `v2-identification-request` | bounded | original typed-operation/control reply | Keeps its original absolute request deadline (at most four seconds; internal steps at most two). On expiry report uncertain/expired, drop the receiver and permit through existing physical cleanup; no automatic retry. |
 | `v2-identification-owner` | acyclic | one retained identification future or status watch | Future is polled beside the same owner message/HAT select, never awaited exclusively. Main context cancellation independently drops it before HAT cleanup; status watch contains one bounded claim. Idle manager retains no work. |
@@ -207,6 +208,7 @@ v2-commissioning-randomise src/service/commissioning.rs Bus::initialize_unaddres
 v2-config-check src/config_check.rs run
 v2-config-output src/config_check.rs output
 v2-daemon-run src/daemon.rs run
+v2-discovery-permit src/service/discovery.rs ServiceHandle::discover
 v2-hat-close src/service/hat.rs Hat::close
 v2-hat-close src/service/owner.rs <DaliService as ProcessService>::run
 v2-hat-health src/service/hat.rs query_health
