@@ -2,41 +2,41 @@
  "rows": {
   "browser_batch_own_revision": {
    "last_real": {
-    "at": "2026-10-22T10:44:15Z",
+    "at": "2026-10-22T15:12:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:69623e52be5fb8a5",
-     "guard": "file:00feeec26a4c4bb9",
+     "files": "files:38de386177a1415b",
+     "guard": "file:efe58fc4cc2915f6",
      "row": "42f5f0c77e619f58",
-     "test": "test:8b3399d5da333be1"
+     "test": "test:46df6be69868970e"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "0eb776bd0e4e91514110298ee23d3a9f7edc3f74",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_deduplicates_name_save": {
    "last_real": {
-    "at": "2026-10-22T10:53:46Z",
+    "at": "2026-10-22T15:12:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:0fa48cd6f42ef4fc",
-     "guard": "file:471c8bc93224620a",
+     "files": "files:4200bb5ba3b73a90",
+     "guard": "file:d1963274a09dba3e",
      "row": "979fbad830327517",
-     "test": "test:b11f79becb083809"
+     "test": "test:0ce0e99f39c64a18"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "9cc0960655503e47c1a12bfc6fab723e30fb5be5",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_embedded_assets_protected": {
    "last_real": {
-    "at": "2026-10-22T10:43:33Z",
+    "at": "2026-10-22T15:12:45Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,150 +46,150 @@
      "test": null
     },
     "path": "command",
-    "secs": 8.7,
-    "sha": "0eb776bd0e4e91514110298ee23d3a9f7edc3f74",
+    "secs": 11.0,
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_fences_view_epoch": {
    "last_real": {
-    "at": "2026-10-22T10:53:46Z",
+    "at": "2026-10-22T15:12:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:0fa48cd6f42ef4fc",
-     "guard": "file:471c8bc93224620a",
+     "files": "files:4200bb5ba3b73a90",
+     "guard": "file:d1963274a09dba3e",
      "row": "1b0d2d1a101a295c",
-     "test": "test:b11f79becb083809"
+     "test": "test:0ce0e99f39c64a18"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "9cc0960655503e47c1a12bfc6fab723e30fb5be5",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_get_cannot_downgrade": {
    "last_real": {
-    "at": "2026-10-22T10:44:16Z",
+    "at": "2026-10-22T15:12:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:69623e52be5fb8a5",
-     "guard": "file:00feeec26a4c4bb9",
-     "row": "71c5c4797cac90ff",
-     "test": "test:8b3399d5da333be1"
+     "files": "files:38de386177a1415b",
+     "guard": "file:efe58fc4cc2915f6",
+     "row": "bdb9066eacdb994d",
+     "test": "test:46df6be69868970e"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "0eb776bd0e4e91514110298ee23d3a9f7edc3f74",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_input_query_exact_bits": {
    "last_real": {
-    "at": "2026-10-22T10:53:46Z",
+    "at": "2026-10-22T15:12:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:0fa48cd6f42ef4fc",
-     "guard": "file:471c8bc93224620a",
+     "files": "files:4200bb5ba3b73a90",
+     "guard": "file:d1963274a09dba3e",
      "row": "9642e44c3fa06998",
-     "test": "test:b11f79becb083809"
+     "test": "test:0ce0e99f39c64a18"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "9cc0960655503e47c1a12bfc6fab723e30fb5be5",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_logout_bypasses_busy": {
    "last_real": {
-    "at": "2026-10-22T10:53:00Z",
+    "at": "2026-10-22T15:12:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:94385e0259788a39",
-     "guard": "file:98459af7e61551cc",
+     "files": "files:c1707a545a13a437",
+     "guard": "file:2797188699a6e44a",
      "row": "6eb7d7ef5a40d3e5",
      "test": "test:dafdbcbf58a496a8"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "9cc0960655503e47c1a12bfc6fab723e30fb5be5",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_origin_continuation": {
    "last_real": {
-    "at": "2026-10-22T10:53:46Z",
+    "at": "2026-10-22T15:12:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:0fa48cd6f42ef4fc",
-     "guard": "file:471c8bc93224620a",
+     "files": "files:4200bb5ba3b73a90",
+     "guard": "file:d1963274a09dba3e",
      "row": "d34d15bd34fe1b0e",
-     "test": "test:b11f79becb083809"
+     "test": "test:0ce0e99f39c64a18"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "9cc0960655503e47c1a12bfc6fab723e30fb5be5",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_post_admission_cannot_downgrade": {
    "last_real": {
-    "at": "2026-10-22T10:44:16Z",
+    "at": "2026-10-22T15:12:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:69623e52be5fb8a5",
-     "guard": "file:00feeec26a4c4bb9",
+     "files": "files:38de386177a1415b",
+     "guard": "file:efe58fc4cc2915f6",
      "row": "7bbfa8f791a83a1f",
-     "test": "test:8b3399d5da333be1"
+     "test": "test:46df6be69868970e"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "0eb776bd0e4e91514110298ee23d3a9f7edc3f74",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_refuses_unsafe_revision": {
    "last_real": {
-    "at": "2026-10-22T10:53:46Z",
+    "at": "2026-10-22T15:12:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:0fa48cd6f42ef4fc",
-     "guard": "file:471c8bc93224620a",
+     "files": "files:4200bb5ba3b73a90",
+     "guard": "file:d1963274a09dba3e",
      "row": "a7c0dd0344c125cf",
-     "test": "test:b11f79becb083809"
+     "test": "test:0ce0e99f39c64a18"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "9cc0960655503e47c1a12bfc6fab723e30fb5be5",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_retires_failed_sources": {
    "last_real": {
-    "at": "2026-10-22T10:44:16Z",
+    "at": "2026-10-22T15:12:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:69623e52be5fb8a5",
-     "guard": "file:00feeec26a4c4bb9",
+     "files": "files:38de386177a1415b",
+     "guard": "file:efe58fc4cc2915f6",
      "row": "514a1aba0515fa13",
-     "test": "test:8b3399d5da333be1"
+     "test": "test:46df6be69868970e"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "0eb776bd0e4e91514110298ee23d3a9f7edc3f74",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_unknown_routes_stay_missing": {
    "last_real": {
-    "at": "2026-10-22T10:43:45Z",
+    "at": "2026-10-22T15:12:59Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -199,25 +199,25 @@
      "test": null
     },
     "path": "command",
-    "secs": 11.8,
-    "sha": "0eb776bd0e4e91514110298ee23d3a9f7edc3f74",
+    "secs": 13.9,
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   },
   "browser_unwraps_inventory": {
    "last_real": {
-    "at": "2026-10-22T10:44:15Z",
+    "at": "2026-10-22T15:12:33Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
-     "files": "files:69623e52be5fb8a5",
-     "guard": "file:00feeec26a4c4bb9",
+     "files": "files:38de386177a1415b",
+     "guard": "file:efe58fc4cc2915f6",
      "row": "e65634dba383ea47",
-     "test": "test:8b3399d5da333be1"
+     "test": "test:46df6be69868970e"
     },
     "path": "command",
     "secs": 0.1,
-    "sha": "0eb776bd0e4e91514110298ee23d3a9f7edc3f74",
+    "sha": "f92c49652770820df8601c132ffbfc996c1cc168",
     "verdict": "RED"
    }
   }

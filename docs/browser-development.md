@@ -20,7 +20,8 @@ credential storage, a filesystem asset server or public shared application chunk
 
 The browser client unwraps `snapshot.inventory.Inventory`, the existing published
 State envelope. SSE is the sole authority for view snapshots and job books.
-POST 202 admits a job; GET job fallback resolves its waiter only. Neither may
+POST 202 admits a job; SSE job summaries omit results. GET job lookup resolves
+its waiter, including a completed streamed summary. Neither may
 overwrite a newer streamed view. Connection/session epochs fence late callbacks.
 No passive traffic renews user activity; requests, timers and streams stop when
 the client closes. Native action history is bounded and loss is explicit.
@@ -44,14 +45,31 @@ cargo test --offline --target aarch64-apple-darwin --lib \
 The test prints its private `/tmp/dali-browser-…` artifact directory containing
 screenshots and browser log. It exercises 390×844 and 1440×1024 viewports through
 real DOM interactions and checks resulting disk/physical state, including failed
-save injection, live inputs, DT8 and group drift review. Inspect screenshots and
+save injection, live inputs, DT8 and group drift review. Scenes covers Tc/xy/
+RGBWAF values and MASKs, inline save/retry, frozen capture, scoped copy/clear,
+native adoption, matching repair review, group recall, all sixteen slots,
+metadata/privacy and cancellation when leaving the page. A held creation reply
+cannot erase a later slot's name draft. Native hardware drift/repair execution
+has separate service/literal tests; the browser repair case uses matching data. Inspect screenshots and
 console errors; a successful compile alone is not UI acceptance. Routine Rust
 suites skip this explicitly ignored browser dependency.
 Query-before-event cases include multi-bit Part 302 inputs and exact 64-bit
 Part 304 sensor data. The logout case holds a real job admission while discovery
 is busy, then verifies session revocation and absence of later batch commands.
 
-Run `docs/v2-browser-controls.toml` with the existing Store negative-control runner
+Run `docs/v2-browser-controls.toml` and `docs/v2-scenes-ui-controls.toml` with
+the existing Store negative-control runner
 to prove the frontend authority/race guards and protected embedded routes detect
 their intended mutations. Mutations, source edits and verification must remain
 serialized; rebuild assets after source edits and finish with `check-dist`.
+The scene creation control rebuilds mutated assets and runs the real browser;
+the runner restores its source, so rebuild assets after that control too.
+
+Scene helpers live in `scene-settings.ts` and `scene-controller.ts`. Keep native
+Setting distinct from live output values and unmanaged null distinct from MASK.
+The saved-view decoder requires every exact output/token. SceneScope captures
+original Scene/fixture identities, root revision and connection epoch; it advances
+only through its own result and exact SSE revision. Do not use metadata()'s
+latest-root injection for reviewed scene batches. Drafts preserve untouched raw
+codes and coalesce row blur/check commits. Keep operation snapshots only for the
+lifetime of their draft, review or batch. See the [operator guide](scenes-browser.md).

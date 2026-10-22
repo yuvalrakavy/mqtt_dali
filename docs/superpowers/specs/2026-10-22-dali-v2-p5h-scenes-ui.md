@@ -179,3 +179,37 @@ saved reader is a real missing presentation primitive; it avoids physical reads
 just to display configuration and permits offline inspection. The existing
 ConfigStore, PTY/browser fixture, job dispatcher, dialogs and epoch fencing are
 reused. No infrastructure gap requires user input.
+
+## Acceptance record
+
+Accepted locally at frozen source `77e7ae1`, following initial `f92c496` and the
+consumed-revision correction `9dac765`. Both fresh design reviews and both final
+source reviews approve. Source reviewers are same-family and source-only; a
+cross-family review was unavailable. Their two grounded source findings were
+fixed with failing-first tests and inverse controls: valid reserved revisions
+may skip numbers, and adopted results with unresolved native evidence must keep
+the saved revision while stopping as unconfirmed.
+
+All **583 native tests** across eleven binaries pass; the opt-in browser case
+is run separately and passes at 390×844/1440×1024 through 325 owned HTTP commands.
+The final frontend run passes **26 tests**, deterministic build/check-dist,
+and inspected screenshots. Four new native tests cover the saved-only reader,
+including ConfigStore restart and real retained packet privacy. All eighteen
+current scene UI fault controls produce intended behavioral failures; the prior
+thirteen browser controls and existing HTTP result bound also remain sensitive.
+The restored 64-case scene/job/codec run, scoped strict Clippy, Pi library/four
+binaries, changed-file formatting, affected control plans, wait validation and
+full base diff whitespace pass. Logs: `/tmp/dali-scenes-ui-acceptance`,
+`/tmp/dali-scenes-ui-restored-final`, `/tmp/dali-scenes-ui-controls`,
+`/tmp/dali-scenes-ui-revision-controls`, `/tmp/dali-scenes-ui-adoption-fixed`.
+
+Operator documentation lives in `docs/scenes-browser.md`; reference, contributor,
+capability and progress guides plus bridge-local CLAUDE guidance are updated.
+No new standalone/global skill is needed: the existing browser guide carries
+the scene authority/result-budget/lifetime procedure and CLAUDE links it. No
+Store catalog, shared skill or user-memory write belongs to this bridge slice.
+Physical HAT/fixtures, actual drift repair through the browser, Store integration,
+SDK publication and deployment remain outside this evidence. Browser repair
+proves matching/no-change review; drift repair retains its accepted native and
+literal-peer coverage. Full reassign and lost-address restore are subsequent
+approved commissioning work.

@@ -94,8 +94,10 @@ Each row references the fixture's continuing ledger Origin. Renames and verified
 address changes preserve it; removal/replacement drops its saved expectations.
 A replacement at the same short address does not inherit them. Removing a scene
 name removes its private rows without changing hardware. Old files with no
-`contents` remain valid. Public Inventory, its history, HTTP snapshots and SSE
-contain scene metadata only. Store and other MQTT consumers keep opaque scenes.
+`contents` remain valid. Public Inventory, its history, HTTP inventory snapshots
+and SSE snapshot events contain scene metadata only. Explicit command results
+are protected operator data; job summary feeds omit results. All authenticated
+operators have equal configuration authority. Store keeps opaque scenes.
 
 An absent row is **unmanaged**. An explicitly ignored row is a saved expectation
 that the fixture will leave its brightness and colour unchanged on recall.
@@ -108,6 +110,7 @@ or unresolved. Incomplete, unsupported or stale evidence cannot be matching.
 | `adopt_scene_row` | Named scene | `fixture`, `reviewed`, `expected_revision` | Re-read reviewed stored data and save it; no settings writes |
 | `repair_scene_row` | Named scene | `fixture`, `reviewed`, `expected_revision` | Re-read review before programming saved intent; no adoption of drift |
 | `capture_scene_row` | Output | `slot` | Read actual output plus stored evidence; return a candidate without saving |
+| `read_scene_settings` | Named scene | None | Complete saved settings and current output identities from one snapshot, without UART IO |
 
 `fixture` is the canonical output target on the named scene's bus. `reviewed`
 is the complete `stored` object from inspection. If native data changes, refresh
@@ -115,6 +118,15 @@ and review it again. Mutations require the original scene generation and exact
 complete inventory revision; this revision also pins the selected fixture.
 The fixture generation remains independent. Capture follows the normal MQTT
 read convention; HTTP still requires generation, session and CSRF.
+
+`read_scene_settings` returns `target`, `target_generation`, complete root
+`revision`, `bus`, `slot`, and `fixtures`. Each fixture entry contains `fixture`,
+`fixture_generation` and nullable `saved` Setting. Every configured output on
+that bus appears exactly once; null means unmanaged. It reads one immutable Ready
+snapshot and needs neither enabled bus nor UART. A supplied MQTT token must match;
+HTTP still requires its original token. The local read budget is two seconds and
+the complete HTTP result budget is 1 MiB. No physical evidence is claimed and no
+native scene is queried merely to display saved settings.
 
 Each setting has required `level` and `color` objects:
 
@@ -165,7 +177,7 @@ direct levels, Off or Recall, and does not publish stored settings as actual Sta
 Unknown DT8 support permits only whole-row Remove after confirmed presence;
 participating writes must first establish DT8 presence or absence.
 
-The later browser workflows compose these bounded operations. Apply a capture's
+The [Scenes screen](scenes-browser.md) composes these bounded operations. Apply a capture's
 frozen candidate with Set; copy reviewed source saved settings with Set; clear
 selected rows using the whole-ignore setting. Preserve unselected rows/slots.
 Name an unnamed destination explicitly before writing. Multi-row batches must

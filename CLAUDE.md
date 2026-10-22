@@ -211,6 +211,16 @@ configured public component. The Scenes screen and reviewed multi-row
 capture/copy/clear composition remain pending.
 Controls: `docs/v2-scene-controls.toml`, `docs/v2-scene-identity-controls.toml` and
 `docs/v2-scene-operation-controls.toml`, `docs/v2-scene-settings-controls.toml`.
+The protected Scenes screen composes the accepted row APIs; operator guide:
+`docs/scenes-browser.md`. `read_scene_settings` is a pure Ready snapshot read,
+with optional MQTT token and mandatory HTTP token, independent of UART/bus status.
+It has a 1 MiB HTTP result budget; ordinary jobs retain 32 KiB. Job list/SSE
+summaries omit results; the waiter fetches per-id results without replacing SSE
+view authority. Keep exact output/token coverage, raw scene MASKs, original
+Scene/fixture/root/connection authority and frozen candidates. Metadata dialogs
+retain their original Scene identity. Release completed operation snapshots.
+UI and reader controls: `docs/v2-scenes-ui-controls.toml`. Rebuild assets after
+the real browser creation control, then check-dist. No Store/PanelScript change.
 
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`

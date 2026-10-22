@@ -163,7 +163,14 @@ programs on a no-op save; adoption writes only configuration; repair never adopt
 drift and repeats the review immediately before native programming. Capture
 reads actual output without inserting it into the State cache, then reads stored
 data under the same permit. See [private rows](dali-scenes-contract.md#private-per-fixture-settings)
-for payloads, MASKs, failure outcomes and future browser composition.
+for payloads, MASKs, failure outcomes and browser composition.
+`read_scene_settings` uses a pure shared snapshot helper before MQTT completion
+is required. It checks Ready phase and any supplied scene token, but requires
+neither enabled bus nor physical permit. HTTP retains its mandatory generation,
+session and CSRF. The complete reply identifies every output, including unmanaged
+null rows. Its HTTP budget is 1 MiB; ordinary jobs retain 32 KiB. Public snapshots
+still use the central stripped Inventory reader. Job lists/SSE contain summaries;
+only explicit per-id lookup carries a full result.
 
 `Snapshot.inputs` contains typed observed input data; `input_listeners` contains
 routes with installed receive boundaries, not a device-presence claim.

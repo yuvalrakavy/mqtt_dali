@@ -5,6 +5,84 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5h3 — protected Scenes screen and reviewed operations
+
+Accepted locally at frozen source `77e7ae1` (initial source `f92c496`, revision
+fix `9dac765`): **583 native tests**, **26 frontend tests**, the real browser
+workflow and both final source reviews pass. Both design lenses approved after
+grounding the complete reader's HTTP budget and result-summary transport.
+Reviewers are same-family/source-only; no cross-family or physical HAT coverage
+is claimed.
+
+The served Scenes page provides sixteen slots, inline naming and raw-preserving
+brightness/Tc/xy/RGBWAF settings, per-attribute MASKs, Blink/Stop, native bus/group
+recall, frozen capture/copy/clear previews, adoption/repair and all-slot native
+verification. Drafts and batches retain original scene/fixture identity, exact
+root revision, connection epoch and page/slot lifetime. Public Inventory remains
+opaque. `read_scene_settings` is a pure protected saved view without UART or
+enabled-bus requirements. Only that complete reply gets a 1 MiB HTTP budget;
+ordinary replies retain 32 KiB. SSE/list job feeds carry summaries, and waiters
+fetch full results explicitly without replacing streamed observations.
+
+Fail-first reader/transport cases reproduced missing offline reads, insufficient
+result capacity and completed-summary handling (`/tmp/dali-scenes-ui-reader-red`).
+Four focused native cases cover complete mapping, optional-token/Ready checks,
+64 long-name fixtures over real HTTP, saved configuration across ConfigStore
+restart, and actual emitted retained Inventory privacy. The restart test first
+needed tombstone exclusion, then a fresh broker per process to avoid a historical
+subscription being mistaken for the restarted process's live subscription.
+The corrected 56-case scene/job library run passes
+(`/tmp/dali-scenes-ui-restored-fixed`). Scoped strict Clippy passes
+(`/tmp/dali-scenes-ui-restored-first`).
+
+Twenty-six frontend tests pass. Real phone (390×844) and desktop (1440×1024)
+final acceptance passes through 325 owned commands, covering all three colour families,
+attribute masks, failed save/retry, frozen capture after changed actual output,
+scoped copy/clear/adoption, matching repair review, group recall, all sixteen
+slots, metadata/privacy, late creation and page cancellation. Both screenshots
+were inspected. A harness-only lookup incorrectly expected public targets in
+private config; it was corrected. Phone slot-strip duplication was removed, and
+desktop screenshot capture now settles layout at the top before capture.
+Initial complete logs: `/tmp/dali-scenes-ui-browser-lifetime`; final frozen-source
+native/browser/assets acceptance: `/tmp/dali-scenes-ui-acceptance`.
+Final browser artifacts: `/tmp/dali-browser-a31c9faed95d94fcb6d10262337946ec`.
+
+The first frozen source review found an unnecessary consecutive-revision bound:
+ConfigStore can consume a revision during recovery. The regression first fails
+on that bound (`/tmp/dali-scenes-ui-revision-red`); the corrected batch accepts its
+own 1→3 result, then submits against exactly 3. Identity, monotonicity and exact
+SSE acceptance remain enforced. Twenty-five tests/build/check-dist pass after
+the fix (`/tmp/dali-scenes-ui-revision-fixed`). The second source review found
+that adoption can commit while its physical evidence becomes stale. The UI now
+retains that revision but requires the backend's matching comparison before
+claiming confirmation or continuing. Its unresolved/different/matching regression
+first fails on the prior code, then passes with the inverse guard control and all
+26 frontend tests (`/tmp/dali-scenes-ui-adoption-red`,
+`/tmp/dali-scenes-ui-adoption-fixed`). Both reviewers approve `77e7ae1`.
+
+All eighteen current scene UI
+controls have intended RED evidence: sixteen in `/tmp/dali-scenes-ui-controls`,
+plus the consumed-revision row and refreshed external-edit row in
+`/tmp/dali-scenes-ui-revision-controls`, and the stale-adoption row in
+`/tmp/dali-scenes-ui-adoption-fixed`. All thirteen older browser controls and
+the existing encoded-result bound also produce intended REDs. Restored assets
+were rebuilt and byte-checked after the real browser mutation.
+
+The restored **64-case** scene/job/codec run, scoped strict Clippy, Pi library/four
+binaries, changed-file formatting, every affected control plan, wait validation
+(zero findings) and full base diff whitespace pass
+(`/tmp/dali-scenes-ui-restored-final`). The final frozen-source full suite passes
+**583/583** across eleven binaries, with only the separately-run browser test
+skipped. Doctests contain no cases. The required final phone/desktop run then
+passes, followed by all 26 frontend tests and deterministic check-dist.
+
+Browser repair proves the matching/no-change review path; actual hardware drift
+repair remains covered by the accepted service/literal cases. Private saved
+settings are not an active-scene claim. No Store/PanelScript work, SDK publication,
+physical test, push, merge or deployment belongs to this acceptance. See the
+[operator workflow](scenes-browser.md), [design](superpowers/specs/2026-10-22-dali-v2-p5h-scenes-ui.md)
+and [fault controls](v2-scenes-ui-controls.toml).
+
 ## P5h2b2 — private scene rows and nonactivating settings
 
 Accepted locally at frozen source `33ea901`: **579 native tests** and both

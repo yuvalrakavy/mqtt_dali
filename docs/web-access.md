@@ -72,9 +72,9 @@ All responses are no-store and carry content/frame restrictions.
 | POST `/api/session/activity` | Cookie + Origin + CSRF; 204 on accepted user activity |
 | POST `/api/logout` | Cookie + Origin + CSRF; revokes session/stream and clears cookie; 204 |
 | GET `/api/snapshot` | Cookie; routing/hardware status, complete public inventory and actual per-target scalar `states` |
-| GET `/api/events` | Cookie; initial/latest `snapshot`, complete `jobs`, native `input` and `input_events_lost`; closes on revocation/expiry/stop |
+| GET `/api/events` | Cookie; initial/latest `snapshot`, complete job summaries, native `input` and `input_events_lost`; closes on revocation/expiry/stop |
 | POST `/api/jobs` | Cookie + Origin + CSRF; strict command JSON below, 202 with job record and Location |
-| GET `/api/jobs` | Cookie; `{"jobs":[...]}` in admission order; no activity renewal |
+| GET `/api/jobs` | Cookie; result-free `{"jobs":[...]}` summaries in admission order; no activity renewal |
 | GET `/api/jobs/{id}` | Cookie; job record or 404; no activity renewal |
 
 Unauthenticated internal APIs, including unknown API paths, return 401 without
@@ -125,13 +125,12 @@ configuration requires fresh verification before applying another old result.
 Settings shows version/build and downloads an inventory report, which is not a
 restorable configuration backup. Diagnostics shows actual HAT/browser state,
 bounded jobs and recent native actions/loss; MQTT connection status is currently
-unknown. The Scenes screen remains unavailable. Named-slot creation, rename,
-description and list removal are available to API clients through the shared
-[scene metadata commands](dali-scenes-contract.md#named-slot-metadata), together
-with [stored reads and native recall](dali-scenes-contract.md#stored-reads-and-native-recall).
-Private per-fixture Set/Adopt/Repair/Capture also use shared jobs; see
-[scene settings](dali-scenes-contract.md#private-per-fixture-settings).
-The Scenes screen and reviewed multi-row capture/copy/clear remain pending.
+unknown. Scenes provides sixteen named/unnamed slots, inline per-fixture settings,
+Tc/xy/RGBWAF with attribute MASKs, Blink/Stop and native bus/group recall. Capture,
+saved copy, clear, adoption and repair require reviewed before/after settings.
+Verify this scene or all sixteen slots, including unnamed ones. Saved settings
+remain visible without ready hardware; physical actions require it. See the
+[Scenes operator workflow](scenes-browser.md) and [API contract](dali-scenes-contract.md).
 Connection loss disables operations until a new complete stream snapshot arrives.
 Writes are never replayed after reconnect or sign-in. Runtime UI assets are
 embedded in the executable; no Node server or CDN is needed.
@@ -174,6 +173,8 @@ after the body arrives, before any preparation or admission.
 A 202 response confirms admission for an attempt, not successful programming.
 Follow Location or inspect the returned id in `/api/jobs`. Records contain id,
 command, target, status (`running`, `succeeded`, `failed`), result and error.
+SSE and GET `/api/jobs` contain summaries with result null. Retrieve a complete
+result through GET `/api/jobs/{id}`; a completed summary is not a full reply.
 Metadata success returns a revision; discovery/assignment/group success returns
 the existing structured report. Inspect its outcome and quality: a succeeded
 job can report `reserved_but_unconfirmed` or an unconfirmed group/scene operation.
@@ -181,7 +182,7 @@ Saved reservations survive incomplete physical programming. Private error text
 is replaced with safe inspection guidance; errors have a stable code: busy,
 closed, expired, refused, uncertain or result_unavailable.
 
-Work keeps its original deadline (2 s metadata/recovery/group read, 10 s addressed
+Work keeps its original deadline (2 s metadata/recovery/group/saved-scene read, 10 s addressed
 discovery, 18 s assignment/group/scene mutation, 8 s stored-scene read/capture,
 3 s native recall). Jobs own their result after an HTTP
 connection closes or the initiating session logs out. Log in again to inspect.
@@ -192,7 +193,9 @@ the command. Restart clears job history, while saved configuration survives.
 Four jobs can be active, including the small mailbox; excess returns 503. The
 existing service still owns one physical/configuration operation permit and may
 report Busy. History retains up to 32 jobs, evicting oldest completed records;
-running records are retained. Encoded sanitized results cap at 32 KiB as a whole.
+running records are retained. Encoded sanitized results cap at 32 KiB as a whole,
+except complete `read_scene_settings` replies, which have a 1 MiB bound. Results
+are omitted from summary feeds so a history of large scenes cannot overflow SSE.
 All authenticated sessions share this controller's history. Passive polling does
 not keep sessions alive; authenticated submissions record explicit user activity.
 Stopping the server drops its owned command futures through existing service
@@ -243,8 +246,10 @@ button Status, occupancy and raw light values follow [the input contract](mqtt-i
 
 An SSE connection begins with a complete `snapshot` and `jobs` event. Subsequent
 updates coalesce complete snapshots/job books; they are not incremental patches.
-For `jobs`, replace the previous list, including completed results. A completed
-job may already be present by the time an admission notification is read.
+For `jobs`, replace the previous summary list. Results are null; fetch the
+individual job for its complete reply. A completed summary may already be
+present by the time an admission notification is read. Full command results
+never replace the authoritative streamed Inventory or scalar observations.
 
 `input` contains the native action payload plus its original generation. Only
 the exact current endpoint and receive lifetime can emit it. Button actions
