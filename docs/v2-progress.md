@@ -35,6 +35,15 @@ whitespace and wait validation. Native execution is 54.137 s; suite command wall
 time is 91 s. Logs: `/tmp/dali-scenes-acceptance`. Source reviews follow the
 frozen implementation. Managed scene identity/jobs and the Scenes screen remain
 unbuilt; broader DT8 settings/physics and hardware validation are still pending.
+
+First frozen-source review requests one correction (55 s): selected Tc with MASK
+must become active while preserving its numeric value. A cross-family test fails
+before the fix; the corrected test covers all six family changes in automatic
+and manual modes. All sixteen focused scene/old-Tc cases and the new sixteenth
+scene control pass their declared checks; two affected old Tc/cleanup controls
+remain RED. Correct the two older documentation claims too. Logs:
+`/tmp/dali-scenes-masked-family-red.log` and `/tmp/dali-scenes-review-controls`.
+Restored regression and source rechecks follow.
 See the [scene contract](dali-scenes-contract.md) and
 [slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scenes.md).
 

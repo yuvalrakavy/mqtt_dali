@@ -47,6 +47,17 @@ fn tc(m: &Model) -> Value {
 fn stage_tc(m: &mut Model) {
     send(m, &[0xa35e, 0xc301, 0xc108, 0x07e7]); // 350 mirek.
 }
+fn stage_masked(m: &mut Model, family: u8) {
+    let frames: &[u16] = match family {
+        0x10 => &[0xa3ff, 0xc3ff, 0xc108, 0x07e0, 0xc108, 0x07e1],
+        0x20 => &[0xa3ff, 0xc3ff, 0xc108, 0x07e7],
+        0x80 => &[
+            0xa3ff, 0xc3ff, 0xc5ff, 0xc108, 0x07eb, 0xc108, 0x07ec, 0xc108, 0x07ed,
+        ],
+        _ => panic!("invalid fixture family"),
+    };
+    send(m, frames);
+}
 fn store(m: &mut Model, slot: u16, level: u8) {
     let frame = 0x0740 | slot;
     send(m, &[0xa300 | u16::from(level), frame, frame]);
@@ -345,4 +356,49 @@ fn scene_temporary_rgb_control_selects_family_and_clears_prior_temperature() {
     stage_tc(&mut m);
     assert_eq!(value(&mut m, 208), 0x20);
     assert_eq!(value(&mut m, 207), 255);
+}
+
+#[test]
+fn scene_all_masked_selected_families_switch_type_in_auto_and_manual_modes() {
+    for automatic in [true, false] {
+        for original in [0x10, 0x80, 0x20] {
+            for selected in [0x20, 0x10, 0x80] {
+                if original == selected {
+                    continue;
+                }
+                let mut m = physical(automatic);
+                stage_masked(&mut m, original);
+                send(&mut m, &[0xc108, 0x07e2]);
+                stage_masked(&mut m, selected);
+                store(&mut m, 10, 255);
+                assert_eq!(m.transmit(0, 0x07ba, 0), Reply::Value(255));
+                assert_eq!(value(&mut m, 240), selected);
+                assert_eq!(tc(&m), 250, "storing MASK changed numeric Tc");
+                send(&mut m, &[0xc108]);
+                assert_eq!(m.transmit(0, 0x07f8, 0), Reply::Value(original));
+                send(&mut m, &[0x071a]);
+                if !automatic {
+                    send(&mut m, &[0xc108]);
+                    assert_eq!(
+                        m.transmit(0, 0x07f8, 0),
+                        Reply::Value(original),
+                        "manual MASK scene activated early"
+                    );
+                    send(&mut m, &[0xc108, 0x07e2]);
+                }
+                send(&mut m, &[0xc108]);
+                assert_eq!(
+                    m.transmit(0, 0x07f8, 0),
+                    Reply::Value(selected),
+                    "scene MASK value prevented selected-family activation"
+                );
+                assert_eq!(tc(&m), 250, "MASK Tc was clamped instead of preserved");
+                let actual = &m.snapshot()["buses"][0]["outputs"][0]["colour_state"]["actual"];
+                assert_eq!(actual["xy"], json!([4660, 9029]));
+                assert_eq!(actual["rgbwaf"], json!([1, 2, 3, 4, 5, 6]));
+                assert_eq!(value(&mut m, 208), 255);
+                assert_eq!(m.transmit(0, 0x07a0, 0), Reply::Value(100));
+            }
+        }
+    }
 }

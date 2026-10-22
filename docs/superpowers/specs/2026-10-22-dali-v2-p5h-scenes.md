@@ -155,11 +155,11 @@ requires temporary RGBWAF control to select RGBWAF type; a separate failing-firs
 case establishes that control-only scene staging clears prior pending Tc.
 
 Every P5h1 part in the table has its code and a named test: five literal codec
-tests in `dali/scenes/tests.rs`, seven literal physical tests in
+tests in `dali/scenes/tests.rs`, eight literal physical tests in
 `emulator/model/scene_tests.rs`, and
 `standalone_native_scene_codec_programs_and_queries_physical_colour_over_pty`.
 The existing live-colour vectors remain exercised. The whole scene-filtered run
-has fourteen cases including the pre-existing base scene test.
+has fifteen cases including the pre-existing base scene test.
 
 All fifteen scene sensitivity controls have intended behavioral REDs, followed
 by source restoration. Three affected older controls are also retargeted:
@@ -173,3 +173,12 @@ acceptance passes 544 native tests, scoped strict Clippy, Pi library/four-bin
 compilation, doctests (none), changed-file formatting, all eight affected control
 plans, whitespace and wait validation. No production wait/loop was introduced.
 Logs: `/tmp/dali-scenes-acceptance`. Frozen source reviews follow.
+
+First source review requests one correction (55 s): selected Tc still becomes
+active with a MASK numeric value, matching the already implemented xy/RGB rules.
+The added cross-family test fails before the fix, then covers all six changes
+in auto/manual modes. Condition only Tc's numeric update; preserve its value for
+MASK while selecting its family and consuming temporaries. Both older doc claims
+are corrected. Sixteen focused cases and the sixteenth scene control pass their
+declared checks; two affected old controls remain RED. Restored acceptance and
+frozen rechecks follow. See `/tmp/dali-scenes-review-controls`.

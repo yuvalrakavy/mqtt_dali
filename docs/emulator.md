@@ -131,8 +131,9 @@ Temporary xy/Tc/RGB/WAF commands stage raw values. ACTIVATE applies them and
 clears the temporary values/type to MASK. Writing MASK replaces an earlier staged
 numeric value; at activation it leaves the actual channel unchanged. RGB/WAF
 triples accumulate together. Selecting another representation clears the previous
-family's pending values. Tc zero is ignored. Tc MASK does not change actual Tc
-or make it active. Tc requests outside configured limits clamp at activation and
+family's pending values. Tc zero is ignored. Tc MASK preserves its numeric value;
+activation still selects Tc as the active family. Tc requests outside configured
+limits clamp at activation and
 set the Tc range bit. Colour writes leave master brightness unchanged.
 
 The DT8 enable selection is consumed by the next standard 16-bit command, even

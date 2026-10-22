@@ -37,6 +37,9 @@ accepts independently masked Tc/xy/RGBWAF attributes, including all-MASK values
 with a selected family. RGBWAF includes a control byte; `RgbwafControl` refuses
 reserved mode bits and an omitted control means MASK. No capability is inferred.
 
+On activation a selected family still becomes active when all its attributes
+are MASK. The model preserves its stored numeric values while changing the type.
+
 `ReportValue::plan` first queries the scene level, then supported Tc/xy/RGBWAF
 report selectors in 224–240,
 including the LSB query for word values. QueryActualLevel would replace that

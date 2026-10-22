@@ -85,6 +85,23 @@
     "verdict": "RED"
    }
   },
+  "scene_masked_tc_cannot_become_active": {
+   "last_real": {
+    "at": "2026-10-22T12:25:57Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:d95dc54bfb04f453",
+     "row": "b4c84c3fccc469c9",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.6,
+    "sha": "eda339f4364bdaa0c4b20fd85aa95943578d1008",
+    "verdict": "RED"
+   }
+  },
   "scene_masked_type_erases_stored": {
    "last_real": {
     "at": "2026-10-22T12:17:39Z",

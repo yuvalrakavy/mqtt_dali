@@ -46,8 +46,9 @@ model, preserving private PTYs, strict scenario validation and existing controls
   selecting another representation clear that previous family's staged values.
   Within RGBWAF, RGB and WAF triples accumulate until activation. MASK fields
   leave actual channels unchanged at activation; repeated ACTIVATE without a
-  new setter does nothing. Tc zero is ignored; Tc MASK does not change actual Tc
-  or select it as active. Setters never change arc power. ACTIVATE applies the
+  new setter does nothing. Tc zero is ignored; Tc MASK preserves the numeric Tc
+  but activation still selects Tc as active (corrected during P5h1 source review
+  against IEC §9.12.5). Setters never change arc power. ACTIVATE applies the
   selected representation, keeps unrelated
   representation values and untouched channels, clamps Tc to configured limits,
   and sets the corresponding active bit/range flag. Unsupported representation

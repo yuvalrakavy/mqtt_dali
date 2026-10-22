@@ -125,6 +125,15 @@ argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwi
 expect_text = "temporary RGB control did not select RGB family"
 
 [[control]]
+name = "scene_masked_tc_cannot_become_active"
+file = "src/emulator/colour.rs"
+anchor = "Some(ColourType::Temperature) => {"
+replacement = "Some(ColourType::Temperature) if staged.temperature != 65535 => {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_all_masked_selected)"]
+expect_text = "scene MASK value prevented selected-family activation"
+
+[[control]]
 name = "scene_reset_retains_colour"
 file = "src/emulator/colour.rs"
 anchor = "self.scenes = std::array::from_fn(|_| Temporary::default());"

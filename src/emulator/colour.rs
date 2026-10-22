@@ -101,11 +101,13 @@ impl State {
     fn activate(&mut self) {
         let staged = std::mem::take(&mut self.temporary);
         match staged.kind {
-            Some(ColourType::Temperature) if staged.temperature != 65535 => {
+            Some(ColourType::Temperature) => {
                 if let Some(tc) = &mut self.actual.temperature {
-                    let clamped = staged.temperature.clamp(tc.coolest, tc.warmest);
-                    self.temperature_out_of_range = clamped != staged.temperature;
-                    tc.value = clamped;
+                    if staged.temperature != 65535 {
+                        let clamped = staged.temperature.clamp(tc.coolest, tc.warmest);
+                        self.temperature_out_of_range = clamped != staged.temperature;
+                        tc.value = clamped;
+                    }
                     self.actual.active = ColourType::Temperature;
                     if self.actual.rgbwaf.is_some() {
                         self.actual_control &= 0xc0;
