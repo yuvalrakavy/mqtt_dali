@@ -732,6 +732,57 @@ Reviews were source-only and used the same model family. Hardware discovery,
 current input State, native action events/configuration/feedback remain required.
 See [the input inventory spec](superpowers/specs/2026-10-22-dali-v2-p4c-input-inventory.md).
 
+## P4c3 — live input State and native events
+
+The existing UART reader/HAT owner now resolves enabled named input instances
+and publishes observed State plus native non-retained events through BridgeKit.
+Exact device/instance sources and unique saved device/type sources route;
+ambiguous/unassociated sources do not receive guessed targets. Native button
+actions remain native; absolute/light values remain raw 10-bit fields and
+occupancy flags are decoded. Unknown/stale values explicitly clear applicable
+properties to null, including a previously pressed button. Input Desired remains
+unsupported. Refresh uses current observed projections without another hardware
+query; aggregate refresh projects inputs after its final output await.
+
+Per-route generation/UART receive boundaries reuse the existing same-reader drain
+and partial-line-aware minimum sequence. Inline rename cannot attach a queued or
+partially received old event to the new target token. Unchanged routes retain
+their boundary. Metadata does not wait for UART, and no P4a quiet-recovery behavior
+was reopened or changed. Snapshot input_listeners reports established routes,
+separately from physical presence. Frozen routing suppresses action publication.
+
+Native actions use a capacity-64 broadcast plus bounded HAT batch; loss is
+explicit and never reconstructed from retained State. Only SDK-owned worker
+helpers publish. Original source generations and absent traces survive the queue,
+including events while a traced light command awaits its acknowledgement.
+Broker outages preserve the existing SDK's bounded queued-event delivery policy;
+there is no new SDK extension or broker-offline discard guarantee.
+
+Three behavioral tests failed against the API skeleton before implementation.
+Ten new tests cover source ambiguity, native actions and sensor fields, nullable
+state, bounded notices, rename-back, actual MQTT during pending light commands,
+old partial-line rename cutover, the existing ATX PTY emulator, cached refresh and
+a controlled aggregate-read/input-change ordering. The first literal-peer test
+exposed a test-owner capture bug: its retained PTY slave was dropped before the
+bridge opened it. Keeping the whole owner in the task fixed the test fixture;
+no production UART workaround was added.
+
+The corrected initial gate passed **323 native tests**, strict scoped Clippy and
+Pi compilation; the final aggregate regression then passed with the focused set.
+All **11 new controls** and **6 affected existing helper/progress controls** failed
+at their intended behavioral assertions. After restoration, **324 native tests**,
+strict scoped Clippy, Pi library/all four binary compilation, changed-file
+formatting, whitespace, wait registry and doctests (none defined) pass. The first
+full attempt caught only wait-registry classification/tag issues; those were
+corrected before the passing gates. Sequential source reviews remain in progress.
+Both source-grounded design reviews completed; their nullable-state and SDK
+broker-delivery clarifications are incorporated. Reviews use the same family.
+
+Hardware input discovery/full-value reads, event configuration/feedback,
+unresolved group/source mapping and semantic emulator controls remain required.
+See [MQTT inputs](mqtt-inputs.md) and the
+[live-input spec](superpowers/specs/2026-10-22-dali-v2-p4c-live-inputs.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -739,7 +790,7 @@ See [the input inventory spec](superpowers/specs/2026-10-22-dali-v2-p4c-input-in
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, output codec/service/MQTT base properties, common input codec and named input metadata implemented | Input discovery/state/events/configuration, color representations and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata and live native input State/events implemented | Input discovery/full-value polling/configuration/feedback, color representations and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

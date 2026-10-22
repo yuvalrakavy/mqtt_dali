@@ -159,8 +159,13 @@ and durable metadata rename path; see `docs/inventory-contract.md`. Module
 replacement retires every child lifetime; ordinary rename preserves them. Replay
 validates hierarchy and continuing parent origins at every batch, and the
 independent consumer verifies this without producer replay helpers. Hardware
-input discovery, MQTT state/events and configuration remain subsequent work,
-not implied by successful decoding or saved metadata alone.
+input discovery and configuration remain subsequent work. Live observed State
+and native events now use `docs/mqtt-inputs.md`: nullable unknown properties,
+separate bounded event notices, original source generations/absent traces and
+receive-only per-route cutover. Sync routes before draining frames after metadata
+activation. State comes from latest snapshots after awaits; notices carry native
+actions rather than historical State. Preserve the existing bounded SDK event
+queue across broker outages; never reconstruct actions from retained State.
 
 ## Architecture (legacy)
 

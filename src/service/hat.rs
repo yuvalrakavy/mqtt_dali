@@ -1,5 +1,5 @@
 //! UART lifecycle only. Fixture operations must join the service admission path.
-use super::{output, ServiceError};
+use super::{input, output, ServiceError};
 use super::{BusHealth, Hardware};
 use crate::atx::{
     monitor::{CloseReason, Event},
@@ -55,6 +55,7 @@ enum JobKind {
     Query,
     Close,
     Output,
+    InputBoundary,
     Settle,
 }
 impl Drop for Job {
@@ -70,6 +71,7 @@ enum Done {
     Recover(Result<(), TransactionError>),
     Close(Result<(), TransactionError>, bool),
     Output(output::Outcome),
+    InputBoundary(Vec<input::Cut>, Result<u64, TransactionError>),
     Settled(Result<(), TransactionError>),
 }
 struct Session {
@@ -101,6 +103,7 @@ pub(super) struct Hat {
     bus_generations: [u64; 4],
     physical: Option<output::Active>,
     completed: Option<output::Completion>,
+    inputs: input::Router,
 }
 enum Wake {
     Job(Result<Done, tokio::task::JoinError>),
@@ -138,6 +141,7 @@ impl Hat {
             bus_generations: [0; 4],
             physical: None,
             completed: None,
+            inputs: input::Router::default(),
         }
     }
     fn spawn(
@@ -449,6 +453,20 @@ impl Hat {
                 if Instant::now() < self.next {
                     return Ok(());
                 }
+                if self.version.is_some() && link.status() == SessionState::Ready {
+                    let stamps = self.input_stamps();
+                    let cuts = self.inputs.pending(|bus| stamps[usize::from(bus)]);
+                    if !cuts.is_empty() {
+                        self.next = Instant::now() + self.settings.as_ref().unwrap().timing.retry;
+                        self.spawn(JobKind::InputBoundary, async move {
+                            Done::InputBoundary(
+                                cuts,
+                                link.input_boundary(Duration::from_millis(500)).await,
+                            )
+                        });
+                        return Ok(());
+                    }
+                }
                 let timing = self.settings.as_ref().unwrap().timing;
                 let buses = self.buses.clone();
                 let initialize =
@@ -500,8 +518,12 @@ impl Hat {
             Done::Setup(Ok((version, buses))) => {
                 self.version = Some(version);
                 self.fill_missing(buses);
+                self.schedule_inputs();
             }
-            Done::Poll(Ok(buses)) => self.fill_missing(buses),
+            Done::Poll(Ok(buses)) => {
+                self.fill_missing(buses);
+                self.schedule_inputs();
+            }
             Done::Boundary(Ok(minimum)) => {
                 self.boundary = Some(minimum);
                 self.needs_boundary = false;
@@ -558,6 +580,14 @@ impl Hat {
             }
             Done::Settled(Ok(())) => self.complete_output(None),
             Done::Settled(Err(_)) => self.begin_close(),
+            Done::InputBoundary(cuts, Ok(minimum)) => {
+                let stamps = self.input_stamps();
+                self.inputs
+                    .install(&cuts, minimum, |bus| stamps[usize::from(bus)]);
+            }
+            Done::InputBoundary(_, Err(error)) => {
+                tracing::debug!(kind="input_boundary_pending",%error,"Input mapping awaits a receive boundary");
+            }
         }
         Ok(())
     }
@@ -574,6 +604,10 @@ impl Hat {
                 sequence,
                 packet: Ok(packet),
             }) => match packet.kind {
+                Kind::Dali(crate::atx::wire::DaliFrame::Bits24(raw)) => {
+                    let stamp = self.input_stamps()[usize::from(packet.bus)];
+                    self.inputs.observe(packet.bus, sequence, raw, stamp);
+                }
                 Kind::Boot(_) => {
                     self.boot = Some(sequence);
                     self.version = None;
@@ -834,7 +868,11 @@ impl Hat {
     fn cancel_query(&mut self) {
         // A receive fence is still valid across Boot: its returned minimum
         // decides whether that Boot was fresh. Only query observations expire.
-        if self.job.as_ref().is_some_and(|job| job.1 == JobKind::Query) {
+        if self
+            .job
+            .as_ref()
+            .is_some_and(|job| matches!(job.1, JobKind::Query | JobKind::InputBoundary))
+        {
             self.cancel_job();
         }
     }
@@ -857,6 +895,46 @@ impl Hat {
             }
         }
         self.observations.sort_by_key(|bus| bus.bus);
+    }
+    fn input_stamps(&self) -> [Option<output::Stamp>; 4] {
+        std::array::from_fn(|bus| {
+            (!self.reset
+                && !self.closing
+                && !self.needs_quiet
+                && matches!(self.hardware(),Hardware::Ready {ref buses,..}
+                    if buses.iter().any(|b|usize::from(b.bus)==bus && b.status==2)))
+            .then(|| self.stamp(bus as u8))
+            .flatten()
+        })
+    }
+    pub(super) fn sync_inputs(&mut self, model: &crate::inventory::Model) {
+        if self.inputs.sync(model) {
+            self.schedule_inputs();
+        }
+    }
+    fn schedule_inputs(&mut self) {
+        let stamps = self.input_stamps();
+        if !self
+            .inputs
+            .pending(|bus| stamps[usize::from(bus)])
+            .is_empty()
+        {
+            self.next = Instant::now();
+        }
+    }
+    pub(super) fn input_observations(
+        &mut self,
+    ) -> std::collections::BTreeMap<String, input::Observation> {
+        let stamps = self.input_stamps();
+        self.inputs.invalidate(|bus| stamps[usize::from(bus)]);
+        self.inputs.observations.clone()
+    }
+    pub(super) fn take_input_notices(&mut self) -> (Vec<input::Notice>, u64) {
+        self.inputs.take_notices()
+    }
+    pub(super) fn input_listeners(&self) -> std::collections::BTreeSet<String> {
+        let stamps = self.input_stamps();
+        self.inputs.listeners(|bus| stamps[usize::from(bus)])
     }
     pub(super) async fn close(&mut self, deadline: Instant) -> Result<(), String> {
         // Abort and actually join the helper before dropping its parent session.

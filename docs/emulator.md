@@ -24,7 +24,7 @@ the next. Available requests include:
 
 ```json
 {"op":"snapshot"}
-{"op":"input_event","bus":0,"frame":132097}
+{"op":"input_event","bus":0,"frame":32769}
 {"op":"set_address","id":"new-fixture","short_address":null}
 {"op":"bus_power","bus":1,"powered":false}
 {"op":"next_fault","effect":{"kind":"delay","millis":250}}
@@ -37,8 +37,10 @@ the next. Available requests include:
 {"op":"advance_time","millis":900000}
 ```
 
-132097 is 0x020401, a 24-bit event; command-bit frames are rejected. P2 injects
-wire events; P4 adds semantic inputs and discovery. One next-response fault may
+32769 is 0x008001, a device/instance button press at input address 0, instance 0;
+command-bit frames are rejected. With matching saved input metadata, the bridge
+now publishes [native input State/events](mqtt-inputs.md). Discovery and semantic
+emulator controls remain in development. One next-response fault may
 be armed at once. It affects the next J/N/X/Z terminal, excluding echoes, status
 and input events; in the two-terminal profile it affects the first terminal.
 

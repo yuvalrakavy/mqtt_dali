@@ -1,0 +1,192 @@
+{
+ "rows": {
+  "aggregate_refresh_reports_input_snapshot_from_before_await": {
+   "last_real": {
+    "at": "2026-10-22T00:00:40Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:824b54f51ac693ba",
+     "row": "867129c7ba2056f0",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.7,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "ambiguous_source_is_assigned_to_first_button": {
+   "last_real": {
+    "at": "2026-10-21T23:59:38Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:63ea94c8170917c3",
+     "row": "01366ae50c444475",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.2,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "changed_uart_epoch_reuses_old_route_boundary": {
+   "last_real": {
+    "at": "2026-10-21T23:59:48Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:63ea94c8170917c3",
+     "row": "8f3ce34ea07e1b4c",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.1,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "input_notice_batch_has_no_bound": {
+   "last_real": {
+    "at": "2026-10-22T00:00:33Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:63ea94c8170917c3",
+     "row": "f7a6cab3c26da0e5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.5,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "mqtt_double_press_is_changed_to_short_press": {
+   "last_real": {
+    "at": "2026-10-22T00:00:46Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:a0bb53d3cff41c2b",
+     "row": "ca88b68d448d332d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.3,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "native_action_report_helper_is_missing": {
+   "last_real": {
+    "at": "2026-10-22T00:00:18Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:fae563638018c92d",
+     "row": "96e089c428776c54",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.2,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "native_actions_are_coalesced_by_target": {
+   "last_real": {
+    "at": "2026-10-22T00:00:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:63ea94c8170917c3",
+     "row": "53f041c01b86d196",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.3,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "partial_old_line_is_not_excluded_by_receive_floor": {
+   "last_real": {
+    "at": "2026-10-22T00:00:26Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:dc7db420d3fe34b2",
+     "row": "19dd3e597b55cbd5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.7,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "pre_boundary_frames_acquire_named_generation": {
+   "last_real": {
+    "at": "2026-10-21T23:59:43Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:63ea94c8170917c3",
+     "row": "9ddecd513518b1ee",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.5,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "rename_back_accepts_old_boundary_token": {
+   "last_real": {
+    "at": "2026-10-21T23:59:53Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7251b4270bc15221",
+     "row": "0ef477d41286cfcf",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.9,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  },
+  "unknown_button_fields_are_omitted_from_merged_mqtt_state": {
+   "last_real": {
+    "at": "2026-10-22T00:00:08Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:2810d1919870e5de",
+     "row": "a091b658051bb1a9",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.1,
+    "sha": "4d577613480b3d329e7dedebeab4ebad1721f701",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

@@ -1,8 +1,10 @@
 # Running the v2 development daemon
 
 This is an unfinished development version. Its current executable serves saved
-inventory and metadata edits through BridgeKit and checks ATX I4 UART health.
-Fixture control, commissioning and the web interface arrive in later phases.
+inventory and metadata edits through BridgeKit, checks ATX I4 UART health and
+supports [base light control](mqtt-outputs.md) plus
+[native input State/events](mqtt-inputs.md). Commissioning, input discovery and
+the web interface remain in development.
 
 Start one controller with an MQTT broker and its own writable config directory:
 

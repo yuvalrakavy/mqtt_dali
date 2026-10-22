@@ -237,6 +237,30 @@ impl<S: DrainRead + AsyncWrite + Unpin + Send + 'static> Transactions<S> {
     pub fn observe_status(&self) -> watch::Receiver<SessionState> {
         self.shared.status.clone()
     }
+    /// Receive-only cutoff for named input mapping activation. Does not reset
+    /// the parser or modify command recovery; excludes an already-started line.
+    pub(crate) async fn input_boundary(&self, within: Duration) -> Result<u64, TransactionError> {
+        let deadline = Instant::now()
+            .checked_add(within)
+            .ok_or(TransactionError::Deadline)?;
+        let _permit = self
+            .shared
+            .permit
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| TransactionError::Busy)?;
+        if self.status() != SessionState::Ready {
+            return Err(TransactionError::Desynchronized);
+        }
+        let fence = self.shared.monitor.receive_fence_until(deadline).await?;
+        if Instant::now() >= deadline {
+            return Err(TransactionError::Deadline);
+        }
+        if self.status() != SessionState::Ready {
+            return Err(TransactionError::Desynchronized);
+        }
+        Ok(fence.minimum_sequence)
+    }
     /// Exclude already-readable boot records on a reopened descriptor. This
     /// receives only; it neither rearms poison nor establishes a physical reset.
     pub(crate) async fn fresh_boot_boundary(

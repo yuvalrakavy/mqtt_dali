@@ -91,6 +91,7 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
                 context,
             ))
         })
+        .chain(super::super::input::projections(snapshot))
         .collect()
 }
 

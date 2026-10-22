@@ -62,6 +62,7 @@ impl DeviceDriver for DaliProxy {
         }
     }
     async fn connect(&mut self, ctx: &mut LinkContext) -> Result<(), LinkError> {
+        let input_events = self.handle.subscribe_inputs();
         let snapshot = self
             .handle
             .snapshot()
@@ -80,6 +81,7 @@ impl DeviceDriver for DaliProxy {
         #[cfg(test)]
         let helper = helper.with_pause(self.snapshot_pause.clone());
         ctx.spawn(helper.run());
+        ctx.spawn(super::input::events(input_events, ctx.report.clone()));
         Ok(())
     }
     async fn disconnect(&mut self) {
@@ -228,6 +230,19 @@ impl DaliProxy {
                 Ok(vec![Self::inventory(&self.snapshot()?, cause)?])
             }
             Scope::Target(target) => {
+                let snapshot = self.snapshot()?;
+                if let Some(state) = super::input::projections(&snapshot)
+                    .into_iter()
+                    .find(|s| s.state.target == target)
+                {
+                    if cause
+                        .generation()
+                        .is_some_and(|g| Some(g) != state.context.generation())
+                    {
+                        return Err(OpError::Rejected("retired input generation".into()));
+                    }
+                    return Ok(vec![state]);
+                }
                 let deadline = Instant::now() + Duration::from_secs(2);
                 let observed = self
                     .read_observation(&target, cause.clone(), deadline)

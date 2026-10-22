@@ -79,8 +79,8 @@ the generation in their current complete inventory. Retired State uses BridgeKit
 contextual retirement/removal; each consumer owns cleanup of its own retained
 Desired/Config. The adopted runtime enforces original request contexts and
 retires old work/cache entries. Base individual output State is implemented
-(see [MQTT outputs](mqtt-outputs.md)); physical input State/actions remain a later
-integration slice. Input metadata can be renamed with the existing MQTT `rename`
+(see [MQTT outputs](mqtt-outputs.md)); resolved native input observations/actions
+use [MQTT inputs](mqtt-inputs.md). Input metadata can be renamed with the existing MQTT `rename`
 command or service API. Input Desired remains unsupported; saved metadata does
 not establish HAT connectivity.
 

@@ -1,8 +1,8 @@
 # Managed inventory service (v2 development)
 
 This guide is for bridge contributors and embedders. The service library owns
-durable configuration, runtime routing, optional UART health and individual-output
-library operations. The canonical
+durable configuration, runtime routing, optional UART health, individual-output
+operations and native input observations/actions. The canonical
 `mqtt_dali` executable now runs it through BridgeKit; `mqtt_dali_v2` is an alias.
 `--check-config` remains an explicit offline operation. See
 [running the development daemon](running-v2.md). MQTT base fixture properties
@@ -38,7 +38,9 @@ explicit library output operations share that same owner. Hardware
 snapshots distinguish Connecting, Resynchronizing, Initializing, Ready (raw version strings and
 bus observations), unavailable retry, waiting for a late reply, ResetRequired
 and Closed. Bus power loss remains a bus fact, rather than disconnecting a
-responding HAT. Raw input frames are drained but do not yet produce input actions.
+responding HAT. Resolved input L frames now produce observed instance State and
+native non-retained actions; see [MQTT inputs](mqtt-inputs.md). The same reader
+obtains receive-only mapping boundaries without changing quiet recovery.
 
 A timed-out complete write keeps its owner; a delayed eligible terminal can
 retire it, or measured quiet recovery retires its unresolved receive ordering.
@@ -100,6 +102,14 @@ token still applies if only a child was renamed earlier. See the
 [input inventory contract](inventory-contract.md). No public metadata call
 can claim a physical replacement, address assignment or group-member change.
 Those require verified commissioning jobs in a later slice.
+
+`Snapshot.inputs` contains typed observed input data; `input_listeners` contains
+routes with installed receive boundaries, not a device-presence claim.
+`subscribe_inputs()` supplies a bounded capacity-64 native action stream; handle
+Lagged as action loss. Snapshot watch updates may coalesce, and must not be used
+to recreate button actions. Only the LinkContext-owned SDK worker helper reports
+MQTT events. Device-link helper recreation starts a fresh receiver; broker
+outages retain BridgeKit's existing bounded queued-event delivery policy.
 
 Writing/Uncertain phases reject new edits. A lost response cannot undo a save:
 inspect the latest owned snapshot before retrying. If it is Uncertain, explicitly

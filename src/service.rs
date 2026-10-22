@@ -11,6 +11,7 @@ use tokio::{
 };
 
 mod hat;
+pub mod input;
 pub mod output;
 mod owner;
 mod proxy;
@@ -58,6 +59,9 @@ pub struct Snapshot {
     pub phase: Phase,
     pub hardware: Hardware,
     pub outputs: std::collections::BTreeMap<String, output::Observation>,
+    pub inputs: std::collections::BTreeMap<String, input::Observation>,
+    /// Routes with an installed receive boundary, independently of device presence.
+    pub input_listeners: std::collections::BTreeSet<String>,
     pub version: &'static str,
     pub build_utc: &'static str,
 }
@@ -135,6 +139,7 @@ pub struct ServiceHandle {
     send: mpsc::Sender<Message>,
     state: watch::Receiver<Option<Snapshot>>,
     updates: broadcast::Sender<Snapshot>,
+    input_events: broadcast::Sender<input::Notice>,
     permit: Arc<Semaphore>,
 }
 /// Constructing this object opens no files, UART or network connections.
@@ -210,6 +215,7 @@ impl DaliService {
             send,
             state: read,
             updates: broadcast::channel(16).0,
+            input_events: broadcast::channel(input::EVENT_CAPACITY).0,
             permit: Arc::new(Semaphore::new(1)),
         };
         (
@@ -242,6 +248,10 @@ impl ServiceHandle {
     }
     pub fn subscribe(&self) -> broadcast::Receiver<Snapshot> {
         self.updates.subscribe()
+    }
+    /// Native actions are non-retained. Lag means lost actions, never replay State.
+    pub fn subscribe_inputs(&self) -> broadcast::Receiver<input::Notice> {
+        self.input_events.subscribe()
     }
     /// Change saved metadata using the current inventory revision and original
     /// item token (controller token for bus/description edits). A lost response

@@ -2,6 +2,7 @@ use super::*;
 use crate::{config::Inventory, inventory::Location};
 use serde_json::json;
 mod input;
+mod live_input;
 
 #[derive(Default)]
 pub(super) struct Pause {
@@ -26,6 +27,8 @@ pub(super) fn snapshot(model: Model, phase: Phase) -> Snapshot {
         phase,
         hardware: Hardware::NotStarted,
         outputs: Default::default(),
+        inputs: Default::default(),
+        input_listeners: Default::default(),
         version: env!("CARGO_PKG_VERSION"),
         build_utc: build_info::BUILT_TIME_UTC,
     }

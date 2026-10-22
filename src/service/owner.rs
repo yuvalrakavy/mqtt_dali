@@ -29,6 +29,15 @@ impl Drop for AdmissionGuard {
 impl DaliService {
     fn update_snapshot(&self, model: Arc<Model>, phase: Phase) -> Snapshot {
         let snapshot = Snapshot {
+            input_listeners: self
+                .handle
+                .snapshot()
+                .map(|s| input::retained_listeners(&model, &s))
+                .unwrap_or_default(),
+            inputs: input::retained(
+                &model,
+                self.handle.snapshot().map(|s| s.inputs).unwrap_or_default(),
+            ),
             outputs: output::retained(
                 &model,
                 self.handle
@@ -240,6 +249,8 @@ impl ProcessService for DaliService {
         let mut hat = hat::Hat::new(self.uart.take(), buses);
         let mut failure = None;
         loop {
+            // Sync before polling any public frame after durable activation.
+            hat.sync_inputs(&owner.model);
             // WAIT: v2-service-loop
             let message = tokio::select! {
                 biased;
@@ -249,6 +260,8 @@ impl ProcessService for DaliService {
                     if let Err(error)=result { failure=Some(error);break; }
                     let mut snapshot=self.handle.snapshot().expect("service started");
                     snapshot.hardware=hat.hardware();
+                    snapshot.inputs=hat.input_observations();
+                    snapshot.input_listeners=hat.input_listeners();
                     let mut completion=hat.take_completed_output();
                     if let Some(completion)=&mut completion {
                         if let Some(observation)=&mut completion.observation {
@@ -275,8 +288,12 @@ impl ProcessService for DaliService {
                             }
                         }
                     }
+                    let input_actions_allowed=snapshot.phase==Phase::Ready;
                     self.state.send_replace(Some(snapshot.clone()));
                     let _=self.handle.updates.send(snapshot);
+                    let (notices,dropped)=hat.take_input_notices();
+                    if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
+                    if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion {
                         let result=match (completion.error, completion.observation) {
                             (Some(error),_)=>Err(error),
@@ -355,6 +372,8 @@ impl ProcessService for DaliService {
         let hardware = hat.close(deadline).await;
         let mut snapshot = self.handle.snapshot().expect("service started");
         snapshot.hardware = hat.hardware();
+        snapshot.inputs = hat.input_observations();
+        snapshot.input_listeners = hat.input_listeners();
         hat.invalidate_outputs(&mut snapshot.outputs);
         self.state.send_replace(Some(snapshot.clone()));
         let _ = self.handle.updates.send(snapshot);

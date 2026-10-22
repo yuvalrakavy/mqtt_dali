@@ -1,0 +1,100 @@
+# Normal live-input behavior, each fault must reach its named behavioral oracle.
+
+[[control]]
+name = "ambiguous_source_is_assigned_to_first_button"
+file = "src/service/input.rs"
+anchor = "if candidates.next().is_some()"
+replacement = "if false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_routes_exact_instances_and_preserves_ambiguous_sources)"]
+expect_text = "ambiguous source or command acquired a button target"
+
+[[control]]
+name = "pre_boundary_frames_acquire_named_generation"
+file = "src/service/input.rs"
+anchor = "floor == stamp && sequence >= min"
+replacement = "floor == stamp && { let _ = (sequence,min); true }"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_cutover_cannot_retoken_old_frames_or_stale_boundary_completions)"]
+expect_text = "pre-boundary partial/queued frame acquired a token"
+
+[[control]]
+name = "changed_uart_epoch_reuses_old_route_boundary"
+file = "src/service/input.rs"
+anchor = "floor == stamp && sequence >= min"
+replacement = "{ let _ = (floor,stamp); true } && sequence >= min"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_state_is_nullable_and_unknown_data_cannot_preserve_pressed_state)"]
+expect_text = "new UART epoch bypassed input boundary"
+
+[[control]]
+name = "rename_back_accepts_old_boundary_token"
+file = "src/service/input.rs"
+anchor = "route.context.generation() == cut.context.generation()"
+replacement = "true"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_cutover_cannot_retoken_old_frames_or_stale_boundary_completions)"]
+expect_text = "rename-back reused an old input boundary token"
+
+[[control]]
+name = "native_actions_are_coalesced_by_target"
+file = "src/service/input.rs"
+anchor = "self.notices.push_back(Notice {"
+replacement = "self.notices.retain(|n| n.target != target); self.notices.push_back(Notice {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_actions_are_native_and_never_coalesced_into_one_snapshot)"]
+expect_text = "press/release were coalesced"
+
+[[control]]
+name = "unknown_button_fields_are_omitted_from_merged_mqtt_state"
+file = "src/service/input.rs"
+anchor = "let context = current.map_or_else("
+replacement = "if values.get(\"Status\").is_some_and(Value::is_null) { values.remove(\"Status\"); } let context = current.map_or_else("
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_mqtt_actions_survive_a_pending_light_command_and_publish_truthful_state)"]
+expect_text = "missing expected live input State for Bus1.Inputs.Panel.Instances.First"
+
+[[control]]
+name = "native_action_report_helper_is_missing"
+file = "src/service/proxy.rs"
+anchor = "ctx.spawn(super::input::events(input_events, ctx.report.clone()));"
+replacement = "drop(input_events);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_mqtt_actions_survive_a_pending_light_command_and_publish_truthful_state)"]
+expect_text = "pending light acknowledgement blocked native input actions"
+
+[[control]]
+name = "partial_old_line_is_not_excluded_by_receive_floor"
+file = "src/atx/transactions/engine.rs"
+anchor = "Ok(fence.minimum_sequence)\n    }\n    /// Exclude already-readable boot records"
+replacement = "Ok(fence.minimum_sequence.saturating_sub(1))\n    }\n    /// Exclude already-readable boot records"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_rename_excludes_a_partial_old_uart_line_before_new_generation)"]
+expect_text = "old partial press acquired a fresh mapping token"
+
+[[control]]
+name = "input_notice_batch_has_no_bound"
+file = "src/service/input.rs"
+anchor = "if self.notices.len() >= crate::atx::monitor::EVENT_CAPACITY {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_notice_batches_are_bounded_with_explicit_loss_count)"]
+expect_text = "unbounded native input notice batch"
+
+[[control]]
+name = "aggregate_refresh_reports_input_snapshot_from_before_await"
+file = "src/service/proxy.rs"
+anchor = "state::projections(&latest)"
+replacement = "state::projections(&snapshot)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_state_changed_during_all_refresh_is_projected_after_the_last_await)"]
+expect_text = "aggregate refresh overwrote a newer input with its old snapshot"
+
+[[control]]
+name = "mqtt_double_press_is_changed_to_short_press"
+file = "src/service/input.rs"
+anchor = "ButtonAction::DoublePress => \"double_press\","
+replacement = "ButtonAction::DoublePress => \"short_press\","
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(live_input_actions_are_native_and_never_coalesced_into_one_snapshot)"]
+expect_text = "native action meaning changed"
