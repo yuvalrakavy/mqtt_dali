@@ -157,5 +157,10 @@ wait registry and doctests (zero). Initial integration diagnosed/fixed only the
 test peer's retained-slave capture lifetime. The initial full gate found wait
 classification/tag placement, fixed through the established local-method rule;
 there is one new actual wait, the LinkContext-owned event broadcast receiver.
-No production broker/bus, SDK code or Store state was touched. Source reviews
-will inspect the frozen commit after the parent's complete diff review.
+No production broker/bus, SDK code or Store state was touched. Both sequential
+read-only source reviews approved frozen `c0951fb` with no material finding after
+the parent's complete diff review. They inspected cutover, context propagation,
+nullable merged State, worker ownership, aggregate ordering and test sensitivity.
+Neither ran tests or controls; both use the same model family. Physical-device
+validation remains outstanding. The held-acknowledgement and partial-line tests
+proved useful and should remain the pattern for future capability integration.

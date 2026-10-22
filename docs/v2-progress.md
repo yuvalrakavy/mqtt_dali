@@ -774,7 +774,10 @@ at their intended behavioral assertions. After restoration, **324 native tests**
 strict scoped Clippy, Pi library/all four binary compilation, changed-file
 formatting, whitespace, wait registry and doctests (none defined) pass. The first
 full attempt caught only wait-registry classification/tag issues; those were
-corrected before the passing gates. Sequential source reviews remain in progress.
+corrected before the passing gates. Both sequential read-only source reviews
+approved frozen `c0951fb` with no material finding. Neither reviewer ran tests or
+controls; the parent ran the verification above. Physical-device validation
+remains outstanding.
 Both source-grounded design reviews completed; their nullable-state and SDK
 broker-delivery clarifications are incorporated. Reviews use the same family.
 
