@@ -201,3 +201,7 @@ binary compilation, changed-file rustfmt/whitespace, unchanged wait registry and
 doctests (none defined) pass. Logs: `/tmp/dali-mqtt-colour-controls` and
 `/tmp/dali-mqtt-colour-restored-gate`. Source acceptance follows the frozen commit;
 no hardware/firmware, live Logmon, Store, merge or release validation is claimed.
+
+Both sequential source gates approve frozen `5e7dc2e` against `96c818a`, with no
+material findings. Reviews inspected source/tests/controls only and performed
+no builds, tests, mutations or external operations; same-model-family limits apply.

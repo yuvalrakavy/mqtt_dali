@@ -1026,6 +1026,10 @@ coverage is same-family/source-only; physical firmware and live deployment remai
 unverified. See the [MQTT guide](mqtt-outputs.md#colour-controls) and
 [slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-mqtt-colour.md).
 
+Frozen `5e7dc2e` is approved by both sequential source gates against `96c818a`,
+with no material findings. Both were read-only/source-only/same-family and ran
+no verification. Physical hardware validation remains outstanding.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
