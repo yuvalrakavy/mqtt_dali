@@ -30,7 +30,22 @@ continuity, type mismatch/smaller counts, strict requests/retired authority,
 native events during cancellation, permit retention, physical epoch loss and
 held/noncommitted/uncertain saves. A literal peer initially lost its PTY slave
 through Rust field capture; retaining the whole PTY fixed that test fixture.
-Final gate and frozen-source review evidence follows before this slice closes.
+All **7 new mutation controls** and **2 affected metadata controls** fail at
+their intended behavioral assertions. The restored gate's 411 behavioral/native
+checks passed, with one registry failure: the new owned `discover` wrapper needed
+an explicit local-method declaration. After that registry-only correction,
+the complete suite passes **412/412 tests**. Scoped strict Clippy, Pi library/all
+four binary compilation, doctests (none defined), changed-file rustfmt and
+whitespace pass. Logs: `/tmp/dali-discovery-controls.log`,
+`/tmp/dali-discovery-affected-controls.log`,
+`/tmp/dali-discovery-restored-gate` and `/tmp/dali-discovery-final-gate`.
+
+Both sequential read-only source gates approve frozen `a180167` against
+`af3648c`, with no material findings. Reviewers inspected source/test contracts
+and ran no verification or mutations. Same-model-family review and absent
+physical hardware evidence remain explicit limits. Keeping captured probe
+semantics separate from current State and reusing the existing durable owner
+held through both reviews; retain those boundaries for addressing work.
 
 This is discovery of already addressed devices. Unaddressed assignment, complete
 readdress/restore, identification controls, group/scene workflows and the approved
