@@ -53,18 +53,18 @@
   },
   "bus_setup_drops_valid_action_during_unrelated_save": {
    "last_real": {
-    "at": "2026-10-22T06:17:58Z",
+    "at": "2026-10-22T17:03:03Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:66eb2e5c7259c981",
-     "row": "90be321ea167d0fe",
+     "guard": "item:7d8e15cd79228519",
+     "row": "3370b4851a54bc8c",
      "test": null
     },
     "path": "command",
-    "secs": 7.7,
-    "sha": "fea28efce87833f283ea96122cc6dba830906cd8",
+    "secs": 8.7,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
     "verdict": "RED"
    }
   },

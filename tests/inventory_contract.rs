@@ -42,6 +42,84 @@ fn input_model() -> Model {
 }
 
 #[test]
+fn address_adoption_consumer_keeps_original_device_and_button_ids_and_retires_candidates() {
+    let mut inventory = serde_json::to_value(input_model().inventory()).unwrap();
+    inventory["buses"][0]["inputs"].as_array_mut().unwrap().push(json!({"short_address":1,"name":"Candidate","instances":[{"number":0,"name":"Key","instance_type":1}]}));
+    inventory["buses"][0]["scenes"] = json!([{"slot":0,"name":"Evening","contents":[
+        {"output_origin":{"target":"Bus1.Outputs.Light1","revision":1},"setting":{"level":{"kind":"value","value":100},"color":{"kind":"mask"}}},
+        {"output_origin":{"target":"Bus1.Outputs.Light2","revision":1},"setting":{"level":{"kind":"value","value":50},"color":{"kind":"mask"}}}]}]);
+    let first = Model::new(serde_json::from_value(inventory).unwrap()).unwrap();
+    let originals = [
+        "Bus1.Outputs.Light1",
+        "Bus1.Inputs.Panel",
+        "Bus1.Inputs.Panel.Instances.Key",
+    ];
+    let candidates = [
+        "Bus1.Outputs.Light2",
+        "Bus1.Inputs.Candidate",
+        "Bus1.Inputs.Candidate.Instances.Key",
+    ];
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    let ids = originals.map(|target| consumer.by_target(target).unwrap().id);
+    let retired = candidates.map(|target| consumer.by_target(target).unwrap().id);
+    consumer.set_intent(originals[0], json!({"Brightness":0.4}));
+    consumer.set_intent(originals[2], json!({"Status":true}));
+    let adopted = first
+        .edit(
+            1,
+            &[
+                Edit::RemoveOutput { bus: 0, address: 1 },
+                Edit::ReaddressOutputs {
+                    bus: 0,
+                    addresses: vec![(0, 1)],
+                },
+                Edit::RemoveInput { bus: 0, address: 1 },
+                Edit::ReaddressInput {
+                    bus: 0,
+                    from: 0,
+                    to: 1,
+                },
+            ],
+        )
+        .unwrap();
+    let restarted = Model::new(
+        serde_json::from_slice(&serde_json::to_vec(adopted.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    consumer.accept(&restarted.state_bytes().unwrap()).unwrap();
+    for (target, id) in originals.into_iter().zip(ids) {
+        let device = consumer.by_target(target).unwrap();
+        assert_eq!(
+            device.id, id,
+            "adopting a short address replaced the bound consumer object"
+        );
+        assert!(!consumer.accepts_state(target, "0123456789abcdef0123456789abcdef.1"));
+        assert!(consumer.accepts_state(target, "0123456789abcdef0123456789abcdef.2"));
+    }
+    assert_eq!(
+        consumer.by_target(originals[0]).unwrap().intent,
+        Some(json!({"Brightness":0.4}))
+    );
+    assert_eq!(
+        consumer.by_target(originals[2]).unwrap().intent,
+        Some(json!({"Status":true}))
+    );
+    for (target, id) in candidates.into_iter().zip(retired) {
+        assert!(consumer.by_target(target).is_none());
+        assert!(consumer.retired.contains(&id));
+    }
+    assert_eq!(restarted.inventory().buses[0].groups[0].members, vec![1]);
+    assert_eq!(restarted.inventory().buses[0].scenes[0].contents.len(), 1);
+    assert_eq!(
+        restarted.inventory().buses[0].scenes[0].contents[0]
+            .output_origin
+            .target,
+        originals[0]
+    );
+}
+
+#[test]
 fn group_membership_consumer_preserves_origins_and_fixture_intent_but_retires_changed_group_contract(
 ) {
     let first = model();

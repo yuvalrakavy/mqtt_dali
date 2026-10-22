@@ -12,6 +12,7 @@ mod live_input;
 mod readback;
 mod reassignment;
 mod removal;
+mod restoration;
 mod scene_operations;
 mod scene_saved_view;
 mod scene_settings;

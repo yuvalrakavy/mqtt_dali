@@ -36,6 +36,50 @@ fn router() -> Router {
 }
 
 #[test]
+fn input_restoration_cut_never_reauthorizes_queued_notices_after_fresh_activity() {
+    let mut inventory = model().inventory().clone();
+    inventory.buses[0].inputs.push(serde_json::from_value(json!({"short_address":1,"name":"Other","instances":[{"number":0,"name":"Button","instance_type":1}]})).unwrap());
+    let model = Model::new(inventory).unwrap();
+    let mut router = Router::default();
+    router.sync(&model);
+    let cuts = router.pending(|_| Some(stamp()));
+    router.install(&cuts, 10, |_| Some(stamp()));
+    let target = "Bus1.Inputs.Panel.Instances.First";
+    let other = "Bus1.Inputs.Other.Instances.Button";
+    router.observe(0, 10, 0x008001, Some(stamp()));
+    router.observe(0, 11, 0x028001, Some(stamp()));
+    let old = router.take_notices().0;
+    router.cut_for_restore(0, 0);
+    let cuts = router.pending(|_| Some(stamp()));
+    assert_eq!(cuts.len(), 6);
+    router.install(&cuts, 20, |_| Some(stamp()));
+    router.observe(0, 20, 0x008000, Some(stamp()));
+    let fresh = router.take_notices().0;
+    let mut snapshot = super::super::tests::snapshot(model, Phase::Ready);
+    snapshot.inputs = router.observations.clone();
+    snapshot.input_listeners = router.listeners(|_| Some(stamp()));
+    assert!(fresh
+        .iter()
+        .find(|n| n.target == target)
+        .unwrap()
+        .current(&snapshot));
+    assert!(
+        old.iter()
+            .find(|n| n.target == other)
+            .unwrap()
+            .current(&snapshot),
+        "restoration cut revoked an unaffected input route"
+    );
+    assert!(
+        !old.iter()
+            .find(|n| n.target == target)
+            .unwrap()
+            .current(&snapshot),
+        "fresh activity reauthorized a queued pre-restoration input action"
+    );
+}
+
+#[test]
 fn input_native_sequence_restarts_at_a_new_transport_boundary() {
     let mut router = router();
     let target = "Bus1.Inputs.Panel.Instances.First";

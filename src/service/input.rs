@@ -5,6 +5,10 @@ use crate::inventory::{Location, Projection};
 use mqtt_bridge_kit::{ContextualState, PropertyMap, TargetState};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, VecDeque};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 pub const EVENT_CAPACITY: usize = 64;
 pub mod readback;
@@ -36,10 +40,14 @@ pub struct Notice {
     // Private receive lifetime; unchanged item identity does not authorize replay
     // across a bus disable/re-enable or transport receive boundary.
     stamp: Stamp,
+    // A continuing saved identity can undergo a native address repair without
+    // changing its token/stamp. That repair permanently revokes older actions.
+    valid: Arc<AtomicBool>,
 }
 impl Notice {
     pub(crate) fn current(&self, snapshot: &Snapshot) -> bool {
-        matches!(snapshot.phase, Phase::Ready | Phase::Writing)
+        self.valid.load(Ordering::SeqCst)
+            && matches!(snapshot.phase, Phase::Ready | Phase::Writing)
             && snapshot.input_listeners.contains(&self.target)
             && routing::generations(&snapshot.model)
                 .targets
@@ -105,6 +113,7 @@ struct Route {
     context: RequestContext,
     floor: Option<(Stamp, u64)>,
     native_sequence: u64,
+    notice_valid: Arc<AtomicBool>,
 }
 #[derive(Clone)]
 pub(super) struct Cut {
@@ -154,6 +163,7 @@ impl Router {
                     context,
                     floor: None,
                     native_sequence: 0,
+                    notice_valid: Arc::new(AtomicBool::new(true)),
                 });
             self.routes.insert(projection.target, route);
         }
@@ -272,6 +282,7 @@ impl Router {
         };
         let target = route.projection.target.clone();
         let context = route.context.clone();
+        let valid = route.notice_valid.clone();
         self.observations.insert(
             target.clone(),
             Observation {
@@ -297,7 +308,24 @@ impl Router {
             frame: event,
             payload,
             stamp,
+            valid,
         });
+    }
+    /// Reuse normal receive-boundary installation after an address repair.
+    /// Queued old Notice clones stay revoked when fresh observations resume.
+    pub fn cut_for_restore(&mut self, bus: u8, address: u8) {
+        for (target, route) in &mut self.routes {
+            if matches!(route.projection.location,Location::InputInstance{bus:route_bus,short_address,..} if route_bus==bus&&short_address==address)
+            {
+                route.notice_valid.store(false, Ordering::SeqCst);
+                route.notice_valid = Arc::new(AtomicBool::new(true));
+                route.floor = None;
+                route.native_sequence = 0;
+                if let Some(observation) = self.observations.get_mut(target) {
+                    observation.stale = true;
+                }
+            }
+        }
     }
     pub fn invalidate(&mut self, ready: impl Fn(u8) -> Option<Stamp>) {
         for observation in self.observations.values_mut() {

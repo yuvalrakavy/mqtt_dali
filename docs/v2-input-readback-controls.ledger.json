@@ -121,18 +121,18 @@
   },
   "new_transport_keeps_old_native_sequence": {
    "last_real": {
-    "at": "2026-10-22T03:36:45Z",
+    "at": "2026-10-22T17:04:26Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
      "guard": "item:de1ca6312dbdcdde",
-     "row": "38a75c3d3db28dcb",
+     "row": "363187d4a6db9067",
      "test": null
     },
     "path": "command",
-    "secs": 6.8,
-    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
+    "secs": 16.6,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
     "verdict": "RED"
    }
   },

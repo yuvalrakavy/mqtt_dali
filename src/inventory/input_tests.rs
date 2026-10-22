@@ -15,6 +15,93 @@ fn model() -> Model {
 }
 
 #[test]
+fn input_readdress_preserves_parent_and_child_lifetimes_and_frees_old_reservation() {
+    let original = model();
+    let moved = original
+        .edit(
+            1,
+            &[Edit::ReaddressInput {
+                bus: 0,
+                from: 0,
+                to: 23,
+            }],
+        )
+        .expect("input readdress must preserve the saved module and its children");
+    let current = Model::new(
+        serde_json::from_slice(&serde_json::to_vec(moved.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    for number in [None, Some(0), Some(31)] {
+        let at = |address| match number {
+            None => Location::Input {
+                bus: 0,
+                short_address: address,
+            },
+            Some(instance) => Location::InputInstance {
+                bus: 0,
+                short_address: address,
+                instance,
+            },
+        };
+        assert_eq!(
+            original.origin(at(0)),
+            current.origin(at(23)),
+            "input address change replaced a continuing lifetime"
+        );
+        assert!(
+            current.origin(at(0)).is_none(),
+            "old input address stayed reserved"
+        );
+    }
+    assert_eq!(
+        original.origin(Location::Output {
+            bus: 0,
+            short_address: 0
+        }),
+        current.origin(Location::Output {
+            bus: 0,
+            short_address: 0
+        })
+    );
+    assert!(current
+        .projections()
+        .iter()
+        .filter(|p| matches!(
+            p.location,
+            Location::Input { .. } | Location::InputInstance { .. }
+        ))
+        .all(|p| p.binding_revision == 2));
+    let mut expected = original.inventory().buses[0].inputs[0].clone();
+    expected.short_address = 23;
+    assert_eq!(current.inventory().buses[0].inputs[0], expected);
+    let reused = current
+        .edit(
+            2,
+            &[Edit::AddInput {
+                bus: 0,
+                input: crate::config::Input {
+                    short_address: 0,
+                    name: "NewPanel".into(),
+                    description: None,
+                    instances: vec![],
+                },
+            }],
+        )
+        .unwrap();
+    assert_ne!(
+        reused.origin(Location::Input {
+            bus: 0,
+            short_address: 0
+        }),
+        original.origin(Location::Input {
+            bus: 0,
+            short_address: 0
+        }),
+        "reused old address inherited the recovered identity"
+    );
+}
+
+#[test]
 fn input_inventory_has_distinct_addresses_and_complete_nested_projections() {
     let model = model();
     assert_eq!(

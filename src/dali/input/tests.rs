@@ -1,5 +1,20 @@
 use super::*;
 
+#[test]
+fn literal_unaddressed_input_queries_keep_device_and_instance_bytes() {
+    assert_eq!(query_unaddressed(DeviceQuery::NumberOfInstances), 0xfdfe35);
+    assert_eq!(query_unaddressed(DeviceQuery::Status), 0xfdfe30);
+    assert_eq!(
+        query_unaddressed_instance(Instance::new(0).unwrap(), InstanceQuery::Type),
+        0xfd0080
+    );
+    assert_eq!(
+        query_unaddressed_instance(Instance::new(31).unwrap(), InstanceQuery::Type),
+        0xfd1f80
+    );
+    assert!(Instance::new(32).is_err());
+}
+
 fn event(raw: u32) -> Event {
     decode(raw)
         .expect("standard event frame rejected")

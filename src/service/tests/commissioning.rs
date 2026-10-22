@@ -6,9 +6,9 @@ use crate::{
 };
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-struct Peer {
-    path: PathBuf,
-    commands: Arc<std::sync::Mutex<Vec<Vec<u8>>>>,
+pub(super) struct Peer {
+    pub(super) path: PathBuf,
+    pub(super) commands: Arc<std::sync::Mutex<Vec<Vec<u8>>>>,
     held: Arc<tokio::sync::Notify>,
     release: Arc<tokio::sync::Notify>,
     task: tokio::task::JoinHandle<()>,
@@ -21,7 +21,7 @@ impl Drop for Peer {
 impl Peer {
     /// Independent literal addressing peer; RANDOMISE deliberately selects a
     /// forced boundary value, not the emulator/bridge search implementation.
-    fn start(
+    pub(super) fn start(
         random: u32,
         two: bool,
         fail_final_status: bool,

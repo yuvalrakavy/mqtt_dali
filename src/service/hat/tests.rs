@@ -361,6 +361,59 @@ async fn scene_settings_program_handoff_refuses_a_previously_observed_bus_cycle(
     hat.close(deadline()).await.unwrap();
 }
 
+#[tokio::test]
+async fn restoration_handoff_never_replaces_its_admission_stamp() {
+    use crate::service::{
+        discovery::Space,
+        restoration,
+        tests::{model, snapshot},
+    };
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    hat.settings.as_mut().unwrap().repeat = RepeatPolicy::OneTerminal;
+    let old = hat.reassignment_stamp(0, Space::Outputs).unwrap();
+    let action = restoration::Action::OnlyUnaddressed {
+        expected_revision: 1,
+    };
+    let target = "Bus1.Outputs.Light1";
+    let mut route = restoration::resolve(
+        &snapshot(model(), Phase::Ready),
+        target,
+        &action,
+        &context(1),
+    )
+    .unwrap();
+    route.original_stamp = Some(old);
+    hat.power_cycle_output_samples_for_test();
+    assert_ne!(hat.reassignment_stamp(0, Space::Outputs).unwrap(), old);
+    let permits = std::sync::Arc::new(tokio::sync::Semaphore::new(1));
+    let (reply, receive) = tokio::sync::oneshot::channel();
+    let report = restoration::report(&action, &route, 1);
+    let request = Box::new(restoration::Request {
+        target: target.into(),
+        action,
+        context: context(1),
+        deadline: deadline(),
+        completion: None,
+        route: Some(route.clone()),
+        report: Some(report),
+        committed: false,
+        reply,
+        _permit: permits.clone().try_acquire_owned().unwrap(),
+    });
+    hat.enqueue_restore(request, route);
+    assert!(
+        hat.physical.is_none(),
+        "restoration queued address writes with a replacement stamp"
+    );
+    assert_eq!(
+        receive.await.unwrap().unwrap().outcome,
+        restoration::ResultKind::Unconfirmed
+    );
+    assert_eq!(permits.available_permits(), 1);
+    hat.close(deadline()).await.unwrap();
+}
+
 fn queue_output(
     hat: &mut Hat,
     intent: Option<crate::dali::gear::Intent>,

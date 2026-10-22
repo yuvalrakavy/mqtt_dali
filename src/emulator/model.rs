@@ -210,7 +210,7 @@ impl Model {
         }
         if high != 0
             || address & 1 == 0
-            || (address > 0x7f && address != 0xff)
+            || (address > 0x7f && !matches!(address, 0xfd | 0xff))
             || (instance > 31 && instance != 0xfe)
         {
             self.unsupported += 1;
@@ -223,7 +223,11 @@ impl Model {
         let replies: Vec<_> = bus
             .inputs
             .iter_mut()
-            .filter(|i| address == 0xff || i.config.short_address == Some(address >> 1))
+            .filter(|i| {
+                address == 0xff
+                    || address == 0xfd && i.config.short_address.is_none()
+                    || i.config.short_address == Some(address >> 1)
+            })
             .filter_map(|i| i.query(instance, opcode))
             .collect();
         match replies.first() {

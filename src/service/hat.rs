@@ -776,6 +776,12 @@ impl Hat {
                     .into(),
             ));
         }
+        self.ready_physical_stamp(bus)
+    }
+    fn ready_physical_stamp(&self, bus: u8) -> Result<output::Stamp, ServiceError> {
+        if self.physical.is_some() || self.completed.is_some() {
+            return Err(ServiceError::Busy);
+        }
         let stamp = self
             .stamp(bus)
             .ok_or_else(|| ServiceError::Rejected("UART evidence unavailable".into()))?;
@@ -785,12 +791,37 @@ impl Hat {
         }
         Ok(stamp)
     }
+    pub(super) fn restoration_stamp(
+        &self,
+        bus: u8,
+        space: super::discovery::Space,
+        unique: bool,
+    ) -> Result<output::Stamp, ServiceError> {
+        if unique {
+            self.reassignment_stamp(bus, space)
+        } else {
+            self.ready_physical_stamp(bus)
+        }
+    }
     pub(super) fn enqueue_reassignment(
         &mut self,
         request: super::reassignment::Request,
         route: super::reassignment::Route,
     ) {
         self.enqueue_physical(physical::Work::Reassignment(request, route));
+    }
+    pub(super) fn enqueue_restore(
+        &mut self,
+        request: Box<super::restoration::Request>,
+        route: super::restoration::Route,
+    ) {
+        self.enqueue_physical(physical::Work::Restore(request, route));
+    }
+    pub(super) fn cut_restoration_inputs(&mut self, bus: u8, addresses: &[u8]) {
+        for address in addresses {
+            self.inputs.cut_for_restore(bus, *address);
+        }
+        self.next = Instant::now();
     }
     pub(super) fn enqueue_output(&mut self, request: output::Request, route: output::Route) {
         self.enqueue_physical(physical::Work::Output(request, route));

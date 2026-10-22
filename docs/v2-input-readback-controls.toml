@@ -39,8 +39,8 @@ expect_text = "latched query overwrote a newer native event"
 [[control]]
 name = "new_transport_keeps_old_native_sequence"
 file = "src/service/input.rs"
-anchor = "route.native_sequence = 0;"
-replacement = "let _ = &route.native_sequence;"
+anchor = "                    if route.floor.is_none_or(|(stamp, _)| stamp != cut.stamp) {\n                        route.native_sequence = 0;\n                    }"
+replacement = "                    if route.floor.is_none_or(|(stamp, _)| stamp != cut.stamp) {\n                        let _ = &route.native_sequence;\n                    }"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_native_sequence_restarts)"]
 expect_text = "new transport retained an old native sequence"

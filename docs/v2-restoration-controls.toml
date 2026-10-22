@@ -1,0 +1,116 @@
+[[control]]
+name = "restore_input_recreates_lifetimes"
+file = "src/inventory/edit.rs"
+anchor = "                origins.insert(new, origin);"
+replacement = "                let _=origin; fresh(origins,new,revision);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(input_readdress_preserves)", "--test-threads", "4"]
+expect_text = "input address change replaced a continuing lifetime"
+
+[[control]]
+name = "restore_skips_confirmed_save"
+file = "src/service/owner/restoration_changes.rs"
+anchor = "                let accepted =\n                    self.accept_save(service, outcome, q.completion.as_ref(), &q.context)?;"
+replacement = "                let _=outcome; let accepted=service.handle.snapshot().unwrap();"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(restoration_failed_or_uncertain)", "--test-threads", "4"]
+expect_text = "unconfirmed candidate retirement was accepted"
+
+[[control]]
+name = "restore_releases_permit_during_save"
+file = "src/service/owner/restoration_changes.rs"
+anchor = "                service.update_snapshot(self.model.clone(), Phase::Writing);"
+replacement = "                let fake=Arc::new(Semaphore::new(1)).try_acquire_owned().unwrap();\n                drop(std::mem::replace(&mut q._permit,fake));\n                service.update_snapshot(self.model.clone(), Phase::Writing);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(restoration_held_save)", "--test-threads", "4"]
+expect_text = "candidate retirement released the physical permit"
+
+[[control]]
+name = "restore_replaces_admission_stamp"
+file = "src/service/physical.rs"
+anchor = "Self::Restore(_, r) => r.original_stamp,"
+replacement = "Self::Restore(_, _) => None,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(restoration_handoff)", "--test-threads", "4"]
+expect_text = "restoration queued address writes with a replacement stamp"
+
+[[control]]
+name = "restore_ignores_final_probe_stamp"
+file = "src/service/owner/restoration_changes.rs"
+anchor = "            || !hat.evidence_current(route.bus, observed.stamp)"
+replacement = "            || false"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(restoration_final_evidence)", "--test-threads", "4"]
+expect_text = "stale final restoration evidence claimed success"
+
+[[control]]
+name = "restore_ignores_multiple_candidates"
+file = "src/service/commissioning.rs"
+anchor = "        if self.compare(false).await? {\n            return Ok(Selection::Multiple);"
+replacement = "        if false {\n            return Ok(Selection::Multiple);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(restoration_unique_refuses)", "--test-threads", "4"]
+expect_text = "ambiguous/incompatible restoration was accepted"
+
+[[control]]
+name = "restore_reauthorizes_old_notices"
+file = "src/service/input.rs"
+anchor = "        self.valid.load(Ordering::SeqCst)\n            && matches!"
+replacement = "        matches!"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(restoration_mqtt_helper)", "--test-threads", "4"]
+expect_text = "restoration replayed a pre-repair queued action after fresh activity"
+
+[[control]]
+name = "restore_ui_rebases_original_token"
+file = "web/src/restoration.ts"
+anchor = "ui.client.job(old.generation,old.item.target,command,"
+replacement = "ui.client.job(itemGeneration(scope.initial.inventory.inventory_epoch,this.revision),old.item.target,command,"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "unique restoration accepts unchanged revision", "web/src/restoration.test.ts"]
+expect_text = "Expected values to be strictly equal"
+
+[[control]]
+name = "restore_ui_resumes_retired_route"
+file = "web/src/restoration.ts"
+anchor = "if(this.cancelled||this.ui.cancelled||"
+replacement = "if(this.ui.cancelled||"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "route lifetime, reconnect", "web/src/restoration.test.ts"]
+expect_text = "Missing expected rejection"
+
+[[control]]
+name = "restore_ui_rebases_external_root"
+file = "web/src/restoration.ts"
+anchor = "!continuation(this.initial,snapshot,this.revision,this.original.bus.bus)||"
+replacement = "false||"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "frozen restoration review", "web/src/restoration.test.ts"]
+expect_text = "Missing expected rejection"
+
+[[control]]
+name = "restore_ui_accepts_unconfirmed_stop"
+file = "web/src/restoration.ts"
+anchor = "if(stopped.phase!=='restored')"
+replacement = "if(false)"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "unconfirmed stop and other blink", "web/src/restoration.test.ts"]
+expect_text = "Missing expected rejection"
+
+[[control]]
+name = "restore_ui_refreshes_previous_address"
+file = "web/src/restoration.ts"
+anchor = "await this.controller('discover_address',{space:this.space,address:this.address});"
+replacement = "await this.controller('discover_address',{space:this.space,address:this.original.item.short_address});"
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "identified restoration waits for confirmed stop", "web/src/restoration.test.ts"]
+expect_text = "refresh did not follow the adopted address"
+
+[[control]]
+name = "restore_ui_hides_already_scanned_candidates"
+file = "web/src/restoration.ts"
+anchor = "    for(const candidate of ui.currentRows)if(candidate.kind===row.kind&&candidate.bus.bus===row.bus.bus&&candidate.key!==row.key)this.candidates.add(candidate.key);"
+replacement = ""
+target = "command"
+argv = ["node", "--test", "--test-name-pattern", "recovery can select a fixture already assigned", "web/src/restoration.test.ts"]
+expect_text = "Identified candidate changed"

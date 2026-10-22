@@ -53,18 +53,18 @@
   },
   "exact_collision_is_treated_as_one_selected_fixture": {
    "last_real": {
-    "at": "2026-10-22T05:56:26Z",
+    "at": "2026-10-22T17:03:37Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:54a8886f443d78cd",
+     "guard": "item:fdf1cf59d391f5f3",
      "row": "db2f0898164b33b0",
      "test": null
     },
     "path": "command",
-    "secs": 11.0,
-    "sha": "e2ed360fea1d8e4b454b29c6211f8d62a683afeb",
+    "secs": 16.9,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
     "verdict": "RED"
    }
   },
@@ -104,18 +104,18 @@
   },
   "search_programs_before_durable_reservation": {
    "last_real": {
-    "at": "2026-10-22T07:34:05Z",
+    "at": "2026-10-22T17:03:21Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:ae5ead82498ac0dc",
-     "row": "bdb7e3aa206cf39c",
+     "guard": "item:234acf1c3003edc8",
+     "row": "75b9595a7db0b58a",
      "test": null
     },
     "path": "command",
-    "secs": 11.1,
-    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "secs": 17.7,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
     "verdict": "RED"
    }
   },

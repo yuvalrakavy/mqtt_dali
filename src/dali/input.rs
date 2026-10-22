@@ -42,6 +42,14 @@ impl Address {
         u32::from_be_bytes([0, (self.0 << 1) | 1, instance, opcode])
     }
 }
+/// Query all unaddressed devices. The caller must establish a unique candidate
+/// before interpreting its backward reply as one device's topology.
+pub fn query_unaddressed(query: DeviceQuery) -> u32 {
+    0xfdfe00 | u32::from(query.opcode())
+}
+pub fn query_unaddressed_instance(instance: Instance, query: InstanceQuery) -> u32 {
+    0xfd0000 | (u32::from(instance.raw()) << 8) | u32::from(query.opcode())
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Instance(u8);
 impl Instance {

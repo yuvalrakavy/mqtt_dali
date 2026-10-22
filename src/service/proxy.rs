@@ -30,6 +30,8 @@ impl DeviceDriver for DaliProxy {
                 "assign_group",
                 "adopt_groups",
                 "repair_groups",
+                "restore_unaddressed_address",
+                "restore_identified_address",
                 "reset_address_space",
                 "assign_next_output",
                 "assign_next_input",
@@ -339,6 +341,24 @@ impl DeviceDriver for DaliProxy {
                         target.ok_or_else(|| OpError::Rejected("output target required".into()))?,
                         action,
                         expected,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(18),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+            Operation::Restore(action) => {
+                let result = self
+                    .handle
+                    .restore(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("saved fixture target required".into())
+                        })?,
+                        action,
                         context.clone(),
                         Instant::now() + Duration::from_secs(18),
                         Some(completion),
@@ -700,6 +720,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    Restore(restoration::Action),
     Reassignment(Assignment, discovery::Space),
     SavedScene,
     SceneSettings(scene_settings::Action),
@@ -756,6 +777,15 @@ impl Operation {
                 context,
             )
             .map(|_| ()),
+            Self::Restore(action) => restoration::resolve(
+                snapshot,
+                target.ok_or_else(|| {
+                    ServiceError::Rejected("saved fixture target required".into())
+                })?,
+                action,
+                context,
+            )
+            .map(|_| ()),
             Self::Reassignment(p, space) => {
                 commissioning::resolve_space(snapshot, p.bus, *space, p.expected_revision, context)
                     .map(|_| ())
@@ -804,7 +834,10 @@ impl Operation {
             Self::Identify(_) => 4,
             Self::SavedScene | Self::Metadata(_) | Self::Groups(groups::Action::Read, _) => 2,
             Self::Discovery(_) => 10,
-            Self::Reassignment(_, _) | Self::Groups(_, _) | Self::Assignment(_, _) => 18,
+            Self::Restore(_)
+            | Self::Reassignment(_, _)
+            | Self::Groups(_, _)
+            | Self::Assignment(_, _) => 18,
         })
     }
 }
@@ -1025,6 +1058,19 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::Restore(action) => value(
+                handle
+                    .restore(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("saved fixture target required".into())
+                        })?,
+                        action,
+                        context,
+                        deadline,
+                        None,
+                    )
+                    .await?,
+            ),
             Operation::Reassignment(p, space) => value(
                 handle
                     .reset_space(p.bus, space, p.expected_revision, context, deadline, None)
@@ -1236,6 +1282,40 @@ fn parse(
             }
         };
         return Ok(Operation::SceneSettings(action));
+    }
+    if matches!(
+        call.command.as_str(),
+        "restore_unaddressed_address" | "restore_identified_address"
+    ) {
+        if target.is_none() {
+            return Err(OpError::Rejected("saved fixture target required".into()));
+        }
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Unique {
+            expected_revision: u64,
+        }
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Identified {
+            expected_revision: u64,
+            candidate: String,
+            candidate_generation: String,
+        }
+        let action = if call.command == "restore_unaddressed_address" {
+            let p: Unique = decode(call)?;
+            restoration::Action::OnlyUnaddressed {
+                expected_revision: p.expected_revision,
+            }
+        } else {
+            let p: Identified = decode(call)?;
+            restoration::Action::Identified {
+                candidate: p.candidate,
+                candidate_generation: p.candidate_generation,
+                expected_revision: p.expected_revision,
+            }
+        };
+        return Ok(Operation::Restore(action));
     }
     if call.command == "reset_address_space" {
         if target.is_some() {

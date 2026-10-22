@@ -6,6 +6,7 @@ use tracing::Instrument;
 
 mod group_changes;
 mod reassignment_changes;
+mod restoration_changes;
 mod scene_changes;
 
 struct Owner {
@@ -544,6 +545,16 @@ impl ProcessService for DaliService {
                     snapshot.hardware=hat.hardware();
                     snapshot.input_listeners=hat.input_listeners();
                     let mut completion=hat.take_completed_physical();
+                    if matches!(completion,Some(physical::Completion::Restore(_))) {
+                        let Some(physical::Completion::Restore(mut completed))=completion.take() else {unreachable!()};
+                        #[cfg(test)]
+                        if let Some(hook)=&self.output_acceptance_hook { hook(&mut hat); }
+                        match owner.restore(&self,&mut completed,&mut context,&mut hat).await {
+                            Ok(restoration::Advance::Done(report))=>restoration::finish(completed.request,Ok(report)),
+                            Err(error)=>restoration::finish(completed.request,Err(error)),
+                        }
+                        snapshot=self.handle.snapshot().expect("service started");hat.sync_model(&owner.model);
+                    }
                     if matches!(completion,Some(physical::Completion::Reassignment(_))) {
                         let Some(physical::Completion::Reassignment(mut completed))=completion.take() else {unreachable!()};
                         #[cfg(test)]
@@ -645,6 +656,7 @@ impl ProcessService for DaliService {
                     if let Some(completion)=completion { match completion {
                       physical::Completion::Scenes(completion)=>scenes::finish(completion.request,scene_result.expect("scene accepted before publication")),
                       physical::Completion::Groups(_)=>unreachable!("groups accepted before cache publication"),
+                      physical::Completion::Restore(_)=>unreachable!("restoration accepted before cache publication"),
                       physical::Completion::Reassignment(_)=>unreachable!("reassignment accepted before cache publication"),
                       physical::Completion::SceneSettings(_)=>unreachable!("scene settings accepted before cache publication"),
                       physical::Completion::Commission(_)=>unreachable!("commissioning advanced before cache publication"),
@@ -677,6 +689,43 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::Restore(mut request) => {
+                    let result = (|| {
+                        if request.reply.is_closed() || Instant::now() >= request.deadline {
+                            return Err(ServiceError::Expired);
+                        }
+                        let mut route = restoration::resolve(
+                            &self.handle.snapshot().expect("service started"),
+                            &request.target,
+                            &request.action,
+                            &request.context,
+                        )?;
+                        if identification::blocks_bus(&self.handle, route.bus) {
+                            return Err(ServiceError::Rejected(
+                                "stop identification before address restoration".into(),
+                            ));
+                        }
+                        route.original_stamp = Some(hat.restoration_stamp(
+                            route.bus,
+                            route.space,
+                            matches!(route.plan, restoration::Plan::Unique),
+                        )?);
+                        Ok(route)
+                    })();
+                    match result {
+                        Ok(route) => {
+                            request.report = Some(restoration::report(
+                                &request.action,
+                                &route,
+                                request.action.expected(),
+                            ));
+                            request.route = Some(route.clone());
+                            restoration_changes::cut(&self, &mut hat, &route);
+                            hat.enqueue_restore(request, route);
+                        }
+                        Err(error) => restoration::finish(request, Err(error)),
+                    }
+                }
                 Message::Reassignment(mut request) => {
                     let span = request
                         .context
@@ -884,6 +933,9 @@ impl ProcessService for DaliService {
         self.update_snapshot(owner.model.clone(), Phase::Stopping);
         while let Ok(message) = self.receive.try_recv() {
             match message {
+                Message::Restore(request) => {
+                    restoration::finish(request, Err(ServiceError::Closed))
+                }
                 Message::Reassignment(request) => {
                     reassignment::finish(request, Err(ServiceError::Closed))
                 }

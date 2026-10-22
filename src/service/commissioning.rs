@@ -172,7 +172,7 @@ pub(super) fn finish(request: Request, result: Result<Report, ServiceError>) {
 }
 
 #[derive(Debug)]
-enum Error {
+pub(super) enum Error {
     Transaction(TransactionError),
     Evidence(&'static str),
 }
@@ -181,20 +181,27 @@ impl From<TransactionError> for Error {
         Self::Transaction(value)
     }
 }
-struct Bus<'a> {
-    link: &'a Transactions<Serial>,
-    route: &'a Route,
-    stamp: output::Stamp,
-    deadline: Instant,
+pub(super) struct Bus<'a> {
+    pub link: &'a Transactions<Serial>,
+    pub bus: u8,
+    pub space: Space,
+    pub stamp: output::Stamp,
+    pub deadline: Instant,
 }
+pub(super) enum Selection {
+    None,
+    Multiple,
+    Found(frames::SearchAddress),
+}
+
 impl Bus<'_> {
-    fn frame(&self, gear: u16, input: u32) -> DaliFrame {
-        match self.route.space {
+    pub(super) fn frame(&self, gear: u16, input: u32) -> DaliFrame {
+        match self.space {
             Space::Outputs => DaliFrame::Bits16(gear),
             Space::Inputs => DaliFrame::Bits24(input),
         }
     }
-    fn status(&self, address: u8) -> DaliFrame {
+    pub(super) fn status(&self, address: u8) -> DaliFrame {
         self.frame(
             gear::ShortAddress::new(address)
                 .unwrap()
@@ -214,7 +221,7 @@ impl Bus<'_> {
             .link
             .execute_until(
                 Command::Send {
-                    bus: self.route.bus,
+                    bus: self.bus,
                     frame,
                     repeat,
                 },
@@ -227,14 +234,14 @@ impl Bus<'_> {
             _ => Err(TransactionError::StreamLoss.into()),
         }
     }
-    async fn query(&self, frame: DaliFrame) -> Result<BusReply, Error> {
+    pub(super) async fn query(&self, frame: DaliFrame) -> Result<BusReply, Error> {
         let mut replies = self.exchange(frame, false, self.deadline).await?;
         if replies.len() != 1 {
             return Err(TransactionError::StreamLoss.into());
         }
         Ok(replies.remove(0))
     }
-    async fn command(&self, frame: DaliFrame, repeat: bool) -> Result<(), Error> {
+    pub(super) async fn command(&self, frame: DaliFrame, repeat: bool) -> Result<(), Error> {
         let input_pair = repeat && matches!(frame, DaliFrame::Bits24(_));
         let deadline = if input_pair {
             self.deadline
@@ -254,8 +261,8 @@ impl Bus<'_> {
         }
         Ok(())
     }
-    async fn select(&self, address: frames::SearchAddress) -> Result<(), Error> {
-        let frames: Vec<_> = match self.route.space {
+    pub(super) async fn select(&self, address: frames::SearchAddress) -> Result<(), Error> {
+        let frames: Vec<_> = match self.space {
             Space::Outputs => address
                 .frames()
                 .into_iter()
@@ -271,7 +278,7 @@ impl Bus<'_> {
         }
         Ok(())
     }
-    async fn compare(&self, exact: bool) -> Result<bool, Error> {
+    pub(super) async fn compare(&self, exact: bool) -> Result<bool, Error> {
         match self
             .query(self.frame(frames::COMPARE, device::COMPARE))
             .await?
@@ -302,6 +309,17 @@ impl Bus<'_> {
         let Some(address) = destination else {
             return Ok(Step::NoCapacity);
         };
+        self.initialize_unaddressed(entered, true).await?;
+        Ok(match self.find_random().await? {
+            Some(random) => Step::Found { address, random },
+            None => Step::NoCandidate,
+        })
+    }
+    pub(super) async fn initialize_unaddressed(
+        &self,
+        entered: &mut bool,
+        randomize: bool,
+    ) -> Result<(), Error> {
         self.command(self.frame(frames::TERMINATE, device::TERMINATE), false)
             .await?;
         *entered = true;
@@ -313,26 +331,30 @@ impl Bus<'_> {
             true,
         )
         .await?;
+        if !randomize {
+            return Ok(());
+        }
         self.command(self.frame(frames::RANDOMISE, device::RANDOMISE), true)
             .await?;
         // WAIT: v2-commissioning-randomise
         timeout_at(
             self.deadline,
-            tokio::time::sleep(Duration::from_millis(
-                if self.route.space == Space::Inputs {
-                    200
-                } else {
-                    100
-                },
-            )),
+            tokio::time::sleep(Duration::from_millis(if self.space == Space::Inputs {
+                200
+            } else {
+                100
+            })),
         )
         .await
         .map_err(|_| TransactionError::Deadline)?;
+        Ok(())
+    }
+    pub(super) async fn find_random(&self) -> Result<Option<frames::SearchAddress>, Error> {
         let (mut low, mut high) = (0u32, 0xffffffu32);
         self.select(frames::SearchAddress::new(high).unwrap())
             .await?;
         if !self.compare(false).await? {
-            return Ok(Step::NoCandidate);
+            return Ok(None);
         }
         while low < high {
             let middle = low + (high - low) / 2;
@@ -356,9 +378,39 @@ impl Bus<'_> {
                 "selected candidate is no longer uniquely unaddressed",
             ));
         }
-        Ok(Step::Found { address, random })
+        Ok(Some(random))
     }
-    async fn program(&self, candidate: &Candidate, entered: &mut bool) -> Result<Step, Error> {
+    /// Prove the selected unaddressed cohort has only one participating member.
+    /// Reinitialize without Randomise so programming can select that same one.
+    pub(super) async fn only_unaddressed(&self, entered: &mut bool) -> Result<Selection, Error> {
+        self.initialize_unaddressed(entered, true).await?;
+        let Some(random) = self.find_random().await? else {
+            return Ok(Selection::None);
+        };
+        self.command(self.frame(frames::WITHDRAW, device::WITHDRAW), false)
+            .await?;
+        self.select(frames::SearchAddress::new(0xffffff).unwrap())
+            .await?;
+        if self.compare(false).await? {
+            return Ok(Selection::Multiple);
+        }
+        self.initialize_unaddressed(entered, false).await?;
+        self.select(random).await?;
+        if !self.compare(true).await?
+            || self
+                .query(self.frame(frames::QUERY_SHORT_ADDRESS, device::QUERY_SHORT_ADDRESS))
+                .await?
+                != BusReply::Value(255)
+        {
+            return Err(Error::Evidence("reviewed unaddressed candidate changed"));
+        }
+        Ok(Selection::Found(random))
+    }
+    pub(super) async fn program(
+        &self,
+        candidate: &Candidate,
+        entered: &mut bool,
+    ) -> Result<Step, Error> {
         *entered = true;
         let address = gear::ShortAddress::new(candidate.address).unwrap();
         if self.query(self.status(candidate.address)).await? != BusReply::NoResponse {
@@ -393,7 +445,7 @@ impl Bus<'_> {
             || self
                 .query(self.frame(frames::QUERY_SHORT_ADDRESS, device::QUERY_SHORT_ADDRESS))
                 .await?
-                != BusReply::Value(match self.route.space {
+                != BusReply::Value(match self.space {
                     Space::Outputs => (candidate.address << 1) | 1,
                     Space::Inputs => candidate.address,
                 })
@@ -424,7 +476,8 @@ pub(super) async fn execute(
 ) -> Outcome {
     let bus = Bus {
         link: &link,
-        route: &route,
+        bus: route.bus,
+        space: route.space,
         stamp,
         deadline,
     };

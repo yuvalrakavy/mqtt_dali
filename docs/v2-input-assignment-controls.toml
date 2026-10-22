@@ -19,10 +19,8 @@ expect_text = "input inclusive search or raw address verification failed"
 [[control]]
 name = "input_randomisation_uses_output_wait"
 file = "src/service/commissioning.rs"
-anchor = '''if self.route.space == Space::Inputs {
-                    200'''
-replacement = '''if self.route.space == Space::Inputs {
-                    100'''
+anchor = "if self.space == Space::Inputs {\n                200"
+replacement = "if self.space == Space::Inputs {\n                100"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_assignment_literal_boundaries)"]
 expect_text = "input inclusive search or raw address verification failed"

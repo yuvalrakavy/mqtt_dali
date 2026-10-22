@@ -70,18 +70,18 @@
   },
   "input_pair_renews_its_deadline": {
    "last_real": {
-    "at": "2026-10-22T07:31:59Z",
+    "at": "2026-10-22T17:03:55Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:ff8d03401c4d2a60",
+     "guard": "item:d7af47ec294d374a",
      "row": "10fc77943b485ae7",
      "test": null
     },
     "path": "command",
-    "secs": 10.0,
-    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "secs": 17.3,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
     "verdict": "RED"
    }
   },
@@ -104,18 +104,18 @@
   },
   "input_randomisation_uses_output_wait": {
    "last_real": {
-    "at": "2026-10-22T07:32:22Z",
+    "at": "2026-10-22T17:04:10Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:ae5ead82498ac0dc",
-     "row": "67e3396d99918ac5",
+     "guard": "item:9f839b7406b39e00",
+     "row": "3c209da2ba0e8f65",
      "test": null
     },
     "path": "command",
-    "secs": 11.5,
-    "sha": "29ccd37f11be0aa2f384fa84ec48d026a309b4e6",
+    "secs": 14.5,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
     "verdict": "RED"
    }
   },

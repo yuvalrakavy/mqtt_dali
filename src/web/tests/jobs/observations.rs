@@ -849,6 +849,105 @@ fn web_observed_dense_valid_inventory_fits_the_measured_snapshot_budget() {
 }
 
 #[tokio::test]
+async fn web_restoration_pending_press_stays_revoked_after_fresh_query_and_event() {
+    let (fixture, emulator, button) = inputs().await;
+    let (cookie, csrf) = fixture.login().await;
+    let original = fixture.handle.snapshot().unwrap().model;
+    let module = original
+        .projections()
+        .into_iter()
+        .find(|p| {
+            matches!(
+                p.location,
+                crate::inventory::Location::Input {
+                    bus: 0,
+                    short_address: 0
+                }
+            )
+        })
+        .unwrap()
+        .target;
+    let mut stream = pull_stream(&fixture, &cookie);
+    assert!(pull(&mut stream).await.contains("event: snapshot\n"));
+    let mut notices = fixture.handle.subscribe_inputs();
+    observe_native(&emulator.emulator, &mut notices, 0x008001).await;
+    // Prefetch holds the old press while the rotation emits its initial jobs row.
+    assert!(pull(&mut stream).await.contains("event: jobs\n"));
+    control(
+        &emulator.emulator,
+        Control::SetAddress {
+            id: "panel".into(),
+            short_address: None,
+        },
+    )
+    .await;
+    let result = run(
+        &fixture,
+        &cookie,
+        &csrf,
+        command(
+            2,
+            Some(&module),
+            "restore_unaddressed_address",
+            json!({"expected_revision":2}),
+        ),
+    )
+    .await;
+    assert_eq!(
+        result["outcome"], "restored",
+        "HTTP restoration did not complete: {result}"
+    );
+    assert_eq!(
+        result["revision"], 2,
+        "unique restoration changed saved identity metadata"
+    );
+    fixture
+        .handle
+        .read_input(
+            &button,
+            mqtt_bridge_kit::RequestContext::new(format!("{EPOCH}.2")).unwrap(),
+            tokio::time::Instant::now() + Duration::from_secs(2),
+        )
+        .await
+        .unwrap();
+    observe_native(&emulator.emulator, &mut notices, 0x008000).await;
+    let event = timeout(Duration::from_secs(2), async {
+        loop {
+            let data = pull(&mut stream).await;
+            if data.contains("event: input\n") {
+                break data;
+            }
+        }
+    })
+    .await
+    .unwrap();
+    let value: Value = serde_json::from_str(
+        event
+            .lines()
+            .find_map(|line| line.strip_prefix("data: "))
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        value["action"], "released",
+        "SSE replayed a pre-repair queued press after fresh activity"
+    );
+    assert_eq!(
+        original.state_bytes().unwrap(),
+        fixture
+            .handle
+            .snapshot()
+            .unwrap()
+            .model
+            .state_bytes()
+            .unwrap()
+    );
+    drop(stream);
+    fixture.close().await;
+    emulator.emulator.close().await.unwrap();
+}
+
+#[tokio::test]
 async fn web_observed_job_notifications_include_running_then_completed_results() {
     let hold = SaveHold::new();
     let fixture = Fixture::configured(|s| s.with_config_test_hooks(hold.hooks.clone())).await;

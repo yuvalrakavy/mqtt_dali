@@ -1,6 +1,8 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { busReady, glob, inputType, inputDisplay, values, type Bus, type PhysicalRow as Row } from './model.ts';
 import { Modal, NameField, Progress, useUi } from './ui.tsx';
+import { Restoration, type RestorationReview } from './restoration.ts';
+import { Recovery } from './restoration-ui.tsx';
 
 function Colour({row,close}:{row:Row;close:()=>void}){
   const ui=useUi(),current=ui.physical(row.key),state=values(ui.snapshot,current);
@@ -23,7 +25,7 @@ function FixtureGroups({row,close}:{row:Row;close:()=>void}){
   const ui=useUi(),current=ui.physical(row.key);
   return <Modal title={`Groups · ${current.item.name}`} close={close}><p class="hint">Saved membership. Verify groups to compare with hardware.</p><div class="checklist">{(current.bus.groups??[]).map(group=><label key={group.group_address}><input type="checkbox" checked={group.members?.includes(current.item.short_address)??false} disabled={!!ui.busy} onChange={e=>{const checked=e.currentTarget.checked;void ui.run(()=>ui.group(current,group.group_address!,checked));}}/>{group.name} <span class="hint">{group.group_address}</span></label>)}{!current.bus.groups?.length&&<p>No groups are saved. Open the Groups tab to create one.</p>}</div></Modal>;
 }
-function DeviceRow({row}:{row:Row}){
+function DeviceRow({row,recover,select}:{row:Row;recover:(row:Row)=>void;select?:()=>void}){
   const ui=useUi(),snapshot=ui.snapshot,state=values(snapshot,row);
   const [menu,setMenu]=useState(false),[colour,setColour]=useState(false),[groups,setGroups]=useState(false),[remove,setRemove]=useState(false),[level,setLevel]=useState<string|null>(null);
   const ready=busReady(snapshot,row.bus)&&ui.client.views.ready;
@@ -40,7 +42,8 @@ function DeviceRow({row}:{row:Row}){
       <button class="colour-button" aria-label={`Colour ${row.item.name}`} disabled={!ready||!!ui.busy||blinking} onClick={()=>setColour(true)}>{row.item.color_representation==='temperature'&&typeof state.ColorTemperature==='number'?`${Math.round(state.ColorTemperature)} K`:row.item.color_representation==='xy'?'xy controls':row.item.color_representation==='rgbwaf'?'RGB controls':'Colour'}</button>
       <button class={blinking?'primary blink':'blink'} aria-label={`${blinking?'Stop blink':'Blink'} ${row.item.name}`} disabled={!ready||!!ui.busy||identified?.phase==='restoring'} onClick={()=>void ui.run(()=>ui.blink(row))}>{identified?.phase==='restoring'?'Restoring…':blinking?'Stop blink':'Blink'}</button></>:<><span class={`input-state ${state.Available===true?'':'muted'}`}>{row.kind==='input'?`${row.item.instances?.length??0} instances`:inputState}</span><span class="activity">{activity?.action??'No recent action'}</span></>}
     <button class="menu-button" aria-label={`Actions ${row.item.name}`} onClick={()=>setMenu(true)}>⋮</button>
-    {menu&&<Modal title={row.item.name} close={()=>setMenu(false)}><div class="menu-actions">{row.kind!=='input'&&<button disabled={!ready||!!ui.busy} onClick={()=>{setMenu(false);void ui.run(()=>ui.read(row));}}>Read current values</button>}{row.kind==='output'&&<button onClick={()=>{setMenu(false);setGroups(true);}}>Group membership</button>}{row.kind==='output'&&<button onClick={()=>{setMenu(false);setColour(true);}}>Colour representation and values</button>}{row.kind!=='instance'&&<button class="danger" onClick={()=>{setMenu(false);setRemove(true);}}>Remove from list</button>}</div></Modal>}
+    {menu&&<Modal title={row.item.name} close={()=>setMenu(false)}><div class="menu-actions">{row.kind!=='input'&&<button disabled={!ready||!!ui.busy} onClick={()=>{setMenu(false);void ui.run(()=>ui.read(row));}}>Read current values</button>}{row.kind==='output'&&<button onClick={()=>{setMenu(false);setGroups(true);}}>Group membership</button>}{row.kind==='output'&&<button onClick={()=>{setMenu(false);setColour(true);}}>Colour representation and values</button>}{row.kind!=='instance'&&<button disabled={!ready||!!ui.busy} onClick={()=>{setMenu(false);recover(row);}}>Restore lost address</button>}{row.kind!=='instance'&&<button class="danger" onClick={()=>{setMenu(false);setRemove(true);}}>Remove from list</button>}</div></Modal>}
+    {select&&<div class="row-error"><button disabled={!ready||!!ui.busy} onClick={select}>Use this fixture</button></div>}
     {colour&&<Colour row={row} close={()=>setColour(false)}/>}{groups&&<FixtureGroups row={row} close={()=>setGroups(false)}/>}
     {remove&&<Modal title={`Remove ${row.item.name}?`} close={()=>setRemove(false)}><p>Remove this {row.kind==='input'?'module and all its instances':'fixture'} from the saved list. Its hardware address stays unchanged and discovery can find it again.</p><div class="dialog-actions"><button onClick={()=>setRemove(false)}>Cancel</button><button class="danger" disabled={!!ui.busy} onClick={()=>void ui.run(async()=>{await ui.remove(row);setRemove(false);})}>Remove from list</button></div></Modal>}
     {identified?.phase==='interrupted'&&<p class="hint row-error">Identification interrupted. Restoration was not confirmed.</p>}
@@ -48,6 +51,10 @@ function DeviceRow({row}:{row:Row}){
 }
 export function Devices({bus}:{bus:Bus}){
   const ui=useUi(),[filter,setFilter]=useState('');
+  const [recovery,setRecovery]=useState<Restoration|null>(null),[review,setReview]=useState<RestorationReview|null>(null);
+  useEffect(()=>()=>{if(recovery)recovery.cancelled=true;},[recovery]);
+  const recover=(row:Row)=>{ui.cancelled=false;setReview(null);setFilter('');setRecovery(new Restoration(ui,row));};
+  const select=(row:Row)=>recovery?.candidates.has(row.key)?()=>{try{setReview(recovery.review(row));}catch(error){ui.error=(error as Error).message;ui.touch();}}:undefined;
   const all=ui.currentRows.filter((r):r is Row=>r.kind!=='scene'&&r.bus.bus===bus.bus);
   const visible=(row:Row)=>glob(filter,row.item.name)||!!ui.drafts.get(row.key)?.dirty||!!ui.drafts.get(row.key)?.error;
   const outputs=all.filter(r=>r.kind==='output'&&visible(r)),inputs=all.filter(r=>(r.kind==='input'||r.kind==='instance')&&visible(r));
@@ -55,9 +62,10 @@ export function Devices({bus}:{bus:Bus}){
   const retired=[...ui.drafts].filter(([key,d])=>d.dirty&&!ui.currentRows.some(r=>r.key===key));
   return <><div class="toolbar discovery"><button class="primary" disabled={!ready||!!ui.busy} onClick={()=>void ui.run(()=>ui.scan(bus,true))}>Add unaddressed</button><button disabled={!ready||!!ui.busy} onClick={()=>void ui.run(()=>ui.scan(bus,false))}>Refresh addressed</button><span class="hint">Existing names and addresses are preserved.</span></div>
     <Progress/>
+    {recovery&&<Recovery scope={recovery} review={review} choose={setReview} close={()=>{setReview(null);setRecovery(null);}}/>}
     <div class="toolbar filter"><input type="search" value={filter} placeholder="Filter names · e.g. Light*" aria-label="Filter device names" onInput={e=>setFilter(e.currentTarget.value)}/>{['','Light*','Input*'].map(value=><button class={filter===value?'soft':''} onClick={()=>setFilter(value)}>{value||'All'}</button>)}<span class="spacer"/><span class="hint">{all.filter(r=>r.kind==='output').length} outputs · {all.filter(r=>r.kind==='input').length} input modules</span></div>
-    <div class="section-heading"><h2>Outputs</h2><span class="hint">✓, Enter or leave the field to save</span></div><div class="device-table"><div class="table-heading output-grid"><span>Address</span><span>Name</span><span>Type</span><span>Power</span><span>Brightness</span><span>Colour</span><span>Identify</span><span/></div>{outputs.map(row=><DeviceRow key={row.key} row={row}/>)}{!outputs.length&&<p class="empty">{filter?'No matching outputs.':'No outputs are saved. Start discovery to find the fixtures on this bus.'}</p>}</div>
-    <div class="section-heading"><h2>Inputs</h2><span class="hint">Operate a switch to see its current state and action.</span></div><div class="device-table"><div class="table-heading input-grid"><span>Addr / instance</span><span>Name</span><span>Type</span><span>Current state</span><span>Last action</span><span/></div>{inputs.map(row=><DeviceRow key={row.key} row={row}/>)}{!inputs.length&&<p class="empty">{filter?'No matching inputs.':'No input modules are saved.'}</p>}</div>
+    <div class="section-heading"><h2>Outputs</h2><span class="hint">✓, Enter or leave the field to save</span></div><div class="device-table"><div class="table-heading output-grid"><span>Address</span><span>Name</span><span>Type</span><span>Power</span><span>Brightness</span><span>Colour</span><span>Identify</span><span/></div>{outputs.map(row=><DeviceRow key={row.key} row={row} recover={recover} select={select(row)}/>)}{!outputs.length&&<p class="empty">{filter?'No matching outputs.':'No outputs are saved. Start discovery to find the fixtures on this bus.'}</p>}</div>
+    <div class="section-heading"><h2>Inputs</h2><span class="hint">Operate a switch to see its current state and action.</span></div><div class="device-table"><div class="table-heading input-grid"><span>Addr / instance</span><span>Name</span><span>Type</span><span>Current state</span><span>Last action</span><span/></div>{inputs.map(row=><DeviceRow key={row.key} row={row} recover={recover} select={select(row)}/>)}{!inputs.length&&<p class="empty">{filter?'No matching inputs.':'No input modules are saved.'}</p>}</div>
     {retired.map(([key,draft])=><div class="card retired" key={key}><p>Removed or replaced fixture · unsaved name: <strong>{draft.text}</strong></p><p class="error">This draft cannot be applied to a replacement.</p><button onClick={()=>{ui.drafts.delete(key);ui.touch();}}>Discard retired draft</button></div>)}
     {!ready&&<p class="hint">{!bus.enabled?'Enable this bus to use hardware controls.':'Hardware controls are unavailable until the bus is ready.'}</p>}
   </>;

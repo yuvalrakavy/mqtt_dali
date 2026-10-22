@@ -132,6 +132,11 @@ pub enum Edit {
         bus: u8,
         addresses: Vec<(u8, u8)>,
     },
+    ReaddressInput {
+        bus: u8,
+        from: u8,
+        to: u8,
+    },
     AddOutput {
         bus: u8,
         output: crate::config::Output,

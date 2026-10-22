@@ -1,8 +1,8 @@
 [[control]]
 name = "bus_setup_drops_valid_action_during_unrelated_save"
 file = "src/service/input.rs"
-anchor = "        matches!(snapshot.phase, Phase::Ready | Phase::Writing)"
-replacement = "        snapshot.phase == Phase::Ready"
+anchor = "            && matches!(snapshot.phase, Phase::Ready | Phase::Writing)"
+replacement = "            && snapshot.phase == Phase::Ready"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(bus_setup_queued_action_remains)"]
 expect_text = "unrelated metadata save dropped a valid queued button action"

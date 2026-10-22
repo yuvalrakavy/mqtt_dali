@@ -451,6 +451,61 @@ fn apply(
                 .ok_or("unknown group")?
                 .members = members.clone();
         }
+        Edit::ReaddressInput {
+            bus: index,
+            from,
+            to,
+        } => {
+            let bus = bus(inventory, *index)?;
+            let module = bus
+                .inputs
+                .iter_mut()
+                .find(|i| i.short_address == *from)
+                .ok_or("unknown input module")?;
+            let instances: Vec<_> = module.instances.iter().map(|i| i.number).collect();
+            if *to >= 64 {
+                return Err("input destination exceeds short-address range".into());
+            }
+            if from == to {
+                return Ok(());
+            }
+            if bus.inputs.iter().any(|i| i.short_address == *to) {
+                return Err("input destination is reserved".into());
+            }
+            let mut locations = vec![(
+                Location::Input {
+                    bus: *index,
+                    short_address: *from,
+                },
+                Location::Input {
+                    bus: *index,
+                    short_address: *to,
+                },
+            )];
+            locations.extend(instances.into_iter().map(|instance| {
+                (
+                    Location::InputInstance {
+                        bus: *index,
+                        short_address: *from,
+                        instance,
+                    },
+                    Location::InputInstance {
+                        bus: *index,
+                        short_address: *to,
+                        instance,
+                    },
+                )
+            }));
+            for (old, new) in locations {
+                let origin = origins.remove(&old).ok_or("input lifetime is missing")?;
+                origins.insert(new, origin);
+            }
+            bus.inputs
+                .iter_mut()
+                .find(|i| i.short_address == *from)
+                .unwrap()
+                .short_address = *to;
+        }
         Edit::ReaddressOutputs {
             bus: index,
             addresses,

@@ -13,6 +13,33 @@ fn physical() -> Model {
 }
 
 #[test]
+fn input_unaddressed_broadcast_queries_exclude_addressed_gear_and_keep_instance_types() {
+    let mut m = physical();
+    assert_eq!(
+        m.transmit_input(0, 0xfdfe35, 0),
+        Reply::Value(1),
+        "unaddressed input broadcast count was not answered"
+    );
+    assert_eq!(
+        m.transmit_input(0, 0xfd0080, 0),
+        Reply::Value(1),
+        "unaddressed input broadcast included an addressed module"
+    );
+    assert_eq!(
+        m.transmit_input(0, 0xfd008c, 0),
+        Reply::None,
+        "unaddressed input query used another module's value"
+    );
+    m.set_address("new", Some(3)).unwrap();
+    assert_eq!(
+        m.transmit_input(0, 0xfdfe35, 0),
+        Reply::None,
+        "addressed module kept answering broadcast-unaddressed"
+    );
+    assert_eq!(m.transmit_input(0, 0x07fe35, 0), Reply::Value(1));
+}
+
+#[test]
 fn input_address_write_requires_repeat_raw_address_and_preserves_values_latches() {
     let mut m = physical();
     let before = m.snapshot();

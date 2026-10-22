@@ -1,12 +1,13 @@
 //! One concrete owner for input reads, output operations and commissioning on the HAT.
 use super::{
-    commissioning, discovery, groups, input::readback, output, reassignment, scene_settings,
-    scenes, ServiceError,
+    commissioning, discovery, groups, input::readback, output, reassignment, restoration,
+    scene_settings, scenes, ServiceError,
 };
 use crate::atx::{serial::Serial, transactions::Transactions};
 use tokio::time::Instant;
 
 pub(super) enum Work {
+    Restore(Box<restoration::Request>, restoration::Route),
     Reassignment(reassignment::Request, reassignment::Route),
     SceneSettings(Box<scene_settings::Request>, scene_settings::Route),
     Scenes(scenes::Request, scenes::Route),
@@ -19,6 +20,7 @@ pub(super) enum Work {
 impl Work {
     pub fn bus(&self) -> u8 {
         match self {
+            Self::Restore(_, r) => r.bus,
             Self::Reassignment(_, r) => r.bus,
             Self::SceneSettings(_, r) => r.bus,
             Self::Scenes(_, r) => r.bus,
@@ -31,6 +33,7 @@ impl Work {
     }
     pub fn required_stamp(&self) -> Option<output::Stamp> {
         match self {
+            Self::Restore(_, r) => r.original_stamp,
             Self::Reassignment(_, r) => Some(r.original_stamp),
             Self::SceneSettings(
                 _,
@@ -59,6 +62,7 @@ impl Work {
     }
     pub fn deadline(&self) -> Instant {
         match self {
+            Self::Restore(q, _) => q.deadline,
             Self::Reassignment(q, _) => q.deadline,
             Self::SceneSettings(q, _) => q.deadline,
             Self::Scenes(q, _) => q.deadline,
@@ -71,6 +75,7 @@ impl Work {
     }
     pub fn is_closed(&self) -> bool {
         match self {
+            Self::Restore(q, _) => q.reply.is_closed(),
             Self::Reassignment(q, _) => q.reply.is_closed(),
             Self::SceneSettings(q, _) => q.reply.is_closed(),
             Self::Scenes(q, _) => q.reply.is_closed(),
@@ -82,6 +87,9 @@ impl Work {
         }
     }
     pub fn mutating(&self) -> bool {
+        if matches!(self, Self::Restore(_, r) if matches!(r.plan,restoration::Plan::Unique)) {
+            return true;
+        }
         if matches!(self, Self::Reassignment(..)) {
             return true;
         }
@@ -102,6 +110,7 @@ impl Work {
     }
     pub fn span(&self) -> tracing::Span {
         match self {
+            Self::Restore(q, r) => r.context.operation_span(&r.controller, q.action.name()),
             Self::Reassignment(_, r) => r
                 .context
                 .operation_span(&r.controller, "reset_address_space"),
@@ -122,6 +131,10 @@ impl Work {
     }
     pub async fn wait_for_receiver_close(&mut self) {
         match self {
+            Self::Restore(q, _) => {
+                // WAIT: v2-hat-loop
+                q.reply.closed().await
+            }
             Self::Reassignment(q, _) => {
                 // WAIT: v2-hat-loop
                 q.reply.closed().await
@@ -163,6 +176,7 @@ impl Work {
     ) -> impl std::future::Future<Output = Outcome> + Send + 'static {
         // Capture values only: the owner retains requests, replies and permits.
         let run = match self {
+            Self::Restore(q, r) => Run::Restore(r.clone(), q.deadline),
             Self::Reassignment(q, r) => Run::Reassignment(r.clone(), q.deadline),
             Self::SceneSettings(q, r) => Run::SceneSettings(r.clone(), q.deadline),
             Self::Scenes(q, r) => Run::Scenes(r.clone(), q.deadline),
@@ -202,6 +216,14 @@ impl Work {
         };
         async move {
             match run {
+                Run::Restore(route, deadline) => {
+                    let value = restoration::execute::execute(link, route, stamp, deadline).await;
+                    Outcome {
+                        sample: Sample::Restore(value.observation),
+                        error: value.error,
+                        recovery: value.recovery,
+                    }
+                }
                 Run::Reassignment(route, deadline) => {
                     let value = reassignment::execute(link, route, stamp, deadline).await;
                     Outcome {
@@ -272,6 +294,14 @@ impl Work {
     }
     pub fn finish(self, sample: Option<Sample>, error: Option<ServiceError>) -> Completion {
         match (self, sample) {
+            (Self::Restore(request, _), sample) => Completion::Restore(restoration::Completion {
+                request,
+                observation: sample.map(|s| match s {
+                    Sample::Restore(o) => o,
+                    _ => unreachable!("physical result kind"),
+                }),
+                error,
+            }),
             (Self::Reassignment(request, _), sample) => {
                 Completion::Reassignment(reassignment::Completion {
                     request,
@@ -349,6 +379,7 @@ impl Work {
     }
 }
 enum Run {
+    Restore(restoration::Route, Instant),
     Reassignment(reassignment::Route, Instant),
     SceneSettings(scene_settings::Route, Instant),
     Scenes(scenes::Route, Instant),
@@ -359,6 +390,7 @@ enum Run {
     Input(readback::Route, Instant),
 }
 pub(super) enum Sample {
+    Restore(restoration::Observation),
     Reassignment(reassignment::Observation),
     SceneSettings(scene_settings::Observation),
     Scenes(scenes::Observation),
@@ -371,6 +403,7 @@ pub(super) enum Sample {
 impl Sample {
     pub fn invalidate(&mut self, reason: &str) {
         match self {
+            Self::Restore(value) => value.stale = true,
             Self::Reassignment(value) => value.stale = true,
             Self::SceneSettings(value) => value.stale = true,
             Self::Scenes(value) => value.stale = true,
@@ -392,6 +425,7 @@ pub(super) struct Outcome {
     pub recovery: bool,
 }
 pub(super) enum Completion {
+    Restore(restoration::Completion),
     Reassignment(reassignment::Completion),
     SceneSettings(scene_settings::Completion),
     Scenes(scenes::Completion),
@@ -404,6 +438,9 @@ pub(super) enum Completion {
 impl Completion {
     pub fn reject(self) {
         match self {
+            Self::Restore(q) => {
+                restoration::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
+            }
             Self::Reassignment(q) => {
                 reassignment::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
             }

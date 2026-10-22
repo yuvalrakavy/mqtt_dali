@@ -1,0 +1,226 @@
+{
+ "rows": {
+  "restore_ignores_final_probe_stamp": {
+   "last_real": {
+    "at": "2026-10-22T16:57:03Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5979b5254f904686",
+     "row": "d26eb17ca42bfc26",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_ignores_multiple_candidates": {
+   "last_real": {
+    "at": "2026-10-22T16:57:21Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:49892955a22b16b6",
+     "row": "89ac29cb7399d375",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.6,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_input_recreates_lifetimes": {
+   "last_real": {
+    "at": "2026-10-22T16:56:03Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:c4c0883851c56815",
+     "row": "378e871407a2b5aa",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_reauthorizes_old_notices": {
+   "last_real": {
+    "at": "2026-10-22T16:57:39Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7d8e15cd79228519",
+     "row": "79beb6822efffeb7",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.7,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_releases_permit_during_save": {
+   "last_real": {
+    "at": "2026-10-22T16:56:32Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5979b5254f904686",
+     "row": "83be5648ee1f502c",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.6,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_replaces_admission_stamp": {
+   "last_real": {
+    "at": "2026-10-22T16:56:48Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5ae3c98dccde6d61",
+     "row": "870f28e91290167e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_skips_confirmed_save": {
+   "last_real": {
+    "at": "2026-10-22T16:56:18Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5979b5254f904686",
+     "row": "6fc159d447fa2367",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.2,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_ui_accepts_unconfirmed_stop": {
+   "last_real": {
+    "at": "2026-10-22T16:59:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:bf3c70edf1e7e012",
+     "guard": "file:84d5dcad4fa6fa63",
+     "row": "424abc234787e656",
+     "test": "test:52e568f45af32ae5"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_ui_hides_already_scanned_candidates": {
+   "last_real": {
+    "at": "2026-10-22T16:59:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:bf3c70edf1e7e012",
+     "guard": "file:84d5dcad4fa6fa63",
+     "row": "9e5b66f2b5629d93",
+     "test": "test:52e568f45af32ae5"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_ui_rebases_external_root": {
+   "last_real": {
+    "at": "2026-10-22T16:59:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:bf3c70edf1e7e012",
+     "guard": "file:84d5dcad4fa6fa63",
+     "row": "d97d2aa05da60911",
+     "test": "test:52e568f45af32ae5"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_ui_rebases_original_token": {
+   "last_real": {
+    "at": "2026-10-22T16:59:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:bf3c70edf1e7e012",
+     "guard": "file:84d5dcad4fa6fa63",
+     "row": "91b6caedffdaca44",
+     "test": "test:52e568f45af32ae5"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_ui_refreshes_previous_address": {
+   "last_real": {
+    "at": "2026-10-22T16:59:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:bf3c70edf1e7e012",
+     "guard": "file:84d5dcad4fa6fa63",
+     "row": "eec0687f49d113f5",
+     "test": "test:52e568f45af32ae5"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  },
+  "restore_ui_resumes_retired_route": {
+   "last_real": {
+    "at": "2026-10-22T16:59:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:bf3c70edf1e7e012",
+     "guard": "file:84d5dcad4fa6fa63",
+     "row": "f7fee2bdb942951c",
+     "test": "test:52e568f45af32ae5"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "8fc26353778977a33c41de561000854388e21221",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

@@ -10,8 +10,8 @@ expect_text = "inclusive search missed a valid boundary"
 [[control]]
 name = "search_programs_before_durable_reservation"
 file = "src/service/commissioning.rs"
-anchor = "Ok(Step::Found { address, random })"
-replacement = "self.command(DaliFrame::Bits16(frames::program(gear::ShortAddress::new(address).unwrap())),false).await?;\n        Ok(Step::Found { address, random })"
+anchor = "Some(random) => Step::Found { address, random },"
+replacement = "Some(random) => {self.command(DaliFrame::Bits16(frames::program(gear::ShortAddress::new(address).unwrap())),false).await?; Step::Found {address,random}},"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(commissioning_bus_epoch_change)"]
 expect_text = "PROGRAM preceded durable reservation"

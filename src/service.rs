@@ -21,6 +21,7 @@ mod owner;
 mod physical;
 mod proxy;
 pub mod reassignment;
+pub mod restoration;
 mod routing;
 pub mod scene_settings;
 pub mod scenes;
@@ -273,6 +274,7 @@ type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations)
 #[cfg(test)]
 type OutputAcceptanceHook = Arc<dyn Fn(&mut hat::Hat) + Send + Sync>;
 enum Message {
+    Restore(Box<restoration::Request>),
     Reassignment(reassignment::Request),
     SceneSetting(Box<scene_settings::Request>),
     Scene(scenes::Request),
