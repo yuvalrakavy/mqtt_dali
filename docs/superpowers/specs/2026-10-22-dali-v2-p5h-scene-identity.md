@@ -133,6 +133,14 @@ correctness/reader-completeness review APPROVED (15 s). Both are same-family,
 source-only reviews; no cross-family review or runtime verification is implied.
 The continuity approval and current Go authorize this bounded metadata slice.
 
+As built: all seven implementation/verification parts are present at `a03ffee`.
+Nine added cases and eight intended behavioral RED controls pass, followed by
+555 native regressions, scoped strict Clippy, Pi four-bin check, formatting,
+affected control plans and wait validation. Both sequential frozen-source
+reviews APPROVE without actionable findings. Review is same-family/source-only;
+no physical HAT or cross-family acceptance is implied. Logs and limits are in
+`docs/v2-progress.md`.
+
 Round one traces creation through ConfigStore, retained State, consumer replay
 and original-token command completion. Round two checks siblings: optional old
 files versus malformed new lists; duplicate names across versus within address

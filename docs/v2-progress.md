@@ -7,7 +7,8 @@ The approved architecture and phase acceptance criteria are in
 
 ## P5h2a — durable named scene slots
 
-Implementation and targeted checks are in progress; source acceptance is pending.
+Accepted locally at frozen source `a03ffee`: **555 native tests** and both
+sequential source reviews pass.
 This slice adds only named-slot metadata through the existing config, identity
 ledger, durable owner and shared MQTT/authenticated HTTP job path. Creation,
 rename, description and list removal do not touch hardware. Rename preserves
@@ -28,7 +29,10 @@ tests** across eleven binaries (one opt-in browser test skipped), scoped strict
 Clippy, Pi library/four-bin check, doctests (none), changed-file formatting,
 affected control plans, wait validation and whitespace. Native execution is
 51.875 s; the native command takes 95 s. Logs:
-`/tmp/dali-scene-identity-acceptance`. Sequential source reviews remain pending.
+`/tmp/dali-scene-identity-acceptance`. Both sequential frozen-source reviews
+APPROVE with no actionable findings, covering implementer/correctness and
+reader-completeness/parts-ledger lenses. They are same-family/source-only;
+cross-family independence and runtime review are not claimed.
 No browser source changes or physical HAT validation are part of this slice.
 See the [slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scene-identity.md)
 and [metadata contract](dali-scenes-contract.md#named-slot-metadata).
@@ -1765,7 +1769,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene protocol/model accepted locally; named-slot metadata in verification | Full reassign/restore and managed physical scenes/UI |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene protocol/model and durable named-slot metadata accepted locally | Full reassign/restore and managed physical scenes/UI |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
