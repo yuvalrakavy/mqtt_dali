@@ -90,6 +90,8 @@ errors were fixed before behavioral failing-first evidence. Ten behavioral
 controls all failed for their named reasons (55 seconds). Restored full native
 verification passes 331 tests, strict scoped Clippy, Pi library/all four binary
 compilation, formatting, whitespace, wait registry and zero doctests. Sequential
-source gates inspect the frozen implementation commit after parent diff review.
+source gates approved frozen `64c05f9` with no material finding after parent diff
+review. Both were read-only, same-family and did not execute tests or controls;
+neither physical validation nor whole-plan execution ownership is claimed.
 The useful verification pattern is a complete literal plan, independent of the
 production encoder or emulator, with explicit unchanged channels and byte widths.

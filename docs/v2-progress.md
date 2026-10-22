@@ -806,8 +806,10 @@ test-only type/ownership mistakes were corrected before that evidence was taken.
 All ten fault-injection controls failed at their intended assertions in 55 seconds.
 The restored gate passes **331 native tests**, strict scoped Clippy, Pi
 library/all four binary compilation, changed-file formatting, whitespace,
-wait registry and doctests (none defined). Sequential source reviews follow the
-frozen implementation commit. No emulator/SDK/Store/runtime path was changed.
+wait registry and doctests (none defined). Both sequential read-only source
+reviews approved frozen `64c05f9` without material findings. Reviews were
+same-family, source-only, and did not run tests. No emulator/SDK/Store/runtime
+path was changed. Physical validation remains outstanding.
 
 Service discovery, physical limits/mode handling, actual colour readback, MQTT
 representation properties, independent emulator semantics and colour scenes
