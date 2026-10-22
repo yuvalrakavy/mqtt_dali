@@ -1,0 +1,19 @@
+{
+  "name": "mqtt-dali-web",
+  "version": "2.0.0-dev.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=24.11.0"},
+  "scripts": {
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "test": "node --test src/model.test.ts src/client.test.ts src/controller.test.ts",
+    "check-dist": "node scripts/build.mjs --check"
+  },
+  "dependencies": {"preact": "11.0.1"},
+  "devDependencies": {
+    "@preact/preset-vite": "2.10.6",
+    "playwright": "1.58.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.5"
+  }
+}

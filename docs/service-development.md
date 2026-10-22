@@ -8,7 +8,8 @@ operations, selected-family DT8 MQTT controls and native input observations/acti
 [running the development daemon](running-v2.md). MQTT base fixture properties
 use [the output wire contract](mqtt-outputs.md). Optional authenticated HTTP status,
 sessions, SSE, scalar reads/applies and configuration/commissioning jobs use
-[web access](web-access.md); browser assets are subsequent work. Embedders can use the
+[web access](web-access.md); embedded Preact assets and browser verification use
+[browser development](browser-development.md). Embedders can use the
 [single-output service API](output-service.md).
 
 `DaliService::new(paths, instance)` returns a resource-free service and a

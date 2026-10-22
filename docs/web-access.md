@@ -1,10 +1,10 @@
 # Optional web access: API foundation
 
 Web access is disabled unless explicitly enabled. There is no default password.
-The current development phase supplies authenticated HTTP APIs and live snapshots;
-configuration/commissioning jobs reuse the existing service operations. The
-approved Preact login/screens are still being built.
-`/login` currently returns minimal controller/version/build JSON, not the finished UI.
+The bridge serves its responsive sign-in and configuration screens directly.
+Configuration/commissioning jobs reuse the existing service operations. Open the
+configured origin in a browser; sign-in shows the controller name, version and
+build. Phone and desktop use the same screens and saved configuration.
 
 Use one canonical browser origin and an explicit listener. For example, in Bash:
 
@@ -51,8 +51,8 @@ duplicate or other origins are refused. No cross-origin API access is enabled.
 
 Sessions expire after 30 minutes of user inactivity or 12 hours absolute. Passive
 reads, live events and keepalive traffic do not extend inactivity. An explicit
-`POST /api/session/activity` records real user activity; future UI code will send
-it on throttled interactions. Logout/restart revoke sessions, including existing
+`POST /api/session/activity` records real user activity; the UI sends it at most
+once a minute on explicit interactions. Logout/restart revoke sessions, including existing
 streams. Re-login never resubmits a prior mutation. A running operation may have
 finished after its client lost access; inspect current inventory before retrying.
 
@@ -64,7 +64,9 @@ All responses are no-store and carry content/frame restrictions.
 
 | Endpoint | Access and response |
 |---|---|
-| GET `/api/identity` or `/login` | Public controller, version and build UTC only |
+| GET `/api/identity` | Public controller, version and build UTC JSON only |
+| GET `/login`, `/assets/login.js`, `/assets/login.css` | Public sign-in page and its embedded assets |
+| GET `/`, `/buses/{0..3}`, `/buses/{0..3}/groups`, `/buses/{0..3}/scenes`, `/settings`, `/diagnostics`, `/assets/app.js`, `/assets/app.css` | Cookie; protected browser application and assets |
 | POST `/api/login` | Origin + strict JSON `{"password":"..."}`; sets cookie, returns `{"csrf":"..."}` |
 | GET `/api/session` | Cookie; CSRF and remaining idle/absolute milliseconds; no activity renewal |
 | POST `/api/session/activity` | Cookie + Origin + CSRF; 204 on accepted user activity |
@@ -79,6 +81,50 @@ Unauthenticated internal APIs, including unknown API paths, return 401 without
 inventory. Protected page navigation redirects only to `/login`, with no return
 URL. Unknown authenticated routes return 404. The API does not fabricate fixture
 State from inventory.
+
+## Browser workflow
+
+Overview lists the four HAT bus slots. Choose **Set up bus**, enter its name and
+enable it. Open that bus to see `controller/bus` with Devices, Groups and Scenes
+tabs. Bus settings can rename or disable it while retaining saved child identity.
+
+On Devices, **Add unaddressed** first discovers both addressed output and input
+spaces, preserving saved names and reserving existing addresses. It then assigns
+unaddressed gear one device at a time and reads current values. **Refresh
+addressed** scans both spaces without assigning addresses or removing missing
+items. Progress can stop after the currently admitted operation; completed
+changes remain saved. Full destructive reassignment and lost-address restoration
+are not available in this build.
+
+Blink a fixture, type its meaningful name and press the checkmark, Enter, or move
+focus to save. Those three actions share one save. Successful rename ends Blink
+and restores its captured level; failed save keeps the draft and Blink so you can
+correct or retry explicitly. There is no separate page-wide Save. A successful
+rename reads current values again. Use `Light*` to find default names; `*` matches
+any sequence and `?` one character, case-insensitively. Dirty/error rows remain
+visible and filtering never limits discovery.
+
+Rows offer actual power, committed brightness changes, Blink/Stop and an actions
+menu. Colour uses the fixture's saved representation: Kelvin, normalized CIE xy,
+or RGBWAF channel percentages. The form shows observed support and limits; it
+does not infer a physical colour mode or convert between representations.
+Unknown/stale values remain unknown. Operate an input to see its current state
+and native action; a live update does not replace an unsaved name.
+
+Groups contains all 16 slots. Create/name a slot, assign fixtures individually,
+or preview Add/Replace using a name pattern. Replace changes that group's members
+only. **Verify all groups** reads every fixture's complete hardware mask and
+shows matching, different and unresolved results, including unnamed slots.
+Adopt or repair explicitly after reviewing; repairs are read back. A changed
+configuration requires fresh verification before applying another old result.
+
+Settings shows version/build and downloads an inventory report, which is not a
+restorable configuration backup. Diagnostics shows actual HAT/browser state,
+bounded jobs and recent native actions/loss; MQTT connection status is currently
+unknown. Scenes are marked unavailable until their backend is implemented.
+Connection loss disables operations until a new complete stream snapshot arrives.
+Writes are never replayed after reconnect or sign-in. Runtime UI assets are
+embedded in the executable; no Node server or CDN is needed.
 
 ## Configuration and commissioning commands
 

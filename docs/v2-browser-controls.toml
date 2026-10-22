@@ -1,0 +1,98 @@
+[[control]]
+name = "browser_unwraps_inventory"
+file = "web/src/client.ts"
+anchor = "inventory:value.inventory.Inventory"
+replacement = "inventory:value.inventory"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=browser unwraps", "web/src/client.test.ts"]
+expect_text = "published Inventory envelope was not decoded"
+
+[[control]]
+name = "browser_refuses_unsafe_revision"
+file = "web/src/model.ts"
+anchor = "!Number.isSafeInteger(revision)"
+replacement = "false"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=authority refuses", "web/src/model.test.ts"]
+expect_text = "unsafe metadata revision was accepted"
+
+[[control]]
+name = "browser_origin_continuation"
+file = "web/src/model.ts"
+anchor = "continuing.get(index)??birth(edge.to)"
+replacement = "birth(edge.to)"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=origin replay", "web/src/model.test.ts"]
+expect_text = "continuing rename lost its stable row key"
+
+[[control]]
+name = "browser_deduplicates_name_save"
+file = "web/src/model.ts"
+anchor = "    if(this.pending)return this.pending;"
+replacement = "    // mutated: permit duplicate saves"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=checkmark and blur", "web/src/model.test.ts"]
+expect_text = "checkmark plus blur submitted duplicate rename"
+
+[[control]]
+name = "browser_fences_view_epoch"
+file = "web/src/model.ts"
+anchor = "if(epoch===this.epoch){this.value=value;this.ready=true;}"
+replacement = "if(true){this.value=value;this.ready=true;}"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=retired stream epochs", "web/src/model.test.ts"]
+expect_text = "retired connection callback overwrote new stream state"
+
+[[control]]
+name = "browser_batch_own_revision"
+file = "web/src/client.ts"
+anchor = "latest.inventory.revision===revision&&"
+replacement = ""
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=a batch continues", "web/src/client.test.ts"]
+expect_text = "batch silently rebased across external metadata"
+
+[[control]]
+name = "browser_post_admission_cannot_downgrade"
+file = "web/src/client.ts"
+anchor = "    const id=admission.id,deadline=Date.now()+25000;"
+replacement = "    this.views.jobBook=[admission];\n    const id=admission.id,deadline=Date.now()+25000;"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=actual client keeps", "web/src/client.test.ts"]
+expect_text = "Unexpected HTTP bootstrap/read: /api/jobs/job"
+
+[[control]]
+name = "browser_get_cannot_downgrade"
+file = "web/src/client.ts"
+anchor = "if(!job||job.status==='running')job=await this.request(`/api/jobs/${id}`);"
+replacement = "if(!job||job.status==='running'){job=await this.request(`/api/jobs/${id}`);this.views.jobBook=[job!];}"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=a delayed GET", "web/src/client.test.ts"]
+expect_text = "late job GET downgraded the terminal stream book"
+
+[[control]]
+name = "browser_retires_failed_sources"
+file = "web/src/client.ts"
+anchor = "const current=()=>!this.stopped&&this.session===session&&this.views.epoch===epoch&&this.source===source;"
+replacement = "const current=()=>true;"
+target = "command"
+argv = ["node", "--test", "--test-timeout=2000", "--test-name-pattern=actual client keeps", "web/src/client.test.ts"]
+expect_text = "retired stream delivered an old input action"
+
+[[control]]
+name = "browser_embedded_assets_protected"
+file = "src/web/handlers.rs"
+anchor = "    let authenticated = cookie(request.headers())"
+replacement = "    if request.uri().path() == \"/assets/app.js\" { return super::assets::app_js().await.into_response(); }\n    let authenticated = cookie(request.headers())"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(browser_assets_signin)"]
+expect_text = "browser application bypassed authentication: /assets/app.js"
+
+[[control]]
+name = "browser_unknown_routes_stay_missing"
+file = "src/web/handlers.rs"
+anchor = "        .fallback(missing)"
+replacement = "        .fallback(super::assets::application)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(browser_assets_signin)"]
+expect_text = "unknown browser route exposed a filesystem or fallback asset"

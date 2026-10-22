@@ -139,8 +139,9 @@ Optional HTTP uses `src/web` and the existing managed owner; see
 `docs/web-access.md`. Disabled by default; explicit password/origin, cookie-only
 sessions, CSRF and live stream expiry/revocation. Strip CLI credentials before
 shared Debug Settings. Clean stop includes actual accepted-IO drop, not just
-Axum's outer task. `docs/v2-web-controls.toml` tests these guards. Browser assets
-remain subsequent work. Configuration/commissioning command jobs reuse the strict
+Axum's outer task. `docs/v2-web-controls.toml` tests these guards. Embedded Preact
+source/lock/dist live in `web/`; see `docs/browser-development.md`. Runtime and
+Cargo compilation need no Node. Configuration/commissioning command jobs reuse the strict
 proxy parser and typed service APIs with original context/deadline and no MQTT
 completion. Bound job futures inside the Server task, never detached; results
 are process-local, with private free-text reasons sanitized. See
@@ -149,7 +150,11 @@ intent parser, budgets and latest-snapshot acceptance. SSE shares exact
 Notice::current receive fencing, bounded loss reporting and three-source rotation;
 job watch notifications occur after dropping the book lock. Snapshots replace
 the complete state array, with unknown/stale values preserved as such. See
-`docs/v2-web-observation-controls.toml`. Preact assets remain pending.
+`docs/v2-web-observation-controls.toml`. Browser views unwrap `inventory.Inventory`
+and use SSE alone as view authority; HTTP job replies never replace newer views.
+Retain original dirty item authority and stable ledger Origin keys across renames.
+Rebuild and byte-check committed assets; run the opt-in real-browser test for UI
+changes and `docs/v2-browser-controls.toml` for browser authority/route guards.
 
 Managed v2 group membership uses `dali::groups`, `service::groups` and concrete
 `physical::Work::Groups`; see `docs/groups.md`. Ordinary assignment saves desired

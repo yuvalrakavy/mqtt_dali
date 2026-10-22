@@ -13,6 +13,8 @@ use tokio::{
     net::TcpStream,
     time::{timeout, Instant},
 };
+mod assets;
+mod browser;
 mod jobs;
 
 #[test]

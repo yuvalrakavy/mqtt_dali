@@ -2,6 +2,7 @@
 use sha2::{Digest, Sha256};
 use std::net::SocketAddr;
 
+mod assets;
 mod auth;
 mod handlers;
 mod jobs;

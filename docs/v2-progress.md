@@ -5,6 +5,60 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P7 — embedded browser application
+
+Implement the approved responsive Preact/TypeScript interface in `web/`, with
+fixed embedded sign-in/application assets, exact npm dependencies/lock and a
+byte-for-byte rebuild check. Existing sessions protect application pages/assets;
+only sign-in/identity are public. Runtime and Cargo builds need no Node server.
+Screens provide overview/bus setup, compact Devices, Groups, Settings and
+Diagnostics through the existing bounded jobs. Scenes, full reassignment and
+lost-address restoration remain explicitly unavailable in this increment.
+
+SSE is the sole view authority. Decode the existing `inventory.Inventory` State
+envelope; late HTTP admission/job/session results cannot replace newer views or
+restore closed authentication. Original dirty item tokens and replayed continuing
+ledger keys protect inline saves/replacements. Checkmark/Enter/blur deduplicate;
+queued explicit commits prepare their controller revision once. Successful rename
+refreshes actual values; failed saves retain the draft and Blink. Batch discovery,
+group pattern assignment and verification support progress/cancellation and stop
+on unrelated revision/bus changes. Missing/full-capacity/unconfirmed results stay
+explicit; no automatic write replay or UART policy change.
+
+Two design gates approve (75 and 55 seconds, same-family/source-only); the first
+required the HTTP/SSE ordering rule and replacement identity coverage. The initial
+Rust route test fails before asset serving. Real browser acceptance first finds
+the actual Inventory envelope mismatch; decode it and pin the Rust/TS contract.
+Fixture corrections use managed stop, short private macOS socket paths, native
+dialog/enabled-control waits and actual DT8 state rather than its setup profile.
+Chrome/Playwright passes phone 390×844 and desktop 1440×1024 through **303 real
+owned commands** with private MQTT/PTy/disk checks and inspected screenshots.
+Includes naming/Blink restoration, failed-save retry, live input during drafting,
+power/brightness/DT8, patterns, group drift adoption/repair, removal/rediscovery,
+inventory export and logout. No runtime/CSP console errors. Emulator hotplug and
+physical/HTTPS/live Store deployment remain unverified.
+
+Twelve frontend tests pass, including delayed POST/GET, retired stream/session,
+safe metadata, atomic rename swaps/replacement and queued item authority. Eleven
+current controls have intended RED evidence. One broad decoder mutation stranded
+an unrelated setup; the runner was interrupted and restored source, then rows were
+targeted individually. One old-source guard stayed GREEN because snapshot epochs
+already protected snapshots; add native-action/retired-error cases and rerun the
+five affected controls, all RED. Logs: `/tmp/dali-browser-controls-final.log` and
+`/tmp/dali-browser-controls-client-final.log`.
+
+Restored acceptance passes **531/531 native tests** across 11 binaries, with the
+explicitly opt-in browser test skipped (execution 51 s, command wall 94 s), all
+twelve frontend tests, build/reproducible dist, scoped strict Clippy, Pi library
+and all four binaries, doctests (none), changed-file format, all affected control
+plans, whitespace and wait validation (zero findings). Logs are in
+`/tmp/dali-browser-acceptance` and `/tmp/dali-browser-wait-final.log`.
+Frozen-source reviews are being finalized. Browser evidence is recorded separately in
+`/tmp/dali-browser-functional.log`, with screenshots under
+`/tmp/dali-browser-ae7a7c47b606ce190c4bcfb475301ef2`. See
+[operator guide](web-access.md), [build/test guide](browser-development.md) and
+[slice design](superpowers/specs/2026-10-22-dali-v2-p7-browser.md).
+
 ## P5g — output identification
 
 Blink/Stop uses one service-owned polled future and short existing basic output
@@ -50,7 +104,8 @@ Frozen `31bb543` is approved by both sequential source gates against `758b0d2`,
 with no material findings (205 and 99 seconds). A provisional missing-token
 concern was withdrawn after checking the complete writing=true resolver guard;
 no change was needed. Both reviews were read-only/source-only and same-family,
-with no tests rerun. Browser and physical fixture acceptance remain pending. See
+with no tests rerun. P7 subsequently supplies real browser acceptance; physical
+fixture acceptance remains pending. See
 [operator guide](identification.md) and
 [slice design](superpowers/specs/2026-10-22-dali-v2-p5g-identification.md).
 
@@ -170,8 +225,8 @@ password/origin, fixed-size verifier and cookie sessions, Origin/CSRF gates,
 protected public-inventory/status snapshots and pull-based SSE. Idle expiry is
 30 minutes, absolute 12 hours; explicit user activity alone renews inactivity.
 No URL/Bearer auth, persisted sessions, default password, SDK or recovery change.
-P7 still supplies the approved HTML/Preact screens and typed mutation/job routes
-follow; `/login` currently returns minimum identity JSON, not a finished UI.
+At this historical boundary P7 screens and mutation jobs were still pending;
+P6b/c and P7 subsequently add those paths and replace `/login` with sign-in HTML.
 
 Design gate 1 found raw credential retention in the SDK's Debug Settings; consume
 the option and strip separate/inline password arguments before Bridge composition.
@@ -1598,9 +1653,9 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership and Blink/Stop identification implemented | Full reassign/restore, browser/pattern group workflows and native scenes |
-| P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Protected frontend integration and remaining P4/P5 actions |
-| P7 browser UI | Pending | Approved responsive interface and browser acceptance |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented | Full reassign/restore and native scenes |
+| P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
+| P7 browser UI | Embedded responsive screens implemented; local phone/desktop browser workflows pass; final source acceptance in progress | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |
 
