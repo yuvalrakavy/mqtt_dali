@@ -45,7 +45,12 @@ format, all 24 affected control plans, whitespace and wait validation (zero
 findings). Strict Clippy initially flags only `on=!on` spacing; correct it to
 `on = !on` without a behavior change and rerun the affected lint/format checks.
 Logs: `/tmp/dali-identification-acceptance` and
-`/tmp/dali-identification-lint-restored`. Frozen source reviews follow. See
+`/tmp/dali-identification-lint-restored` (strict Clippy/format/plans/whitespace pass).
+Frozen `31bb543` is approved by both sequential source gates against `758b0d2`,
+with no material findings (205 and 99 seconds). A provisional missing-token
+concern was withdrawn after checking the complete writing=true resolver guard;
+no change was needed. Both reviews were read-only/source-only and same-family,
+with no tests rerun. Browser and physical fixture acceptance remain pending. See
 [operator guide](identification.md) and
 [slice design](superpowers/specs/2026-10-22-dali-v2-p5g-identification.md).
 
