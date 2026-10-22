@@ -44,6 +44,13 @@ run passed 427 tests and failed only its wait checker: an internal `send`
 wrapper collided with the checker's channel-send method name. Renaming it to
 `exchange` preserves execution and the existing tagged leaf transaction wait;
 the corrected acceptance run is in `/tmp/dali-commissioning-final-gate`.
+That final gate passes **428/428 native tests**, scoped strict Clippy, Pi
+library/all four binary compilation, doctests (none defined) and whitespace.
+Changed-file rustfmt also passes. Both sequential read-only source gates approve
+frozen `e05ea13` against `e2ed360`, with no material findings. Reviews ran no
+verification or mutations; same-family and absent physical validation remain
+explicit limits. Review learning: put post-commit partial outcomes in the public
+type and promise cleanup only where an executor still owns it.
 
 Input addressing, full reassign/restore, identification controls, group/scene
 workflows and the protected browser UI remain unfinished. See
