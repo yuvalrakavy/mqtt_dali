@@ -2,18 +2,18 @@
  "rows": {
   "consumer_carries_button_binding_through_type_change": {
    "last_real": {
-    "at": "2026-10-21T23:41:07Z",
+    "at": "2026-10-22T02:50:28Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:e9724bdfb986c70b",
+     "guard": "item:42fb418cd37d032a",
      "row": "fc0a5023769c23ee",
      "test": null
     },
     "path": "command",
-    "secs": 6.6,
-    "sha": "2a5bfa85b145281a25241bb27df5ea318528f69b",
+    "secs": 8.1,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
     "verdict": "RED"
    }
   },

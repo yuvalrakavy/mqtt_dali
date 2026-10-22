@@ -53,7 +53,8 @@ pub(super) fn admit(
                     short_address: *address,
                     instance: *instance,
                 }),
-                MetadataEdit::RenameOutput { bus, address, .. } => {
+                MetadataEdit::RenameOutput { bus, address, .. }
+                | MetadataEdit::OutputColorRepresentation { bus, address, .. } => {
                     Some(crate::inventory::Location::Output {
                         bus: *bus,
                         short_address: *address,

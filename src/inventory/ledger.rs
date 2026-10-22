@@ -164,6 +164,20 @@ pub(super) fn project(
                 } else {
                     None
                 },
+                color_representation: if let Location::Output { bus, short_address } = location {
+                    inventory
+                        .buses
+                        .iter()
+                        .find(|b| b.bus == bus)
+                        .unwrap()
+                        .outputs
+                        .iter()
+                        .find(|o| o.short_address == short_address)
+                        .unwrap()
+                        .color_representation
+                } else {
+                    None
+                },
             })
         })
         .collect()
@@ -205,6 +219,7 @@ fn shape(projection: &Projection) -> Result<(), String> {
                 && target.namespace() == Some(Namespace::Groups)
                 && target.instance().is_none()
                 && projection.instance_type.is_none()
+                && projection.color_representation.is_none()
         }
         Location::Input { bus, short_address } => {
             bus < 4
@@ -213,6 +228,7 @@ fn shape(projection: &Projection) -> Result<(), String> {
                 && target.instance().is_none()
                 && projection.members.is_empty()
                 && projection.instance_type.is_none()
+                && projection.color_representation.is_none()
         }
         Location::InputInstance {
             bus,
@@ -226,6 +242,7 @@ fn shape(projection: &Projection) -> Result<(), String> {
                 && target.instance().is_some()
                 && projection.members.is_empty()
                 && projection.instance_type.is_some()
+                && projection.color_representation.is_none()
         }
     };
     if !valid || projection.binding_revision == 0 {

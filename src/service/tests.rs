@@ -153,6 +153,7 @@ impl Fixture {
             short_address: address,
             name: name.into(),
             description: None,
+            color_representation: None,
         });
         fs::write(&self.paths.current, serde_json::to_vec(&inventory).unwrap()).unwrap();
     }
@@ -435,6 +436,145 @@ async fn mqtt_metadata_commands_use_original_tokens_and_publish_the_durable_inve
             "metadata command received a later duplicate completion"
         );
     }
+}
+
+#[tokio::test]
+async fn mqtt_color_selection_is_durable_fenced_and_completes_under_original_token() {
+    async fn command(
+        broker: &FakeBroker,
+        body: serde_json::Value,
+        token: u64,
+        number: usize,
+    ) -> serde_json::Value {
+        let topic = format!("test/color-selection/{number}");
+        assert!(broker.publish(
+            "DALI/Command/Controller",
+            body.to_string(),
+            &SendOptions::default()
+                .user_property("target-generation", context(token).generation().unwrap())
+                .response_topic(&topic)
+        ));
+        assert!(
+            broker
+                .wait_until(Duration::from_secs(2), |b| !b
+                    .received_on(&topic)
+                    .is_empty())
+                .await,
+            "color selection command never completed"
+        );
+        let replies = broker.received_on(&topic);
+        assert_eq!(
+            replies.len(),
+            1,
+            "color selection command received duplicate completion"
+        );
+        assert_eq!(
+            replies[0].user_property("target-generation"),
+            context(token).generation()
+        );
+        serde_json::from_slice(&replies[0].payload).unwrap()
+    }
+    fn selection(format: serde_json::Value, revision: u64) -> serde_json::Value {
+        json!({"command":"set_color_representation","target":"Bus1.Outputs.Light1",
+            "expected_revision":revision,"color_representation":format})
+    }
+    let fixture = Fixture::new();
+    let legacy = fs::read(&fixture.paths.legacy).unwrap();
+    let broker = FakeBroker::start().await;
+    let (service, handle) = fixture.service();
+    let running = start(service, &handle, &broker).await;
+    assert!(
+        broker
+            .wait_for_subscription("DALI/Command/Controller", Duration::from_secs(3))
+            .await
+    );
+    let reply = command(&broker, selection(json!("temperature"), 1), 1, 0).await;
+    assert_eq!(
+        reply["value"]["revision"], 2,
+        "valid color selection did not commit: {reply}"
+    );
+    assert_eq!(
+        serde_json::to_value(fixture.disk()).unwrap()["buses"][0]["outputs"][0]
+            ["color_representation"],
+        "temperature"
+    );
+    assert!(
+        broker
+            .wait_until(Duration::from_secs(2), |b| b
+                .received_on("DALI/State/Controller/__inventory")
+                .iter()
+                .any(|m| m.user_property("target-generation")
+                    == context(2).generation()
+                    && serde_json::from_slice::<serde_json::Value>(&m.payload)
+                        .is_ok_and(|v| v["Inventory"]["buses"][0]["outputs"][0]
+                            ["color_representation"]
+                            == "temperature")))
+            .await,
+        "durable color selection missing from MQTT inventory"
+    );
+    let reply = command(
+        &broker,
+        json!({"command":"describe","description":"House","expected_revision":2}),
+        2,
+        1,
+    )
+    .await;
+    assert_eq!(reply["value"]["revision"], 3);
+    // The controller is at 3, while this output's original binding remains 2.
+    let reply = command(&broker, selection(json!("xy"), 3), 2, 2).await;
+    assert_eq!(
+        reply["value"]["revision"], 4,
+        "color selection used controller token instead of output token: {reply}"
+    );
+    let reply = command(&broker, selection(json!("xy"), 4), 4, 3).await;
+    assert_eq!(
+        reply["value"]["revision"], 4,
+        "same color selection was not a no-op"
+    );
+    for (index, (body, token)) in [
+        (selection(json!("rgbwaf"), 4), 2),
+        (selection(json!("rgbwaf"), 3), 4),
+        (selection(json!("rgb"), 4), 4),
+        (json!({"command":"set_color_representation","target":"Bus1.Outputs.Light1","expected_revision":4}), 4),
+        (json!({"command":"set_color_representation","target":"Bus1.Groups.All","expected_revision":4,"color_representation":"xy"}), 1),
+        (json!({"command":"set_color_representation","expected_revision":4,"color_representation":"xy"}), 4),
+        (json!({"command":"set_color_representation","target":"Bus1.Outputs.Light1","expected_revision":4,"color_representation":"xy","surprise":true}), 4),
+    ].into_iter().enumerate() {
+        let before = fs::read(&fixture.paths.current).unwrap();
+        let reply = command(&broker, body, token, index + 4).await;
+        assert!(reply.get("error").is_some(), "invalid color selection committed: {reply}");
+        assert_eq!(fs::read(&fixture.paths.current).unwrap(), before, "invalid color selection changed durable config");
+    }
+    let reply = command(&broker, selection(serde_json::Value::Null, 4), 4, 11).await;
+    assert_eq!(
+        reply["value"]["revision"], 5,
+        "clearing color selection failed: {reply}"
+    );
+    assert!(
+        serde_json::to_value(fixture.disk()).unwrap()["buses"][0]["outputs"][0]
+            .get("color_representation")
+            .is_none()
+    );
+    assert_eq!(fs::read(&fixture.paths.legacy).unwrap(), legacy);
+    assert!(running.stop().await);
+    for number in 0..12 {
+        assert_eq!(
+            broker
+                .received_on(&format!("test/color-selection/{number}"))
+                .len(),
+            1,
+            "color selection received a later duplicate completion"
+        );
+    }
+    let reopened = crate::config_store::ConfigStore::open(
+        fixture.paths.clone(),
+        "Controller".into(),
+        deadline(),
+    )
+    .await
+    .unwrap();
+    assert_eq!(reopened.snapshot().model.inventory().revision, 5);
+    assert!(reopened.close(deadline()).await);
 }
 
 struct Hold {

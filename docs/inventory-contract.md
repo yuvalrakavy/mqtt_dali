@@ -43,6 +43,23 @@ instance must retain the same parent lifetime across a batch. Instance type is
 part of its projection, so a type change cannot keep the old generation or carry
 old binding intent as though it were merely a rename.
 
+An output can optionally configure `color_representation`: `temperature`, `xy`
+or `rgbwaf`. Omitted or null means the basic power/brightness contract; absent
+values are omitted when saved. This is the public component selection, not a
+claim of hardware support. It appears in the output's identity projection and
+current Inventory. A change preserves the physical lifetime, name/address and
+consumer object ID, while rotating that output's binding generation. Group
+membership and unrelated bindings stay unchanged. Repeating the selected value
+is a no-op; changing away and back does not reuse a generation.
+
+Consumers must drop old observations and retire their old contract intent,
+including when a format change and rename occur together. A same-format rename
+still permits ordinary intent continuity. Colour selection is forbidden on group
+or input projections, including past ledger states. Updated readers accept old
+documents; older strict readers need updating to accept new-field documents.
+Use the service edit/command path so selection and history commit together;
+manually changing a saved setting without its ledger is rejected.
+
 The ledger starts with the epoch baseline and retains every atomic transition
 batch. Before/after edges prove continuity, creation and removal. Consumers replay
 and validate the whole history against current items before accepting a higher

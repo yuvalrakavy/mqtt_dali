@@ -81,6 +81,17 @@ pub struct Output {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Public component contract, independently of observed hardware support.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_representation: Option<ColorRepresentation>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ColorRepresentation {
+    Temperature,
+    Xy,
+    Rgbwaf,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -288,6 +299,7 @@ impl LegacyInventory {
                         short_address: output.short_address,
                         name: output.description,
                         description: None,
+                        color_representation: None,
                     })
                     .collect(),
                 groups: bus

@@ -72,6 +72,11 @@ mod build_info {
 /// Public metadata changes. Physical changes require verified commissioning jobs.
 #[derive(Debug, Clone)]
 pub enum MetadataEdit {
+    OutputColorRepresentation {
+        bus: u8,
+        address: u8,
+        representation: Option<crate::config::ColorRepresentation>,
+    },
     RenameInput {
         bus: u8,
         address: u8,
@@ -102,6 +107,15 @@ pub enum MetadataEdit {
 impl MetadataEdit {
     fn into_edit(self) -> Edit {
         match self {
+            Self::OutputColorRepresentation {
+                bus,
+                address,
+                representation,
+            } => Edit::OutputColorRepresentation {
+                bus,
+                address,
+                representation,
+            },
             Self::RenameInput { bus, address, name } => Edit::RenameInput { bus, address, name },
             Self::RenameInputInstance {
                 bus,

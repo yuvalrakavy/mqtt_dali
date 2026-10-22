@@ -50,7 +50,8 @@ pub(super) fn change(model: &Model, expected: u64, edits: &[Edit]) -> Result<Mod
                 if before.target == projection.target
                     && before.location == projection.location
                     && before.members == projection.members
-                    && before.instance_type == projection.instance_type =>
+                    && before.instance_type == projection.instance_type
+                    && before.color_representation == projection.color_representation =>
             {
                 before.binding_revision
             }
@@ -109,6 +110,18 @@ fn apply(
     edit: &Edit,
 ) -> Result<(), String> {
     match edit {
+        Edit::OutputColorRepresentation {
+            bus: index,
+            address,
+            representation,
+        } => {
+            bus(inventory, *index)?
+                .outputs
+                .iter_mut()
+                .find(|o| o.short_address == *address)
+                .ok_or("unknown output")?
+                .color_representation = *representation;
+        }
         Edit::RenameInput {
             bus: index,
             address,

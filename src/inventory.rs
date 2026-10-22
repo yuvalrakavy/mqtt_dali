@@ -47,6 +47,8 @@ pub struct Projection {
     pub members: Vec<Origin>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub instance_type: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_representation: Option<crate::config::ColorRepresentation>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -70,6 +72,11 @@ pub struct Ledger {
 
 #[derive(Debug, Clone)]
 pub enum Edit {
+    OutputColorRepresentation {
+        bus: u8,
+        address: u8,
+        representation: Option<crate::config::ColorRepresentation>,
+    },
     RenameInput {
         bus: u8,
         address: u8,

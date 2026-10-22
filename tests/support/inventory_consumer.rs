@@ -249,6 +249,7 @@ impl Consumer {
                         if batch.revision > self.revision
                             && (from.members != to.members
                                 || from.instance_type != to.instance_type
+                                || from.color_representation != to.color_representation
                                 || (from.target == to.target && from.location == to.location))
                         {
                             safe_intent_migration.remove(&departures[&from.target]);
@@ -404,6 +405,7 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
                     && record.members.iter().all(|m| outputs.get(m) == Some(&bus))
                     && target.instance().is_none()
                     && record.instance_type.is_none()
+                    && record.color_representation.is_none()
             }
             Location::Input { bus, short_address } => {
                 bus < 4
@@ -412,6 +414,7 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
                     && target.instance().is_none()
                     && record.members.is_empty()
                     && record.instance_type.is_none()
+                    && record.color_representation.is_none()
             }
             Location::InputInstance {
                 bus,
@@ -425,6 +428,7 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
                     && target.instance().is_some()
                     && record.members.is_empty()
                     && record.instance_type.is_some()
+                    && record.color_representation.is_none()
             }
         };
         if !valid
@@ -552,6 +556,16 @@ fn verify_current(
                     || item["binding_revision"].as_u64() != Some(record.binding_revision)
                 {
                     return Err("current mapping disagrees with history".into());
+                }
+                let representation = item
+                    .get("color_representation")
+                    .cloned()
+                    .unwrap_or(Value::Null);
+                if representation
+                    != serde_json::to_value(record.color_representation)
+                        .map_err(|e| e.to_string())?
+                {
+                    return Err("current color representation disagrees with history".into());
                 }
                 if field == "groups" {
                     let mut members = Vec::new();

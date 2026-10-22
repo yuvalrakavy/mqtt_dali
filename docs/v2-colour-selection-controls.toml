@@ -1,0 +1,73 @@
+# Durable selection, generation fencing and independently replayed identity.
+
+[[control]]
+name = "producer_omits_color_contract_from_projection"
+file = "src/inventory/ledger.rs"
+anchor = ".color_representation\n                } else {"
+replacement = ".color_representation.filter(|_| false)\n                } else {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(color_selection_rotates_only_contract)"]
+expect_text = "color selection missing from identity projection"
+
+[[control]]
+name = "producer_reuses_color_contract_generation"
+file = "src/inventory/edit.rs"
+anchor = "&& before.color_representation == projection.color_representation"
+replacement = "&& true"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(color_selection_rotates_only_contract)"]
+expect_text = "color selection kept old request generation"
+
+[[control]]
+name = "producer_accepts_past_group_color_contract"
+file = "src/inventory/ledger.rs"
+anchor = "&& projection.color_representation.is_none()\n        }\n        Location::Input {"
+replacement = "&& true\n        }\n        Location::Input {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(color_selection_rejects_non_output_metadata_even_in_past_history)"]
+expect_text = "past non-output color projection was accepted"
+
+[[control]]
+name = "consumer_accepts_past_group_color_contract"
+file = "tests/support/inventory_consumer.rs"
+anchor = "&& record.color_representation.is_none()\n            }\n            Location::Input {"
+replacement = "&& true\n            }\n            Location::Input {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(color_selection_consumer_rejects_wrong_space_even_in_past_history)"]
+expect_text = "consumer accepted past non-output color projection"
+
+[[control]]
+name = "consumer_carries_old_color_intent_through_rename"
+file = "tests/support/inventory_consumer.rs"
+anchor = "|| from.color_representation != to.color_representation"
+replacement = "|| false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(color_selection_consumer_drops_intent_even_when_fixture_is_also_renamed)"]
+expect_text = "rename carried incompatible color intent"
+
+[[control]]
+name = "consumer_accepts_current_color_without_history"
+file = "tests/support/inventory_consumer.rs"
+anchor = "if representation\n                    != serde_json::to_value(record.color_representation)\n                        .map_err(|e| e.to_string())?"
+replacement = "if false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(color_selection_consumer_rejects_unrecorded_or_wrong_space_metadata)"]
+expect_text = "malformed color history accepted"
+
+[[control]]
+name = "color_command_uses_controller_generation"
+file = "src/service/routing.rs"
+anchor = "table.targets[&projection.target].clone()"
+replacement = "table.instance"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_color_selection_is_durable)"]
+expect_text = "color selection used controller token instead of output token"
+
+[[control]]
+name = "missing_color_selection_silently_clears_contract"
+file = "src/service/proxy.rs"
+anchor = "if !call.params.contains_key(\"color_representation\") {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_color_selection_is_durable)"]
+expect_text = "invalid color selection committed"

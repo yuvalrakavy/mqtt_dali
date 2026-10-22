@@ -942,6 +942,38 @@ anchor was also repaired; its intended actual-versus-echo assertion is retained.
 MQTT scalar/profile choice is pending and does not block this native increment.
 See the [slice design](superpowers/specs/2026-10-22-dali-v2-p4d-combined-colour.md).
 
+## P4d5 — durable public colour representation
+
+The approved one-family-per-fixture choice is now saved as optional
+`color_representation` (`temperature`, `xy`, `rgbwaf`). The metadata service and
+MQTT `set_color_representation` command use existing durable activation, original
+output-token admission and single command completion. Selection changes preserve
+physical Origin/name/address and consumer object ID, rotate the output binding
+generation and retire old contract intent/observations. Repeating a value is a
+no-op. Groups and unrelated outputs retain their bindings. No gear settings or
+UART recovery behavior change. Scalar MQTT colour and supported-format State
+remain the next boundary.
+
+Six initial focused tests executed before production edits: four failed on
+rejected valid selection/continuity or unknown command, while two malformed-input
+checks passed. The completed nine-test selection set passes, including durable
+save/reopen, original-token reply, stale request refusal, combined rename/format
+change and illegal metadata in past history. All **8 new controls** detect their
+declared behavioral fault; the omitted-projection control initially tripped the
+generation consequence first, so assertion order was corrected and that row
+rerun successfully. Two affected existing reply/input-type controls also remain
+RED. Restored native suite: **369 passed**. Scoped strict Clippy, Pi library/all
+four binary compilation, changed-file format/whitespace and doctests (none
+defined) pass. Logs: `/tmp/dali-colour-selection-controls`,
+`/tmp/dali-colour-selection-affected-controls` and
+`/tmp/dali-colour-selection-restored-gate`.
+
+Both sequential design reviews approved with no material blocker; the old
+strict-reader compatibility clarification is incorporated. Updated readers
+accept old files, while new-field documents need updated strict consumers.
+Source reviews follow the frozen implementation. Same-family/source-only review
+limits remain explicit. See the [selection specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-selection.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -949,7 +981,7 @@ See the [slice design](superpowers/specs/2026-10-22-dali-v2-p4d-combined-colour.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator and owned colour service including automatic activation/combined writes implemented | Input discovery/full-value polling/configuration/feedback, color MQTT/public representation and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator and owned colour service including automatic activation/combined writes and durable public representation selection implemented | Input discovery/full-value polling/configuration/feedback, scalar color MQTT/supported-format State and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

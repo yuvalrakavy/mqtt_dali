@@ -33,6 +33,20 @@ select a new RGBWAF control mode, alter power or master brightness, or convert
 RGB into xy. The service discovers capability, active mode and limits before
 accepting an operation. DT8 alone does not imply RGB support.
 
+## Public representation selection
+
+Saved outputs can select optional `color_representation`: `temperature`, `xy`
+or `rgbwaf`, independently of physical capability/active-mode observations. The
+metadata service and `set_color_representation` command persist it with the
+identity ledger; see [metadata commands](service-development.md#mqtt-metadata-commands).
+Only one public family is selected per physical fixture. Changing it preserves
+the fixture lifetime but retires the old binding generation and contract intent.
+The future scalar MQTT colour path uses this selection, rather than allowing
+retained requests for competing families or silently changing the contract when
+another DALI master changes the physical mode. Supported-format reporting and
+scalar colour properties remain pending. Library typed intents still support all
+their explicit families independently of this public metadata choice.
+
 ## Owned service operations
 
 `ServiceHandle::read_colour` and `apply_colour` use the same capacity-one output
@@ -58,7 +72,7 @@ setters; persistent gear settings are never changed implicitly. RGBWAF writes
 additionally require normalized control mode and a
 confirmed assignment for every requested logical colour. Unsupported modes and
 representations are rejected with actual base evidence retained. MQTT colour
-properties and public representation selection remain subsequent work.
+properties remain subsequent work; public selection is persisted as above.
 
 A combined operation validates all colour capabilities before either mutation.
 It sends an off intent before the colour plan, or the colour plan (including

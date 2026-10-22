@@ -1,6 +1,146 @@
 use super::*;
 use serde_json::{json, Value};
 
+#[test]
+fn color_selection_rotates_only_contract_generation_and_survives_reload() {
+    use crate::config::ColorRepresentation;
+    let initial = Model::new(baseline()).unwrap();
+    let select = |representation| Edit::OutputColorRepresentation {
+        bus: 0,
+        address: 0,
+        representation,
+    };
+    let selected = initial
+        .edit(1, &[select(Some(ColorRepresentation::Temperature))])
+        .expect("color selection kept old request generation");
+    let find = |model: &Model, target: &str| {
+        model
+            .projections()
+            .into_iter()
+            .find(|p| p.target == target)
+            .unwrap()
+    };
+    let old = find(&initial, "Bus1.Outputs.Light1");
+    let changed = find(&selected, "Bus1.Outputs.Light1");
+    assert_eq!(
+        changed.color_representation,
+        Some(ColorRepresentation::Temperature),
+        "color selection missing from identity projection"
+    );
+    assert_eq!(
+        changed.binding_revision, 2,
+        "color selection kept old request generation"
+    );
+    assert_eq!(changed.location, old.location);
+    let edge = &selected.ledger().batches[0].transitions[0];
+    assert_eq!(
+        edge.from.as_ref(),
+        Some(&old),
+        "color selection lost continuity source"
+    );
+    assert_eq!(
+        edge.to.as_ref(),
+        Some(&changed),
+        "color selection created a replacement lifetime"
+    );
+    assert_eq!(
+        find(&selected, "Bus1.Groups.All"),
+        find(&initial, "Bus1.Groups.All")
+    );
+    assert_eq!(
+        find(&selected, "Bus1.Outputs.Light2"),
+        find(&initial, "Bus1.Outputs.Light2")
+    );
+    let same = selected
+        .edit(2, &[select(Some(ColorRepresentation::Temperature))])
+        .unwrap();
+    assert_eq!(
+        same.inventory(),
+        selected.inventory(),
+        "identical color selection changed revision"
+    );
+    let renamed = selected
+        .edit(
+            2,
+            &[
+                Edit::RenameOutput {
+                    bus: 0,
+                    address: 0,
+                    name: "Kitchen".into(),
+                },
+                select(Some(ColorRepresentation::Xy)),
+            ],
+        )
+        .unwrap();
+    let mut consumer = crate::inventory::Model::new(
+        serde_json::from_slice(&serde_json::to_vec(renamed.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        consumer.state_bytes().unwrap(),
+        renamed.state_bytes().unwrap(),
+        "color selection reload changed complete inventory"
+    );
+    consumer = consumer.edit(3, &[select(None)]).unwrap();
+    assert_eq!(find(&consumer, "Bus1.Outputs.Kitchen").binding_revision, 4);
+    let returned = consumer
+        .edit(4, &[select(Some(ColorRepresentation::Temperature))])
+        .unwrap();
+    assert_eq!(
+        find(&returned, "Bus1.Outputs.Kitchen").binding_revision,
+        5,
+        "returning color selection reused retired generation"
+    );
+    let mut tampered = selected.inventory().clone();
+    tampered.buses[0].outputs[0].color_representation = Some(ColorRepresentation::Xy);
+    assert!(
+        Model::new(tampered).is_err(),
+        "unrecorded color selection was accepted"
+    );
+    let mut illegal = selected.inventory().clone();
+    let group = illegal
+        .identity_ledger
+        .as_mut()
+        .unwrap()
+        .baseline
+        .iter_mut()
+        .find(|p| p.target == "Bus1.Groups.All")
+        .unwrap();
+    group.color_representation = Some(ColorRepresentation::Xy);
+    assert!(
+        Model::new(illegal).is_err(),
+        "non-output color projection was accepted"
+    );
+}
+
+#[test]
+fn color_selection_rejects_non_output_metadata_even_in_past_history() {
+    let mut inventory = baseline();
+    inventory.revision = 2;
+    let initial = Model::new(baseline()).unwrap();
+    let mut ledger = initial.ledger().clone();
+    let group = ledger
+        .baseline
+        .iter_mut()
+        .find(|p| p.target == "Bus1.Groups.All")
+        .unwrap();
+    let mut to = group.clone();
+    to.binding_revision = 2;
+    group.color_representation = Some(crate::config::ColorRepresentation::Xy);
+    ledger.batches.push(Batch {
+        revision: 2,
+        transitions: vec![Transition {
+            from: Some(group.clone()),
+            to: Some(to),
+        }],
+    });
+    inventory.identity_ledger = Some(ledger);
+    assert!(
+        Model::new(inventory).is_err(),
+        "past non-output color projection was accepted"
+    );
+}
+
 fn baseline() -> Inventory {
     serde_json::from_value(json!({
         "schema_version": 2, "revision": 1,
@@ -428,6 +568,7 @@ fn edits_are_atomic_for_new_items_simultaneous_address_moves_and_invalid_groups(
                         short_address: 9,
                         name: "New".into(),
                         description: None,
+                        color_representation: None,
                     },
                 },
                 Edit::RenameOutput {

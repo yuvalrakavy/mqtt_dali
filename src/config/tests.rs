@@ -87,6 +87,61 @@ fn imports_names_addresses_groups_and_order_without_writing_v1() {
 }
 
 #[test]
+fn color_selection_roundtrips_without_changing_legacy_defaults() {
+    let fixture = Fixture::new();
+    fixture.legacy(&legacy());
+    let loaded = fixture.load().unwrap();
+    let mut value = serde_json::to_value(&loaded.inventory).unwrap();
+    assert!(value["buses"][0]["outputs"][0]
+        .get("color_representation")
+        .is_none());
+    for format in [
+        json!("temperature"),
+        json!("xy"),
+        json!("rgbwaf"),
+        Value::Null,
+    ] {
+        value["buses"][0]["outputs"][0]["color_representation"] = format.clone();
+        let parsed = serde_json::from_value::<Inventory>(value.clone())
+            .expect("valid public color selection rejected");
+        validate_structure(&parsed).unwrap();
+        let roundtrip = serde_json::to_value(&parsed).unwrap();
+        if format.is_null() {
+            assert!(roundtrip["buses"][0]["outputs"][0]
+                .get("color_representation")
+                .is_none());
+        } else {
+            assert_eq!(
+                roundtrip["buses"][0]["outputs"][0]["color_representation"],
+                format
+            );
+        }
+    }
+    assert_eq!(fixture.load().unwrap().inventory, loaded.inventory);
+}
+
+#[test]
+fn color_selection_rejects_unknown_formats_and_non_string_values() {
+    let fixture = Fixture::new();
+    fixture.legacy(&legacy());
+    let mut value = serde_json::to_value(fixture.load().unwrap().inventory).unwrap();
+    for invalid in [
+        json!("rgb"),
+        json!("Temperature"),
+        json!(true),
+        json!(8),
+        json!({}),
+        json!([]),
+    ] {
+        value["buses"][0]["outputs"][0]["color_representation"] = invalid;
+        assert!(
+            serde_json::from_value::<Inventory>(value.clone()).is_err(),
+            "invalid public color selection accepted"
+        );
+    }
+}
+
+#[test]
 fn existing_v2_wins_even_if_v1_is_corrupt_and_startup_name_differs() {
     let fixture = Fixture::new();
     fixture.legacy(&legacy());

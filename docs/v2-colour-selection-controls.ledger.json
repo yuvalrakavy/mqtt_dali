@@ -1,0 +1,141 @@
+{
+ "rows": {
+  "color_command_uses_controller_generation": {
+   "last_real": {
+    "at": "2026-10-22T02:49:45Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:b99f203399e9e910",
+     "row": "63de5d25a91e4177",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.2,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "verdict": "RED"
+   }
+  },
+  "consumer_accepts_current_color_without_history": {
+   "last_real": {
+    "at": "2026-10-22T02:49:39Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:bbc24e2b1b84da31",
+     "row": "35affa7e99149406",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.9,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "verdict": "RED"
+   }
+  },
+  "consumer_accepts_past_group_color_contract": {
+   "last_real": {
+    "at": "2026-10-22T02:49:23Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:9c30039987634a3f",
+     "row": "4bc2426e52350fa0",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.3,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "verdict": "RED"
+   }
+  },
+  "consumer_carries_old_color_intent_through_rename": {
+   "last_real": {
+    "at": "2026-10-22T02:49:31Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:42fb418cd37d032a",
+     "row": "84cb89e5250de767",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.8,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "verdict": "RED"
+   }
+  },
+  "missing_color_selection_silently_clears_contract": {
+   "last_real": {
+    "at": "2026-10-22T02:49:51Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:21d86109006ebd18",
+     "row": "26c89891661f995c",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.3,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "verdict": "RED"
+   }
+  },
+  "producer_accepts_past_group_color_contract": {
+   "last_real": {
+    "at": "2026-10-22T02:49:14Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:256c0fe897535495",
+     "row": "b339b0780936e516",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.4,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "verdict": "RED"
+   }
+  },
+  "producer_omits_color_contract_from_projection": {
+   "last_real": {
+    "at": "2026-10-22T02:50:05Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:bccc84a29acb16c3",
+     "row": "edc8cea5610ae94e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.5,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "verdict": "RED"
+   }
+  },
+  "producer_reuses_color_contract_generation": {
+   "last_real": {
+    "at": "2026-10-22T02:49:08Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:dd69da27078a4569",
+     "row": "1a0a99ab70ee8797",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.4,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

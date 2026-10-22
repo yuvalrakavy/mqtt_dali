@@ -37,6 +37,156 @@ fn input_model() -> Model {
     Model::new(inventory).unwrap()
 }
 
+// Deliberately construct the new wire contract without producer edit/replay helpers.
+fn color_document() -> Value {
+    let mut value: Value = serde_json::from_slice(&model().state_bytes().unwrap()).unwrap();
+    let current = &mut value["Inventory"];
+    current["revision"] = json!(2);
+    current["buses"][0]["outputs"][0]["binding_revision"] = json!(2);
+    current["buses"][0]["outputs"][0]["color_representation"] = json!("temperature");
+    let from = current["identity_ledger"]["baseline"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["target"] == "Bus1.Outputs.Light1")
+        .unwrap()
+        .clone();
+    let mut to = from.clone();
+    to["binding_revision"] = json!(2);
+    to["color_representation"] = json!("temperature");
+    current["identity_ledger"]["batches"] =
+        json!([{"revision":2,"transitions":[{"from":from,"to":to}]}]);
+    value
+}
+
+#[test]
+fn color_selection_consumer_keeps_identity_but_retires_old_intent_and_observation() {
+    let first = model();
+    let target = "Bus1.Outputs.Light1";
+    let group = "Bus1.Groups.All";
+    let mut consumer = Consumer::default();
+    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    let id = consumer.by_target(target).unwrap().id;
+    let group_before = consumer.by_target(group).unwrap().record.clone();
+    consumer.set_intent(target, json!({"Brightness":0.2}));
+    consumer
+        .observe(
+            target,
+            "0123456789abcdef0123456789abcdef.1",
+            br#"{"Brightness":0.2}"#,
+        )
+        .unwrap();
+    consumer
+        .accept(&serde_json::to_vec(&color_document()).unwrap())
+        .expect("valid color selection continuity rejected");
+    let fixture = consumer.by_target(target).unwrap();
+    assert_eq!(fixture.id, id, "color selection replaced physical identity");
+    assert!(
+        fixture.intent.is_none(),
+        "color selection preserved old contract intent"
+    );
+    assert!(
+        fixture.observed.is_none(),
+        "color selection preserved old observation"
+    );
+    assert_eq!(
+        consumer.by_target(group).unwrap().record,
+        group_before,
+        "color selection changed group membership identity"
+    );
+    assert!(!consumer.accepts_state(target, "0123456789abcdef0123456789abcdef.1"));
+    assert!(consumer.accepts_state(target, "0123456789abcdef0123456789abcdef.2"));
+}
+
+#[test]
+fn color_selection_consumer_rejects_unrecorded_or_wrong_space_metadata() {
+    let valid = color_document();
+    let mut malformed = Vec::new();
+    let mut disagreement = valid.clone();
+    disagreement["Inventory"]["buses"][0]["outputs"][0]["color_representation"] = json!("xy");
+    malformed.push(disagreement);
+    let mut unrelated = valid.clone();
+    let group = unrelated["Inventory"]["identity_ledger"]["baseline"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|p| p["target"] == "Bus1.Groups.All")
+        .unwrap();
+    group["color_representation"] = json!("xy");
+    malformed.push(unrelated);
+    for document in malformed {
+        let mut consumer = Consumer::default();
+        consumer.accept(&model().state_bytes().unwrap()).unwrap();
+        let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
+        assert!(
+            consumer
+                .accept(&serde_json::to_vec(&document).unwrap())
+                .is_err(),
+            "malformed color history accepted"
+        );
+        assert_eq!(
+            consumer.revision, 1,
+            "failed color acceptance partially committed"
+        );
+        assert_eq!(consumer.by_target("Bus1.Outputs.Light1").unwrap().id, id);
+    }
+}
+
+#[test]
+fn color_selection_consumer_drops_intent_even_when_fixture_is_also_renamed() {
+    let mut value = color_document();
+    let current = &mut value["Inventory"];
+    current["buses"][0]["outputs"][0]["name"] = json!("Kitchen");
+    current["buses"][0]["outputs"][0]["target"] = json!("Bus1.Outputs.Kitchen");
+    current["identity_ledger"]["batches"][0]["transitions"][0]["to"]["target"] =
+        json!("Bus1.Outputs.Kitchen");
+    let mut consumer = Consumer::default();
+    consumer.accept(&model().state_bytes().unwrap()).unwrap();
+    let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
+    consumer.set_intent("Bus1.Outputs.Light1", json!({"ColorTemperature":3000}));
+    consumer
+        .accept(&serde_json::to_vec(&value).unwrap())
+        .expect("valid renamed color selection rejected");
+    assert_eq!(consumer.by_target("Bus1.Outputs.Kitchen").unwrap().id, id);
+    assert!(
+        consumer
+            .by_target("Bus1.Outputs.Kitchen")
+            .unwrap()
+            .intent
+            .is_none(),
+        "rename carried incompatible color intent"
+    );
+}
+
+#[test]
+fn color_selection_consumer_rejects_wrong_space_even_in_past_history() {
+    let mut document = color_document();
+    let current = &mut document["Inventory"];
+    current["buses"][0]["groups"][0]["binding_revision"] = json!(2);
+    let group = current["identity_ledger"]["baseline"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|p| p["target"] == "Bus1.Groups.All")
+        .unwrap();
+    let mut to = group.clone();
+    to["binding_revision"] = json!(2);
+    group["color_representation"] = json!("xy");
+    let edge = json!({"from":group.clone(),"to":to});
+    current["identity_ledger"]["batches"][0]["transitions"]
+        .as_array_mut()
+        .unwrap()
+        .push(edge);
+    let mut consumer = Consumer::default();
+    assert!(
+        consumer
+            .accept(&serde_json::to_vec(&document).unwrap())
+            .is_err(),
+        "consumer accepted past non-output color projection"
+    );
+    assert_eq!(consumer.revision, 0);
+}
+
 #[test]
 fn input_consumer_preserves_rename_identity_and_retires_same_text_replacement() {
     let first = input_model();

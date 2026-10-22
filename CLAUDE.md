@@ -166,6 +166,12 @@ and `docs/v2-combined-colour-controls.toml`.
 Never share the codec with emulator semantics,
 treat a high byte FF as full-word MASK, clear unrequested WAF channels, or infer
 RGB support from DT8 alone. No MQTT colour path is claimed yet.
+Outputs can persist optional `color_representation` (`temperature`, `xy`, `rgbwaf`)
+through `MetadataEdit::OutputColorRepresentation` / `set_color_representation`.
+This is component metadata, not hardware configuration or capability evidence.
+Changes preserve Origin and rotate the binding token, including combined renames;
+consumers retire old contract intent. See `docs/inventory-contract.md` and
+`docs/v2-colour-selection-controls.toml`. Scalar colour MQTT remains pending.
 The independent emulator's optional strict colour profile covers selected DT8
 staging/activation/current values and limits; see `docs/emulator.md`. Staged MASK
 overwrites earlier staged numeric values; ACTIVATE clears temporaries. Standard

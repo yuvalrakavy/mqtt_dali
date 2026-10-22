@@ -17,10 +17,16 @@ pub struct DaliProxy {
 impl DeviceDriver for DaliProxy {
     fn info(&self) -> DriverInfo {
         DriverInfo {
-            commands: ["rename", "rename_bus", "describe", "recover"]
-                .into_iter()
-                .map(|name| CommandSpec::new(name, CommandClass::WithReply))
-                .collect(),
+            commands: [
+                "rename",
+                "rename_bus",
+                "describe",
+                "recover",
+                "set_color_representation",
+            ]
+            .into_iter()
+            .map(|name| CommandSpec::new(name, CommandClass::WithReply))
+            .collect(),
             timing: Timing {
                 operation: Duration::from_secs(20),
                 poll: Some(Duration::from_secs(30)),
@@ -390,12 +396,44 @@ struct Describe {
     expected_revision: u64,
     description: Option<String>,
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ColorSelection {
+    expected_revision: u64,
+    color_representation: Option<crate::config::ColorRepresentation>,
+}
 fn decode<T: serde::de::DeserializeOwned>(call: &CommandCall) -> Result<T, OpError> {
     serde_json::from_value(Value::Object(call.params.clone()))
         .map_err(|e| OpError::Rejected(e.to_string()))
 }
 fn parse(snapshot: &Snapshot, target: Option<&str>, call: &CommandCall) -> Result<Change, OpError> {
     let edit = match (call.command.as_str(), target) {
+        ("set_color_representation", Some(target)) => {
+            let params: ColorSelection = decode(call)?;
+            if !call.params.contains_key("color_representation") {
+                return Err(OpError::Rejected(
+                    "color_representation is required; use null to clear".into(),
+                ));
+            }
+            let projection = snapshot
+                .model
+                .projections()
+                .into_iter()
+                .find(|p| p.target == target)
+                .ok_or_else(|| OpError::Rejected("unknown output".into()))?;
+            let crate::inventory::Location::Output { bus, short_address } = projection.location
+            else {
+                return Err(OpError::Unsupported("individual output required".into()));
+            };
+            (
+                params.expected_revision,
+                MetadataEdit::OutputColorRepresentation {
+                    bus,
+                    address: short_address,
+                    representation: params.color_representation,
+                },
+            )
+        }
         ("rename", Some(target)) if target != "__inventory" => {
             let params: Rename = decode(call)?;
             let projection = snapshot

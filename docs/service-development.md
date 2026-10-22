@@ -90,8 +90,8 @@ the paced retry, while an actual task failure remains fatal.
 `subscribe()` is a bounded notification stream. On lag, read a fresh complete
 snapshot. Notifications are not a replayable edit log.
 
-Public `MetadataEdit` operations rename an output/group/input module/input
-instance/bus or update the
+Public `MetadataEdit` operations select an output's public colour representation,
+rename an output/group/input module/input instance/bus or update the
 controller description. Supply the expected current inventory revision, original
 item token (instance token for bus/description), and one absolute deadline.
 Admission is nonwaiting and exclusive; Busy is a refusal to wait in another queue.
@@ -127,6 +127,7 @@ response topic and correlation data when awaiting the result.
 | Command | JSON fields in addition to `command` | Generation |
 |---|---|---|
 | `rename` | `target`, `name`, `expected_revision` | Current output/group token |
+| `set_color_representation` | Individual output `target`, `color_representation` (`temperature`, `xy`, `rgbwaf` or null), `expected_revision` | Current output token |
 | `rename_bus` | `bus`, `name`, `expected_revision` | Controller token |
 | `describe` | `description` (string or null), `expected_revision` | Controller token |
 | `recover` | None; valid only while uncertain | Prior confirmed controller token |
@@ -139,6 +140,14 @@ it to its owner. A successful durable change returns one reply containing
 does not reuse the retired token for hardware work. All other queued old work
 retires. HTTP/embedded handle edits use ordinary runtime retirement without that
 capability.
+
+For example,
+`{"command":"set_color_representation","target":"Bus1.Outputs.Light1","color_representation":"temperature","expected_revision":1}`
+saves the public colour format and retires old requests without replacing the
+fixture's physical identity. The field is required; null clears it. This metadata
+command performs no UART operation and does not configure a physical colour mode.
+The setting alone does not enable MQTT colour values in this increment; those
+properties and supported-format reporting are the next integration boundary.
 
 Optional MQTT v5 `traceparent` follows each command through BridgeKit's worker
 and the metadata actor. Inventory publication uses the committed generation

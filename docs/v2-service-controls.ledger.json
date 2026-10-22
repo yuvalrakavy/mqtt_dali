@@ -36,7 +36,7 @@
   },
   "mqtt_edits_retire_their_own_final_reply": {
    "last_real": {
-    "at": "2026-10-21T23:12:21Z",
+    "at": "2026-10-22T02:50:20Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -46,8 +46,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 5.9,
-    "sha": "e88f03cd6e41afaa31b6ff02f8eafc6ac526843b",
+    "secs": 4.3,
+    "sha": "dfd10de719861ac09081cbaabc4f68281e318e66",
     "verdict": "RED"
    }
   },
