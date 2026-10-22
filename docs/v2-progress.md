@@ -52,7 +52,11 @@ wall 98 s), scoped strict Clippy (9 s), Pi library/all four binaries (4 s),
 doctests (none), changed-file format, affected control plans, whitespace and
 wait validation (zero findings). The registry initially needed explicit
 "on expiry end the stream" wording; its generated waiter now names event_stream.
-Logs: `/tmp/dali-web-observation-acceptance`. Frozen source reviews follow.
+Logs: `/tmp/dali-web-observation-acceptance`.
+
+Frozen `f4501ec` is approved by both sequential source gates against `fe7c30d`,
+with no material findings (67 seconds each). Both reviews were read-only,
+source/test-only and from the same model family; they reran no checks.
 Browser workflows and physical HAT validation
 remain pending. See [web access](web-access.md) and
 [slice design](superpowers/specs/2026-10-22-dali-v2-p6c-web-observations.md).
@@ -1546,7 +1550,7 @@ no verification. Physical hardware validation remains outstanding.
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
 | P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal and per-fixture group membership implemented | Full reassign/restore, identification, browser/pattern group workflows and native scenes |
-| P6 authenticated HTTP | Session/status and command jobs accepted; scalar observation/apply and native/job SSE implemented, final verification in progress | Protected frontend integration and remaining P4/P5 actions |
+| P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Protected frontend integration and remaining P4/P5 actions |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |
