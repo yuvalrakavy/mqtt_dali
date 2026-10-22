@@ -35,6 +35,10 @@ pub enum Location {
         short_address: u8,
         instance: u8,
     },
+    Scene {
+        bus: u8,
+        slot: u8,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -156,6 +160,24 @@ pub enum Edit {
     Description {
         description: Option<String>,
     },
+    AddScene {
+        bus: u8,
+        scene: crate::config::Scene,
+    },
+    RenameScene {
+        bus: u8,
+        slot: u8,
+        name: String,
+    },
+    RemoveScene {
+        bus: u8,
+        slot: u8,
+    },
+    SceneDescription {
+        bus: u8,
+        slot: u8,
+        description: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -240,6 +262,15 @@ fn state_bytes(
                 group_address: group.group_address,
             }];
             let item = &mut snapshot["buses"][bus_index]["groups"][index];
+            item["target"] = projection.target.clone().into();
+            item["binding_revision"] = projection.binding_revision.into();
+        }
+        for (index, scene) in bus.scenes.iter().enumerate() {
+            let projection = by_location[&Location::Scene {
+                bus: bus.bus,
+                slot: scene.slot,
+            }];
+            let item = &mut snapshot["buses"][bus_index]["scenes"][index];
             item["target"] = projection.target.clone().into();
             item["binding_revision"] = projection.binding_revision.into();
         }

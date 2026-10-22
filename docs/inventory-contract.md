@@ -15,6 +15,18 @@ instance numbers are 0..31. Unknown types remain metadata. The same short addres
 may identify an output and an input independently. Missing inputs in an older
 v2 file or v1 import means an empty array; an explicit null array is invalid.
 
+Named native scenes occupy `Bus1.Scenes.Evening`. Each bus's optional `scenes`
+array contains `slot` (0..15), `name` and optional `description`. Names and slots
+are unique within that bus's Scenes namespace, independently of outputs/groups.
+An absent array means empty; null is invalid. Scene projections carry their
+target and binding revision, with no members, input type or colour representation.
+Rename, including bus rename, preserves the lifetime and rotates its binding;
+description changes preserve the binding. Removal/recreation starts a fresh
+lifetime. History remains after removal, so older readers that do not understand
+Scene locations can still be incompatible when the current scene list is empty.
+See [scene metadata operations](dali-scenes-contract.md#named-slot-metadata).
+This catalogue does not expose per-fixture scene settings or active-scene State.
+
 The pure `inventory::Model` validates configuration and produces the complete
 State payload destined for `DALI/State/<controller>/__inventory`. The property
 `Inventory` contains wire schema 1, epoch/revision, controller/buses/items, and

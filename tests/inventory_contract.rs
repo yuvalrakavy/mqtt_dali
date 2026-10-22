@@ -1,5 +1,7 @@
 #[path = "support/inventory_consumer.rs"]
 mod inventory_consumer;
+#[path = "inventory_contract/scenes.rs"]
+mod scenes;
 use inventory_consumer::Consumer;
 use mqtt_dali::config::Inventory;
 use mqtt_dali::inventory::{Edit, Model};

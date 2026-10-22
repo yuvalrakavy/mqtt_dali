@@ -1,5 +1,6 @@
 use super::*;
 mod observations;
+mod scenes;
 use crate::config_store::test_hooks::{Hooks, Stage, Step};
 use std::sync::{
     atomic::{AtomicBool, Ordering},

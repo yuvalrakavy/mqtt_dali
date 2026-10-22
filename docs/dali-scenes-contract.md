@@ -1,8 +1,39 @@
 # Native scene protocol and emulator
 
 This contributor guide covers the native scene codec and physical emulator.
-Managed scene configuration, MQTT/HTTP jobs and the Scenes screen are pending.
+Named-slot metadata is available through MQTT/HTTP jobs. Physical scene jobs
+and the Scenes screen are pending.
 No scene operation here has been validated on a physical HAT.
+
+## Named-slot metadata
+
+Each bus can save sixteen named slots with an optional description. A name is
+independent of the slot's physical contents: creating a name does not program
+lights, and removing it from the saved list does not clear any fixture's scene.
+Stored per-fixture settings remain private to the bridge in the planned physical
+workflow; the public catalogue contains no mirrored scene settings or active flag.
+
+Commands use the standard BridgeKit command envelope with these parameters:
+
+| Command | Target | Parameters |
+|---|---|---|
+| `create_scene` | Controller | `bus`, `slot`, `name`, optional `description`, `expected_revision` |
+| `rename` | Scene | `name`, `expected_revision` |
+| `describe` | Scene | `description` (string or explicit null), `expected_revision` |
+| `remove_from_list` | Scene | `expected_revision` |
+
+For example, `Bus1.Scenes.Evening` identifies a scene; its slot is 0..15.
+Use the original controller generation for creation and the original scene
+generation for targeted edits, together with the expected complete inventory
+revision. Missing description is refused by `describe`; null clears it. Unknown
+fields, duplicate names/slots and invalid slots are refused. Rename preserves
+identity; removal/recreation creates a new lifetime. An unrelated controller
+edit does not replace the scene generation. Both transports use the existing
+durable metadata owner; HTTP requires its normal session and CSRF protection.
+
+The [inventory contract](inventory-contract.md) explains replay and compatibility.
+Behavioral controls are in `v2-scene-identity-controls.toml`. Read, capture,
+program, verify, recall, copy and hardware-clear jobs remain pending.
 
 ## Storage and participation
 

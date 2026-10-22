@@ -5,6 +5,34 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5h2a — durable named scene slots
+
+Implementation and targeted checks are in progress; source acceptance is pending.
+This slice adds only named-slot metadata through the existing config, identity
+ledger, durable owner and shared MQTT/authenticated HTTP job path. Creation,
+rename, description and list removal do not touch hardware. Rename preserves
+identity; removal/recreation starts another lifetime. Other device bindings stay
+unchanged. Physical scene jobs and the Scenes screen remain subsequent slices.
+
+Both sequential design reviewers approve (40 s and 15 s, same-family/source-only).
+Valid scene JSON and real MQTT creation fail behaviorally before implementation.
+Nine new cases now pass, covering strict config/payload validation, independent
+current/history replay, identity continuity, durable reopen, original scene
+authority after unrelated edits, stale-token refusal and authenticated HTTP jobs.
+Logs: `/tmp/dali-scene-identity-red.log` and
+`/tmp/dali-scene-identity-cases-final.log`.
+
+All eight scene identity controls produce their intended behavioral REDs (163 s,
+`/tmp/dali-scene-identity-controls`). Restored acceptance passes **555/555 native
+tests** across eleven binaries (one opt-in browser test skipped), scoped strict
+Clippy, Pi library/four-bin check, doctests (none), changed-file formatting,
+affected control plans, wait validation and whitespace. Native execution is
+51.875 s; the native command takes 95 s. Logs:
+`/tmp/dali-scene-identity-acceptance`. Sequential source reviews remain pending.
+No browser source changes or physical HAT validation are part of this slice.
+See the [slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scene-identity.md)
+and [metadata contract](dali-scenes-contract.md#named-slot-metadata).
+
 ## P5h1 — native scene protocol and physical model
 
 Accepted locally at frozen source `2e46c31`: **546 native tests** and both
@@ -1737,7 +1765,7 @@ no verification. Physical hardware validation remains outstanding.
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene protocol/model accepted locally | Full reassign/restore and managed native scenes/UI |
+| P5 commissioning | Addressed discovery/default adoption, one unaddressed output/input assignment, bus setup, removal, per-fixture group membership, browser patterns/verification and Blink/Stop identification implemented; native scene protocol/model accepted locally; named-slot metadata in verification | Full reassign/restore and managed physical scenes/UI |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |

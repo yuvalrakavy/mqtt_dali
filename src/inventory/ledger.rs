@@ -68,6 +68,21 @@ pub(super) fn catalog(inventory: &Inventory) -> Result<Vec<(Location, String)>, 
                 target.to_string(),
             ));
         }
+        for (i, scene) in bus.scenes.iter().enumerate() {
+            let target = qualified(
+                &bus.name,
+                Namespace::Scenes,
+                &scene.name,
+                &format!("buses[{b}].scenes[{i}].name"),
+            )?;
+            result.push((
+                Location::Scene {
+                    bus: bus.bus,
+                    slot: scene.slot,
+                },
+                target,
+            ));
+        }
         for (i, input) in bus.inputs.iter().enumerate() {
             let path = format!("buses[{b}].inputs[{i}]");
             let target = qualified(
@@ -221,6 +236,15 @@ fn shape(projection: &Projection) -> Result<(), String> {
                 && projection.instance_type.is_none()
                 && projection.color_representation.is_none()
         }
+        Location::Scene { bus, slot } => {
+            bus < 4
+                && slot < 16
+                && target.namespace() == Some(Namespace::Scenes)
+                && target.instance().is_none()
+                && projection.members.is_empty()
+                && projection.instance_type.is_none()
+                && projection.color_representation.is_none()
+        }
         Location::Input { bus, short_address } => {
             bus < 4
                 && short_address < 64
@@ -275,6 +299,7 @@ fn valid_records(records: &Records) -> Result<(), String> {
             Location::Output { bus, .. }
             | Location::Group { bus, .. }
             | Location::Input { bus, .. }
+            | Location::Scene { bus, .. }
             | Location::InputInstance { bus, .. } => bus,
         };
         if bus_names

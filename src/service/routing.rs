@@ -37,6 +37,14 @@ pub(super) fn admit(
                 return Err(ServiceError::Rejected("inventory revision changed".into()));
             }
             let location = match edit {
+                MetadataEdit::RenameScene { bus, slot, .. }
+                | MetadataEdit::DescribeScene { bus, slot, .. }
+                | MetadataEdit::RemoveScene { bus, slot } => {
+                    Some(crate::inventory::Location::Scene {
+                        bus: *bus,
+                        slot: *slot,
+                    })
+                }
                 MetadataEdit::RenameInput { bus, address, .. }
                 | MetadataEdit::RemoveInput { bus, address } => {
                     Some(crate::inventory::Location::Input {

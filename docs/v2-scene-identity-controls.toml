@@ -1,0 +1,72 @@
+[[control]]
+name = "scene_metadata_accepts_slot_16"
+file = "src/config.rs"
+anchor = "if scene.slot >= 16 {"
+replacement = "if scene.slot > 16 {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "--test", "inventory_contract", "-E", "test(scene_metadata_rejects_invalid)"]
+expect_text = "invalid scene metadata was accepted"
+
+[[control]]
+name = "scene_metadata_omits_public_target"
+file = "src/inventory.rs"
+anchor = "for (index, scene) in bus.scenes.iter().enumerate() {"
+replacement = "for (index, scene) in bus.scenes.iter().take(0).enumerate() {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "--test", "inventory_contract", "-E", "test(scene_metadata_valid_json)"]
+expect_text = "scene target was not published"
+
+[[control]]
+name = "scene_metadata_rename_creates_new_lifetime"
+file = "src/inventory/edit.rs"
+anchor = "Edit::RenameScene {\n            bus: index,\n            slot,\n            name,\n        } => {"
+replacement = "Edit::RenameScene {\n            bus: index,\n            slot,\n            name,\n        } => {\n            fresh(origins, Location::Scene { bus:*index, slot:*slot }, revision);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "--test", "inventory_contract", "-E", "test(scene_metadata_consumer_preserves)"]
+expect_text = "scene rename replaced its continuing consumer object"
+
+[[control]]
+name = "scene_metadata_uses_latest_controller_authority"
+file = "src/service/routing.rs"
+anchor = "Some(crate::inventory::Location::Scene {\n                        bus: *bus,\n                        slot: *slot,\n                    })"
+replacement = "None"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "--test", "inventory_contract", "-E", "test(scene_metadata_mqtt_saves)"]
+expect_text = "original scene generation was replaced by controller generation"
+
+[[control]]
+name = "scene_metadata_producer_ignores_historical_input_type"
+file = "src/inventory/ledger.rs"
+anchor = "Location::Scene { bus, slot } => {\n            bus < 4\n                && slot < 16\n                && target.namespace() == Some(Namespace::Scenes)\n                && target.instance().is_none()\n                && projection.members.is_empty()\n                && projection.instance_type.is_none()\n                && projection.color_representation.is_none()\n        }"
+replacement = "Location::Scene { bus, slot } => {\n            bus < 4\n                && slot < 16\n                && target.namespace() == Some(Namespace::Scenes)\n                && target.instance().is_none()\n                && projection.members.is_empty()\n                \n                && projection.color_representation.is_none()\n        }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "--test", "inventory_contract", "-E", "test(scene_metadata_historical_reader)"]
+expect_text = "producer accepted foreign metadata in retired scene history"
+
+[[control]]
+name = "scene_metadata_consumer_ignores_historical_input_type"
+file = "tests/support/inventory_consumer.rs"
+anchor = "Location::Scene { bus, slot } => {\n                bus < 4\n                    && slot < 16\n                    && target.namespace() == Some(Namespace::Scenes)\n                    && target.instance().is_none()\n                    && record.members.is_empty()\n                    && record.instance_type.is_none()\n                    && record.color_representation.is_none()\n            }"
+replacement = "Location::Scene { bus, slot } => {\n                bus < 4\n                    && slot < 16\n                    && target.namespace() == Some(Namespace::Scenes)\n                    && target.instance().is_none()\n                    && record.members.is_empty()\n                    \n                    && record.color_representation.is_none()\n            }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "--test", "inventory_contract", "-E", "test(scene_metadata_historical_reader)"]
+expect_text = "consumer accepted foreign metadata in retired scene history"
+
+[[control]]
+name = "scene_metadata_consumer_ignores_current_slot"
+file = "tests/support/inventory_consumer.rs"
+anchor = "if place != record.location"
+replacement = "if (field != \"scenes\" && place != record.location)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "--test", "inventory_contract", "-E", "test(scene_metadata_consumer_validates_current)"]
+expect_text = "consumer accepted malformed current scene metadata"
+
+[[control]]
+name = "scene_metadata_command_accepts_unknown_fields"
+file = "src/service/proxy.rs"
+anchor = "#[serde(deny_unknown_fields)]\nstruct SceneCreation"
+replacement = "struct SceneCreation"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "--test", "inventory_contract", "-E", "test(scene_metadata_mqtt_rejects_unknown)"]
+expect_text = "invalid scene command parameters were accepted"
+

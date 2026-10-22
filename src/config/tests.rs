@@ -1,4 +1,5 @@
 use super::*;
+mod scene_metadata;
 use serde_json::{json, Value};
 use std::fs;
 use std::sync::atomic::{AtomicU64, Ordering};

@@ -50,6 +50,8 @@ pub struct Bus {
     #[serde(default)]
     pub groups: Vec<Group>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub scenes: Vec<Scene>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub inputs: Vec<Input>,
 }
 
@@ -118,6 +120,15 @@ pub struct Group {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub members: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Scene {
+    pub slot: u8,
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -308,6 +319,7 @@ impl LegacyInventory {
                 description: None,
                 enabled: true,
                 inputs: Vec::new(),
+                scenes: Vec::new(),
                 outputs: bus
                     .channels
                     .into_iter()
@@ -488,6 +500,21 @@ pub(crate) fn validate_structure(inventory: &Inventory) -> Result<(), String> {
                 if !members.insert(member) {
                     return Err(format!("{at}.members repeats output {member}"));
                 }
+            }
+        }
+        let mut scene_slots = HashSet::new();
+        let mut scene_names = HashSet::new();
+        for (i, scene) in bus.scenes.iter().enumerate() {
+            let at = format!("{at}.scenes[{i}]");
+            validate_name(&scene.name).map_err(|why| format!("{at}.name: {why}"))?;
+            if scene.slot >= 16 {
+                return Err(format!("{at}.slot must be in 0..15"));
+            }
+            if !scene_slots.insert(scene.slot) {
+                return Err(format!("{at}.slot duplicates another scene"));
+            }
+            if !scene_names.insert(&scene.name) {
+                return Err(format!("{at}.name duplicates another scene name"));
             }
         }
     }

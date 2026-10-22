@@ -11,6 +11,7 @@ mod input_assignment;
 mod live_input;
 mod readback;
 mod removal;
+mod scenes;
 
 #[derive(Default)]
 pub(super) struct Pause {

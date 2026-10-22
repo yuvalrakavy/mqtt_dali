@@ -126,6 +126,7 @@ fn apply(
                     enabled: *enabled,
                     outputs: Vec::new(),
                     groups: Vec::new(),
+                    scenes: Vec::new(),
                     inputs: Vec::new(),
                 });
             }
@@ -307,6 +308,58 @@ fn apply(
             origins.remove(&Location::Output {
                 bus: *index,
                 short_address: *address,
+            });
+        }
+        Edit::AddScene { bus: index, scene } => {
+            let bus = bus(inventory, *index)?;
+            if bus.scenes.iter().any(|s| s.slot == scene.slot) {
+                return Err("scene slot already reserved".into());
+            }
+            bus.scenes.push(scene.clone());
+            fresh(
+                origins,
+                Location::Scene {
+                    bus: *index,
+                    slot: scene.slot,
+                },
+                revision,
+            );
+        }
+        Edit::RenameScene {
+            bus: index,
+            slot,
+            name,
+        } => {
+            bus(inventory, *index)?
+                .scenes
+                .iter_mut()
+                .find(|s| s.slot == *slot)
+                .ok_or("unknown scene")?
+                .name = name.clone();
+        }
+        Edit::SceneDescription {
+            bus: index,
+            slot,
+            description,
+        } => {
+            bus(inventory, *index)?
+                .scenes
+                .iter_mut()
+                .find(|s| s.slot == *slot)
+                .ok_or("unknown scene")?
+                .description = description.clone();
+        }
+        Edit::RemoveScene { bus: index, slot } => {
+            let bus = bus(inventory, *index)?;
+            let at = bus
+                .scenes
+                .iter()
+                .position(|s| s.slot == *slot)
+                .ok_or("unknown scene")?;
+            bus.scenes.remove(at);
+            origins.remove(&Location::Scene {
+                bus: *index,
+                slot: *slot,
             });
         }
         Edit::AddGroup { bus: index, group } => {

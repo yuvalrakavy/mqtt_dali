@@ -9,7 +9,7 @@ mod cases;
 
 const TRACE: &str = "00-11111111111111111111111111111111-2222222222222222-01";
 
-async fn call(
+pub(super) async fn call(
     broker: &FakeBroker,
     body: serde_json::Value,
     token: u64,
@@ -28,7 +28,7 @@ async fn call(
         broker
             .wait_until(Duration::from_secs(3), |b| !b.received_on(topic).is_empty())
             .await,
-        "group command did not complete"
+        "command did not complete"
     );
     let replies = broker.received_on(topic);
     assert_eq!(replies.len(), 1);

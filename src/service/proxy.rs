@@ -22,6 +22,7 @@ impl DeviceDriver for DaliProxy {
                 "blink",
                 "stop_blink",
                 "create_group",
+                "create_scene",
                 "assign_group",
                 "adopt_groups",
                 "repair_groups",
@@ -955,6 +956,15 @@ struct GroupCreation {
     name: String,
     expected_revision: u64,
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SceneCreation {
+    bus: u8,
+    slot: u8,
+    name: String,
+    description: Option<String>,
+    expected_revision: u64,
+}
 fn parse(
     snapshot: &Snapshot,
     target: Option<&str>,
@@ -1058,6 +1068,18 @@ fn parse_metadata(
     call: &CommandCall,
 ) -> Result<Change, OpError> {
     let edit = match (call.command.as_str(), target) {
+        ("create_scene", None) => {
+            let p: SceneCreation = decode(call)?;
+            (
+                p.expected_revision,
+                MetadataEdit::CreateScene {
+                    bus: p.bus,
+                    slot: p.slot,
+                    name: p.name,
+                    description: p.description,
+                },
+            )
+        }
         ("create_group", None) => {
             let p: GroupCreation = decode(call)?;
             (
@@ -1090,9 +1112,12 @@ fn parse_metadata(
                         address: short_address,
                     }
                 }
+                crate::inventory::Location::Scene { bus, slot } => {
+                    MetadataEdit::RemoveScene { bus, slot }
+                }
                 _ => {
                     return Err(OpError::Unsupported(
-                        "output or input module required".into(),
+                        "output, input module or scene required".into(),
                     ))
                 }
             };
@@ -1164,6 +1189,11 @@ fn parse_metadata(
                         name: params.name,
                     }
                 }
+                crate::inventory::Location::Scene { bus, slot } => MetadataEdit::RenameScene {
+                    bus,
+                    slot,
+                    name: params.name,
+                },
             };
             (params.expected_revision, edit)
         }
@@ -1185,6 +1215,31 @@ fn parse_metadata(
                 MetadataEdit::RenameBus {
                     bus: params.bus,
                     name: params.name,
+                },
+            )
+        }
+        ("describe", Some(target)) if target != "__inventory" => {
+            let projection = snapshot
+                .model
+                .projections()
+                .into_iter()
+                .find(|p| p.target == target)
+                .ok_or_else(|| OpError::Rejected("unknown scene".into()))?;
+            let crate::inventory::Location::Scene { bus, slot } = projection.location else {
+                return Err(OpError::Unsupported("scene target required".into()));
+            };
+            let params: Describe = decode(call)?;
+            if !call.params.contains_key("description") {
+                return Err(OpError::Rejected(
+                    "description is required; use null to clear".into(),
+                ));
+            }
+            (
+                params.expected_revision,
+                MetadataEdit::DescribeScene {
+                    bus,
+                    slot,
+                    description: params.description,
                 },
             )
         }

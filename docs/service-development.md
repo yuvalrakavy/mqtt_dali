@@ -133,6 +133,14 @@ Group membership uses the owned [probe/save/program API](groups.md), with explic
 hardware adoption distinct from reviewed full-mask repair. Address assignment
 uses the [commissioning API](commissioning.md).
 
+Scene metadata also uses this owner: `CreateScene`, `RenameScene`, `DescribeScene`
+and `RemoveScene` save named slots without UART access. Creation requires the
+original controller token; targeted edits require the original scene token, even
+when an unrelated edit has advanced the controller generation. Description-only
+edits preserve the scene binding. Creation/removal does not program/clear native
+fixture contents. MQTT and authenticated HTTP jobs share the same strict parser
+and save path; see [scene metadata](dali-scenes-contract.md#named-slot-metadata).
+
 `Snapshot.inputs` contains typed observed input data; `input_listeners` contains
 routes with installed receive boundaries, not a device-presence claim.
 `subscribe_inputs()` supplies a bounded capacity-64 native action stream; handle

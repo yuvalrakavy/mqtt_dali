@@ -378,6 +378,7 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
             Location::Output { bus, .. }
             | Location::Group { bus, .. }
             | Location::Input { bus, .. }
+            | Location::Scene { bus, .. }
             | Location::InputInstance { bus, .. } => bus,
         };
         if ancestors
@@ -404,6 +405,15 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
                     && target.namespace() == Some(Namespace::Groups)
                     && record.members.iter().all(|m| outputs.get(m) == Some(&bus))
                     && target.instance().is_none()
+                    && record.instance_type.is_none()
+                    && record.color_representation.is_none()
+            }
+            Location::Scene { bus, slot } => {
+                bus < 4
+                    && slot < 16
+                    && target.namespace() == Some(Namespace::Scenes)
+                    && target.instance().is_none()
+                    && record.members.is_empty()
                     && record.instance_type.is_none()
                     && record.color_representation.is_none()
             }
@@ -515,11 +525,20 @@ fn verify_current(
         {
             return Err("invalid or duplicate bus metadata".into());
         }
-        for (field, space) in [
-            ("outputs", Namespace::Outputs),
-            ("groups", Namespace::Groups),
+        for (field, space, address_field) in [
+            ("outputs", Namespace::Outputs, "short_address"),
+            ("groups", Namespace::Groups, "group_address"),
+            ("scenes", Namespace::Scenes, "slot"),
         ] {
-            for item in bus[field].as_array().ok_or("incomplete item array")? {
+            let items = if field == "scenes" && bus.get(field).is_none() {
+                &[][..]
+            } else {
+                bus[field]
+                    .as_array()
+                    .ok_or("incomplete item array")?
+                    .as_slice()
+            };
+            for item in items {
                 valid_description(item)?;
                 let expected =
                     Target::item(name, space, item["name"].as_str().ok_or("no item name")?)
@@ -531,25 +550,22 @@ fn verify_current(
                 let (_, record) = active
                     .get(&expected)
                     .ok_or("current target not in history")?;
-                let address = u8::try_from(
-                    item[if field == "outputs" {
-                        "short_address"
-                    } else {
-                        "group_address"
-                    }]
-                    .as_u64()
-                    .ok_or("no address")?,
-                )
-                .map_err(|_| "address too large")?;
+                let address = u8::try_from(item[address_field].as_u64().ok_or("no address")?)
+                    .map_err(|_| "address too large")?;
                 let place = if field == "outputs" {
                     Location::Output {
                         bus: index,
                         short_address: address,
                     }
-                } else {
+                } else if field == "groups" {
                     Location::Group {
                         bus: index,
                         group_address: address,
+                    }
+                } else {
+                    Location::Scene {
+                        bus: index,
+                        slot: address,
                     }
                 };
                 if place != record.location

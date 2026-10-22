@@ -188,8 +188,13 @@ scene report plans and nonactivating colour staging. See
 the old stored colour; Remove clears both kinds of participation. QueryActualLevel
 overwrites scene reporting. Keep each staging/report sequence under one bus
 permit. The independent emulator models sixteen colour slots and auto/manual
-recall. Managed scene inventory/jobs and the Scenes screen remain pending.
-Controls: `docs/v2-scene-controls.toml`.
+recall. Named-slot metadata now uses the existing durable inventory/ledger and
+shared MQTT/HTTP jobs. Creation requires controller authority; rename/describe/
+removal require the original scene authority. Description preserves its token;
+removal/recreation replaces its lifetime. Metadata removal never clears hardware.
+Scene history remains after removal: do not erase it for an older reader.
+Physical scene jobs and the Scenes screen remain pending. Controls:
+`docs/v2-scene-controls.toml` and `docs/v2-scene-identity-controls.toml`.
 
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`

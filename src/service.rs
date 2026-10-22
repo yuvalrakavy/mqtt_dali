@@ -79,6 +79,27 @@ mod build_info {
 /// Public metadata changes. Physical changes require verified commissioning jobs.
 #[derive(Debug, Clone)]
 pub enum MetadataEdit {
+    CreateScene {
+        bus: u8,
+        slot: u8,
+        name: String,
+        description: Option<String>,
+    },
+    RenameScene {
+        bus: u8,
+        slot: u8,
+        name: String,
+    },
+    DescribeScene {
+        bus: u8,
+        slot: u8,
+        description: Option<String>,
+    },
+    /// Forget the name only; native scene contents are not cleared.
+    RemoveScene {
+        bus: u8,
+        slot: u8,
+    },
     CreateGroup {
         bus: u8,
         group: u8,
@@ -134,6 +155,30 @@ pub enum MetadataEdit {
 impl MetadataEdit {
     fn into_edit(self) -> Edit {
         match self {
+            Self::CreateScene {
+                bus,
+                slot,
+                name,
+                description,
+            } => Edit::AddScene {
+                bus,
+                scene: crate::config::Scene {
+                    slot,
+                    name,
+                    description,
+                },
+            },
+            Self::RenameScene { bus, slot, name } => Edit::RenameScene { bus, slot, name },
+            Self::DescribeScene {
+                bus,
+                slot,
+                description,
+            } => Edit::SceneDescription {
+                bus,
+                slot,
+                description,
+            },
+            Self::RemoveScene { bus, slot } => Edit::RemoveScene { bus, slot },
             Self::CreateGroup { bus, group, name } => Edit::AddGroup {
                 bus,
                 group: crate::config::Group {

@@ -125,7 +125,10 @@ configuration requires fresh verification before applying another old result.
 Settings shows version/build and downloads an inventory report, which is not a
 restorable configuration backup. Diagnostics shows actual HAT/browser state,
 bounded jobs and recent native actions/loss; MQTT connection status is currently
-unknown. Scenes are marked unavailable until their backend is implemented.
+unknown. The Scenes screen remains unavailable. Named-slot creation, rename,
+description and list removal are available to API clients through the shared
+[scene metadata commands](dali-scenes-contract.md#named-slot-metadata); physical
+scene jobs remain pending.
 Connection loss disables operations until a new complete stream snapshot arrives.
 Writes are never replayed after reconnect or sign-in. Runtime UI assets are
 embedded in the executable; no Node server or CDN is needed.
