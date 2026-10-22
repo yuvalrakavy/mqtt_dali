@@ -37,7 +37,10 @@ strict Clippy, Pi library/all four binaries, doctests (none defined), changed-fi
 formatting, wait registry, whitespace and both control-table plan checks.
 Logs: `/tmp/dali-input-assignment-controls.log`,
 `/tmp/dali-input-shared-controls.log`, `/tmp/dali-input-assignment-acceptance`.
-The two frozen source gates follow. Physical I4/fixture timing remains unverified. Full bus
+Both sequential read-only source gates approve frozen **f016463** against
+**29ccd37**, with no material findings (about one minute and 45 seconds).
+Reviews used the same model family and ran no verification or mutations.
+Physical I4/fixture timing remains unverified. Full bus
 readdress/restore, identification and browser orchestration remain unfinished.
 See [commissioning](commissioning.md), [design](superpowers/specs/2026-10-22-dali-v2-p5-input-assignment.md)
 and `v2-input-assignment-controls.toml`.
