@@ -847,8 +847,9 @@ regression reproduced AA instead of the returned MSB; the model now updates both
 registers. The added test covers normal/full-MASK words and known/MASK byte
 queries preserving both registers. Its new control and two affected word/byte
 controls failed as intended. The corrected restored gate passes **339 native
-tests** and the same build/lint/format/wait/doc checks. Final source re-review
-follows the frozen correction commit.
+tests** and the same build/lint/format/wait/doc checks. Final read-only source
+re-review approved frozen `2b60104`, confirming the finding resolved with no
+remaining material issue. Review was source-only/same-family and ran no tests.
 
 No service/MQTT/SDK/Store or recovery behavior changed. The emulator explicitly
 does not yet model alternate RGBWAF control modes/channel assignment, physical

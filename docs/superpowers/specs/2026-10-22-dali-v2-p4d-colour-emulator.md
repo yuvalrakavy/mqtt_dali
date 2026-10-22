@@ -140,5 +140,6 @@ the regression checks both normal/MASK words plus known/MASK byte preservation.
 The new guard-removal control and two affected word/byte controls failed for their
 named assertions. The corrected restored gate passes 339 native tests and the
 same scoped lint, Pi, formatting, whitespace, wait and zero-doctest checks. A
-final narrow source re-review follows the frozen correction commit. This shows
+final narrow source re-review approved frozen `2b60104` with no remaining material
+finding. It was read-only/same-family and ran no tests or controls. This shows
 why shared-register effects need assertions alongside the visible reply byte.
