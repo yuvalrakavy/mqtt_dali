@@ -71,3 +71,30 @@ replacement = "if false {"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(mqtt_color_selection_is_durable)"]
 expect_text = "invalid color selection committed"
+
+[[control]]
+name = "color_contract_accepts_tagged_objects"
+file = "src/config.rs"
+anchor = "let name = String::deserialize(deserializer)?;"
+replacement = "let name = match serde_json::Value::deserialize(deserializer)? {\nserde_json::Value::String(name) => name,\nserde_json::Value::Object(map) => map.into_iter().next().map(|(key, _)| key).unwrap_or_default(),\n_ => String::new() };"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(color_selection_rejects_unknown_formats)"]
+expect_text = "invalid public color selection accepted"
+
+[[control]]
+name = "consumer_ignores_current_input_color_contract"
+file = "tests/support/inventory_consumer.rs"
+anchor = "if input\n                    .get(\"color_representation\")\n                    .is_some_and(|v| !v.is_null())"
+replacement = "if false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(color_selection_consumer_rejects_current_input)"]
+expect_text = "non-output current color selection accepted, instance=false"
+
+[[control]]
+name = "consumer_ignores_current_instance_color_contract"
+file = "tests/support/inventory_consumer.rs"
+anchor = "if instance\n                        .get(\"color_representation\")\n                        .is_some_and(|v| !v.is_null())"
+replacement = "if false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","inventory_contract","-E","test(color_selection_consumer_rejects_current_input)"]
+expect_text = "non-output current color selection accepted, instance=true"

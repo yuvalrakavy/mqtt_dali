@@ -86,12 +86,28 @@ pub struct Output {
     pub color_representation: Option<ColorRepresentation>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ColorRepresentation {
     Temperature,
     Xy,
     Rgbwaf,
+}
+impl<'de> Deserialize<'de> for ColorRepresentation {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // Serde's derived unit enum accepts externally tagged objects too.
+        // The persisted/wire contract deliberately accepts strings only.
+        let name = String::deserialize(deserializer)?;
+        match name.as_str() {
+            "temperature" => Ok(Self::Temperature),
+            "xy" => Ok(Self::Xy),
+            "rgbwaf" => Ok(Self::Rgbwaf),
+            _ => Err(serde::de::Error::unknown_variant(
+                &name,
+                &["temperature", "xy", "rgbwaf"],
+            )),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

@@ -974,6 +974,18 @@ accept old files, while new-field documents need updated strict consumers.
 Source reviews follow the frozen implementation. Same-family/source-only review
 limits remain explicit. See the [selection specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-selection.md).
 
+First source review found two concrete validation gaps: externally tagged enum
+objects could pass the promised string-only setting, and current input/instance
+metadata could be ignored by the independent consumer. Both were reproduced
+behaviorally and fixed with strict shared-string parsing and two current-record
+guards. Ten selection tests and all **370 native tests** pass after correction;
+all **11 selection controls** detect their intended behavioral faults. Scoped
+strict Clippy, Pi compile, format/whitespace and doctests pass again. One new
+injector required a locked-API correction; its compile failure was not evidence.
+Logs: `/tmp/dali-colour-selection-review-controls` and
+`/tmp/dali-colour-selection-review-restored-gate`. Corrected frozen-source
+acceptance follows; no UART/SDK/physical setting behavior changed.
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |

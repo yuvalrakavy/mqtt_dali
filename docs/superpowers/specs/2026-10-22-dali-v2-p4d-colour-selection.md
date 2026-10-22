@@ -115,3 +115,22 @@ The review was read-only and same-family, with no builds, tests or mutations.
 Design gate 2 approved with no material blocker, checking producer/consumer
 representation equality and original-generation single command completion.
 It was also read-only/same-family, with no builds, tests or mutations.
+
+## Source-review corrections
+
+The first frozen source review (`ca001f0` against `dfd10de`) found two validation
+gaps: derived enum deserialization admitted recognized single-key JSON objects,
+and independent current-input/instance validation ignored non-null colour metadata.
+Executable regressions reproduced config/history/MQTT object acceptance (including
+an actual command commit) and a newer literal input inventory's acceptance before
+the fixes. The input probe was changed from equal to higher revision so the
+pre-existing equal-revision conflict guard could not hide the missing validation.
+
+Use strict String deserialization in the shared representation type, and reject
+non-null colour metadata in both current input loops. Ten selection tests pass;
+the restored native suite has **370 passing tests**, with scoped strict Clippy,
+Pi library/all binaries compile, changed-file format/whitespace and doctests
+passing. All eleven selection controls now detect their declared faults. The
+new enum injector initially used an unavailable Map method; that compile failure
+was not counted, the injector was corrected to the locked API and rerun RED at
+the intended assertion. No new physical or SDK behavior changed.

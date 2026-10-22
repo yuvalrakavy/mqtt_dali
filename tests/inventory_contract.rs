@@ -105,6 +105,10 @@ fn color_selection_consumer_rejects_unrecorded_or_wrong_space_metadata() {
     let mut disagreement = valid.clone();
     disagreement["Inventory"]["buses"][0]["outputs"][0]["color_representation"] = json!("xy");
     malformed.push(disagreement);
+    let mut enum_object = valid.clone();
+    enum_object["Inventory"]["identity_ledger"]["batches"][0]["transitions"][0]["to"]
+        ["color_representation"] = json!({"temperature":null});
+    malformed.push(enum_object);
     let mut unrelated = valid.clone();
     let group = unrelated["Inventory"]["identity_ledger"]["baseline"]
         .as_array_mut()
@@ -185,6 +189,41 @@ fn color_selection_consumer_rejects_wrong_space_even_in_past_history() {
         "consumer accepted past non-output color projection"
     );
     assert_eq!(consumer.revision, 0);
+}
+
+#[test]
+fn color_selection_consumer_rejects_current_input_and_instance_metadata() {
+    let first = input_model();
+    for instance in [false, true] {
+        let mut value: Value = serde_json::from_slice(&first.state_bytes().unwrap()).unwrap();
+        value["Inventory"]["revision"] = json!(2);
+        let input = &mut value["Inventory"]["buses"][0]["inputs"][0];
+        if instance {
+            input["instances"][0]["color_representation"] = json!("xy");
+        } else {
+            input["color_representation"] = json!("xy");
+        }
+        let mut consumer = Consumer::default();
+        consumer.accept(&first.state_bytes().unwrap()).unwrap();
+        let id = consumer
+            .by_target("Bus1.Inputs.Panel.Instances.Key")
+            .unwrap()
+            .id;
+        assert!(
+            consumer
+                .accept(&serde_json::to_vec(&value).unwrap())
+                .is_err(),
+            "non-output current color selection accepted, instance={instance}"
+        );
+        assert_eq!(
+            consumer
+                .by_target("Bus1.Inputs.Panel.Instances.Key")
+                .unwrap()
+                .id,
+            id
+        );
+        assert_eq!(consumer.revision, 1);
+    }
 }
 
 #[test]

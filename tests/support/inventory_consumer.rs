@@ -600,7 +600,10 @@ fn verify_current(
                     .map_err(|e| e.to_string())?
                     .to_string();
                 let (_, record) = active.get(&target).ok_or("input not in history")?;
-                if input["target"].as_str() != Some(&target)
+                if input
+                    .get("color_representation")
+                    .is_some_and(|v| !v.is_null())
+                    || input["target"].as_str() != Some(&target)
                     || !seen.insert(target)
                     || record.location
                         != (Location::Input {
@@ -630,7 +633,10 @@ fn verify_current(
                     )
                     .map_err(|_| "instance type too large")?;
                     let (_, record) = active.get(&target).ok_or("instance not in history")?;
-                    if instance["target"].as_str() != Some(&target)
+                    if instance
+                        .get("color_representation")
+                        .is_some_and(|v| !v.is_null())
+                        || instance["target"].as_str() != Some(&target)
                         || !seen.insert(target)
                         || record.location
                             != (Location::InputInstance {

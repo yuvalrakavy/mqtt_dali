@@ -531,21 +531,49 @@ async fn mqtt_color_selection_is_durable_fenced_and_completes_under_original_tok
         reply["value"]["revision"], 4,
         "same color selection was not a no-op"
     );
-    for (index, (body, token)) in [
+    let invalid = [
         (selection(json!("rgbwaf"), 4), 2),
         (selection(json!("rgbwaf"), 3), 4),
         (selection(json!("rgb"), 4), 4),
-        (json!({"command":"set_color_representation","target":"Bus1.Outputs.Light1","expected_revision":4}), 4),
-        (json!({"command":"set_color_representation","target":"Bus1.Groups.All","expected_revision":4,"color_representation":"xy"}), 1),
-        (json!({"command":"set_color_representation","expected_revision":4,"color_representation":"xy"}), 4),
-        (json!({"command":"set_color_representation","target":"Bus1.Outputs.Light1","expected_revision":4,"color_representation":"xy","surprise":true}), 4),
-    ].into_iter().enumerate() {
+        (selection(json!({"temperature":null}), 4), 4),
+        (
+            json!({"command":"set_color_representation","target":"Bus1.Outputs.Light1","expected_revision":4}),
+            4,
+        ),
+        (
+            json!({"command":"set_color_representation","target":"Bus1.Groups.All","expected_revision":4,"color_representation":"xy"}),
+            1,
+        ),
+        (
+            json!({"command":"set_color_representation","expected_revision":4,"color_representation":"xy"}),
+            4,
+        ),
+        (
+            json!({"command":"set_color_representation","target":"Bus1.Outputs.Light1","expected_revision":4,"color_representation":"xy","surprise":true}),
+            4,
+        ),
+    ];
+    let clear_number = 4 + invalid.len();
+    for (index, (body, token)) in invalid.into_iter().enumerate() {
         let before = fs::read(&fixture.paths.current).unwrap();
         let reply = command(&broker, body, token, index + 4).await;
-        assert!(reply.get("error").is_some(), "invalid color selection committed: {reply}");
-        assert_eq!(fs::read(&fixture.paths.current).unwrap(), before, "invalid color selection changed durable config");
+        assert!(
+            reply.get("error").is_some(),
+            "invalid color selection committed: {reply}"
+        );
+        assert_eq!(
+            fs::read(&fixture.paths.current).unwrap(),
+            before,
+            "invalid color selection changed durable config"
+        );
     }
-    let reply = command(&broker, selection(serde_json::Value::Null, 4), 4, 11).await;
+    let reply = command(
+        &broker,
+        selection(serde_json::Value::Null, 4),
+        4,
+        clear_number,
+    )
+    .await;
     assert_eq!(
         reply["value"]["revision"], 5,
         "clearing color selection failed: {reply}"
@@ -557,7 +585,7 @@ async fn mqtt_color_selection_is_durable_fenced_and_completes_under_original_tok
     );
     assert_eq!(fs::read(&fixture.paths.legacy).unwrap(), legacy);
     assert!(running.stop().await);
-    for number in 0..12 {
+    for number in 0..=clear_number {
         assert_eq!(
             broker
                 .received_on(&format!("test/color-selection/{number}"))

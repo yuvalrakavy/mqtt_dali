@@ -131,6 +131,9 @@ fn color_selection_rejects_unknown_formats_and_non_string_values() {
         json!(true),
         json!(8),
         json!({}),
+        json!({"temperature":null}),
+        json!({"xy":null}),
+        json!({"rgbwaf":null}),
         json!([]),
     ] {
         value["buses"][0]["outputs"][0]["color_representation"] = invalid;
