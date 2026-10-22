@@ -128,3 +128,15 @@ preflight-before-mutation, cleared pre-write evidence, ordered commands, actual
 readback and explicit partial/later-effect uncertainty. The pending public MQTT
 representation preference is independent of this typed service increment.
 This review was also read-only/same-family with no builds/tests/mutations.
+
+## Implementation and source acceptance
+
+Frozen `3d6cc06` is approved by both sequential source gates against `80f358b`,
+with no material findings. Reviews were read-only/source-only/same-family and
+ran no tests, builds or controls. Seven new tests and the upgraded combined
+cancellation/native-input case pass in the restored **360-test** native suite.
+All eight new, five affected colour and two affected base readback controls fail
+at their declared behavioral assertions; both affected tables have no stale
+anchors. Strict scoped Clippy, Pi library/all four binary compilation,
+changed-file format/whitespace, wait registry and doctests (none defined) pass.
+No physical fading/firmware validation, deployment, merge or release is claimed.
