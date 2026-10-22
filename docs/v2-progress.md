@@ -55,7 +55,12 @@ affected controls are RED at their declared behavioral assertions; logs are
 `/tmp/dali-bus-setup-affected-controls.log` and
 `/tmp/dali-bus-setup-event-control.log`. The final explicit original-correlation
 assertions pass in all nine focused bus tests; changed-file format/whitespace
-also pass. Source gates follow before acceptance.
+also pass. Both sequential read-only source gates approve frozen `c461bb2`
+against `fea28ef`, with no material findings. Reviewers ran no checks or mutations;
+same-family review and absent physical I4/fixture validation remain explicit
+limits. Review learning: keep unchanged identity separate from receive lifetime,
+check the event predicate during unrelated saves too, and avoid inventing a
+health-freshness framework for the owner's accepted best-effort bus behavior.
 
 See [bus setup guide](bus-setup.md),
 [design](superpowers/specs/2026-10-22-dali-v2-p5-bus-setup.md) and
