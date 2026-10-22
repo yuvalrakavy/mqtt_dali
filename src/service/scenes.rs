@@ -203,6 +203,11 @@ pub(super) fn finish(request: Request, result: Result<Report, ServiceError>) {
     drop(_permit);
     let _ = reply.send(result);
 }
+pub(super) fn invalidate_actual(snapshot: &mut Snapshot, bus: u8) {
+    for sample in snapshot.outputs.values_mut().filter(|s| s.bus == bus) {
+        sample.invalidate("native scene recall requires fresh actual readback");
+    }
+}
 pub(super) fn accept(
     snapshot: &Snapshot,
     completion: &mut Completion,

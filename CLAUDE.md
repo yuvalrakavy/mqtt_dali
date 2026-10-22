@@ -196,7 +196,8 @@ Scene history remains after removal: do not erase it for an older reader.
 Stored reads and native bus/group recall use `service::scenes` under the same
 physical owner, original context/deadline and final stamp acceptance. Discover
 capabilities before selecting stored reports; stored data never becomes actual
-State. Recall says sent, invalidates all cached actual values on its bus even
+State. Recall says sent, invalidates all cached actual values on its bus at
+admission and settlement, even
 after failed/cancelled possible sends, and refuses continuing Blink claims there.
 Editing/capture/verification/copy/clear and the Scenes screen remain pending.
 Controls: `docs/v2-scene-controls.toml`, `docs/v2-scene-identity-controls.toml` and

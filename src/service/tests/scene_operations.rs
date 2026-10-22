@@ -9,6 +9,64 @@ const OUTPUT: &str = "Bus1.Outputs.Light1";
 const SCENE: &str = "Bus1.Scenes.Evening";
 mod peer;
 
+#[tokio::test]
+async fn scene_operations_inflight_and_timed_out_recall_cannot_leave_actual_values_current() {
+    let peer = peer::Peer::new(peer::Profile {
+        hold_recall: true,
+        ..peer::Profile::default()
+    });
+    let fixture = Fixture::new();
+    save_named_scene(&fixture);
+    let broker = FakeBroker::start().await;
+    let (service, handle) = fixture.service();
+    let running = start(
+        service.with_uart(&peer.path, RepeatPolicy::Unverified),
+        &handle,
+        &broker,
+    )
+    .await;
+    wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+    handle
+        .read_output(OUTPUT, context(1), Instant::now() + Duration::from_secs(2))
+        .await
+        .unwrap();
+    let h = handle.clone();
+    let task = tokio::spawn(async move {
+        h.recall_scene(
+            SCENE,
+            None,
+            2,
+            context(2),
+            Instant::now() + Duration::from_secs(2),
+        )
+        .await
+    });
+    tokio::time::timeout(Duration::from_secs(1), peer.held.notified())
+        .await
+        .unwrap();
+    assert_eq!(
+        handle.snapshot().unwrap().outputs[OUTPUT].quality,
+        output::Quality::Stale,
+        "in-flight recall left possibly changed actual values current"
+    );
+    assert!(matches!(
+        task.await.unwrap(),
+        Err(ServiceError::Uncertain(_))
+    ));
+    assert_eq!(
+        handle.snapshot().unwrap().outputs[OUTPUT].quality,
+        output::Quality::Stale,
+        "caller timeout exposed current values before physical cleanup"
+    );
+    peer.release.notify_one();
+    let guard = tokio::time::timeout(Duration::from_secs(3), handle.permit.acquire())
+        .await
+        .unwrap()
+        .unwrap();
+    drop(guard);
+    assert!(running.stop().await);
+}
+
 fn save_named_scene(fixture: &Fixture) {
     let model = Model::new(fixture.disk())
         .unwrap()

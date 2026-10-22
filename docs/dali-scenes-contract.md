@@ -71,9 +71,12 @@ parts. Capability/actual probes finish before selecting the stored report.
 Stored reads neither activate lights nor replace their actual State.
 
 `sent` does not confirm participation, resulting levels/colour or completed fades.
-Recall invalidates cached actual values across the bus, including for group scope
+Recall invalidates cached actual values at admission and again after settlement
+across the bus, including for group scope
 because physical membership may differ from saved groups. Failed/cancelled recalls
-that might have reached the wire also invalidate them. State then follows the
+that might have reached the wire also invalidate them. Admission happens before
+any possible send, so a caller timeout cannot expose old values as current while
+the UART owner is still cleaning up. State then follows the
 existing Available=false/Quality=stale contract; stale colour fields are null.
 Base PowerState/Brightness may remain merged last-known values, gated by
 availability. Refresh obtains actual readback; no old desired command is replayed.

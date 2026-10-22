@@ -93,7 +93,10 @@ levels/colours or completed fades. If cancellation/expiry/loss follows a possibl
 write, retain the existing uncertain physical-operation semantics.
 
 Recall changes actual values without individual readback. Invalidate cached
-output observations on the affected bus, including colour, before returning.
+output observations on the affected bus, including colour, at owner admission
+before any possible send and again before completing the settled request. The
+caller deadline may return Uncertain before settlement, per existing conventions;
+admission publication ensures old values are already stale during that interval.
 Publish the existing `Available=false`/`Quality=stale` contract and null stale
 colour values. Base PowerState/Brightness may remain in merged State as the
 existing contract documents; consumers must gate them on availability/quality.
@@ -141,8 +144,8 @@ source-only; no cross-family or physical validation is implied.
 As-built parts: typed service/evidence and literal query plans are in
 `service/scenes.rs` and `scenes/read.rs`; concrete Work/Run/Sample/Completion,
 owner and claim checks are integrated; shared MQTT/PreparedCommand paths expose
-both commands. Seven library cases plus one canonical/standalone process case
-cover the planned surfaces, including all returned colour attributes. Twelve
+both commands. Eight library cases plus one canonical/standalone process case
+cover the planned surfaces, including all returned colour attributes. Thirteen
 scene fault controls and the existing headerless group-read control produce
 intended behavioral REDs. Contributor/operator docs and capability catalog are
 updated. Full restored regressions and frozen-source review remain pending.

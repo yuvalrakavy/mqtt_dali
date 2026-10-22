@@ -612,9 +612,7 @@ impl ProcessService for DaliService {
                         // A canceled/failed recall may have reached hardware even
                         // when no usable helper sample survives settlement.
                         if completed.request.action.writing() {
-                            for sample in snapshot.outputs.values_mut().filter(|s|s.bus==completed.request.bus) {
-                                sample.invalidate("native scene recall requires fresh actual readback");
-                            }
+                            scenes::invalidate_actual(&mut snapshot,completed.request.bus);
                         }
                         Some(scenes::accept(&snapshot,completed,&hat))
                     } else {None};
@@ -674,7 +672,18 @@ impl ProcessService for DaliService {
                         })
                     };
                     match result {
-                        Ok(route) => hat.enqueue_scene(request, route),
+                        Ok(route) => {
+                            if request.action.writing() {
+                                let mut snapshot = self.handle.snapshot().expect("service started");
+                                // Publish unknown before any possible send, so a
+                                // caller deadline cannot expose old Current data
+                                // while the physical owner is still settling.
+                                scenes::invalidate_actual(&mut snapshot, route.bus);
+                                self.state.send_replace(Some(snapshot.clone()));
+                                let _ = self.handle.updates.send(snapshot);
+                            }
+                            hat.enqueue_scene(request, route);
+                        }
                         Err(error) => scenes::finish(request, Err(error)),
                     }
                 }

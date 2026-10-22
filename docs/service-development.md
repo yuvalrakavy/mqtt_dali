@@ -146,7 +146,9 @@ to broadcast or a numeric group through `physical::Work::Scenes`. They retain
 original context, deadline and permit through settlement and final acceptance.
 Stored reports never enter actual output State. Every possibly-sent recall,
 including a failed/cancelled one without a sample, invalidates bus cached actual
-values before completing; the request retains its bus independently of the sample.
+values at admission and again before completing; the request retains its bus
+independently of the sample. Admission publication precedes any send, covering
+caller timeouts that can return before the physical owner has finished cleanup.
 Recall refuses continuing Blink claims on that bus at submission and owner
 admission. See [scene operations](dali-scenes-contract.md#stored-reads-and-native-recall).
 

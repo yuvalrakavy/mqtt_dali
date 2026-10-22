@@ -136,6 +136,23 @@
     "verdict": "RED"
    }
   },
+  "scene_recall_delays_cache_until_completion": {
+   "last_real": {
+    "at": "2026-10-22T13:33:09Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:33738502cc593ede",
+     "row": "6dc95bb615b377f4",
+     "test": null
+    },
+    "path": "command",
+    "secs": 23.0,
+    "sha": "57fa74e2ce1c8695db9d9ec8ba2d898984817d9a",
+    "verdict": "RED"
+   }
+  },
   "scene_recall_group_becomes_broadcast": {
    "last_real": {
     "at": "2026-10-22T13:22:09Z",
@@ -172,18 +189,18 @@
   },
   "scene_recall_keeps_cached_actual": {
    "last_real": {
-    "at": "2026-10-22T13:21:37Z",
+    "at": "2026-10-22T13:32:46Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:fb414cde17932bf3",
-     "row": "669dccf0e36d7c67",
+     "guard": "item:614f67449916bc8e",
+     "row": "8d30133304203194",
      "test": null
     },
     "path": "command",
-    "secs": 17.6,
-    "sha": "0780df27ca7f260286552bf9a21a0ff92aa7518c",
+    "secs": 22.6,
+    "sha": "57fa74e2ce1c8695db9d9ec8ba2d898984817d9a",
     "verdict": "RED"
    }
   },

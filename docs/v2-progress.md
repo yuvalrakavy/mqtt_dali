@@ -39,6 +39,22 @@ runs. Full native regressions and frozen-source gates remain pending; no physica
 HAT or browser acceptance is implied.
 See the [slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scene-operations.md).
 
+Initial frozen-source reviews APPROVE `57fa74e` without blockers (same-family,
+source-only). The depth review identifies a control-table EOF blank line, now
+trimmed, and notes that the existing caller deadline may return Uncertain before
+the owner's settlement. A deterministic fail-first case confirms old actual
+values remain Current while recall is held in flight. Admission now publishes
+stale values before any possible send, with shared completion-time invalidation
+retained. Nine focused cases pass, including actual timeout and cleanup. Logs:
+`/tmp/dali-scene-operations-inflight-red` and
+`/tmp/dali-scene-operations-inflight-controls`. The control table now has thirteen
+rows; the cache control is retargeted to the shared guard, and a new admission
+control detects delayed invalidation. Both cache controls produce intended REDs;
+restored nine-case checks, scoped strict Clippy, Pi lib/four bins, formatting,
+affected control plans, wait validation and final base-to-worktree whitespace
+check pass (`/tmp/dali-scene-operations-inflight-check`). Fix-set source review
+and full regressions remain pending.
+
 ## P5h2a — durable named scene slots
 
 Accepted locally at frozen source `a03ffee`: **555 native tests** and both
