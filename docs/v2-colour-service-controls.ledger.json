@@ -19,18 +19,18 @@
   },
   "colour_assignment_preflight_removed": {
    "last_real": {
-    "at": "2026-10-22T00:38:40Z",
+    "at": "2026-10-22T00:56:53Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:2b987e9a143020af",
+     "guard": "item:0c2b2ba07e149b4a",
      "row": "d97565c3566d8dbf",
      "test": null
     },
     "path": "command",
-    "secs": 6.0,
-    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "secs": 5.6,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
     "verdict": "RED"
    }
   },
@@ -53,24 +53,24 @@
   },
   "colour_base_success_requires_incidental_colour": {
    "last_real": {
-    "at": "2026-10-22T00:39:00Z",
+    "at": "2026-10-22T00:57:09Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:dbdfd20e96aedce3",
+     "guard": "item:0b14325c2dacdee1",
      "row": "46d23b24ba0291c4",
      "test": null
     },
     "path": "command",
-    "secs": 8.9,
-    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "secs": 9.1,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
     "verdict": "RED"
    }
   },
   "colour_confirmation_accepts_another_active_kind": {
    "last_real": {
-    "at": "2026-10-22T00:38:51Z",
+    "at": "2026-10-22T00:57:00Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
@@ -80,8 +80,8 @@
      "test": null
     },
     "path": "command",
-    "secs": 6.1,
-    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "secs": 6.6,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
     "verdict": "RED"
    }
   },
@@ -102,37 +102,37 @@
     "verdict": "RED"
    }
   },
-  "colour_manual_activation_preflight_removed": {
+  "colour_known_gear_features_preflight_removed": {
    "last_real": {
-    "at": "2026-10-22T00:38:27Z",
+    "at": "2026-10-22T00:56:42Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:2b987e9a143020af",
-     "row": "9fe4680c40f45c83",
+     "guard": "item:0c2b2ba07e149b4a",
+     "row": "c61c24c9e824ba11",
      "test": null
     },
     "path": "command",
-    "secs": 8.4,
-    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "secs": 6.3,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
     "verdict": "RED"
    }
   },
   "colour_normalized_control_preflight_removed": {
    "last_real": {
-    "at": "2026-10-22T00:38:34Z",
+    "at": "2026-10-22T00:56:48Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:2b987e9a143020af",
+     "guard": "item:0c2b2ba07e149b4a",
      "row": "f00c560d49ad9d01",
      "test": null
     },
     "path": "command",
-    "secs": 6.3,
-    "sha": "c0509075fceb509a8a28a132eb1d3bfe418e340b",
+    "secs": 5.9,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
     "verdict": "RED"
    }
   },

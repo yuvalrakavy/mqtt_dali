@@ -36,7 +36,9 @@ accepting an operation. DT8 alone does not imply RGB support.
 ## Owned service operations
 
 `ServiceHandle::read_colour` and `apply_colour` use the same capacity-one output
-owner as base output operations. Supply the named individual output, original
+owner as base output operations. `apply_colour_with_output` additionally accepts
+a validated base intent within that same owned operation. Supply the named
+individual output, original
 request context and absolute deadline. Writes require the current target
 generation. These library APIs do not add MQTT properties or browser controls.
 A whole operation owns DTRs and device-type selection through actual helper
@@ -50,14 +52,26 @@ finding or passing 8. Unknown replies do not establish capability. RGBWAF channe
 counts are separate from physical channel roles: QUERY ASSIGNED COLOUR identifies
 each supported output channel, retaining unassigned, MASK and unknown bytes.
 
-This first internal service implementation permits colour writes only when a
-fresh gear-features reply confirms manual activation. Enabled or unknown automatic
-activation is rejected before setters; persistent gear settings are never changed
-implicitly. RGBWAF writes additionally require normalized control mode and a
+Colour writes require a fresh successful gear-features reply and accept either
+manual or automatic activation. Unknown/missing/collided features reject before
+setters; persistent gear settings are never changed implicitly. RGBWAF writes
+additionally require normalized control mode and a
 confirmed assignment for every requested logical colour. Unsupported modes and
-representations are rejected with actual base evidence retained. Automatic
-activation and combined base/colour ordering remain required work before general
-MQTT colour mutation is exposed.
+representations are rejected with actual base evidence retained. MQTT colour
+properties and public representation selection remain subsequent work.
+
+A combined operation validates all colour capabilities before either mutation.
+It sends an off intent before the colour plan, or the colour plan (including
+ACTIVATE) before a positive base intent. Explicit OFF is immediate; zero DAPC
+retains configured fading. This orders commands without promising darkness or
+completion of a colour/level fade. Every successful combined operation requires
+fresh usable base and requested-representation readback.
+
+No DALI write is promised atomic or rolled back. An interrupted operation returns
+`Uncertain`; some commands may already have taken effect. With automatic activation,
+staged colour from an interrupted operation can also become visible at a later
+power command. The bridge does not add retries, cleanup commands or gear-setting
+workarounds. Refresh actual state before deciding what to send next.
 
 Successful writes include new actual base/status/colour reads. The active
 representation must match the requested type, with usable actual values; intended

@@ -161,8 +161,8 @@ impl Observation {
         if self.dt8 != Some(true) || !self.supported(intent.kind()) {
             return Err("requested colour representation is unsupported or unknown".into());
         }
-        if !matches!(self.gear_features, Some(Reply::Value(raw)) if raw & 1 == 0) {
-            return Err("colour writes currently require confirmed manual activation".into());
+        if !matches!(self.gear_features, Some(Reply::Value(_))) {
+            return Err("colour writes require confirmed gear features".into());
         }
         if let Some(channels) = intent.channels() {
             if !matches!(self.control, Some(Reply::Value(raw)) if raw >> 6 == 2) {

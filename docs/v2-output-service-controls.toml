@@ -297,8 +297,11 @@ expect_text = '''Err(ServiceError::Uncertain(_))'''
 [[control]]
 name = "write_echoes_requested_brightness"
 file = "src/service/output.rs"
-anchor = '''observation.actual_level = Some(Query::ActualLevel.decode(level));'''
-replacement = '''observation.actual_level = Some(Query::ActualLevel.decode(if intent.is_some() { BusReply::Value(254) } else { level }));'''
+anchor = '''observation.update_quality();
+    observation.status = Some('''
+replacement = '''observation.actual_level = Some(Query::ActualLevel.decode(BusReply::Value(254)));
+    observation.update_quality();
+    observation.status = Some('''
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(write_completion_uses_observed_level_instead_of_echoing_requested_brightness)"]
 expect_text = '''write completion echoed requested brightness'''

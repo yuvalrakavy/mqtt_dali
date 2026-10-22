@@ -15,6 +15,21 @@ pub mod colour;
 pub(super) enum WriteIntent {
     Base(Intent),
     Colour(crate::dali::colour::Intent),
+    Combined(Intent, crate::dali::colour::Intent),
+}
+impl WriteIntent {
+    fn base(self) -> Option<Intent> {
+        match self {
+            Self::Base(base) | Self::Combined(base, _) => Some(base),
+            _ => None,
+        }
+    }
+    fn colour(self) -> Option<crate::dali::colour::Intent> {
+        match self {
+            Self::Colour(colour) | Self::Combined(_, colour) => Some(colour),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -196,46 +211,43 @@ pub(super) async fn execute(
     };
     let mut recovery = false;
     let mut rejection = None;
-    let operation = async {
-        if let Some(WriteIntent::Base(intent)) = intent {
-            match frame(
-                &link,
-                route.bus,
-                intent.frame(Destination::Short(route.address)),
-                deadline,
-                stamp,
-            )
-            .await?
-            {
-                BusReply::NoResponse => {}
-                BusReply::Value(_) => {
-                    recovery = true;
-                    return Err(TransactionError::StreamLoss);
-                }
-                reply => {
-                    observation.reason = Some(format!("write collision: {reply:?}"));
-                    return Ok(());
-                }
+    let base = intent.and_then(WriteIntent::base);
+    let colour_intent = intent.and_then(WriteIntent::colour);
+    let operation: Result<(), TransactionError> = async {
+        if let Some(base) = base.filter(|_| colour_intent.is_none()) {
+            if !write_base(&mut observation, &link, &route, stamp, deadline, base).await? {
+                return Ok(());
             }
         }
         read_base(&mut observation, &link, &route, stamp, deadline).await?;
         if include_colour {
             let sample = observation.colour.insert(colour::Observation::default());
             colour::discover(sample, &link, &route, stamp, deadline).await?;
-            if let Some(WriteIntent::Colour(intent)) = intent {
+            if let Some(intent) = colour_intent {
                 if let Err(reason) = sample.preflight(intent) {
                     rejection = Some(reason);
                     return Ok(());
                 }
-                // From the first setter onward pre-write colour/base evidence
+                // From the first mutation onward pre-write colour/base evidence
                 // cannot confirm this mutation, even if the transport fails.
                 sample.quality = colour::Quality::Partial;
                 sample.values.clear();
                 sample.raw_values.clear();
+                sample.status = None;
                 observation.actual_level = None;
                 observation.status = None;
                 observation.update_quality();
+                if let Some(base) = base.filter(|base| base.is_off()) {
+                    if !write_base(&mut observation, &link, &route, stamp, deadline, base).await? {
+                        return Ok(());
+                    }
+                }
                 colour::apply(&link, &route, stamp, deadline, intent).await?;
+                if let Some(base) = base.filter(|base| !base.is_off()) {
+                    if !write_base(&mut observation, &link, &route, stamp, deadline, base).await? {
+                        return Ok(());
+                    }
+                }
                 read_base(&mut observation, &link, &route, stamp, deadline).await?;
                 colour::read_values(
                     observation.colour.as_mut().unwrap(),
@@ -264,7 +276,14 @@ pub(super) async fn execute(
         Ok(()) if intent.is_some() && observation.quality != Quality::Current => Some(
             ServiceError::Uncertain("post-write fixture readback is incomplete".into()),
         ),
-        Ok(()) if matches!(intent, Some(WriteIntent::Colour(value)) if !observation.colour.as_ref().is_some_and(|sample| sample.confirms(value))) => {
+        Ok(())
+            if colour_intent.is_some_and(|value| {
+                !observation
+                    .colour
+                    .as_ref()
+                    .is_some_and(|sample| sample.confirms(value))
+            }) =>
+        {
             Some(ServiceError::Uncertain(
                 "requested colour representation readback is incomplete".into(),
             ))
@@ -275,6 +294,31 @@ pub(super) async fn execute(
         observation,
         error,
         recovery,
+    }
+}
+async fn write_base(
+    observation: &mut Observation,
+    link: &Transactions<Serial>,
+    route: &Route,
+    stamp: Stamp,
+    deadline: Instant,
+    intent: Intent,
+) -> Result<bool, TransactionError> {
+    match frame(
+        link,
+        route.bus,
+        intent.frame(Destination::Short(route.address)),
+        deadline,
+        stamp,
+    )
+    .await?
+    {
+        BusReply::NoResponse => Ok(true),
+        BusReply::Value(_) => Err(TransactionError::StreamLoss),
+        reply => {
+            observation.reason = Some(format!("write collision: {reply:?}"));
+            Ok(false)
+        }
     }
 }
 async fn read_base(
@@ -379,6 +423,23 @@ impl ServiceHandle {
         self.output(
             target,
             Some(WriteIntent::Colour(intent)),
+            true,
+            context,
+            deadline,
+        )
+        .await
+    }
+    pub async fn apply_colour_with_output(
+        &self,
+        target: &str,
+        colour: crate::dali::colour::Intent,
+        base: Intent,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Observation, ServiceError> {
+        self.output(
+            target,
+            Some(WriteIntent::Combined(base, colour)),
             true,
             context,
             deadline,

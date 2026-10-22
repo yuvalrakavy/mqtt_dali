@@ -104,18 +104,18 @@
   },
   "missing_fixture_write_is_reported_successful": {
    "last_real": {
-    "at": "2026-10-21T22:34:52Z",
+    "at": "2026-10-22T00:57:17Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:5503a6e029d5310e",
+     "guard": "item:0b14325c2dacdee1",
      "row": "f09a1f00ed13400a",
      "test": null
     },
     "path": "command",
-    "secs": 7.1,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 7.4,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
     "verdict": "RED"
    }
   },
@@ -308,18 +308,18 @@
   },
   "write_echoes_requested_brightness": {
    "last_real": {
-    "at": "2026-10-21T22:34:59Z",
+    "at": "2026-10-22T00:57:25Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:5503a6e029d5310e",
-     "row": "93bbe1eeea30d7eb",
+     "guard": "item:ab5af5ba7fb264c5",
+     "row": "7e044b0b37e10b69",
      "test": null
     },
     "path": "command",
-    "secs": 7.0,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 8.4,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
     "verdict": "RED"
    }
   }

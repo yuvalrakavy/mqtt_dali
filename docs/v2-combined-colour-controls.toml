@@ -1,0 +1,73 @@
+# P4d4 automatic activation and combined-output behavior controls.
+
+[[control]]
+name = "known_automatic_activation_is_rejected"
+file = "src/service/output/colour.rs"
+anchor = "if !matches!(self.gear_features, Some(Reply::Value(_))) {"
+replacement = "if !matches!(self.gear_features, Some(Reply::Value(raw)) if raw & 1 == 0) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_known_automatic)"]
+expect_text = "known automatic activation was rejected"
+
+[[control]]
+name = "combined_off_classification_is_lost"
+file = "src/dali/gear.rs"
+anchor = "matches!(self.0, Drive::Off) || matches!(self.0, Drive::Level(level) if level.raw() == 0)"
+replacement = "false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_combined_orders)"]
+expect_text = "combined power/colour frame order is incorrect"
+
+[[control]]
+name = "combined_on_is_misclassified_as_off"
+file = "src/dali/gear.rs"
+anchor = "matches!(self.0, Drive::Off) || matches!(self.0, Drive::Level(level) if level.raw() == 0)"
+replacement = "true"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_combined_orders)"]
+expect_text = "combined power/colour frame order is incorrect"
+
+[[control]]
+name = "combined_power_mutates_before_colour_preflight"
+file = "src/service/output.rs"
+anchor = "base.filter(|_| colour_intent.is_none())"
+replacement = "base.filter(|_| true)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_combined_invalid_preflight)"]
+expect_text = "combined preflight mutated master power before rejecting colour"
+
+[[control]]
+name = "combined_colour_intent_is_lost"
+file = "src/service/output.rs"
+anchor = "Self::Colour(colour) | Self::Combined(_, colour) => Some(colour),"
+replacement = "Self::Colour(colour) => Some(colour),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_combined_incomplete_colour)"]
+expect_text = "complete base write concealed unconfirmed combined colour"
+
+[[control]]
+name = "emulator_automatic_feature_bit_is_hidden"
+file = "src/emulator/colour.rs"
+anchor = "0xf7 => Some(u8::from(self.actual.auto_activation)),"
+replacement = "0xf7 => Some(0),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_automatic_activation_reports)"]
+expect_text = "automatic-activation profile reports manual mode"
+
+[[control]]
+name = "emulator_power_does_not_activate_colour"
+file = "src/emulator/colour.rs"
+anchor = "if self.actual.auto_activation {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_automatic_power_commands)"]
+expect_text = "power command ignored staged colour with automatic activation enabled"
+
+[[control]]
+name = "emulator_manual_mode_activates_automatically"
+file = "src/emulator/colour.rs"
+anchor = "if self.actual.auto_activation {"
+replacement = "if true {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emulator_automatic_power_commands)"]
+expect_text = "manual profile automatically activated colour"

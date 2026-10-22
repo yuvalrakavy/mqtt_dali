@@ -77,9 +77,14 @@ pub enum ColourType {
 #[serde(deny_unknown_fields)]
 pub struct Colour {
     pub active: ColourType,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub auto_activation: bool,
     pub xy: Option<[u16; 2]>,
     pub temperature: Option<Temperature>,
     pub rgbwaf: Option<Vec<u8>>,
+}
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

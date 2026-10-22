@@ -142,6 +142,10 @@ impl Intent {
             Drive::Level(level) => destination.set_level(level),
         }
     }
+    /// Identifies off command ordering; zero DAPC can retain configured fading.
+    pub fn is_off(self) -> bool {
+        matches!(self.0, Drive::Off) || matches!(self.0, Drive::Level(level) if level.raw() == 0)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

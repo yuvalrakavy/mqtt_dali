@@ -109,6 +109,8 @@ impl Peer {
                                             Some(low)
                                         },
                                         0x0100 => { level = 0; None },
+                                        0x0105 => { level = 254; None },
+                                        0x0000..=0x00fe => { level = frame as u8; None },
                                         0xc108 => None,
                                         0x01e0..=0x01ec => None,
                                         raw if raw >> 8 == 0xa3 => { dtr0 = raw as u8; None },

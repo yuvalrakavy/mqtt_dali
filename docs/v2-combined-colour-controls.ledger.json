@@ -1,0 +1,141 @@
+{
+ "rows": {
+  "combined_colour_intent_is_lost": {
+   "last_real": {
+    "at": "2026-10-22T00:56:18Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:4cd3290b39bcd51e",
+     "row": "af6b333faab36ff0",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.7,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "verdict": "RED"
+   }
+  },
+  "combined_off_classification_is_lost": {
+   "last_real": {
+    "at": "2026-10-22T00:55:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:d1aa7780af430e55",
+     "row": "cba7f10bdc6175fe",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.5,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "verdict": "RED"
+   }
+  },
+  "combined_on_is_misclassified_as_off": {
+   "last_real": {
+    "at": "2026-10-22T00:56:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:d1aa7780af430e55",
+     "row": "75dbce20301f73b0",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.2,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "verdict": "RED"
+   }
+  },
+  "combined_power_mutates_before_colour_preflight": {
+   "last_real": {
+    "at": "2026-10-22T00:56:09Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:0b14325c2dacdee1",
+     "row": "79e5f162c51d9caf",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.0,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "verdict": "RED"
+   }
+  },
+  "emulator_automatic_feature_bit_is_hidden": {
+   "last_real": {
+    "at": "2026-10-22T00:56:23Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6275be7cf7a2a318",
+     "row": "d07a26d4c7b8e233",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.8,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "verdict": "RED"
+   }
+  },
+  "emulator_manual_mode_activates_automatically": {
+   "last_real": {
+    "at": "2026-10-22T00:56:35Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:9cdf589d1efef269",
+     "row": "998746338cb55686",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.4,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "verdict": "RED"
+   }
+  },
+  "emulator_power_does_not_activate_colour": {
+   "last_real": {
+    "at": "2026-10-22T00:56:29Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:9cdf589d1efef269",
+     "row": "6642905b1751730a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.5,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "verdict": "RED"
+   }
+  },
+  "known_automatic_activation_is_rejected": {
+   "last_real": {
+    "at": "2026-10-22T00:55:47Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:0c2b2ba07e149b4a",
+     "row": "0884b046815f4f87",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.7,
+    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

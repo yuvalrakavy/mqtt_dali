@@ -156,10 +156,13 @@ The regression controls are `docs/v2-mqtt-output-controls.toml`.
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`
 reuse whole-plan DTR/enable ownership, captured deadlines and final acceptance.
 Colour quality is independent of base quality; incidental colour failures cannot
-fail successful base writes. Writes preflight manual activation, representation,
+fail successful base writes. Writes preflight known gear features, representation,
 normalized RGBWAF mode and physical channel assignments; no implicit mode change.
-Automatic activation and combined colour/base ordering must precede general MQTT
-colour mutation. Controls are in `docs/v2-colour-service-controls.toml`.
+Both manual and automatic activation are accepted. Combined operations preflight
+before either mutation, send off before colour or colour before positive base,
+and require both actual readbacks. Ordering never promises completed fades or
+rollback after partial writes. Controls are in `docs/v2-colour-service-controls.toml`
+and `docs/v2-combined-colour-controls.toml`.
 Never share the codec with emulator semantics,
 treat a high byte FF as full-word MASK, clear unrequested WAF channels, or infer
 RGB support from DT8 alone. No MQTT colour path is claimed yet.

@@ -1,9 +1,9 @@
 # Each control mutates one guard and must fail a named behavior test.
 
 [[control]]
-name = "colour_manual_activation_preflight_removed"
+name = "colour_known_gear_features_preflight_removed"
 file = "src/service/output/colour.rs"
-anchor = "if !matches!(self.gear_features, Some(Reply::Value(raw)) if raw & 1 == 0) {"
+anchor = "if !matches!(self.gear_features, Some(Reply::Value(_))) {"
 replacement = "if false {"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_preflight_rejects)"]

@@ -319,6 +319,9 @@ impl Model {
                 continue;
             }
             if address & 1 == 0 {
+                if let Some(colour) = &mut gear.colour_state {
+                    colour.power_command();
+                }
                 if opcode != 255 {
                     gear.config.level = if opcode == 0 {
                         0
@@ -328,6 +331,11 @@ impl Model {
                 }
                 known = true;
                 continue;
+            }
+            if matches!(opcode, 0 | 3..=8) {
+                if let Some(colour) = &mut gear.colour_state {
+                    colour.power_command();
+                }
             }
             let value = match opcode {
                 0 => {

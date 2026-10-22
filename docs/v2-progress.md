@@ -903,6 +903,42 @@ by reviewers. Physical fixture/firmware validation remains outstanding. Evidence
 See [colour operations](dali-colour-contract.md#owned-service-operations) and the
 [slice specification](superpowers/specs/2026-10-22-dali-v2-p4d-colour-service.md).
 
+## P4d4 — automatic activation and combined colour/base operations (source review active)
+
+The typed service now accepts both confirmed manual and automatic activation.
+`apply_colour_with_output` retains one owner, deadline and final acceptance for
+both intents. All colour preflight precedes either mutation; off commands precede
+colour, while positive base commands follow the complete colour plan. Pre-write
+actual evidence is cleared before the first mutation. Success requires actual
+base plus requested-representation colour readback. Partial effects remain
+Uncertain, with no retry/rollback or persistent gear-setting change. Command
+order does not promise darkness or completed fades.
+
+The independent emulator adds an optional automatic-activation flag and applies
+staged colour through its existing activation routine for supported immediate
+power commands, including DAPC MASK. Manual scenarios preserve their default
+behavior and serialized shape; fades/colour scenes/settings remain unfinished.
+
+Both design gates approved after clarifying OFF versus zero-DAPC fade semantics.
+Four new tests failed behaviorally before implementation (feature bit, physical
+automatic activation, service acceptance and combined master write). Eighteen
+focused tests now pass, covering seven new tests plus prior colour/paced/native
+event coverage; an async result type annotation was corrected before that run.
+The existing cancelled-write/native-input test now uses the combined request.
+All **8 new controls**, **5 affected colour controls** and **2 affected base
+readback controls** fail at their intended behavioral assertions (53/34/16 s).
+The restored gate passes **360 native tests**, strict scoped Clippy, Pi
+library/all four binary compilation, changed-file format/whitespace, wait registry
+and doctests (none defined). Both affected control tables have no stale anchors.
+Two sequential frozen-source reviews remain pending. Evidence logs are in
+`/tmp/dali-combined-colour-controls` and `/tmp/dali-combined-colour-restored-gate`.
+
+The manual-only policy control is intentionally replaced by unknown-feature
+rejection and known-enabled acceptance controls. A moved base-readback control
+anchor was also repaired; its intended actual-versus-echo assertion is retained.
+MQTT scalar/profile choice is pending and does not block this native increment.
+See the [slice design](superpowers/specs/2026-10-22-dali-v2-p4d-combined-colour.md).
+
 ## Remaining phases
 
 | Phase | Status | Next concrete boundary |
@@ -910,7 +946,7 @@ See [colour operations](dali-colour-contract.md#owned-service-operations) and th
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator and owned colour service implemented | Input discovery/full-value polling/configuration/feedback, color automatic activation/MQTT and remaining explicit capability support |
+| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator and owned colour service implemented; automatic/combined operation source review active | Input discovery/full-value polling/configuration/feedback, color MQTT/public representation and remaining explicit capability support |
 | P5 commissioning | Pending | Addressing, identification, names, group/scene workflows |
 | P6 authenticated HTTP | Pending | Optional server, authentication and shared-service API |
 | P7 browser UI | Pending | Approved responsive interface and browser acceptance |

@@ -117,13 +117,6 @@ async fn colour_service_preflight_rejects_unsupported_activation_mode_and_assign
         ),
         (
             Profile {
-                gear_features: Some(1),
-                ..Profile::default()
-            },
-            tc_intent(),
-        ),
-        (
-            Profile {
                 gear_features: None,
                 ..Profile::default()
             },
@@ -321,9 +314,10 @@ async fn colour_service_owns_cancelled_write_while_native_inputs_continue() {
     let trace = "00-11111111111111111111111111111111-2222222222222222-01";
     let request = tokio::spawn(async move {
         client
-            .apply_colour(
+            .apply_colour_with_output(
                 TARGET,
                 tc_intent(),
+                crate::dali::gear::Intent::new(Some(true), None).unwrap(),
                 context(1).with_traceparent(Some(trace)),
                 deadline(),
             )
@@ -574,6 +568,229 @@ async fn colour_service_paced_target_read_keeps_actual_colour() {
 #[tokio::test]
 async fn colour_service_paced_all_read_keeps_actual_colour() {
     paced_base(PacedOperation::AllRead).await;
+}
+
+#[tokio::test]
+async fn colour_service_known_automatic_activation_accepts_a_colour_write() {
+    let (_fixture, peer, running, handle) = boot(Profile {
+        gear_features: Some(1),
+        ..Profile::default()
+    })
+    .await;
+    let actual = handle
+        .apply_colour(TARGET, tc_intent(), context(1), deadline())
+        .await
+        .expect("known automatic activation was rejected");
+    assert_eq!(actual.colour.unwrap().quality, Quality::Current);
+    assert_eq!(peer.setters(), vec![0x01e7, 0x01e2]);
+    stop(running, peer).await;
+}
+
+#[tokio::test]
+async fn colour_service_combined_operation_applies_colour_and_master_independently() {
+    for automatic in [false, true] {
+        let fixture = Fixture::new();
+        let broker = mqtt_test_broker::FakeBroker::start().await;
+        let mut scenario: crate::emulator::scenario::Scenario =
+            serde_json::from_str(include_str!("../../../../examples/emulator/colour-i4.json"))
+                .unwrap();
+        scenario.buses[0].outputs[0].short_address = Some(0);
+        scenario.buses[0].outputs[0]
+            .colour
+            .as_mut()
+            .unwrap()
+            .auto_activation = automatic;
+        let emulator = pty::spawn(scenario).await.unwrap();
+        let (service, handle) = fixture.service();
+        let running = start(
+            service.with_uart(emulator.path, RepeatPolicy::Unverified),
+            &handle,
+            &broker,
+        )
+        .await;
+        wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+        for (base, colour, query, expected, level) in [
+            (
+                crate::dali::gear::Intent::new(Some(false), None).unwrap(),
+                tc_intent(),
+                ValueQuery::Temperature,
+                Value::Word(WordValue::Known(300)),
+                0,
+            ),
+            (
+                crate::dali::gear::Intent::new(None, Some(0.5)).unwrap(),
+                codec::Intent::xy(
+                    codec::Coordinate::new(1000).unwrap(),
+                    codec::Coordinate::new(2000).unwrap(),
+                ),
+                ValueQuery::X,
+                Value::Word(WordValue::Known(1000)),
+                127,
+            ),
+            (
+                crate::dali::gear::Intent::new(None, Some(0.0)).unwrap(),
+                codec::Intent::rgbwaf([
+                    Some(codec::Channel::new(80).unwrap()),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ])
+                .unwrap(),
+                ValueQuery::Red,
+                Value::Byte(ByteValue::Known(80)),
+                0,
+            ),
+        ] {
+            let actual = handle
+                .apply_colour_with_output(TARGET, colour, base, context(1), deadline())
+                .await
+                .unwrap();
+            assert_eq!(
+                actual.brightness(),
+                Some(f64::from(level) / 254.0),
+                "combined request did not apply the independent master level"
+            );
+            assert_eq!(
+                actual.colour.as_ref().unwrap().value(query),
+                Some(expected),
+                "combined request did not read actual requested colour"
+            );
+            let physical = emulator
+                .emulator
+                .control(Control::Snapshot, Duration::from_secs(1))
+                .await
+                .unwrap();
+            assert_eq!(physical["buses"][0]["outputs"][0]["level"], level);
+        }
+        assert!(running.stop().await);
+        emulator.emulator.close().await.unwrap();
+    }
+}
+
+#[tokio::test]
+async fn colour_service_combined_orders_commands_without_claiming_completed_fades() {
+    let (_fixture, peer, running, handle) = boot(Profile {
+        gear_features: Some(1),
+        ..Profile::default()
+    })
+    .await;
+    for (power, brightness, base_frame, off_first) in [
+        (Some(false), None, 0x0100, true),
+        (None, Some(0.0), 0x0000, true),
+        (Some(true), None, 0x0105, false),
+        (None, Some(64.0 / 254.0), 0x0040, false),
+    ] {
+        let before = peer.commands.lock().unwrap().len();
+        handle
+            .apply_colour_with_output(
+                TARGET,
+                tc_intent(),
+                crate::dali::gear::Intent::new(power, brightness).unwrap(),
+                context(1),
+                deadline(),
+            )
+            .await
+            .unwrap();
+        let recorded = peer.commands.lock().unwrap().clone();
+        let frames = &recorded[before..];
+        let base = frames.iter().position(|f| *f == base_frame).unwrap();
+        let setter = frames.iter().position(|f| *f == 0x01e7).unwrap();
+        let activate = frames.iter().position(|f| *f == 0x01e2).unwrap();
+        assert!(setter < activate);
+        assert!(
+            if off_first {
+                base < setter
+            } else {
+                base > activate
+            },
+            "combined power/colour frame order is incorrect: {frames:04x?}"
+        );
+        assert_eq!(
+            frames.iter().filter(|f| **f == base_frame).count(),
+            1,
+            "combined operation repeated its base mutation"
+        );
+    }
+    stop(running, peer).await;
+}
+
+#[tokio::test]
+async fn colour_service_combined_invalid_preflight_sends_neither_power_nor_colour() {
+    let (_fixture, peer, running, handle) = boot(Profile::default()).await;
+    for profile in [
+        Profile {
+            device_type: 0,
+            ..Profile::default()
+        },
+        Profile {
+            features: 1,
+            ..Profile::default()
+        },
+        Profile {
+            gear_features: None,
+            ..Profile::default()
+        },
+    ] {
+        *peer.profile.lock().unwrap() = profile;
+        let result = handle
+            .apply_colour_with_output(
+                TARGET,
+                tc_intent(),
+                crate::dali::gear::Intent::new(Some(false), None).unwrap(),
+                context(1),
+                deadline(),
+            )
+            .await;
+        assert!(
+            matches!(result, Err(ServiceError::Rejected(_))),
+            "combined unsupported preflight was not rejected: {result:?}"
+        );
+        assert!(
+            !peer.commands.lock().unwrap().contains(&0x0100),
+            "combined preflight mutated master power before rejecting colour"
+        );
+        assert!(peer.setters().is_empty());
+        assert_eq!(
+            handle.snapshot().unwrap().outputs[TARGET].brightness(),
+            Some(100.0 / 254.0)
+        );
+    }
+    stop(running, peer).await;
+}
+
+#[tokio::test]
+async fn colour_service_combined_incomplete_colour_returns_actual_base_and_uncertain() {
+    let (_fixture, peer, running, handle) = boot(Profile {
+        features: 3,
+        ..Profile::default()
+    })
+    .await;
+    let colour = codec::Intent::xy(
+        codec::Coordinate::new(1000).unwrap(),
+        codec::Coordinate::new(2000).unwrap(),
+    );
+    let result = handle
+        .apply_colour_with_output(
+            TARGET,
+            colour,
+            crate::dali::gear::Intent::new(Some(false), None).unwrap(),
+            context(1),
+            deadline(),
+        )
+        .await;
+    assert!(
+        matches!(result, Err(ServiceError::Uncertain(_))),
+        "complete base write concealed unconfirmed combined colour: {result:?}"
+    );
+    let actual = handle.snapshot().unwrap().outputs[TARGET].clone();
+    assert_eq!(actual.power(), Some(false));
+    assert_eq!(
+        actual.colour.unwrap().active(),
+        Some(codec::ColourType::Temperature)
+    );
+    stop(running, peer).await;
 }
 
 #[tokio::test]

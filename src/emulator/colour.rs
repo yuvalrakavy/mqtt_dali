@@ -40,6 +40,11 @@ impl State {
         }
         self.temporary.kind = Some(kind);
     }
+    pub fn power_command(&mut self) {
+        if self.actual.auto_activation {
+            self.activate();
+        }
+    }
     fn activate(&mut self) {
         let staged = std::mem::take(&mut self.temporary);
         match staged.kind {
@@ -106,7 +111,7 @@ impl State {
                 self.activate();
                 None
             }
-            0xf7 => Some(0), // Manual activation, no auto-calibration model.
+            0xf7 => Some(u8::from(self.actual.auto_activation)),
             0xf8 => Some(self.status()),
             0xf9 => Some(
                 u8::from(self.actual.xy.is_some())

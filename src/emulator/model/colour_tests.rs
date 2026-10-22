@@ -32,6 +32,54 @@ fn value(model: &mut Model, selector: u8) -> Reply {
     query(model, 0x07fa)
 }
 
+fn automatic() -> Model {
+    let mut profile = physical();
+    profile["buses"][0]["outputs"][0]["colour"]["auto_activation"] = json!(true);
+    model(profile)
+}
+#[test]
+fn emulator_automatic_activation_reports_the_actual_feature_bit() {
+    let mut m = automatic();
+    assert_eq!(
+        query(&mut m, 0x07f7),
+        Reply::Value(1),
+        "automatic-activation profile reports manual mode"
+    );
+}
+#[test]
+fn emulator_automatic_power_commands_apply_staged_colour_and_clear_temporaries() {
+    for power in [
+        0x06ff, 0x0664, 0x0700, 0x0703, 0x0704, 0x0705, 0x0706, 0x0707, 0x0708,
+    ] {
+        let mut m = automatic();
+        send(&mut m, &[0xa35e, 0xc301, 0xc108, 0x07e7]); // 350 mirek, staged only.
+        assert_eq!(
+            m.snapshot()["buses"][0]["outputs"][0]["colour_state"]["actual"]["temperature"]
+                ["value"],
+            250
+        );
+        send(&mut m, &[power]);
+        let snapshot = m.snapshot();
+        let fixture = &snapshot["buses"][0]["outputs"][0];
+        assert_eq!(
+            fixture["colour_state"]["actual"]["temperature"]["value"], 350,
+            "power command ignored staged colour with automatic activation enabled"
+        );
+        assert_eq!(fixture["colour_state"]["temporary"]["temperature"], 65535);
+        if power == 0x06ff {
+            assert_eq!(fixture["level"], 100, "DAPC MASK changed master brightness");
+        }
+    }
+    let mut manual = model(physical());
+    send(&mut manual, &[0xa35e, 0xc301, 0xc108, 0x07e7, 0x0664]);
+    assert_eq!(
+        manual.snapshot()["buses"][0]["outputs"][0]["colour_state"]["actual"]["temperature"]
+            ["value"],
+        250,
+        "manual profile automatically activated colour"
+    );
+}
+
 #[test]
 fn colour_channel_assignments_are_physical_profile_roles() {
     let mut model = model(physical());

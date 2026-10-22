@@ -81,6 +81,8 @@ physical limits 153..500 mirek. Its six RGBWAF values start at [1,2,3,4,5,6],
 xy at [4660,9029], and master DALI level at 100. Initial numeric values must be
 valid: Tc 1..65534 with ordered physical/configured limits surrounding its value;
 xy 0..65534; RGBWAF 1..6 entries, each 0..254. Unknown profile fields fail.
+An optional `"auto_activation": true` in the colour profile enables automatic
+activation; omitted/false keeps the earlier manual behavior and serialized shape.
 
 Temporary xy/Tc/RGB/WAF commands stage raw values. ACTIVATE applies them and
 clears the temporary values/type to MASK. Writing MASK replaces an earlier staged
@@ -102,7 +104,15 @@ current xy/Tc/RGBWAF values, Tc limits, control and raw extended version 1.
 Word values return their MSB, place it in DTR1 and place the LSB in DTR0. RGBWAF
 byte queries preserve both registers. Inactive/unsupported representations return MASK, without inventing
 a converted colour. RGBWAF control is the fixed normalized profile value 0x80;
-gear features report manual activation and no automatic calibration.
+gear features report the profile's automatic-activation bit and no automatic calibration.
+
+With automatic activation enabled, the supported immediate base commands (OFF,
+DAPC, recall min/max and immediate steps) also apply staged colour and clear its
+temporary values. DAPC MASK activates colour without changing master brightness.
+Explicit ACTIVATE works with either setting. This exposes the normal partial
+effects of interrupted staging; it does not simulate a transactional rollback.
+Levels/fades are still instantaneous in the model, so it proves command order,
+not physical fade completion or absence of visible transitions.
 
 Private `snapshot` retains `colour` as the initial physical profile and exposes
 `colour_state.actual`, `colour_state.temporary` and the range flag as live raw
@@ -111,7 +121,7 @@ do not replace fixture identity. The existing base RESET path does not establish
 DT8 reset/settings support.
 
 This model does not simulate photometry, xy gamut, fades, colour scenes, alternate
-RGBWAF modes/channel assignments, primary-N control, auto activation, or DT8
+RGBWAF modes/channel assignment changes, primary-N control, or DT8
 reset/settings. Those remain explicit extensions. It is not a certification
 oracle or evidence of a particular firmware's behavior. Selected transitions were
 cross-checked with an independently authored
@@ -119,7 +129,7 @@ cross-checked with an independently authored
 and its [dispatch](https://github.com/cad435/OpenDALI_EVG/blob/c1f73d0261c79ae1def6c4a615dcb49f7dc335dd/Firmware/src/dali/protocol/dali_protocol.c),
 alongside the protocol references in [the colour codec guide](dali-colour-contract.md).
 The source was read, not copied. Focused sensitivity controls are in
-`v2-colour-emulator-controls.toml`.
+`v2-colour-emulator-controls.toml` and `v2-combined-colour-controls.toml`.
 
 SIGINT/SIGTERM stops under bounded waits, including with unread output. Logging
 uses tracing-init's normal configuration. All tests use private PTYs/sockets and
