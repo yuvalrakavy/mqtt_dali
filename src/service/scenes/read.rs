@@ -2,7 +2,7 @@ use super::*;
 
 /// Capability probes finish before any stored report is selected. Their actual
 /// colour quality is independent from completeness of this stored configuration.
-pub(super) async fn stored(
+pub(in crate::service) async fn stored(
     link: &Transactions<Serial>,
     route: &Route,
     stamp: output::Stamp,
@@ -17,6 +17,17 @@ pub(super) async fn stored(
     };
     let mut capabilities = output::colour::Observation::default();
     output::colour::discover(&mut capabilities, link, &output_route, stamp, deadline).await?;
+    with_capabilities(link, route, stamp, deadline, &capabilities).await
+}
+
+pub(in crate::service) async fn with_capabilities(
+    link: &Transactions<Serial>,
+    route: &Route,
+    stamp: output::Stamp,
+    deadline: Instant,
+    capabilities: &output::colour::Observation,
+) -> Result<Stored, TransactionError> {
+    let address = route.address.expect("scene read has an output address");
     let level = Reading::byte(
         frame(link, route, stamp, deadline, route.slot.query(address)).await?,
         true,
@@ -94,7 +105,7 @@ pub(super) async fn stored(
     Ok(sample)
 }
 
-async fn value(
+pub(in crate::service) async fn value(
     link: &Transactions<Serial>,
     route: &Route,
     stamp: output::Stamp,

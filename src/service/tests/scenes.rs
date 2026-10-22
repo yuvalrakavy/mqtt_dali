@@ -12,6 +12,7 @@ fn scene_metadata_namespace_never_resolves_as_a_physical_output_or_input() {
                     slot: 0,
                     name: "Native".into(),
                     description: None,
+                    contents: Vec::new(),
                 },
             }],
         )

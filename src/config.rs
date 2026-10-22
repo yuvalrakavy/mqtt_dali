@@ -10,6 +10,7 @@ use std::os::unix::fs::{MetadataExt, OpenOptionsExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+pub mod scene_settings;
 
 pub const SCHEMA_VERSION: u32 = 2;
 pub const MAX_CONFIG_BYTES: usize = 4 * 1024 * 1024;
@@ -129,6 +130,8 @@ pub struct Scene {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub contents: Vec<scene_settings::Row>,
 }
 
 #[derive(Debug, Clone)]
@@ -515,6 +518,11 @@ pub(crate) fn validate_structure(inventory: &Inventory) -> Result<(), String> {
             }
             if !scene_names.insert(&scene.name) {
                 return Err(format!("{at}.name duplicates another scene name"));
+            }
+            for row in &scene.contents {
+                row.setting
+                    .validate()
+                    .map_err(|why| format!("{at}.contents: {why}"))?;
             }
         }
     }

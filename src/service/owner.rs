@@ -5,6 +5,7 @@ use std::time::Duration;
 use tracing::Instrument;
 
 mod group_changes;
+mod scene_changes;
 
 struct Owner {
     store: ConfigStore,
@@ -542,6 +543,17 @@ impl ProcessService for DaliService {
                     snapshot.hardware=hat.hardware();
                     snapshot.input_listeners=hat.input_listeners();
                     let mut completion=hat.take_completed_physical();
+                    if matches!(completion,Some(physical::Completion::SceneSettings(_))) {
+                        let Some(physical::Completion::SceneSettings(mut completed))=completion.take() else {unreachable!()};
+                        #[cfg(test)]
+                        if let Some(hook)=&self.output_acceptance_hook { hook(&mut hat); }
+                        match owner.scene_setting(&self,&mut completed,&mut context,&hat).await {
+                            Ok(scene_settings::Advance::Program(route))=>hat.enqueue_scene_setting(completed.request,route),
+                            Ok(scene_settings::Advance::Done(report))=>scene_settings::finish(completed.request,Ok(report)),
+                            Err(error)=>scene_settings::finish(completed.request,Err(error)),
+                        }
+                        snapshot=self.handle.snapshot().expect("service started");hat.sync_model(&owner.model);
+                    }
                     if matches!(completion,Some(physical::Completion::Groups(_))) {
                         let Some(physical::Completion::Groups(mut grouped))=completion.take() else {unreachable!()};
                         match owner.groups(&self,&mut grouped,&mut context,&hat).await {
@@ -625,6 +637,7 @@ impl ProcessService for DaliService {
                     if let Some(completion)=completion { match completion {
                       physical::Completion::Scenes(completion)=>scenes::finish(completion.request,scene_result.expect("scene accepted before publication")),
                       physical::Completion::Groups(_)=>unreachable!("groups accepted before cache publication"),
+                      physical::Completion::SceneSettings(_)=>unreachable!("scene settings accepted before cache publication"),
                       physical::Completion::Commission(_)=>unreachable!("commissioning advanced before cache publication"),
                       physical::Completion::Discovery(_)=>unreachable!("discovery accepted before cache publication"),
                       physical::Completion::Output(completion)=>{
@@ -655,6 +668,32 @@ impl ProcessService for DaliService {
                 continue;
             };
             match message {
+                Message::SceneSetting(request) => {
+                    let result = if request.reply.is_closed() || Instant::now() >= request.deadline
+                    {
+                        Err(ServiceError::Expired)
+                    } else {
+                        scene_settings::resolve(
+                            &self.handle.snapshot().expect("service started"),
+                            &request.target,
+                            &request.action,
+                            &request.context,
+                            false,
+                        )
+                    };
+                    match result {
+                        Ok(route) if !identification::blocks_bus(&self.handle, route.bus) => {
+                            hat.enqueue_scene_setting(request, route)
+                        }
+                        Ok(_) => scene_settings::finish(
+                            request,
+                            Err(ServiceError::Rejected(
+                                "stop identification before scene settings work".into(),
+                            )),
+                        ),
+                        Err(error) => scene_settings::finish(request, Err(error)),
+                    }
+                }
                 Message::Scene(request) => {
                     let result = if request.reply.is_closed() || Instant::now() >= request.deadline
                     {
@@ -824,6 +863,9 @@ impl ProcessService for DaliService {
                     let _ = request.reply.send(Err(ServiceError::Closed));
                 }
                 Message::Scene(request) => scenes::finish(request, Err(ServiceError::Closed)),
+                Message::SceneSetting(request) => {
+                    scene_settings::finish(request, Err(ServiceError::Closed))
+                }
                 Message::Groups(request) => groups::finish(request, Err(ServiceError::Closed)),
                 Message::Commission(request) => {
                     commissioning::finish(request, Err(ServiceError::Closed))

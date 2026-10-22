@@ -78,6 +78,7 @@ fn save_named_scene(fixture: &Fixture) {
                     slot: 0,
                     name: "Evening".into(),
                     description: None,
+                    contents: Vec::new(),
                 },
             }],
         )
@@ -487,6 +488,7 @@ async fn scene_operations_mqtt_reads_off_and_mask_without_activation_then_recall
                     slot: 0,
                     name: "Evening".into(),
                     description: None,
+                    contents: Vec::new(),
                 },
             }],
         )

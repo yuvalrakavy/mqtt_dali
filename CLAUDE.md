@@ -199,9 +199,18 @@ capabilities before selecting stored reports; stored data never becomes actual
 State. Recall says sent, invalidates all cached actual values on its bus at
 admission and settlement, even
 after failed/cancelled possible sends, and refuses continuing Blink claims there.
-Editing/capture/verification/copy/clear and the Scenes screen remain pending.
+Private desired rows use `config::scene_settings` by continuing output Origin;
+strip them centrally in `Model::state_bytes`, including HTTP/SSE readers. Never
+put contents into ledger projections. `service::scene_settings` owns bounded
+Set/Adopt/Repair/Capture and separate Probe/Program work with save-before-write.
+Retain original scene token, root revision, fixture Origin and physical stamp.
+Copy the confirmed cleared-slot MASK report before staging and Store; editing
+never activates. A no-op desired Set still programs, and repair rechecks review
+after the handoff. Capture uses actual native family/assigned channels, not the
+configured public component. The Scenes screen and reviewed multi-row
+capture/copy/clear composition remain pending.
 Controls: `docs/v2-scene-controls.toml`, `docs/v2-scene-identity-controls.toml` and
-`docs/v2-scene-operation-controls.toml`.
+`docs/v2-scene-operation-controls.toml`, `docs/v2-scene-settings-controls.toml`.
 
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`

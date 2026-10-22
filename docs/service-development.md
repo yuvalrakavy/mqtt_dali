@@ -152,6 +152,19 @@ caller timeouts that can return before the physical owner has finished cleanup.
 Recall refuses continuing Blink claims on that bus at submission and owner
 admission. See [scene operations](dali-scenes-contract.md#stored-reads-and-native-recall).
 
+Private rows use `config::scene_settings::{Row,Setting}` and
+`Edit::SceneRow`. Validate Origins after ledger replay, prune retired outputs,
+and strip contents centrally in public `Model::state_bytes`. Do not change the
+public scene projection when only its desired contents change. The root revision
+still advances. `service::scene_settings` and concrete `Work::SceneSettings`
+retain a boxed request through Probe/ConfigStore/Program. Original scene authority,
+fixture selection, completion and physical stamp survive the save. Set still
+programs on a no-op save; adoption writes only configuration; repair never adopts
+drift and repeats the review immediately before native programming. Capture
+reads actual output without inserting it into the State cache, then reads stored
+data under the same permit. See [private rows](dali-scenes-contract.md#private-per-fixture-settings)
+for payloads, MASKs, failure outcomes and future browser composition.
+
 `Snapshot.inputs` contains typed observed input data; `input_listeners` contains
 routes with installed receive boundaries, not a device-presence claim.
 `subscribe_inputs()` supplies a bounded capacity-64 native action stream; handle

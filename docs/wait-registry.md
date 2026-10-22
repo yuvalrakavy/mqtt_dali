@@ -87,7 +87,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `atx-serial-open` | bounded | runtime-owned blocking task opening/configuring a serial path | At most 2 s. On expiry a late owned fd is dropped; the managed HAT owner never retries that timeout. Actual runtime teardown includes the blocked worker and cannot report a clean stop while it remains alive. |
 | `v2-hat-loop` | acyclic | owned UART helper, independent monitor/status stream or paced retry/poll timer | The parent actor selects managed cancellation independently. No branch waits on the parent; canceled selects retain the stored join handle and session. Complete-write/receive uncertainty schedules bounded measured quiet recovery; known partial-write poison waits for Boot and survives actual close/reopen. |
 | `v2-hat-setup` | bounded | version and enabled-bus status sequence on the existing transaction owner | One original 5 s setup deadline spans the sequence. On expiry retain the session's Late/reset state; metadata stays available and no new probe bypasses that state. |
-| `v2-physical-operation` | bounded | owned discovery/input/output execution future | Every transaction receives the same original caller deadline; no per-query renewal. MQTT selects 4 s for input reads and the existing 2/6/8 s output budgets; addressed discovery clips hardware to 8 s within its original 10 s MQTT save/reply budget. On expiry reject a read or report mutation uncertainty, retaining admission through the existing fixed settlement/teardown ceiling after the execution joins. Caller cancellation cannot release active physical ownership. |
+| `v2-physical-operation` | bounded | owned discovery/input/output/group/scene execution future | Every transaction receives the same original caller deadline; no per-query renewal. MQTT selects 4 s for input reads, the existing 2/6/8 s output budgets, 8 s scene inspection/capture, 3 s recall and 18 s scene settings through save/program; addressed discovery clips hardware to 8 s within its original 10 s MQTT save/reply budget. On expiry reject a read or report mutation uncertainty, retaining admission through the existing fixed settlement/teardown ceiling after the execution joins. Caller cancellation cannot release active physical ownership. |
 | `v2-hat-health` | bounded | a local HAT bus-status snapshot query | Uses the remaining original setup deadline. On expiry retain the same transaction owner and poison state. The proactive D snapshot is not a causal acknowledgement or fixture capability claim. |
 | `v2-hat-close` | bounded | helper abort/join and actual UART close, alongside configuration cleanup | Both resource owners share one absolute local 1.5 s deadline inside managed cooperative stop. On expiry report incomplete cleanup; parent cancellation/runtime destruction includes remaining work, including a blocked opener. |
 | `v2-config-check` | bounded | the check command's filesystem worker, through `recv_timeout` | At most 3 s. The worker's handle is detached before waiting; on expiry, `main` returns a failure without joining a filesystem operation. `stalled_configuration_worker_does_not_hold_process_exit` holds an actual FIFO read in the worker and full unread output pipes while the child exits. The library loader is synchronous; daemon integration must supply its own bounded worker. |
@@ -123,7 +123,7 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, assign_space, commission, search, program, groups, read_groups, change_groups, finished, identify_output, identification_output, scene
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, input_boundary, read_input, wait_for_receiver_close, discover, assign, assign_space, commission, search, program, groups, read_groups, change_groups, finished, identify_output, identification_output, scene, scene_setting, change_scene_row
 ```
 
 ## Waiters (generated)
@@ -231,11 +231,13 @@ v2-service-request src/service/discovery.rs ServiceHandle::discover
 v2-service-request src/service/groups.rs ServiceHandle::groups
 v2-service-request src/service/input/readback.rs ServiceHandle::read_input
 v2-service-request src/service/output.rs ServiceHandle::output
+v2-service-request src/service/scene_settings.rs ServiceHandle::scene_setting
 v2-service-request src/service/scenes.rs ServiceHandle::scene
 v2-service-save src/service/owner.rs Owner::change
 v2-service-save src/service/owner.rs Owner::commission
 v2-service-save src/service/owner.rs Owner::discover
 v2-service-save src/service/owner/group_changes.rs Owner::groups
+v2-service-save src/service/owner/scene_changes.rs Owner::scene_setting
 v2-service-start src/service/owner.rs <DaliService as ProcessService>::run
 v2-store-close src/config_store.rs ConfigStore::close
 v2-store-close src/service/owner.rs <DaliService as ProcessService>::run

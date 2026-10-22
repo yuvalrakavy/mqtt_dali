@@ -46,8 +46,8 @@ expect_text = "group assignment did not durably save desired intent"
 [[control]]
 name = "groups_save_continuation_refreshes_physical_stamp"
 file = "src/service/physical.rs"
-anchor = ") => Some(*original_stamp),"
-replacement = ") => { let _ = original_stamp; None },"
+anchor = "plan: groups::Plan::Program { original_stamp, .. },\n                    ..\n                },\n            ) => Some(*original_stamp),"
+replacement = "plan: groups::Plan::Program { original_stamp, .. },\n                    ..\n                },\n            ) => { let _ = original_stamp; None },"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_program_handoff_rejects_original_stamp)"]
 expect_text = "group continuation queued programming with retired physical stamp"

@@ -129,7 +129,9 @@ unknown. The Scenes screen remains unavailable. Named-slot creation, rename,
 description and list removal are available to API clients through the shared
 [scene metadata commands](dali-scenes-contract.md#named-slot-metadata), together
 with [stored reads and native recall](dali-scenes-contract.md#stored-reads-and-native-recall).
-Editing/capture/verification/copy/clear and the Scenes screen remain pending.
+Private per-fixture Set/Adopt/Repair/Capture also use shared jobs; see
+[scene settings](dali-scenes-contract.md#private-per-fixture-settings).
+The Scenes screen and reviewed multi-row capture/copy/clear remain pending.
 Connection loss disables operations until a new complete stream snapshot arrives.
 Writes are never replayed after reconnect or sign-in. Runtime UI assets are
 embedded in the executable; no Node server or CDN is needed.
@@ -159,7 +161,9 @@ change MQTT naming or add a second encoding. Params is always a JSON object.
 Supported commands: `configure_bus`, `rename_bus`, `rename`, `describe`,
 `set_color_representation`, `remove_from_list`, `recover`, `discover_address`,
 `assign_next_output`, `assign_next_input`, `create_group`, `read_groups`,
-`assign_group`, `adopt_groups`, `repair_groups`. HTTP also supports the observation
+`assign_group`, `adopt_groups`, `repair_groups`, `create_scene`, `read_scene`,
+`recall_scene`, `set_scene_row`, `adopt_scene_row`, `repair_scene_row`,
+`capture_scene_row`. HTTP also supports the observation
 operations below. These extra names are HTTP-only; MQTT keeps its existing
 Desired and refresh forms.
 Unknown envelope/parameter fields are refused. Malformed commands return 400;
@@ -172,13 +176,14 @@ Follow Location or inspect the returned id in `/api/jobs`. Records contain id,
 command, target, status (`running`, `succeeded`, `failed`), result and error.
 Metadata success returns a revision; discovery/assignment/group success returns
 the existing structured report. Inspect its outcome and quality: a succeeded
-job can report `reserved_but_unconfirmed` or an unconfirmed group operation.
+job can report `reserved_but_unconfirmed` or an unconfirmed group/scene operation.
 Saved reservations survive incomplete physical programming. Private error text
 is replaced with safe inspection guidance; errors have a stable code: busy,
 closed, expired, refused, uncertain or result_unavailable.
 
 Work keeps its original deadline (2 s metadata/recovery/group read, 10 s addressed
-discovery, 18 s assignment/group mutation). Jobs own their result after an HTTP
+discovery, 18 s assignment/group/scene mutation, 8 s stored-scene read/capture,
+3 s native recall). Jobs own their result after an HTTP
 connection closes or the initiating session logs out. Log in again to inspect.
 There is no automatic retry, idempotency guarantee or persistent job journal.
 If a response is lost, inspect jobs and current configuration before repeating

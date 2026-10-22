@@ -155,18 +155,18 @@
   },
   "groups_save_continuation_refreshes_physical_stamp": {
    "last_real": {
-    "at": "2026-10-22T07:01:29Z",
+    "at": "2026-10-22T14:24:00Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:c7da595325c9201a",
-     "row": "9bc9fa765378cea6",
+     "guard": "item:224f8552eda1108b",
+     "row": "bb75ca97f417282b",
      "test": null
     },
     "path": "command",
-    "secs": 8.8,
-    "sha": "c9fc2b3442eeb11267fd81be60359f7723ae1b53",
+    "secs": 13.6,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
     "verdict": "RED"
    }
   },

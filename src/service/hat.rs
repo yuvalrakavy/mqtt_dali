@@ -676,6 +676,28 @@ impl Hat {
     ) {
         self.enqueue_physical(physical::Work::Scenes(request, route));
     }
+    pub(super) fn enqueue_scene_setting(
+        &mut self,
+        request: Box<super::scene_settings::Request>,
+        route: super::scene_settings::Route,
+    ) {
+        if request.action.writing()
+            && self
+                .settings
+                .as_ref()
+                .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
+        {
+            super::scene_settings::finish(
+                request,
+                Err(ServiceError::Rejected(
+                    "scene settings require --uart-repeat-terminals 1 or 2 for a known HAT profile"
+                        .into(),
+                )),
+            );
+            return;
+        }
+        self.enqueue_physical(physical::Work::SceneSettings(request, route));
+    }
     pub(super) fn enqueue_groups(
         &mut self,
         request: super::groups::Request,

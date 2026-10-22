@@ -10,6 +10,7 @@ fn with_scene(first: &Model) -> Model {
                     slot: 0,
                     name: "Evening".into(),
                     description: None,
+                    contents: Vec::new(),
                 },
             }],
         )
@@ -121,6 +122,7 @@ fn scene_metadata_consumer_preserves_continuity_and_distinguishes_recreated_slot
                     slot: 0,
                     name: "Movie".into(),
                     description: None,
+                    contents: Vec::new(),
                 },
             }],
         )
@@ -143,7 +145,8 @@ fn scene_metadata_consumer_preserves_continuity_and_distinguishes_recreated_slot
                 scene: mqtt_dali::config::Scene {
                     slot: 0,
                     name: "Duplicate".into(),
-                    description: None
+                    description: None,
+                    contents: Vec::new(),
                 }
             }]
         )

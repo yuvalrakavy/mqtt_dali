@@ -1,5 +1,7 @@
 #[path = "support/inventory_consumer.rs"]
 mod inventory_consumer;
+#[path = "inventory_contract/scene_settings.rs"]
+mod scene_settings;
 #[path = "inventory_contract/scenes.rs"]
 mod scenes;
 use inventory_consumer::Consumer;

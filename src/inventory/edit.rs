@@ -277,6 +277,13 @@ fn apply(
             );
         }
         Edit::ReplaceOutput { bus: index, output } => {
+            prune_scene_rows(
+                bus(inventory, *index)?,
+                origins.get(&Location::Output {
+                    bus: *index,
+                    short_address: output.short_address,
+                }),
+            );
             *bus(inventory, *index)?
                 .outputs
                 .iter_mut()
@@ -296,6 +303,13 @@ fn apply(
             address,
         } => {
             let bus = bus(inventory, *index)?;
+            prune_scene_rows(
+                bus,
+                origins.get(&Location::Output {
+                    bus: *index,
+                    short_address: *address,
+                }),
+            );
             let at = bus
                 .outputs
                 .iter()
@@ -348,6 +362,34 @@ fn apply(
                 .find(|s| s.slot == *slot)
                 .ok_or("unknown scene")?
                 .description = description.clone();
+        }
+        Edit::SceneRow {
+            bus: index,
+            slot,
+            output_origin,
+            setting,
+        } => {
+            setting.validate()?;
+            let scene = bus(inventory, *index)?
+                .scenes
+                .iter_mut()
+                .find(|s| s.slot == *slot)
+                .ok_or("unknown scene")?;
+            if let Some(row) = scene
+                .contents
+                .iter_mut()
+                .find(|r| r.output_origin == *output_origin)
+            {
+                row.setting = *setting;
+            } else {
+                scene.contents.push(crate::config::scene_settings::Row {
+                    output_origin: output_origin.clone(),
+                    setting: *setting,
+                });
+                scene
+                    .contents
+                    .sort_by(|a, b| a.output_origin.cmp(&b.output_origin));
+            }
         }
         Edit::RemoveScene { bus: index, slot } => {
             let bus = bus(inventory, *index)?;
@@ -494,6 +536,13 @@ fn fresh_input(
             },
             revision,
         );
+    }
+}
+fn prune_scene_rows(bus: &mut Bus, retired: Option<&Origin>) {
+    if let Some(retired) = retired {
+        for scene in &mut bus.scenes {
+            scene.contents.retain(|row| &row.output_origin != retired);
+        }
     }
 }
 fn retire_input(origins: &mut BTreeMap<Location, Origin>, bus: u8, input: &crate::config::Input) {

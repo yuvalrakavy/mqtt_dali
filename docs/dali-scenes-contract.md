@@ -1,9 +1,9 @@
 # Native scene protocol and emulator
 
 This contributor guide covers the native scene codec and physical emulator.
-Named-slot metadata, stored-scene reads and native recall are available through
-MQTT/HTTP jobs. Editing/capture/verification/copy/clear and the Scenes screen
-are pending.
+Named-slot metadata, stored-scene reads, native recall and private per-fixture
+settings use shared MQTT/HTTP jobs. The Scenes screen and its reviewed multi-row
+capture/copy/clear workflows remain pending.
 No scene operation here has been validated on a physical HAT.
 
 ## Named-slot metadata
@@ -11,8 +11,8 @@ No scene operation here has been validated on a physical HAT.
 Each bus can save sixteen named slots with an optional description. A name is
 independent of the slot's physical contents: creating a name does not program
 lights, and removing it from the saved list does not clear any fixture's scene.
-Stored per-fixture settings remain private to the bridge in the planned physical
-workflow; the public catalogue contains no mirrored scene settings or active flag.
+Saved per-fixture settings remain private to the bridge; the public catalogue
+contains no mirrored scene settings or active flag.
 
 Commands use the standard BridgeKit command envelope with these parameters:
 
@@ -33,8 +33,7 @@ edit does not replace the scene generation. Both transports use the existing
 durable metadata owner; HTTP requires its normal session and CSRF protection.
 
 The [inventory contract](inventory-contract.md) explains replay and compatibility.
-Behavioral controls are in `v2-scene-identity-controls.toml`. Capture, program,
-verify, copy and hardware-clear jobs remain pending.
+Behavioral controls are in `v2-scene-identity-controls.toml`.
 
 ## Stored reads and native recall
 
@@ -87,6 +86,96 @@ Contributors use `ServiceHandle::read_scene`/`recall_scene` and the existing
 physical owner. Original context, one admission permit, deadline, settlement and
 final mapping/physical-stamp checks apply. No additional UART client or scene
 cache exists. Controls: `v2-scene-operation-controls.toml`.
+
+## Private per-fixture settings
+
+The bridge stores desired scene rows in the existing v2 configuration file.
+Each row references the fixture's continuing ledger Origin. Renames and verified
+address changes preserve it; removal/replacement drops its saved expectations.
+A replacement at the same short address does not inherit them. Removing a scene
+name removes its private rows without changing hardware. Old files with no
+`contents` remain valid. Public Inventory, its history, HTTP snapshots and SSE
+contain scene metadata only. Store and other MQTT consumers keep opaque scenes.
+
+An absent row is **unmanaged**. An explicitly ignored row is a saved expectation
+that the fixture will leave its brightness and colour unchanged on recall.
+Inspection adds nullable `saved` and `comparison`: unmanaged, matching, different
+or unresolved. Incomplete, unsupported or stale evidence cannot be matching.
+
+| Command | Target | Required parameters | Result |
+|---|---|---|---|
+| `set_scene_row` | Named scene | `fixture`, `setting`, `expected_revision` | Probe capabilities, save desired row, program and verify native stored data |
+| `adopt_scene_row` | Named scene | `fixture`, `reviewed`, `expected_revision` | Re-read reviewed stored data and save it; no settings writes |
+| `repair_scene_row` | Named scene | `fixture`, `reviewed`, `expected_revision` | Re-read review before programming saved intent; no adoption of drift |
+| `capture_scene_row` | Output | `slot` | Read actual output plus stored evidence; return a candidate without saving |
+
+`fixture` is the canonical output target on the named scene's bus. `reviewed`
+is the complete `stored` object from inspection. If native data changes, refresh
+and review it again. Mutations require the original scene generation and exact
+complete inventory revision; this revision also pins the selected fixture.
+The fixture generation remains independent. Capture follows the normal MQTT
+read convention; HTTP still requires generation, session and CSRF.
+
+Each setting has required `level` and `color` objects:
+
+```json
+{"level":{"kind":"value","value":0},"color":{"kind":"mask"}}
+```
+
+Level is `value` (native 0..254, including Off=0) or `mask` (keep brightness).
+Colour is one of:
+
+```json
+{"kind":"mask"}
+{"kind":"temperature","value":350}
+{"kind":"xy","x":null,"y":20000}
+{"kind":"rgbwaf","channels":[254,0,80,null,null,null],"control":128}
+```
+
+Tc uses native mirek 1..65534; xy uses codes 0..65534; channels use 0..254 in
+red/green/blue/white/amber/free order. Nullable attributes are mandatory fields:
+explicit null means MASK, while missing is refused. RGBWAF control null means
+MASK; writable numeric control must use normalized mode and confirmed physical
+assignments. Primary-N and alternate control modes remain unsupported.
+A selected family with all attributes MASK still selects that family. Level
+MASK plus colour-type MASK means Leave unchanged for the whole row.
+
+Set/Adopt/Repair retain one permit and original request deadline (18 s) through
+probe, durable save, programming and stored readback. Capture has eight seconds.
+Stop identification on that bus before these operations. Settings writes require
+an explicit known HAT repeat policy. A no-op Set still programs: unchanged saved
+intent does not imply unchanged hardware. Capture uses the active native family,
+including only assigned RGBWAF channels, independently of the public component
+selection. A null candidate and reason preserve unknown/unsupported actual data.
+Actual and stored reads are sequential samples; no coherent instant is promised.
+
+Replies identify scope, targets/tokens and revision, with `configuration_changed`,
+`saved`, native `stored`, `comparison`, optional `candidate` and `reason`. A
+confirmed save can survive a failed, partial or cancelled physical operation:
+`outcome: unconfirmed` preserves desired intent for explicit inspection/repair.
+`verified` requires current stored readback. Save uncertainty refuses programming
+and uses existing configuration recovery. There is no rollback, retry or journal.
+
+Programming removes the old native row first. On confirmed DT8 it queries the
+cleared slot's masked colour type and copies that report into temporary colour,
+then stages the complete requested family, brightness and repeated Store. A
+failed Remove stops before Store. This prevents pending colour leaking into a
+brightness-only row. Whole-row ignore uses Remove. Editing never sends ACTIVATE,
+direct levels, Off or Recall, and does not publish stored settings as actual State.
+Unknown DT8 support permits only whole-row Remove after confirmed presence;
+participating writes must first establish DT8 presence or absence.
+
+The later browser workflows compose these bounded operations. Apply a capture's
+frozen candidate with Set; copy reviewed source saved settings with Set; clear
+selected rows using the whole-ignore setting. Preserve unselected rows/slots.
+Name an unnamed destination explicitly before writing. Multi-row batches must
+advance their revision only through their own accepted results and stop on
+external edits. No backend multi-minute bus queue exists.
+
+Contributors use `service::scene_settings` and concrete
+`physical::Work::SceneSettings`, beside the accepted read/recall work kind.
+Fault controls: `v2-scene-settings-controls.toml`. UI validation belongs to P5h3;
+local PTY evidence does not certify a physical fixture.
 
 ## Storage and participation
 

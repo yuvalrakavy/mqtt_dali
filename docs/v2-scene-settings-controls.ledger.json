@@ -1,0 +1,243 @@
+{
+ "rows": {
+  "scene_accepts_stale_probe_or_write": {
+   "last_real": {
+    "at": "2026-10-22T14:18:45Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:52b1eac155e33085",
+     "row": "e2229180ffa3109b",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.6,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_adoption_programs": {
+   "last_real": {
+    "at": "2026-10-22T14:18:59Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:52b1eac155e33085",
+     "row": "ba765aa4dbe4006e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.5,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_capture_fabricates_candidate": {
+   "last_real": {
+    "at": "2026-10-22T14:19:51Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:42261b33daf40533",
+     "row": "7f908ec6e00b664e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.9,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_capture_is_mutation": {
+   "last_real": {
+    "at": "2026-10-22T14:23:46Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:ecef3331d522c5f9",
+     "row": "5211ed227732f483",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.1,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_private_contents_leak": {
+   "last_real": {
+    "at": "2026-10-22T14:16:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6f8fa7aa389be8f9",
+     "row": "583097d9b6218425",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.3,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_private_missing_attribute_becomes_mask": {
+   "last_real": {
+    "at": "2026-10-22T14:17:25Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:a025fa049b34576f",
+     "row": "022db439cc230c2e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.3,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_private_origin_validation_removed": {
+   "last_real": {
+    "at": "2026-10-22T14:17:08Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:f9e94240489493b4",
+     "row": "a95b275b1d1d002d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.4,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_program_ignores_failed_remove": {
+   "last_real": {
+    "at": "2026-10-22T14:18:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:eddd9f1946d1f720",
+     "row": "921fbfd211270e7d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.0,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_program_skips_masked_report_copy": {
+   "last_real": {
+    "at": "2026-10-22T14:17:42Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:eddd9f1946d1f720",
+     "row": "ceecefb0e129163d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.3,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_program_substitutes_physical_stamp": {
+   "last_real": {
+    "at": "2026-10-22T14:23:33Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:224f8552eda1108b",
+     "row": "1d6b9e97e334179d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 10.9,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_repair_adopts_drift": {
+   "last_real": {
+    "at": "2026-10-22T14:19:14Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:52b1eac155e33085",
+     "row": "70ea6469f4cbbc3a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.5,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_repair_skips_continuation_review": {
+   "last_real": {
+    "at": "2026-10-22T14:19:33Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:42261b33daf40533",
+     "row": "29723bd8be2c2508",
+     "test": null
+    },
+    "path": "command",
+    "secs": 19.1,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_save_failure_still_programs": {
+   "last_real": {
+    "at": "2026-10-22T14:18:17Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:52b1eac155e33085",
+     "row": "fad2bfe116abbba5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.1,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  },
+  "scene_settings_accept_unknown_parameters": {
+   "last_real": {
+    "at": "2026-10-22T14:20:08Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:199aea1bd6137ff7",
+     "row": "a8da08841a4596ac",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.5,
+    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

@@ -1,0 +1,125 @@
+[[control]]
+name = "scene_private_contents_leak"
+file = "src/inventory.rs"
+anchor = "item.as_object_mut().unwrap().remove(\"contents\");"
+replacement = "item.as_object_mut().unwrap().remove(\"_contents\");"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "inventory_contract", "-E", "test(scene_settings_persist_native)"]
+expect_text = "private scene contents leaked"
+
+[[control]]
+name = "scene_private_origin_validation_removed"
+file = "src/inventory.rs"
+anchor = "validate_scene_rows(&inventory, &records)?;"
+replacement = ""
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "inventory_contract", "-E", "test(scene_settings_reject_missing)"]
+expect_text = "invalid scene Origin was accepted"
+
+[[control]]
+name = "scene_private_missing_attribute_becomes_mask"
+file = "src/config/scene_settings.rs"
+anchor = "Temperature {\n        #[serde(deserialize_with = \"required_nullable\")]"
+replacement = "Temperature {\n        #[serde(default)]"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--test", "inventory_contract", "-E", "test(scene_settings_reject_missing)"]
+expect_text = "invalid native scene setting accepted"
+
+[[control]]
+name = "scene_program_skips_masked_report_copy"
+file = "src/service/scene_settings/execute.rs"
+anchor = "for value in codec::copy_report_to_temporary(route.address) {"
+replacement = "for value in [] as [u16; 0] {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_literal_clears_pending)"]
+expect_text = "partial scene write claimed verification"
+
+[[control]]
+name = "scene_program_ignores_failed_remove"
+file = "src/service/scene_settings/execute.rs"
+anchor = "if masked != (scenes::Reading::Mask { raw: 255 }) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_literal_clears_pending)"]
+expect_text = "failed Remove was followed by Store"
+
+[[control]]
+name = "scene_save_failure_still_programs"
+file = "src/service/owner/scene_changes.rs"
+anchor = "self.accept_save(service, outcome, q.completion.as_ref(), &q.context)?;"
+replacement = "let _=outcome;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_save_failure)"]
+expect_text = "unconfirmed save/policy was accepted"
+
+[[control]]
+name = "scene_program_substitutes_physical_stamp"
+file = "src/service/physical.rs"
+anchor = "plan: scene_settings::Plan::Program { original_stamp, .. },\n                    ..\n                },\n            ) => Some(*original_stamp),"
+replacement = "plan: scene_settings::Plan::Program { .. },\n                    ..\n                },\n            ) => None,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_program_handoff)"]
+expect_text = "scene continuation queued programming with retired physical stamp"
+
+[[control]]
+name = "scene_accepts_stale_probe_or_write"
+file = "src/service/owner/scene_changes.rs"
+anchor = "observed.stale |= !hat.evidence_current(route.bus, observed.stamp);"
+replacement = "observed.stale |= false;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_final_stamp)"]
+expect_text = "stale scene probe authorized a private save"
+
+[[control]]
+name = "scene_adoption_programs"
+file = "src/service/owner/scene_changes.rs"
+anchor = "if matches!(q.action, Action::Adopt { .. }) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_literal_adoption)"]
+expect_text = "adoption programmed native scene settings"
+
+[[control]]
+name = "scene_repair_adopts_drift"
+file = "src/service/owner/scene_changes.rs"
+anchor = "Action::Repair { .. } => scenes::settings_value::saved(\n                &self.model,\n                route.bus,\n                route.slot.raw(),\n                route.address.raw(),\n            )"
+replacement = "Action::Repair { .. } => scenes::settings_value::from_stored(observed.stored.as_ref().unwrap()).ok()"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_literal_adoption)"]
+expect_text = "repair adopted hardware drift instead of saved intent"
+
+[[control]]
+name = "scene_repair_skips_continuation_review"
+file = "src/service/scene_settings/execute.rs"
+anchor = "if reviewed != &stored || settings_value::from_stored(&stored).is_err() {"
+replacement = "if (matches!(route.plan,Plan::Probe) && reviewed != &stored) || settings_value::from_stored(&stored).is_err() {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_repair_rechecks)"]
+expect_text = "repair ignored native drift after probe handoff"
+
+[[control]]
+name = "scene_capture_fabricates_candidate"
+file = "src/service/scene_settings/execute.rs"
+anchor = "sample.candidate = candidate(&actual.observation);"
+replacement = "sample.candidate = Some(Setting::ignored());"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_capture_rgbwaf)"]
+expect_text = "capture guessed component representation or required unassigned channels"
+
+[[control]]
+name = "scene_settings_accept_unknown_parameters"
+file = "src/service/proxy.rs"
+anchor = "#[serde(deny_unknown_fields)]\nstruct SceneRowSet"
+replacement = "struct SceneRowSet"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_http_jobs)"]
+expect_text = "HTTP scene setting accepted invalid parameters or original authority"
+
+[[control]]
+name = "scene_capture_is_mutation"
+file = "src/service/proxy.rs"
+anchor = "\"capture_scene_row\",\n                CommandClass::Read,"
+replacement = "\"capture_scene_row\",\n                CommandClass::WithReply,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_mqtt_saves)"]
+expect_text = "capture required mutation authority/completion for a read"

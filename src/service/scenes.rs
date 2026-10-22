@@ -12,8 +12,9 @@ use crate::{
         scenes as codec,
     },
 };
-use serde::Serialize;
-mod read;
+use serde::{Deserialize, Serialize};
+pub(super) mod read;
+pub(super) mod settings_value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
@@ -38,12 +39,12 @@ impl Action {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Reading {
     Value { raw: u16 },
     Mask { raw: u16 },
-    NoResponse,
+    NoResponse {},
     ReceiveCollision { code: Option<u8> },
     TransmitCollision { code: Option<u8> },
 }
@@ -54,12 +55,12 @@ impl Reading {
             BusReply::Value(raw) => Self::Value {
                 raw: u16::from(raw),
             },
-            BusReply::NoResponse => Self::NoResponse,
+            BusReply::NoResponse => Self::NoResponse {},
             BusReply::ReceiveCollision(code) => Self::ReceiveCollision { code },
             BusReply::TransmitCollision(code) => Self::TransmitCollision { code },
         }
     }
-    fn answered(&self) -> bool {
+    pub(super) fn answered(&self) -> bool {
         matches!(self, Self::Value { .. } | Self::Mask { .. })
     }
 }
@@ -71,7 +72,22 @@ pub enum Quality {
     Unsupported,
     Stale,
 }
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+impl<'de> Deserialize<'de> for Quality {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        match String::deserialize(d)?.as_str() {
+            "complete" => Ok(Self::Complete),
+            "partial" => Ok(Self::Partial),
+            "unsupported" => Ok(Self::Unsupported),
+            "stale" => Ok(Self::Stale),
+            other => Err(serde::de::Error::unknown_variant(
+                other,
+                &["complete", "partial", "unsupported", "stale"],
+            )),
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Stored {
     pub level: Reading,
     pub dt8: Option<bool>,
@@ -93,6 +109,8 @@ pub struct Report {
     pub address: Option<u8>,
     pub group: Option<u8>,
     pub stored: Option<Stored>,
+    pub saved: Option<crate::config::scene_settings::Setting>,
+    pub comparison: Option<settings_value::Comparison>,
 }
 pub(super) struct Request {
     pub target: String,
@@ -246,6 +264,11 @@ pub(super) fn accept(
         Action::Recall { group, .. } => group.map(GroupAddress::raw),
         _ => None,
     };
+    let saved = r.address.and_then(|address| {
+        settings_value::saved(&snapshot.model, r.bus, r.slot.raw(), address.raw())
+    });
+    let comparison =
+        (!q.action.writing()).then(|| settings_value::compare(saved, observed.stored.as_ref()));
     Ok(Report {
         operation: q.action.name(),
         outcome: if q.action.writing() {
@@ -261,6 +284,8 @@ pub(super) fn accept(
         address: r.address.map(ShortAddress::raw),
         group,
         stored: observed.stored,
+        saved,
+        comparison,
     })
 }
 pub(super) async fn execute(
@@ -314,7 +339,7 @@ pub(super) async fn execute(
         }),
     }
 }
-async fn frame(
+pub(super) async fn frame(
     link: &Transactions<Serial>,
     route: &Route,
     stamp: output::Stamp,

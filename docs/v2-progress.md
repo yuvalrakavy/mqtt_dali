@@ -5,6 +5,57 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P5h2b2 — private scene rows and nonactivating settings
+
+Implementation and local verification are in progress; no acceptance claim yet.
+Both sequential source-only design reviews approve (same model family).
+Private rows use strict native Setting values and continuing output Origins in
+the existing v2 file. Public Inventory/history/HTTP/SSE remain opaque. Bounded
+Set/Adopt/Repair/Capture use the existing service/physical owner and save before
+program, preserving original scene authority, fixture selection and stamp.
+Read_scene adds saved expectation/comparison. No-op Set still programs;
+adoption saves only; repair checks reviewed evidence again before writing.
+Capture uses actual native family/assigned channels without saving or caching.
+Cleared-slot MASK copy prevents pending colour contaminating base-only Store.
+
+Fail-first JSON/private persistence and MQTT operation cases fail for the intended
+missing feature (`/tmp/dali-scene-settings-model-red`,
+`/tmp/dali-scene-settings-service-red`). Fifteen new focused tests now pass,
+including strict masks and privacy, Origin lifecycle, Tc/xy/RGBWAF under both
+repeat profiles, native literal sequence/pending colour, partial writes,
+save failure/uncertainty, retained physical stamp, final acceptance, reviewed
+adoption/repair, assigned-channel capture and authenticated HTTP jobs. Scoped
+strict Clippy passes (`/tmp/dali-scene-settings-complete-cases`).
+
+The expanded harness initially needed qualified test-module names and a lint
+cleanup. A timeout test overclaimed that Busy must continue after the caller
+deadline; the existing actor may settle to late-reply refusal. The corrected
+test proves Busy during active work and refusal/no new UART send while ordering
+is unresolved (`/tmp/dali-scene-settings-timeout-check`). Recovery policy is
+unchanged. An initial parser case caught extra data on serde unit MASK variants;
+empty structured variants now enforce strict fields.
+
+The first sensitivity pass required moving physical assertions before generic
+outcome assertions. Its held bus-cycle case stayed protected by overlapping
+admission guards; the final control now uses the existing HAT harness to isolate
+original-stamp refusal after the cycle has already been observed. Tokenless
+capture is also explicit. The current table has fourteen intended-RED rows.
+
+The final restored **49-case** scene run, scoped strict Clippy, Pi library/four
+binaries, changed-file formatting, all affected control plans, wait validation
+(zero findings) and whitespace pass (`/tmp/dali-scene-settings-deadline-final`).
+Control-plan validation found an older group stamp anchor matching twice after
+adding the scene arm; it is now qualified to the group route and its real row
+still produces the intended RED. All fourteen current scene controls have intended
+RED evidence (`/tmp/dali-scene-settings-controls-final` plus
+`/tmp/dali-scene-settings-control-refinements`). Self-review also aligned capture's
+final deadline fence with existing reads; the final restored check includes that
+small correction. Frozen-source reviews and full native regressions remain pending.
+Browser scene composition stays in P5h3; no physical
+HAT or Store integration claim is made. See the
+[slice design](superpowers/specs/2026-10-22-dali-v2-p5h-scene-editing.md) and
+[private row contract](dali-scenes-contract.md#private-per-fixture-settings).
+
 ## P5h2b1 — owned stored-scene reads and native recall
 
 Accepted locally at frozen source `b45c471`: **564 native tests** and both final

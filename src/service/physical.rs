@@ -1,9 +1,12 @@
 //! One concrete owner for input reads, output operations and commissioning on the HAT.
-use super::{commissioning, discovery, groups, input::readback, output, scenes, ServiceError};
+use super::{
+    commissioning, discovery, groups, input::readback, output, scene_settings, scenes, ServiceError,
+};
 use crate::atx::{serial::Serial, transactions::Transactions};
 use tokio::time::Instant;
 
 pub(super) enum Work {
+    SceneSettings(Box<scene_settings::Request>, scene_settings::Route),
     Scenes(scenes::Request, scenes::Route),
     Groups(groups::Request, groups::Route),
     Commission(commissioning::Request, commissioning::Route),
@@ -14,6 +17,7 @@ pub(super) enum Work {
 impl Work {
     pub fn bus(&self) -> u8 {
         match self {
+            Self::SceneSettings(_, r) => r.bus,
             Self::Scenes(_, r) => r.bus,
             Self::Groups(_, r) => r.bus,
             Self::Output(_, r) => r.bus,
@@ -24,6 +28,13 @@ impl Work {
     }
     pub fn required_stamp(&self) -> Option<output::Stamp> {
         match self {
+            Self::SceneSettings(
+                _,
+                scene_settings::Route {
+                    plan: scene_settings::Plan::Program { original_stamp, .. },
+                    ..
+                },
+            ) => Some(*original_stamp),
             Self::Output(q, _) => q.required_stamp,
             Self::Groups(
                 _,
@@ -44,6 +55,7 @@ impl Work {
     }
     pub fn deadline(&self) -> Instant {
         match self {
+            Self::SceneSettings(q, _) => q.deadline,
             Self::Scenes(q, _) => q.deadline,
             Self::Groups(q, _) => q.deadline,
             Self::Output(q, _) => q.deadline,
@@ -54,6 +66,7 @@ impl Work {
     }
     pub fn is_closed(&self) -> bool {
         match self {
+            Self::SceneSettings(q, _) => q.reply.is_closed(),
             Self::Scenes(q, _) => q.reply.is_closed(),
             Self::Groups(q, _) => q.reply.is_closed(),
             Self::Output(q, _) => q.reply.is_closed(),
@@ -63,7 +76,8 @@ impl Work {
         }
     }
     pub fn mutating(&self) -> bool {
-        matches!(self, Self::Scenes(q,_) if q.action.writing())
+        matches!(self,Self::SceneSettings(_,r) if matches!(r.plan,scene_settings::Plan::Program { .. }))
+            || matches!(self, Self::Scenes(q,_) if q.action.writing())
             || matches!(self, Self::Groups(_,r) if matches!(r.plan,groups::Plan::Program{..}))
             || matches!(self, Self::Output(q,_) if q.intent.is_some())
             || matches!(
@@ -79,6 +93,7 @@ impl Work {
     }
     pub fn span(&self) -> tracing::Span {
         match self {
+            Self::SceneSettings(_, r) => r.context.operation_span(&r.controller, "scene_settings"),
             Self::Scenes(_, r) => r.context.operation_span(&r.controller, "scenes"),
             Self::Groups(_, r) => r.context.operation_span(&r.controller, "groups"),
             Self::Output(_, r) => r.context.operation_span(&r.controller, "output"),
@@ -95,6 +110,10 @@ impl Work {
     }
     pub async fn wait_for_receiver_close(&mut self) {
         match self {
+            Self::SceneSettings(q, _) => {
+                // WAIT: v2-hat-loop
+                q.reply.closed().await
+            }
             Self::Scenes(q, _) => {
                 // WAIT: v2-hat-loop
                 q.reply.closed().await
@@ -128,6 +147,7 @@ impl Work {
     ) -> impl std::future::Future<Output = Outcome> + Send + 'static {
         // Capture values only: the owner retains requests, replies and permits.
         let run = match self {
+            Self::SceneSettings(q, r) => Run::SceneSettings(r.clone(), q.deadline),
             Self::Scenes(q, r) => Run::Scenes(r.clone(), q.deadline),
             Self::Groups(q, r) => Run::Groups(
                 r.clone(),
@@ -165,6 +185,14 @@ impl Work {
         };
         async move {
             match run {
+                Run::SceneSettings(route, deadline) => {
+                    let value = scene_settings::execute::run(link, route, stamp, deadline).await;
+                    Outcome {
+                        sample: Sample::SceneSettings(value.observation),
+                        error: value.error,
+                        recovery: value.recovery,
+                    }
+                }
                 Run::Scenes(route, deadline) => {
                     let value = scenes::execute(link, route, stamp, deadline).await;
                     Outcome {
@@ -219,6 +247,16 @@ impl Work {
     }
     pub fn finish(self, sample: Option<Sample>, error: Option<ServiceError>) -> Completion {
         match (self, sample) {
+            (Self::SceneSettings(request, _), sample) => {
+                Completion::SceneSettings(scene_settings::Completion {
+                    request,
+                    observation: sample.map(|s| match s {
+                        Sample::SceneSettings(o) => o,
+                        _ => unreachable!("physical result kind"),
+                    }),
+                    error,
+                })
+            }
             (Self::Scenes(request, _), sample) => Completion::Scenes(scenes::Completion {
                 request,
                 observation: sample.map(|s| match s {
@@ -276,6 +314,7 @@ impl Work {
     }
 }
 enum Run {
+    SceneSettings(scene_settings::Route, Instant),
     Scenes(scenes::Route, Instant),
     Groups(groups::Route, Instant),
     Commission(commissioning::Route, Instant),
@@ -284,6 +323,7 @@ enum Run {
     Input(readback::Route, Instant),
 }
 pub(super) enum Sample {
+    SceneSettings(scene_settings::Observation),
     Scenes(scenes::Observation),
     Groups(groups::Observation),
     Commission(commissioning::Observation),
@@ -294,6 +334,7 @@ pub(super) enum Sample {
 impl Sample {
     pub fn invalidate(&mut self, reason: &str) {
         match self {
+            Self::SceneSettings(value) => value.stale = true,
             Self::Scenes(value) => value.stale = true,
             Self::Groups(value) => {
                 if let Some(p) = &mut value.probe {
@@ -313,6 +354,7 @@ pub(super) struct Outcome {
     pub recovery: bool,
 }
 pub(super) enum Completion {
+    SceneSettings(scene_settings::Completion),
     Scenes(scenes::Completion),
     Groups(groups::Completion),
     Commission(commissioning::Completion),
@@ -323,6 +365,9 @@ pub(super) enum Completion {
 impl Completion {
     pub fn reject(self) {
         match self {
+            Self::SceneSettings(q) => {
+                scene_settings::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
+            }
             Self::Scenes(q) => {
                 scenes::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
             }

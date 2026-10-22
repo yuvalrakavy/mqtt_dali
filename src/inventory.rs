@@ -178,6 +178,12 @@ pub enum Edit {
         slot: u8,
         description: Option<String>,
     },
+    SceneRow {
+        bus: u8,
+        slot: u8,
+        output_origin: Origin,
+        setting: crate::config::scene_settings::Setting,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -200,6 +206,7 @@ impl Model {
         };
         let records = ledger::replay(&ledger, inventory.revision)?;
         ledger::match_current(&inventory, &records)?;
+        validate_scene_rows(&inventory, &records)?;
         let projections = records
             .values()
             .map(|r| r.projection.clone())
@@ -271,6 +278,7 @@ fn state_bytes(
                 slot: scene.slot,
             }];
             let item = &mut snapshot["buses"][bus_index]["scenes"][index];
+            item.as_object_mut().unwrap().remove("contents");
             item["target"] = projection.target.clone().into();
             item["binding_revision"] = projection.binding_revision.into();
         }
@@ -302,6 +310,25 @@ fn state_bytes(
         ));
     }
     Ok(bytes)
+}
+
+fn validate_scene_rows(inventory: &Inventory, records: &ledger::Records) -> Result<(), String> {
+    for bus in &inventory.buses {
+        for scene in &bus.scenes {
+            let mut seen = std::collections::BTreeSet::new();
+            for row in &scene.contents {
+                if !seen.insert(&row.output_origin) {
+                    return Err("scene contents repeat an output Origin".into());
+                }
+                if !records.values().any(|record| {
+                    record.origin == row.output_origin && matches!(record.projection.location, Location::Output { bus: index, .. } if index == bus.bus)
+                }) {
+                    return Err("scene contents reference an absent or foreign output Origin".into());
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

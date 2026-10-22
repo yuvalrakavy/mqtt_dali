@@ -197,6 +197,117 @@ async fn group_program_handoff_rejects_original_stamp_after_already_observed_bus
     assert_eq!(admission.available_permits(), 1);
     hat.close(deadline()).await.unwrap();
 }
+#[tokio::test]
+async fn scene_settings_program_handoff_refuses_a_previously_observed_bus_cycle() {
+    use crate::{
+        config::scene_settings::Setting,
+        inventory::Edit,
+        service::{
+            scene_settings as settings,
+            tests::{model, snapshot},
+        },
+    };
+    let mut pty = Pty::new();
+    let mut hat = ready_output_hat(&mut pty).await;
+    hat.settings.as_mut().unwrap().repeat = RepeatPolicy::OneTerminal;
+    let old = hat.stamp(0).unwrap();
+    hat.power_cycle_output_samples_for_test();
+    assert_ne!(hat.stamp(0), Some(old));
+    let origin = model()
+        .origin(crate::inventory::Location::Output {
+            bus: 0,
+            short_address: 0,
+        })
+        .unwrap()
+        .clone();
+    let desired: Setting = serde_json::from_value(
+        serde_json::json!({"level":{"kind":"value","value":80},"color":{"kind":"mask"}}),
+    )
+    .unwrap();
+    let saved = model()
+        .edit(
+            1,
+            &[Edit::AddScene {
+                bus: 0,
+                scene: crate::config::Scene {
+                    slot: 0,
+                    name: "Evening".into(),
+                    description: None,
+                    contents: Vec::new(),
+                },
+            }],
+        )
+        .unwrap()
+        .edit(
+            2,
+            &[Edit::SceneRow {
+                bus: 0,
+                slot: 0,
+                output_origin: origin,
+                setting: desired,
+            }],
+        )
+        .unwrap();
+    let action = settings::Action::Set {
+        fixture: "Bus1.Outputs.Light1".into(),
+        setting: desired,
+        expected_revision: 3,
+    };
+    let mut route = settings::resolve(
+        &snapshot(saved.clone(), Phase::Ready),
+        "Bus1.Scenes.Evening",
+        &action,
+        &context(2),
+        false,
+    )
+    .unwrap();
+    let selection = route.clone();
+    route.plan = settings::Plan::Program {
+        desired,
+        original_stamp: old,
+    };
+    let admission = std::sync::Arc::new(tokio::sync::Semaphore::new(1));
+    let (reply, receive) = tokio::sync::oneshot::channel();
+    let mut request = Box::new(settings::Request {
+        target: "Bus1.Scenes.Evening".into(),
+        action,
+        context: context(2),
+        deadline: deadline(),
+        completion: None,
+        committed: None,
+        selection,
+        reply,
+        _permit: admission.clone().try_acquire_owned().unwrap(),
+    });
+    request.committed = Some(settings::report(
+        &saved,
+        &request,
+        &route,
+        "unconfirmed",
+        true,
+        settings::Observation {
+            stamp: old,
+            stale: false,
+            programmed: false,
+            stored: None,
+            desired: Some(desired),
+            candidate: None,
+            reason: None,
+        },
+    ));
+    hat.enqueue_scene_setting(request, route);
+    assert!(
+        hat.physical.is_none(),
+        "scene continuation queued programming with retired physical stamp"
+    );
+    let report = receive.await.unwrap().unwrap();
+    assert_eq!(report.outcome, "unconfirmed");
+    assert!(report.stored.is_none());
+    assert_eq!(report.saved, Some(desired));
+    assert_eq!(admission.available_permits(), 1);
+    hat.close(deadline()).await.unwrap();
+}
+
 fn queue_output(
     hat: &mut Hat,
     intent: Option<crate::dali::gear::Intent>,

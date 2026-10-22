@@ -21,6 +21,7 @@ mod owner;
 mod physical;
 mod proxy;
 mod routing;
+pub mod scene_settings;
 pub mod scenes;
 pub use proxy::DaliProxy;
 pub(crate) use proxy::{projected_states, PreparationError, PreparedCommand};
@@ -167,6 +168,7 @@ impl MetadataEdit {
                     slot,
                     name,
                     description,
+                    contents: Vec::new(),
                 },
             },
             Self::RenameScene { bus, slot, name } => Edit::RenameScene { bus, slot, name },
@@ -270,6 +272,7 @@ type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations)
 #[cfg(test)]
 type OutputAcceptanceHook = Arc<dyn Fn(&mut hat::Hat) + Send + Sync>;
 enum Message {
+    SceneSetting(Box<scene_settings::Request>),
     Scene(scenes::Request),
     Identify(identification::Request),
     Groups(groups::Request),

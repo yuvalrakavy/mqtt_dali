@@ -24,6 +24,9 @@ impl DeviceDriver for DaliProxy {
                 "create_group",
                 "create_scene",
                 "recall_scene",
+                "set_scene_row",
+                "adopt_scene_row",
+                "repair_scene_row",
                 "assign_group",
                 "adopt_groups",
                 "repair_groups",
@@ -46,6 +49,10 @@ impl DeviceDriver for DaliProxy {
             )))
             .chain(std::iter::once(CommandSpec::new(
                 "read_scene",
+                CommandClass::Read,
+            )))
+            .chain(std::iter::once(CommandSpec::new(
+                "capture_scene_row",
                 CommandClass::Read,
             )))
             .collect(),
@@ -208,6 +215,26 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::SceneSettings(action) = &change {
+            if !action.writing() {
+                let result = self
+                    .handle
+                    .scene_setting(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("scene operation target required".into())
+                        })?,
+                        action.clone(),
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(8),
+                        None,
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+        }
         if let Operation::Scenes(action) = change {
             let budget = if action.writing() { 3 } else { 8 };
             let result = self
@@ -261,6 +288,24 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::SceneSettings(action) => {
+                let result = self
+                    .handle
+                    .scene_setting(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("scene operation target required".into())
+                        })?,
+                        action,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(18),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
             Operation::Scenes(_) => {
                 unreachable!("scene operations dispatched before metadata completion")
             }
@@ -618,6 +663,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    SceneSettings(scene_settings::Action),
     Scenes(scenes::Action),
     Identify(bool),
     Groups(groups::Action, Option<u64>),
@@ -633,6 +679,16 @@ impl Operation {
         context: &RequestContext,
     ) -> Result<(), ServiceError> {
         match self {
+            Self::SceneSettings(action) => scene_settings::resolve(
+                snapshot,
+                target.ok_or_else(|| {
+                    ServiceError::Rejected("scene operation target required".into())
+                })?,
+                action,
+                context,
+                false,
+            )
+            .map(|_| ()),
             Self::Scenes(action) => scenes::resolve(
                 snapshot,
                 target.ok_or_else(|| {
@@ -682,6 +738,13 @@ impl Operation {
     }
     fn budget(&self) -> Duration {
         Duration::from_secs(match self {
+            Self::SceneSettings(action) => {
+                if action.writing() {
+                    18
+                } else {
+                    8
+                }
+            }
             Self::Scenes(action) => {
                 if action.writing() {
                     3
@@ -913,6 +976,19 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::SceneSettings(action) => value(
+                handle
+                    .scene_setting(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("scene operation target required".into())
+                        })?,
+                        action,
+                        context,
+                        deadline,
+                        None,
+                    )
+                    .await?,
+            ),
             Operation::Scenes(action) => value(
                 handle
                     .scene(
@@ -1027,6 +1103,20 @@ struct SceneRead {
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
+struct SceneRowSet {
+    fixture: String,
+    setting: crate::config::scene_settings::Setting,
+    expected_revision: u64,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SceneRowReview {
+    fixture: String,
+    reviewed: scenes::Stored,
+    expected_revision: u64,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 struct SceneRecall {
     group: Option<u8>,
     expected_revision: u64,
@@ -1036,6 +1126,48 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if matches!(
+        call.command.as_str(),
+        "set_scene_row" | "adopt_scene_row" | "repair_scene_row" | "capture_scene_row"
+    ) {
+        if target.is_none() {
+            return Err(OpError::Rejected("scene operation target required".into()));
+        }
+        let action = match call.command.as_str() {
+            "set_scene_row" => {
+                let p: SceneRowSet = decode(call)?;
+                scene_settings::Action::Set {
+                    fixture: p.fixture,
+                    setting: p.setting,
+                    expected_revision: p.expected_revision,
+                }
+            }
+            "capture_scene_row" => {
+                let p: SceneRead = decode(call)?;
+                scene_settings::Action::Capture {
+                    slot: crate::dali::scenes::Slot::new(p.slot)
+                        .map_err(|e| OpError::Rejected(e.to_string()))?,
+                }
+            }
+            name => {
+                let p: SceneRowReview = decode(call)?;
+                if name == "adopt_scene_row" {
+                    scene_settings::Action::Adopt {
+                        fixture: p.fixture,
+                        reviewed: p.reviewed,
+                        expected_revision: p.expected_revision,
+                    }
+                } else {
+                    scene_settings::Action::Repair {
+                        fixture: p.fixture,
+                        reviewed: p.reviewed,
+                        expected_revision: p.expected_revision,
+                    }
+                }
+            }
+        };
+        return Ok(Operation::SceneSettings(action));
+    }
     if call.command == "read_scene" || call.command == "recall_scene" {
         if target.is_none() {
             return Err(OpError::Rejected("scene operation target required".into()));
