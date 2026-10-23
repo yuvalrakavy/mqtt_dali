@@ -112,6 +112,9 @@ scope, bus isolation and Off versus lit clamping. A standalone process test also
 executes typed plans through the real UART/PTY adapter and queries the model.
 No timed fades, mains-cycle behavior or physical HAT certification is claimed.
 Controls are in `v2-gear-settings-controls.toml` and its measured ledger.
+Managed service, MQTT and browser controls are in
+`v2-managed-gear-settings-controls.toml`, including an actual browser regression
+for preserving numeric edits when another control changes.
 
 Protocol references: [pinned python-dali command source](https://github.com/sde1000/python-dali/blob/4b21c18e79d02d2a97f91d135f0eee450e8c2fb9/dali/gear/general.py)
 and [Beckhoff's variable reference](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5908382347.html).

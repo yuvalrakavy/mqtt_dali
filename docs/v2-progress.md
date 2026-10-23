@@ -5,6 +5,71 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4b8 — managed common fixture settings and protected controls
+
+Frozen implementation `51e4613`; local wait-method declaration `906a380`.
+Final sequential native/owner and web/API source gates APPROVE without blockers.
+All reviews are read-only/source-only and same-family. No live HAT/Store,
+shared SDK, publication, deployment, push/merge or memory/skill changes.
+
+Individual fixtures now support `read_output_settings` and `configure_output`
+through typed service APIs, strict generic MQTT commands and protected HTTP jobs.
+The compact Fixture settings dialog covers minimum/maximum brightness, power-on
+and bus-failure levels, basic fade time and dimming rate, plus read-only physical
+minimum, actual level, raw version and status flags. Unavailable families remain
+unknown; readable families remain usable. Reserved fade-rate0 can be repaired.
+Native Off/LastActive/Unchanged meanings remain distinct, and basic time0 does
+not promise an instant transition. No settings cache or automatic poller.
+
+One original authority/deadline/permit spans fresh whole-patch preflight, checked
+native plans and actual readback. Crossed limits are ordered so the fixture can
+accept both changes. Active Blink blocks configuring the same continuing fixture
+at submission and owner admission. Possible writes retire bus-local output,
+colour and group evidence before enqueue and at settlement; unrelated buses,
+input values and native Notices survive. A HAT terminal never confirms settings.
+Missing/mismatched evidence returns unconfirmed and requires explicit refresh.
+The independent model gained only its missing literal PhysicalMinimum reply;
+scenario/snapshot formats and timing behavior are unchanged.
+
+Fail-first native and UI oracles caught inert implementations; a literal model
+case caught the missing physical-minimum query. Ten new native cases pass,
+covering all six fields/both repeat profiles, exact crossing order, no-write
+preflight, partial/masked/colliding evidence, original authority/deadline/epoch,
+both identification guards and strict Read-class MQTT dispatch. Group cache
+neighbors also pass. All **85 Node cases** pass.
+
+The initial full native run passed **711/712** across eleven binaries (74.477s
+execution,147.1s command; one opt-in browser test skipped). Its sole failure was
+the new local helper missing from the wait registry's `local-methods` declaration.
+All three non-self receivers are the bridge's own ServiceHandle. After that
+one-line declaration correction, the failed native test passes and independent
+wait validation reports zero findings; no production change or broad rerun was
+needed. Strict Clippy11.60s, Pi library/four binaries4.3s, changed formatting,
+web assets/whitespace and all41 affected control-table plans pass.
+
+All **20 intentional faults** now produce their named REDs (279.3s latest-row
+sum):13 native,6 Node and1 real-browser numeric-edit fault. The first batch had
+one wrong-reason result: the crossed-limit assertion failed at actual confirmation,
+so its unchanged equality gained a precise message and that row was remeasured
+RED. Mutations and generated assets were restored before freeze/readers.
+
+Actual phone/desktop acceptance passes **1013 owned commands**,92.87s. It verifies
+all six saved native settings, both crossing orders, Off retention, special255,
+basic time0, reopen/restore, lost-reply refresh, dismissal/navigation and unchanged
+inventory. Both settings screenshots were inspected. An early browser run failed
+an existing scene Busy; another run reached the new form and exposed lost numeric
+input when a dropdown rerendered it. A functional state update alone did not fix
+that DOM behavior. Typed text now updates on input, including intermediate values,
+with functional updates and explicit startup modes; native assertions are unchanged.
+Methodology: vary edit order across number/select controls and assert physical
+values, rather than relying on a blur event or the form's displayed text.
+
+Guide: [fixture settings](gear-settings.md). Evidence:
+`/tmp/dali-managed-gear-{settings-final-cases,node-final,clippy,controls,crossing-control,browser4,wait-regression,wait-validation}.log`,
+`/tmp/dali-managed-gear-acceptance.log` and its log directory. Browser artifacts:
+`/tmp/dali-browser-9dddbd689dbec39e911f4889988cb51a`.
+Remaining extended/specialist settings and diagnostics remain explicitly pending.
+
 ## P4b7 — common fixture settings protocol foundation
 
 Frozen source `192c7b7`. Combined design and sequential final codec/contract and
@@ -2637,7 +2702,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
+| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
