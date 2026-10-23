@@ -92,6 +92,8 @@ impl Peer {
                                 if p.hold == Some(frame) { signal.notify_one(); None } else {
                                     let value = match frame {
                                         0x01a0 => Some(level), 0x0190 => Some(4),
+                                        // This independent fixture's sole gear belongs to group0.
+                                        0x01c0 => Some(1), 0x01c1 => Some(0),
                                         0x0199 => { next_index = 0; Some(p.device_type) },
                                         0x01a7 => { let v = p.next.get(next_index).copied().unwrap_or(254); next_index += 1; Some(v) },
                                         0x01f7 => p.gear_features,

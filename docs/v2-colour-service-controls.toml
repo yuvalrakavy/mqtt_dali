@@ -129,8 +129,8 @@ expect_text = "paced known-colour base read expired"
 [[control]]
 name = "known_colour_all_read_keeps_plain_two_second_budget"
 file = "src/service/proxy.rs"
-anchor = "let budget = if *input {\n                Duration::from_secs(4)\n            } else {\n                Self::output_budget(&self.snapshot()?, target, false)\n            };"
-replacement = "let budget = if *input { Duration::from_secs(4) } else { Duration::from_secs(2) };"
+anchor = "ReadKind::Output => Self::output_budget(&self.snapshot()?, target, false),"
+replacement = "ReadKind::Output => Duration::from_secs(2),"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_paced_all_read)"]
 expect_text = "paced known-colour base read expired"

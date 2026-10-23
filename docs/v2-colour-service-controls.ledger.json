@@ -206,18 +206,18 @@
   },
   "known_colour_all_read_keeps_plain_two_second_budget": {
    "last_real": {
-    "at": "2026-10-22T03:38:59Z",
+    "at": "2026-10-23T05:14:48Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:2b85d33fc8d0708a",
-     "row": "9f917d265b4ee51f",
+     "guard": "item:f6e9bd7d235eff8b",
+     "row": "b5cfd027a892edd3",
      "test": null
     },
     "path": "command",
-    "secs": 9.9,
-    "sha": "b3a72b946038f425daf3d12736cab83124a703d8",
+    "secs": 20.4,
+    "sha": "c27d63a6457939e35329c2d1047e77e073683ee1",
     "verdict": "RED"
    }
   },
