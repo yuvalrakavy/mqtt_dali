@@ -13,12 +13,14 @@ use std::time::Duration;
 #[derive(Debug, Clone, Copy)]
 pub(super) enum Action {
     Identity,
+    Luminaire,
     Read { bank: u8, window: codec::Window },
 }
 impl Action {
     pub(super) fn name(self) -> &'static str {
         match self {
             Self::Identity => "read_identity",
+            Self::Luminaire => "read_luminaire_data",
             Self::Read { .. } => "read_memory",
         }
     }
@@ -45,6 +47,8 @@ pub struct Report {
     pub version: Option<scenes::Reading>,
     pub readings: Vec<LocationReading>,
     pub identity: Option<codec::Identity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub luminaire: Option<crate::dali::luminaire::Data>,
     pub reason: Option<String>,
     pub configuration_changed: bool,
 }
@@ -119,6 +123,11 @@ pub(super) fn resolve(
             ))
         }
     };
+    if matches!(action, Action::Luminaire) && space != discovery::Space::Outputs {
+        return Err(reject(
+            "luminaire data requires an individual output fixture",
+        ));
+    }
     if !snapshot
         .model
         .inventory()
@@ -168,6 +177,34 @@ async fn location(
         )),
     })
 }
+fn extend_capture(report: &mut Report, end: u8) {
+    report
+        .readings
+        .extend((report.count..=end).map(|address| LocationReading {
+            address,
+            reading: None,
+        }));
+    report.count = end + 1;
+}
+fn captured_bytes(report: &Report) -> Vec<Option<u8>> {
+    report
+        .readings
+        .iter()
+        .map(|item| item.reading.as_ref().and_then(raw))
+        .collect()
+}
+async fn read_pending(
+    report: &mut Report,
+    bus: &commissioning::Bus<'_>,
+    native: codec::Target,
+) -> Result<(), commissioning::Error> {
+    for item in &mut report.readings {
+        if item.reading.is_none() {
+            *item = location(bus, native, item.address).await?;
+        }
+    }
+    Ok(())
+}
 pub(super) async fn execute(
     link: Transactions<Connection>,
     route: Route,
@@ -185,6 +222,7 @@ pub(super) async fn execute(
     let (bank, window) = match route.action {
         Action::Read { bank, window } => (bank, window),
         Action::Identity => (0, codec::Window::new(0, 1).unwrap()),
+        Action::Luminaire => (1, codec::Window::new(0, 1).unwrap()),
     };
     let mut report = Report {
         operation: route.action.name(),
@@ -208,6 +246,8 @@ pub(super) async fn execute(
             })
             .collect(),
         identity: None,
+        luminaire: matches!(route.action, Action::Luminaire)
+            .then(|| crate::dali::luminaire::decode(&[])),
         reason: None,
         configuration_changed: false,
     };
@@ -219,30 +259,38 @@ pub(super) async fn execute(
             ));
         }
         bus.command(route.native.bank(bank), false).await?;
-        if matches!(route.action, Action::Identity) {
+        if matches!(route.action, Action::Identity | Action::Luminaire) {
             report.readings[0] = location(&bus, route.native, 0).await?;
             let Some(last) = report.readings[0].reading.as_ref().and_then(raw) else {
                 return Ok(());
             };
             if last == 255 {
                 report.quality = "partial";
-                report.reason = Some("bank0 last accessible location is reserved FF".into());
+                report.reason = Some(format!(
+                    "bank{bank} last accessible location is reserved FF"
+                ));
                 return Ok(());
             }
-            let layout = codec::Layout::from_version(report.version.as_ref().and_then(raw));
-            let end = last.min(layout.last_location());
-            report.count = end + 1;
-            report
-                .readings
-                .extend((1..=end).map(|address| LocationReading {
-                    address,
-                    reading: None,
-                }));
+            let end = if matches!(route.action, Action::Identity) {
+                codec::Layout::from_version(report.version.as_ref().and_then(raw)).last_location()
+            } else {
+                0x12
+            };
+            extend_capture(&mut report, last.min(end));
         }
-        for item in &mut report.readings {
-            if item.reading.is_none() {
-                *item = location(&bus, route.native, item.address).await?;
+        read_pending(&mut report, &bus, route.native).await?;
+        if matches!(route.action, Action::Luminaire) {
+            use crate::dali::luminaire::{decode, FormatStatus};
+            if decode(&captured_bytes(&report)).format_status == FormatStatus::Supported {
+                let last = report.readings[0]
+                    .reading
+                    .as_ref()
+                    .and_then(raw)
+                    .expect("header checked above");
+                extend_capture(&mut report, last.min(0x77));
+                read_pending(&mut report, &bus, route.native).await?;
             }
+            report.luminaire = Some(decode(&captured_bytes(&report)));
         }
         let complete = report
             .readings
@@ -261,20 +309,19 @@ pub(super) async fn execute(
         };
         if matches!(route.action, Action::Identity) {
             let version = report.version.as_ref().and_then(raw);
-            let identity = codec::identity(
-                version,
-                &report
-                    .readings
-                    .iter()
-                    .map(|item| item.reading.as_ref().and_then(raw))
-                    .collect::<Vec<_>>(),
-            );
+            let identity = codec::identity(version, &captured_bytes(&report));
             if identity.layout == codec::Layout::Unknown
                 || report.count <= identity.layout.last_location()
             {
                 report.quality = "partial";
             }
             report.identity = Some(identity);
+        }
+        if report.luminaire.as_ref().is_some_and(|data| {
+            data.format_status != crate::dali::luminaire::FormatStatus::Supported
+                || report.count < 120
+        }) {
+            report.quality = "partial";
         }
         Ok(())
     }
@@ -357,6 +404,16 @@ impl ServiceHandle {
         deadline: Instant,
     ) -> Result<Report, ServiceError> {
         self.memory(target, Action::Identity, context, deadline, None)
+            .await
+    }
+    /// Read supported Part251 OEM/ratings/text data without programming memory.
+    pub async fn read_luminaire_data(
+        &self,
+        target: &str,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.memory(target, Action::Luminaire, context, deadline, None)
             .await
     }
     pub(super) async fn memory(

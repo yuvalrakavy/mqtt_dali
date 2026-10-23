@@ -6,8 +6,11 @@ The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
 Current work: typed Part251 luminaire data, using the accepted memory owner.
-The design adds OEM identity/ratings/text to explicit read reports and the device
-information dialog. Its fresh design review APPROVES with a distribution-mask
+The implementation adds OEM identity/ratings/text to explicit read reports and
+the device information dialog. Eighteen focused native cases and104 frontend
+tests pass, including existing memory compatibility. Real Chrome phone/desktop
+checks pass in17.291s. Documentation and the final mutation/source/full gates
+are in progress. Its fresh design review APPROVES with a distribution-mask
 clarification applied; implementation follows the fail-first phases in
 `superpowers/specs/2026-10-23-dali-v2-luminaire-data.md`.
 

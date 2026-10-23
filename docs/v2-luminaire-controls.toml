@@ -1,0 +1,63 @@
+# Run one deliberate defect at a time in a disposable committed checkout.
+[[control]]
+name = "luminaire_unknown_format_authorizes_fields"
+file = "src/dali/luminaire.rs"
+anchor = 'if format != 3 {'
+replacement = 'if format != 3 && format != 4 {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(luminaire_data_header_and_format)"]
+expect_text = "unrecognized Part251 layout was guessed"
+
+[[control]]
+name = "luminaire_decoder_ignores_header_bound"
+file = "src/dali/luminaire.rs"
+anchor = 'capture.len().min(usize::from(last) + 1)'
+replacement = 'capture.len()'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(luminaire_data_header_and_format)"]
+expect_text = "bank header did not bound format proof"
+
+[[control]]
+name = "luminaire_identifier_loses_exact_hex_form"
+file = "src/dali/luminaire.rs"
+anchor = 'format!("{byte:02X}")'
+replacement = 'format!("{byte:02x}")'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(luminaire_data_known_format)"]
+expect_text = "exact text/identifier changed: luminaire_id"
+
+[[control]]
+name = "luminaire_cct_indication_becomes_temperature"
+file = "src/dali/luminaire.rs"
+anchor = 'Some(Value::Number(65534)) => *cct = Field::text("part_209"),'
+replacement = 'Some(Value::Number(65534)) => *cct = Field::value(Value::Number(65534), Some("K")),'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(luminaire_data_cct_indication)"]
+expect_text = "exact text/identifier changed: cct"
+
+[[control]]
+name = "luminaire_text_skips_silent_byte"
+file = "src/dali/luminaire.rs"
+anchor = 'None => return Field::absent(Status::Unavailable, None),'
+replacement = 'None => continue,'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(luminaire_data_holes_nul)"]
+expect_text = "text hole before NUL was skipped"
+
+[[control]]
+name = "luminaire_service_extends_without_format_proof"
+file = "src/service/memory.rs"
+anchor = 'if decode(&captured_bytes(&report)).format_status == FormatStatus::Supported {'
+replacement = 'if true {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(luminaire_data_mqtt_native)"]
+expect_text = "luminaire header/format read bound was ignored"
+
+[[control]]
+name = "luminaire_ui_relaxes_public_raw_read_limit"
+file = "web/src/device-info.ts"
+anchor = 'count<1||count>64||start+count>255'
+replacement = 'count<1||count>120||start+count>255'
+target = "command"
+argv = ["node","--test","web/src/device-info.test.ts"]
+expect_text = "luminaire capture does not relax raw memory windows"

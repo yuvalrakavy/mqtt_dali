@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import {join} from 'node:path';
 export async function deviceInfoFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,setup=false}){
-  const idle=()=>until(()=>page.getByRole('button',{name:'Bus actions',exact:true}).isEnabled(),'memory read did not settle');
+  const idle=()=>until(async()=>{
+    const refresh=page.getByRole('button',{name:'Read identity again',exact:true});
+    return await refresh.count()?refresh.isEnabled():page.getByRole('button',{name:'Refresh addressed',exact:true}).isEnabled();
+  },'memory read did not settle');
   await page.goto(`${origin}/buses/0`);
   if(setup){await page.getByRole('button',{name:'Set up bus',exact:true}).click();await page.getByRole('button',{name:'Save bus',exact:true}).click();await idle();await page.getByRole('button',{name:'Refresh addressed',exact:true}).click();await until(()=>page.getByRole('button',{name:'Refresh addressed',exact:true}).isEnabled(),'memory discovery did not finish',90000);}
   await idle();const saved=await inventory(),bus=saved.buses[0],white=bus.outputs.find(o=>o.short_address===0),plain=bus.outputs.find(o=>o.short_address===1),input=bus.inputs.find(o=>o.short_address===0);
@@ -17,15 +20,41 @@ export async function deviceInfoFlow({page,origin,artifacts,inventory,control,un
     assert.equal(await result().locator('dd').nth(2).innerText(),'6.7');assert.equal(await result().locator('dd').nth(3).innerText(),'2.3');
     await noOverflow();assert.ok(await page.locator('.dialog-body').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'device information overflows');
     await page.screenshot({path:join(artifacts,`${viewport.width===390?'phone':'desktop'}-device-information.png`),fullPage:true});
+    const firstData=commands.length;await page.getByRole('button',{name:'Read luminaire data',exact:true}).click();
+    const data=()=>page.getByRole('region',{name:'Luminaire data',exact:true}),field=key=>data().locator(`[data-luminaire-field="${key}"]`);
+    await field('luminaire_id').getByText('FEDCBA9876543210',{exact:true}).waitFor();await idle();
+    assert.deepEqual(commands.slice(firstData).map(c=>c.command),['read_luminaire_data']);
+    assert.equal(await field('input_power_nominal').innerText(),'42 W');assert.equal(await field('manufacture_year').innerText(),'24');assert.equal(await field('cri').innerText(),'Unavailable');
+    assert.equal(await field('cct').innerText(),'Variable (Part 209 indication)');assert.equal(await field('identification').innerText(),'Fixture <b>OEM</b>');assert.equal(await data().locator('b').count(),0,'OEM text was interpreted as HTML');
+    await result().getByText('partial',{exact:true}).waitFor();await page.locator('.dialog-body').evaluate(e=>e.scrollTop=0);await noOverflow();await dialogVisible();
+    await page.screenshot({path:join(artifacts,`${viewport.width===390?'phone':'desktop'}-luminaire-data.png`),fullPage:true});
+    await page.getByText('Captured bank 1 bytes',{exact:true}).click();assert.equal(await result().locator('tbody tr').count(),120);
+    await result().locator('tbody tr').last().scrollIntoViewIfNeeded();assert.equal(await result().locator('tbody tr').last().locator('td').first().innerText(),'0x77');await dialogVisible();
+    assert.ok(await page.locator('.dialog-body').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'luminaire data overflows horizontally');
+    await page.screenshot({path:join(artifacts,`${viewport.width===390?'phone':'desktop'}-luminaire-raw.png`),fullPage:true});
+    // Lose admission after the real read finishes. No previous capture or retry
+    // may survive the failure; an explicit new read restores the report.
+    let lostResolve;const lostReply=new Promise(r=>lostResolve=r);let lose=true;const loss=async route=>{const call=route.request().postDataJSON();if(lose&&call.command==='read_luminaire_data'){
+      lose=false;const response=await route.fetch(),admission=await response.json();let job;
+      await until(async()=>{job=await(await page.context().request.get(`${origin}/api/jobs/${admission.id}`)).json();return job.status!=='running';},'native luminaire read did not finish');assert.equal(job.status,'succeeded');
+      await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({error:'Luminaire result unavailable.'})});
+      lostResolve();
+    }else await route.continue();};
+    await page.route(`${origin}/api/jobs`,loss);const lostStart=commands.length;
+    try{await page.getByRole('button',{name:'Read luminaire data',exact:true}).click();await lostReply;await idle();assert.equal(await data().count(),0,'lost luminaire result retained old data');assert.deepEqual(commands.slice(lostStart).map(c=>c.command),['read_luminaire_data'],'lost read retried automatically');}
+    finally{await page.unroute(`${origin}/api/jobs`,loss);}
+    await page.getByRole('button',{name:'Read luminaire data',exact:true}).click();await field('input_power_nominal').getByText('42 W',{exact:true}).waitFor();await idle();
     await page.getByText('Read a memory bank',{exact:true}).click();await page.getByLabel('Memory bank',{exact:true}).fill('255');await page.getByLabel('Memory byte count',{exact:true}).fill('4');
     const first=commands.length;await page.getByRole('button',{name:'Read memory',exact:true}).click();await until(async()=>await result().locator('tbody tr').count()===4,'raw memory read did not finish');await idle();
     assert.deepEqual(commands.slice(first).map(c=>c.command),['read_memory']);assert.deepEqual(await result().locator('tbody tr td:nth-child(2)').allTextContents(),['0xFF (255)','No response','0x00 (0)','0x7F (127)']);
     await noOverflow();await dialogVisible();await page.screenshot({path:join(artifacts,`${viewport.width===390?'phone':'desktop'}-memory-bytes.png`),fullPage:true});
     await page.getByLabel('First memory location',{exact:true}).fill('254');await page.getByLabel('Memory byte count',{exact:true}).fill('2');const count=commands.length;
     await page.getByRole('button',{name:'Read memory',exact:true}).click();await page.getByRole('alert').filter({hasText:'within locations'}).first().waitFor();assert.equal(commands.length,count,'invalid range reached HAT');assert.equal(await result().count(),0,'invalid new read retained prior evidence');
-    await page.getByLabel('Memory bank',{exact:true}).fill('1');await page.getByLabel('First memory location',{exact:true}).fill('0');await page.getByLabel('Memory byte count',{exact:true}).fill('1');await page.getByRole('button',{name:'Read memory',exact:true}).click();await result().getByText('unavailable',{exact:true}).waitFor();await idle();await close();
-    await open(plain);await result().getByText('89ABCDEF (32-bit)',{exact:true}).waitFor();await result().getByText('legacy',{exact:true}).waitFor();assert.equal(await result().locator('dd').nth(3).innerText(),'Unknown');await close();
-    await open(input);await result().getByText('unknown',{exact:true}).waitFor();assert.equal(await result().locator('dd').nth(1).innerText(),'Unknown');await result().getByText('partial',{exact:true}).waitFor();await close();
+    await page.getByLabel('Memory bank',{exact:true}).fill('2');await page.getByLabel('First memory location',{exact:true}).fill('0');await page.getByLabel('Memory byte count',{exact:true}).fill('1');await page.getByRole('button',{name:'Read memory',exact:true}).click();await result().getByText('unavailable',{exact:true}).waitFor();await idle();await close();
+    await open(plain);await result().getByText('89ABCDEF (32-bit)',{exact:true}).waitFor();await result().getByText('legacy',{exact:true}).waitFor();assert.equal(await result().locator('dd').nth(3).innerText(),'Unknown');
+    await page.getByRole('button',{name:'Read luminaire data',exact:true}).click();await result().getByText('Unrecognized luminaire data format 0x0004. Raw bytes are available below.',{exact:true}).waitFor();await idle();
+    await page.getByText('Captured bank 1 bytes',{exact:true}).click();assert.equal(await result().locator('tbody tr').count(),19,'unfamiliar data format read extension bytes');await close();
+    await open(input);await result().getByText('unknown',{exact:true}).waitFor();assert.equal(await result().locator('dd').nth(1).innerText(),'Unknown');await result().getByText('partial',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Read luminaire data',exact:true}).count(),0,'input module exposes luminaire data');await close();
     const instance=bus.inputs[0].instances[0];await row(instance).getByRole('button',{name:`Actions ${instance.name}`,exact:true}).click();assert.equal(await page.getByRole('button',{name:'Device information',exact:true}).count(),0,'instance exposes module identity');await close();
   }
   // A held real HTTP reply must lose view authority when its dialog closes.
@@ -35,6 +64,12 @@ export async function deviceInfoFlow({page,origin,artifacts,inventory,control,un
   await row(white).getByRole('button',{name:`Actions ${white.name}`,exact:true}).click();await page.getByRole('button',{name:'Device information',exact:true}).click();await admitted;
   await page.getByRole('button',{name:'Close dialog',exact:true}).click();release();await idle();await page.unroute(`${origin}/api/jobs/*`,intercept);await open(plain);
   assert.equal(await result().getByText('FEDCBA9876543210 (64-bit)',{exact:true}).count(),0,'retired read populated another fixture');await close();
+  await open(white);let dataEntered,dataRelease;const dataAdmitted=new Promise(r=>dataEntered=r),dataHeld=new Promise(r=>dataRelease=r);let holdData=true;
+  const holdLuminaire=async route=>{const response=await route.fetch(),body=await response.json();if(holdData&&body.result?.operation==='read_luminaire_data'){holdData=false;dataEntered();await dataHeld;}await route.fulfill({response}).catch(()=>{});};
+  await page.route(`${origin}/api/jobs/*`,holdLuminaire);await page.getByRole('button',{name:'Read luminaire data',exact:true}).click();await dataAdmitted;
+  await page.getByRole('button',{name:'Close dialog',exact:true}).click();dataRelease();await idle();await page.unroute(`${origin}/api/jobs/*`,holdLuminaire);
+  await open(plain);assert.equal(await page.locator('[data-luminaire-field]').count(),0,'retired luminaire read populated another fixture');await close();
   assert.deepEqual(await native(),before,'memory workflow changed native state other than scratch DTRs');assert.deepEqual(await inventory(),saved,'memory workflow changed saved names/bindings');
-  console.log('PASS device information: phone/desktop modern/legacy/unknown identity, exact serials, raw FF/silence/zero, strict range before submission, unsupported bank, module-only menu, retired dialog, native/config preservation');
+  await page.setViewportSize({width:390,height:844});
+  console.log('PASS device information: phone/desktop identity and Part251 ratings, exact identifiers/units, variable CCT/partial data, escaped OEM text,120-byte scrolling, unknown-format prefix, lost reply/explicit refresh, raw limits, retired dialogs and native/config preservation');
 }

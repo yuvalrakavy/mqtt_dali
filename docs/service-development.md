@@ -11,6 +11,14 @@ Shared Read-class MQTT dispatch precedes mutation completion requirements;
 typed service and protected strict jobs use this same path. Controls:
 `v2-memory-controls.toml`. Independent emulator profiles remain optional.
 
+`Action::Luminaire` and pure `dali::luminaire` add output-only
+[`read_luminaire_data`](luminaire-data.md) under that same owner. Header-bounded
+bank1 prefix reads prove format3 before extending to0x77; unknown formats never
+authorize extension reads. Its optional report field is omitted on identity/raw
+reads. Keep the public raw window at64 bytes, exact IDs as strings and per-field
+unknown/unavailable/invalid semantics. No unlock/latch/write or retained State.
+Controls: `v2-luminaire-controls.toml`.
+
 Common output settings use `output::settings` and concrete `Work::OutputSettings`
 with [checked native plans](gear-settings.md). Shared strict MQTT/HTTP and typed
 read/configure keep original context/revision/deadline/permit through settlement.

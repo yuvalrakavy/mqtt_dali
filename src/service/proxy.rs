@@ -68,7 +68,7 @@ impl DeviceDriver for DaliProxy {
                 CommandClass::Read,
             )))
             .chain(
-                ["read_memory", "read_identity"]
+                ["read_memory", "read_identity", "read_luminaire_data"]
                     .into_iter()
                     .map(|name| CommandSpec::new(name, CommandClass::Read)),
             )
@@ -1618,18 +1618,25 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
-    if matches!(call.command.as_str(), "read_identity" | "read_memory") {
+    if matches!(
+        call.command.as_str(),
+        "read_identity" | "read_memory" | "read_luminaire_data"
+    ) {
         if target.is_none() {
             return Err(OpError::Rejected("memory target required".into()));
         }
-        if call.command == "read_identity" {
+        if call.command != "read_memory" {
             if !call.params.is_empty() {
                 return Err(OpError::Rejected(
-                    "read_identity accepts no parameters".into(),
+                    "identity/luminaire reads accept no parameters".into(),
                 ));
             }
             return Ok(Operation::Memory(
-                memory::Action::Identity,
+                if call.command == "read_identity" {
+                    memory::Action::Identity
+                } else {
+                    memory::Action::Luminaire
+                },
                 snapshot.model.inventory().revision,
             ));
         }

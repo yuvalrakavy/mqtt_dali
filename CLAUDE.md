@@ -506,6 +506,13 @@ observations; no worker/cache/write path. The independent emulator has optional
 bounded raw-bank profiles. See `docs/device-information.md`,
 `docs/v2-memory-controls.toml` and the frozen protected DeviceInfoScope/dialog.
 
+Part251 uses pure `dali::luminaire` and `Action::Luminaire` in the same owner.
+Only bank1 format0003 permits header-bounded extension to0x77; unknown formats
+stay raw prefixes. Public raw reads stay64 bytes. Preserve exact string IDs,
+units and field statuses; ASCII text has no numeric MASK. No metadata inference,
+unlock, latch, write or retained State. See `docs/luminaire-data.md` and
+`docs/v2-luminaire-controls.toml`.
+
 ## Architecture (legacy)
 
 ### Module Dependency Flow

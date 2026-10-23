@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {Controller} from './controller.ts';
 import type {Snapshot,PhysicalRow} from './model.ts';
 import {DeviceInfoScope,decodeMemory,memoryWindow} from './device-info.ts';
+import {readFileSync} from 'node:fs';
+import {luminaireDisplay} from './luminaire.ts';
 function fixture(){
   const ui=new Controller(),epoch='0123456789abcdef0123456789abcdef',target='Bus1.Outputs.Lamp';
   ui.client.views.ready=true;ui.client.views.value={phase:'ready',identity:{controller:'Controller'},hardware:{state:'ready',buses:[{bus:0,status:2}]},states:[],inventory:{name:'Controller',revision:1,inventory_epoch:epoch,buses:[{bus:0,name:'Bus1',enabled:true,outputs:[{name:'Lamp',target,binding_revision:1,short_address:0}]}],identity_ledger:{baseline:[{target,binding_revision:1,location:{kind:'output',bus:0,short_address:0}}],batches:[]}}} as unknown as Snapshot;
@@ -47,4 +49,49 @@ test('memory lost read clears previous evidence and invalid ranges submit no com
   const f=fixture();await f.scope.read({bank:255,start:0,count:3});f.ui.client.job=async()=>{throw new Error('Reply lost');};
   await assert.rejects(f.scope.read({bank:255,start:0,count:3}),/Reply lost/);assert.equal(f.scope.result,null);
   await assert.rejects(f.scope.read({bank:255,start:254,count:3}));assert.equal(f.calls.length,1);f.ui.client.close();
+});
+
+// Producer profile/serialized grammar: service::tests::luminaire's native MQTT case.
+function luminaire(f:ReturnType<typeof fixture>){
+  const profile=JSON.parse(readFileSync(new URL('../../examples/emulator/luminaire-i4.json',import.meta.url),'utf8'));
+  const bytes=profile.buses[0].outputs[0].memory.banks[1].bytes;
+  const fields=Object.fromEntries([
+    ['manufacturer_gtin','00004328719365',null],['luminaire_id','FEDCBA9876543210',null],['manufacture_year',24,null],['manufacture_week',53,null],
+    ['input_power_nominal',42,'W'],['input_power_minimum_dim',7,'W'],['mains_voltage_minimum',230,'V'],['mains_voltage_maximum',480,'V'],
+    ['light_output_nominal',1000,'lm'],['cri',95,null],['cct',3000,'K'],['light_distribution','type_v',null],['oem_color','Black',null],['identification','Garden fixture',null]
+  ].map(([key,value,unit])=>[key,{status:'value',value,unit}]));
+  return {...f.report(),operation:'read_luminaire_data',bank:1,start:0,count:120,quality:'complete',readings:bytes.map((raw:number,address:number)=>({address,reading:{kind:'value',raw}})),luminaire:{format_id:3,format_status:'supported',fields}};
+}
+test('luminaire scope reads the original fixture and preserves exact identifiers and units',async()=>{
+  const f=fixture();f.ui.client.job=async(g,t,c,p)=>{f.calls.push({generation:g,target:t,command:c,params:p});return luminaire(f);};
+  const r=await f.scope.readLuminaire();assert.equal(r.readings.length,120);assert.equal(r.luminaire!.fields.luminaire_id.value,'FEDCBA9876543210');
+  assert.deepEqual(f.calls,[{generation:f.row.generation,target:f.row.item.target,command:'read_luminaire_data',params:{}}]);
+  assert.equal(luminaireDisplay('input_power_nominal',r.luminaire!.fields.input_power_nominal),'42 W');assert.equal(luminaireDisplay('manufacture_year',{status:'value',value:3,unit:null}),'03');f.ui.client.close();
+});
+test('luminaire capture does not relax raw memory windows or format/header bounds',()=>{
+  const f=fixture(),r=luminaire(f);assert.doesNotThrow(()=>decodeMemory(r,'read_luminaire_data'));assert.throws(()=>memoryWindow(1,0,120));
+  for(const patch of [{bank:2},{space:'inputs'},{count:121},{identity:{}},{version:{kind:'value',raw:8}}])assert.throws(()=>decodeMemory({...r,...patch},'read_luminaire_data'));
+  const wrong=structuredClone(r);wrong.readings[0].reading.raw=118;assert.throws(()=>decodeMemory(wrong,'read_luminaire_data'),'header ignored');
+  const unknown=structuredClone(r);unknown.count=19;unknown.quality='partial';unknown.readings=unknown.readings.slice(0,19);unknown.readings[18].reading.raw=4;unknown.luminaire={format_id:4,format_status:'unrecognized',fields:{}};
+  assert.doesNotThrow(()=>decodeMemory(unknown,'read_luminaire_data'));assert.throws(()=>decodeMemory({...unknown,quality:'complete'},'read_luminaire_data'));assert.throws(()=>decodeMemory({...unknown,luminaire:r.luminaire},'read_luminaire_data'));f.ui.client.close();
+});
+test('luminaire known fields reject inconsistent status, precision, units and special CCT',()=>{
+  const f=fixture(),r=luminaire(f);
+  for(const [key,patch]of [['luminaire_id',{value:18364758544493064720}],['luminaire_id',{value:'FEDCBA987654321'}],['input_power_nominal',{unit:'V'}],['cri',{value:101}],['cct',{value:65534}],['identification',{value:'café'}],['oem_color',{status:'unknown'}]]){
+    const wrong=structuredClone(r);Object.assign(wrong.luminaire.fields[key as string],patch);assert.throws(()=>decodeMemory(wrong,'read_luminaire_data'),undefined,`invalid luminaire field accepted: ${key}`);
+  }
+  const special=structuredClone(r);special.readings[33].reading.raw=255;special.readings[34].reading.raw=254;special.luminaire.fields.cct={status:'value',value:'part_209',unit:null};
+  const decoded=decodeMemory(special,'read_luminaire_data');assert.equal(luminaireDisplay('cct',decoded.luminaire!.fields.cct),'Variable (Part 209 indication)');f.ui.client.close();
+});
+test('luminaire unavailable header keeps unknowns separate from a reserved header',()=>{
+  const f=fixture(),r=luminaire(f),base={...r,count:1,quality:'unavailable',readings:[{address:0,reading:{kind:'no_response'}}],luminaire:{format_id:null,format_status:'unavailable',fields:{}}};
+  assert.doesNotThrow(()=>decodeMemory(base,'read_luminaire_data'));
+  assert.doesNotThrow(()=>decodeMemory({...base,quality:'partial',readings:[{address:0,reading:{kind:'value',raw:255}}]},'read_luminaire_data'));f.ui.client.close();
+});
+test('luminaire late and lost reads clear previous evidence without renewing scope',async()=>{
+  for(const reason of ['cancel','epoch','revision','lost']){
+    const f=fixture();f.ui.client.job=async()=>luminaire(f);await f.scope.readLuminaire();
+    f.ui.client.job=async()=>{if(reason==='cancel')f.scope.cancelled=true;if(reason==='epoch')f.ui.client.views.epoch++;if(reason==='revision')f.ui.snapshot.inventory.revision++;if(reason==='lost')throw new Error('Reply lost');return luminaire(f);};
+    await assert.rejects(f.scope.readLuminaire(),undefined,`late ${reason} luminaire read populated dialog`);assert.equal(f.scope.result,null);f.ui.client.close();
+  }
 });

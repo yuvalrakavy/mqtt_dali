@@ -1,10 +1,12 @@
 import type {Controller} from './controller.ts';
 import {continuation} from './client.ts';
 import {busReady,type PhysicalRow,type Snapshot} from './model.ts';
+import {decodeLuminaire,type LuminaireData} from './luminaire.ts';
 
 export type MemoryReading={kind:'value';raw:number}|{kind:'no_response'}|{kind:'receive_collision'|'transmit_collision';code:number|null};
 export interface Identity {layout:'legacy'|'modern'|'unknown';gtin:string|null;serial_number:string|null;serial_bits:32|64|null;firmware_version:[number,number]|null;hardware_version:[number,number]|null;last_memory_bank:number|null}
-export interface MemoryReport {operation:'read_identity'|'read_memory';outcome:'observed';target:string;target_generation:string;revision:number;bus:number;address:number;space:'outputs'|'inputs';bank:number;start:number;count:number;quality:'complete'|'partial'|'unavailable';version:MemoryReading|null;readings:{address:number;reading:MemoryReading|null}[];identity:Identity|null;reason:string|null;configuration_changed:false}
+type Operation='read_identity'|'read_memory'|'read_luminaire_data';
+export interface MemoryReport {operation:Operation;outcome:'observed';target:string;target_generation:string;revision:number;bus:number;address:number;space:'outputs'|'inputs';bank:number;start:number;count:number;quality:'complete'|'partial'|'unavailable';version:MemoryReading|null;readings:{address:number;reading:MemoryReading|null}[];identity:Identity|null;luminaire?:LuminaireData;reason:string|null;configuration_changed:false}
 const byte=(v:unknown):v is number=>typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=255;
 const invalid=():never=>{throw new Error('Device information is incomplete or invalid. Read again.');};
 export function memoryWindow(bank:number,start:number,count:number){
@@ -20,9 +22,11 @@ function reading(v:any):MemoryReading|null{
   return invalid();
 }
 const numeric=(r:MemoryReading|null)=>r?.kind==='value'?r.raw:null;
-export function decodeMemory(v:any,operation:'read_identity'|'read_memory',window?:{bank:number;start:number;count:number}):MemoryReport{
+export function decodeMemory(v:any,operation:Operation,window?:{bank:number;start:number;count:number}):MemoryReport{
   if(!v||v.operation!==operation||v.outcome!=='observed'||v.configuration_changed!==false||!['complete','partial','unavailable'].includes(v.quality)||v.reason!==null&&typeof v.reason!=='string'||!Array.isArray(v.readings))return invalid();
-  memoryWindow(v.bank,v.start,v.count);
+  if(operation==='read_luminaire_data'){
+    if(v.bank!==1||v.start!==0||!Number.isInteger(v.count)||v.count<1||v.count>120||v.space!=='outputs'||v.identity!==null)return invalid();
+  }else{memoryWindow(v.bank,v.start,v.count);if(v.luminaire!==undefined)return invalid();}
   if(v.readings.length!==v.count)return invalid();
   const readings=v.readings.map((item:any,index:number)=>{
     if(!item||item.address!==v.start+index)return invalid();
@@ -32,6 +36,8 @@ export function decodeMemory(v:any,operation:'read_identity'|'read_memory',windo
   let quality=bytes.every((b:number|null)=>b!==null)?'complete':bytes.some((b:number|null)=>b!==null)?'partial':'unavailable';
   if(operation==='read_memory'){
     if(!window||v.bank!==window.bank||v.start!==window.start||v.count!==window.count||v.identity!==null||version!==null)return invalid();
+  }else if(operation==='read_luminaire_data'){
+    if(version!==null)return invalid();const parsed=decodeLuminaire(v.luminaire,bytes);if(parsed.partial)quality='partial';
   }else{
     if(v.bank!==0||v.start!==0||v.count>27)return invalid();
     const raw=numeric(version),layout=raw===1?'legacy':raw!==null&&raw>=8&&raw<=254?'modern':'unknown',last=layout==='legacy'?14:layout==='modern'?26:10;
@@ -63,8 +69,11 @@ export class DeviceInfoScope {
     if(this.cancelled||ui.cancelled||ui.signingOut||!ui.client.views.ready||ui.client.views.epoch!==this.epoch)throw new Error('Device information closed. Reopen to read again.');
     if(!continuation(this.initial,ui.snapshot,this.initial.inventory.revision,row.bus.bus)||!busReady(ui.snapshot,row.bus)||!current||current.kind!==row.kind||current.item.target!==row.item.target||current.generation!==row.generation||current.item.short_address!==row.item.short_address)throw new Error('Device configuration changed. Reopen device information.');
   }
-  async read(window?:{bank:number;start:number;count:number}){
-    this.result=null;this.assert();const frozen=window?memoryWindow(window.bank,window.start,window.count):undefined,operation=frozen?'read_memory':'read_identity';
+  read(window?:{bank:number;start:number;count:number}){return this.request(window?'read_memory':'read_identity',window);}
+  readLuminaire(){return this.request('read_luminaire_data');}
+  private async request(operation:Operation,window?:{bank:number;start:number;count:number}){
+    this.result=null;this.assert();if(operation==='read_luminaire_data'&&this.row.kind!=='output')throw new Error('Select an individual output fixture for luminaire data.');
+    const frozen=window?memoryWindow(window.bank,window.start,window.count):undefined;
     const r=await this.ui.client.job(this.row.generation,this.row.item.target,operation,frozen??{});
     this.assert();const row=this.row;
     if(!r||r.target!==row.item.target||r.target_generation!==row.generation||r.revision!==this.initial.inventory.revision||r.bus!==row.bus.bus||r.address!==row.item.short_address||r.space!==(row.kind==='output'?'outputs':'inputs'))return invalid();

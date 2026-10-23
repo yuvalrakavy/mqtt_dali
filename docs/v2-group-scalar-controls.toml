@@ -51,10 +51,12 @@ expect_text = "selected group freshness survived a native mutation: membership"
 [[control]]
 name = "group_scalar_input_feedback_wrongly_retires_groups"
 file = "src/service/physical.rs"
-anchor = '''            Self::InputFeedback(..)
+anchor = '''            Self::Memory(..)
+            | Self::InputFeedback(..)
             | Self::InputSettings(..)'''
 replacement = '''            Self::InputFeedback(..) => true,
-            Self::InputSettings(..)'''
+            Self::Memory(..)
+            | Self::InputSettings(..)'''
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_common_mutations)"]
 expect_text = "input feedback retired group evidence"

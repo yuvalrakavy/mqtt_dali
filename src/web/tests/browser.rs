@@ -28,6 +28,27 @@ async fn browser_functional_phone_and_desktop() {
         {"bank":0,"bytes":[14,255,0,0,1,2,3,4,5,6,7,137,171,205,239]}]});
     scenario["buses"][0]["inputs"][0]["memory"] = json!({"version":7,"banks":[
         {"bank":0,"bytes":[26,0,0,0,1,2,3,4,5,6,7]}]});
+    let luminaire: serde_json::Value =
+        serde_json::from_str(include_str!("../../../examples/emulator/luminaire-i4.json")).unwrap();
+    let mut bank = luminaire["buses"][0]["outputs"][0]["memory"]["banks"][1].clone();
+    bank["bytes"][32] = serde_json::Value::Null;
+    bank["bytes"][33] = json!(255);
+    bank["bytes"][34] = json!(254);
+    for item in &mut bank["bytes"].as_array_mut().unwrap()[60..120] {
+        *item = json!(0);
+    }
+    for (i, byte) in b"Fixture <b>OEM</b>".iter().enumerate() {
+        bank["bytes"][60 + i] = json!(*byte);
+    }
+    scenario["buses"][0]["outputs"][0]["memory"]["banks"]
+        .as_array_mut()
+        .unwrap()
+        .push(bank.clone());
+    bank["bytes"][18] = json!(4);
+    scenario["buses"][0]["outputs"][1]["memory"]["banks"]
+        .as_array_mut()
+        .unwrap()
+        .push(bank);
     let scenario = serde_json::from_value(scenario).unwrap();
     let tcp_mode = std::env::var_os("DALI_BROWSER_HAT_TCP").is_some();
     let (emulator, tcp, pty_owner) = if tcp_mode {

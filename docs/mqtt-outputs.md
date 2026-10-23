@@ -40,6 +40,12 @@ version-gated bank0 layouts and raw bytes remain separate from scalar State.
 See [device information](device-information.md) for strict parameters, quality
 and examples.
 
+`read_luminaire_data` takes no parameters and reads Part251 OEM identity, ratings
+and descriptive text from individual saved outputs. Its typed captured fields
+include units and unknown/unavailable/invalid status, with exact identifiers as
+strings. See [luminaire data](luminaire-data.md) for the supported format and
+report. It is a Read command, separate from scalar State.
+
 Common individual fixture settings use explicit `read_output_settings` and
 `configure_output` commands, with original target-generation and expected revision
 for writes. They return readback reports, separate from scalar Desired/State and

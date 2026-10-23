@@ -73,6 +73,9 @@ version byte in the existing scenario JSON editor. See
 [device information and a working profile](device-information.md#emulator-configuration).
 Numeric255 and nullable silent locations remain distinct; capture/export and
 reboot/reset preserve profiles. Existing scenarios without profiles still load.
+The ready-to-use `examples/emulator/luminaire-i4.json` includes a Part251 bank1
+profile. Edit its raw array to exercise typed [luminaire reads](luminaire-data.md),
+unknown formats and missing data without a separate emulator data model.
 
 Existing strict version-1 files remain valid. Optional capture fields:
 

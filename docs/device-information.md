@@ -22,7 +22,8 @@ silence alone does not prove why a device did not answer.
 
 Banks are 0–255. Read 1–64 bytes at a time within locations 0–254; a range cannot
 wrap. Bank 0 contains identity information. Other banks depend on the product
-and supported DALI parts; this operation does not interpret their data yet.
+and supported DALI parts. **Read luminaire data** on output fixtures interprets
+supported Part251 bank1 data; see [luminaire identity and ratings](luminaire-data.md).
 
 The report belongs to the original device and configuration revision. Close,
 sign-out, navigation, rename, address changes or replacement retire a pending
@@ -140,8 +141,9 @@ stamp. DTR scratch operations are serialized with other bridge work.
 
 Local evidence covers literal UART bytes, the independent TCP emulator, MQTT,
 typed operations, strict protected jobs and real phone/desktop browsers. Physical
-HAT/fixture validation remains pending. Memory writes, Parts251–253 decoding and
-manufacturer-specific banks are separate capabilities.
+HAT/fixture validation remains pending. [Part251 luminaire decoding](luminaire-data.md)
+reuses this owner. Memory writes, Parts252/253 and manufacturer-specific layouts
+are separate capabilities.
 
 Primary protocol references: [python-dali bank0 layouts](https://github.com/sde1000/python-dali/blob/master/dali/memory/info.py),
 [Part102 commands](https://github.com/sde1000/python-dali/blob/master/dali/gear/general.py),
