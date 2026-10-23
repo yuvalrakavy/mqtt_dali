@@ -12,11 +12,13 @@ export async function inputSettingsFlow({page,origin,artifacts,inventory,control
   const start=commands.length;await open(button.name);await dialogVisible();await noOverflow();
   assert.deepEqual(commands.slice(start).map(c=>c.command),['read_input_settings'],'opening settings changed hardware');
   await page.getByLabel('Input enabled',{exact:true}).uncheck();
+  // Numeric edits must survive a different control's render before blur.
+  await page.getByLabel('Short press (ms)',{exact:true}).fill('1000');
   await page.getByLabel('Event priority',{exact:true}).selectOption('2');
+  assert.equal(await page.getByLabel('Short press (ms)',{exact:true}).inputValue(),'1000','input numeric edit was lost before blur');
   await page.getByLabel('Double press',{exact:true}).uncheck();
   await page.getByLabel('Primary group',{exact:true}).selectOption('0');
   await page.getByLabel('Instance group 2',{exact:true}).selectOption('31');
-  await page.getByLabel('Short press (ms)',{exact:true}).fill('1000');
   await page.getByLabel('Double press (ms)',{exact:true}).fill('400');
   await page.getByLabel('Long repeat (ms)',{exact:true}).fill('200');
   await page.getByLabel('Stuck button (s)',{exact:true}).fill('30');
@@ -41,15 +43,32 @@ export async function inputSettingsFlow({page,origin,artifacts,inventory,control
     for(const viewport of [{width:390,height:844},{width:1440,height:1024}]){
       await page.setViewportSize(viewport);await open(instance.name);await dialogVisible();await noOverflow();
       await page.getByLabel(kind===2?'Position changed':kind===3?'Occupied':'Light level changed',{exact:true}).waitFor();
-      const initial=(await control({op:'snapshot'})).buses[0].inputs.find(i=>i.id==='buttons').settings[instance.number].sensor_settings;
-      await page.getByLabel('Report interval (s)',{exact:true}).fill('255');await page.getByLabel('Deadtime (ms)',{exact:true}).fill('1000');
-      if(kind===3)await page.getByLabel('Hold time (s)',{exact:true}).fill('1');
-      if(kind===4){await page.getByLabel('Hysteresis (%)',{exact:true}).fill('25');await page.getByLabel('Minimum hysteresis (sensor units)',{exact:true}).fill('255');}
+      const initialSettings=(await control({op:'snapshot'})).buses[0].inputs.find(i=>i.id==='buttons').settings[instance.number],initial=initialSettings.sensor_settings;
+      await page.getByLabel('Report interval (s)',{exact:true}).fill('255');await page.getByLabel('Event priority',{exact:true}).selectOption('2');
+      assert.equal(await page.getByLabel('Report interval (s)',{exact:true}).inputValue(),'255','sensor numeric edit was lost before blur');
+      await page.getByLabel('Deadtime (ms)',{exact:true}).fill('1000');await page.getByLabel('Event priority',{exact:true}).selectOption('5');
+      assert.equal(await page.getByLabel('Deadtime (ms)',{exact:true}).inputValue(),'1000','sensor deadtime edit was lost before blur');
+      if(kind===3){
+        await page.getByLabel('Hold time (s)',{exact:true}).fill('2');await page.getByLabel('Event priority',{exact:true}).selectOption('2');
+        assert.equal(await page.getByLabel('Hold time (s)',{exact:true}).inputValue(),'2','intermediate hold text was erased');
+        const beforeInvalid=commands.length;await page.getByRole('button',{name:'Save settings',exact:true}).click();
+        await until(async()=>await page.getByRole('button',{name:'Save settings',exact:true}).isEnabled(),'invalid input validation did not settle');
+        assert.equal(commands.length,beforeInvalid,'invalid intermediate hold submitted a mixed hardware patch');
+        await until(async()=>(await page.locator('dialog').getByRole('alert').allTextContents()).some(t=>t.includes('Sensor values must use valid native steps')),'invalid hold did not show a range error');
+        assert.deepEqual((await control({op:'snapshot'})).buses[0].inputs.find(i=>i.id==='buttons').settings[instance.number],initialSettings,'invalid hold changed native settings');
+        await page.getByLabel('Hold time (s)',{exact:true}).fill('1');
+      }
+      if(kind===4){
+        await page.getByLabel('Hysteresis (%)',{exact:true}).fill('25');await page.getByLabel('Event priority',{exact:true}).selectOption('2');
+        assert.equal(await page.getByLabel('Hysteresis (%)',{exact:true}).inputValue(),'25','sensor hysteresis edit was lost before blur');
+        await page.getByLabel('Minimum hysteresis (sensor units)',{exact:true}).fill('255');
+      }
+      await page.getByLabel('Event priority',{exact:true}).selectOption(String(initialSettings.priority));
       await page.getByRole('button',{name:'Save settings',exact:true}).scrollIntoViewIfNeeded();
       await page.screenshot({path:join(artifacts,`${viewport.width===390?'phone':'desktop'}-sensor-settings-${kind}.png`),fullPage:true});
       await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'sensor settings save did not close');await idle();
-      const actual=(await control({op:'snapshot'})).buses[0].inputs.find(i=>i.id==='buttons').settings[instance.number].sensor_settings;
-      assert.deepEqual(actual,{...initial,report:255,deadtime:20,...(kind===3?{hold:0}:{}),...(kind===4?{hysteresis:25,hysteresis_min:255}:{})},'sensor native values or exact units did not persist');
+      const actual=(await control({op:'snapshot'})).buses[0].inputs.find(i=>i.id==='buttons').settings[instance.number];
+      assert.deepEqual(actual,{...initialSettings,sensor_settings:{...initial,report:255,deadtime:20,...(kind===3?{hold:0}:{}),...(kind===4?{hysteresis:25,hysteresis_min:255}:{})}},'sensor native values or exact units did not persist');
       await open(instance.name);assert.equal(await page.getByLabel('Report interval (s)',{exact:true}).inputValue(),'255');assert.equal(await page.getByLabel('Deadtime (ms)',{exact:true}).inputValue(),'1000');
       if(kind===3)assert.equal(await page.getByLabel('Hold time (s)',{exact:true}).inputValue(),'1');
       if(kind===4){assert.equal(await page.getByLabel('Hysteresis (%)',{exact:true}).inputValue(),'25');assert.equal(await page.getByLabel('Minimum hysteresis (sensor units)',{exact:true}).inputValue(),'255');}

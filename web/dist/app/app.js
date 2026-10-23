@@ -1252,14 +1252,14 @@ function dt(e, t) {
 }
 // src/input-settings-ui.tsx
 function ft({ row: e, close: t }) {
-	let n = X(), [r] = U(() => new ut(n, e)), [i, a] = U(null), [o, s] = U("");
+	let n = X(), [r] = U(() => new ut(n, e)), [i, a] = U(null), [o, s] = U(""), [c, l] = U({}), [u, d] = U({});
 	he(() => () => {
 		r.cancelled = !0;
 	}, [r]);
-	let c = () => {
+	let f = () => {
 		r.cancelled = !0, t();
-	}, l = () => void n.run(async () => {
-		s(""), a(null);
+	}, p = () => void n.run(async () => {
+		s(""), a(null), l({}), d({});
 		try {
 			let e = await r.read();
 			a(e);
@@ -1268,22 +1268,38 @@ function ft({ row: e, close: t }) {
 		}
 	});
 	W(() => {
-		l();
+		p();
 	}, []);
-	let u = (e) => a(i ? {
-		...i,
-		...e
-	} : null), d = () => void n.run(async () => {
+	let m = (e) => a((t) => t ? {
+		...t,
+		...typeof e == "function" ? e(t) : e
+	} : null), h = (e, t) => {
+		l((n) => ({
+			...n,
+			[e]: t
+		})), m((n) => ({ button_timers: n.button_timers ? {
+			...n.button_timers,
+			[e]: Ze(e, t)
+		} : n.button_timers }));
+	}, g = (e, t) => {
+		d((n) => ({
+			...n,
+			[e]: t
+		})), m((n) => ({ sensor_settings: n.sensor_settings ? {
+			...n.sensor_settings,
+			[e]: st(e, t)
+		} : n.sensor_settings }));
+	}, _ = () => void n.run(async () => {
 		try {
 			if (!i || !r.values) return;
-			await r.save(dt(r.values, i)), c();
+			await r.save(dt(r.values, i)), f();
 		} catch (e) {
 			throw r.cancelled || s(e.message), e;
 		}
-	}), f = lt[e.item.instance_type ?? -1];
+	}), v = lt[e.item.instance_type ?? -1];
 	return /* @__PURE__ */ Y(Z, {
 		title: `Event settings · ${e.item.name}`,
-		close: c,
+		close: f,
 		children: [
 			/* @__PURE__ */ Y("p", {
 				class: "hint",
@@ -1314,12 +1330,12 @@ function ft({ row: e, close: t }) {
 					/* @__PURE__ */ Y("label", { children: [/* @__PURE__ */ Y("input", {
 						type: "checkbox",
 						checked: i.enabled,
-						onChange: (e) => u({ enabled: e.currentTarget.checked })
+						onChange: (e) => m({ enabled: e.currentTarget.checked })
 					}), " Input enabled"] }),
 					/* @__PURE__ */ Y("label", { children: ["Event priority", /* @__PURE__ */ Y("select", {
 						"aria-label": "Event priority",
 						value: i.event_priority,
-						onChange: (e) => u({ event_priority: Number(e.currentTarget.value) }),
+						onChange: (e) => m({ event_priority: Number(e.currentTarget.value) }),
 						children: [
 							2,
 							3,
@@ -1333,7 +1349,7 @@ function ft({ row: e, close: t }) {
 					/* @__PURE__ */ Y("label", { children: ["Event addressing", /* @__PURE__ */ Y("select", {
 						"aria-label": "Event addressing",
 						value: i.event_scheme,
-						onChange: (e) => u({ event_scheme: Number(e.currentTarget.value) }),
+						onChange: (e) => m({ event_scheme: Number(e.currentTarget.value) }),
 						children: [
 							"Instance and type",
 							"Device and type",
@@ -1349,10 +1365,13 @@ function ft({ row: e, close: t }) {
 						class: "hint",
 						children: i.event_scheme === 2 ? "Device and instance identifies the source uniquely." : i.event_scheme === 1 ? "Device and type is routed only when exactly one matching instance is saved." : "This scheme is currently diagnostic only in the bridge. Use Device and instance for routed events."
 					}),
-					/* @__PURE__ */ Y("fieldset", { children: [/* @__PURE__ */ Y("legend", { children: "Events to send" }), f ? f.map((e, t) => /* @__PURE__ */ Y("label", { children: [/* @__PURE__ */ Y("input", {
+					/* @__PURE__ */ Y("fieldset", { children: [/* @__PURE__ */ Y("legend", { children: "Events to send" }), v ? v.map((e, t) => /* @__PURE__ */ Y("label", { children: [/* @__PURE__ */ Y("input", {
 						type: "checkbox",
 						checked: !!(i.event_filter & 1 << t),
-						onChange: (e) => u({ event_filter: e.currentTarget.checked ? i.event_filter | 1 << t : i.event_filter & ~(1 << t) })
+						onChange: (e) => {
+							let n = e.currentTarget.checked;
+							m((e) => ({ event_filter: n ? e.event_filter | 1 << t : e.event_filter & ~(1 << t) }));
+						}
 					}), e] })) : /* @__PURE__ */ Y("p", { children: [
 						"Raw filter: ",
 						i.event_filter.toString(16).toUpperCase().padStart(6, "0"),
@@ -1366,8 +1385,11 @@ function ft({ row: e, close: t }) {
 						"aria-label": e,
 						value: i.groups[t],
 						onChange: (e) => {
-							let n = [...i.groups];
-							n[t] = Number(e.currentTarget.value), u({ groups: n });
+							let n = Number(e.currentTarget.value);
+							m((e) => {
+								let r = [...e.groups];
+								return r[t] = n, { groups: r };
+							});
 						},
 						children: [/* @__PURE__ */ Y("option", {
 							value: "255",
@@ -1393,11 +1415,8 @@ function ft({ row: e, close: t }) {
 								min: n,
 								max: e === "short" ? 5100 : e === "stuck" ? 255 : 2e3,
 								step: e === "stuck" ? 1 : 20,
-								value: Number.isFinite(a) ? Xe(e, a) : "",
-								onChange: (n) => u({ button_timers: {
-									...t,
-									[e]: Ze(e, n.currentTarget.value)
-								} })
+								value: c[e] ?? (Number.isFinite(a) ? Xe(e, a) : ""),
+								onInput: (t) => h(e, t.currentTarget.value)
 							})] });
 						})
 					}), /* @__PURE__ */ Y("p", {
@@ -1435,11 +1454,8 @@ function ft({ row: e, close: t }) {
 								min: +(e === "hold"),
 								max: e === "deadtime" ? 12750 : e === "hold" ? 2540 : e === "hysteresis" ? 25 : 255,
 								step: e === "deadtime" ? 50 : 1,
-								value: Number.isFinite(r) ? ot(e, r) : "",
-								onChange: (n) => u({ sensor_settings: {
-									...t,
-									[e]: st(e, n.currentTarget.value)
-								} })
+								value: u[e] ?? (Number.isFinite(r) ? ot(e, r) : ""),
+								onInput: (t) => g(e, t.currentTarget.value)
 							})] });
 						})
 					}), /* @__PURE__ */ Y("p", {
@@ -1459,18 +1475,18 @@ function ft({ row: e, close: t }) {
 				class: "dialog-actions",
 				children: [
 					/* @__PURE__ */ Y("button", {
-						onClick: c,
+						onClick: f,
 						children: "Cancel"
 					}),
 					/* @__PURE__ */ Y("button", {
 						disabled: !!n.busy,
-						onClick: l,
+						onClick: p,
 						children: "Refresh settings"
 					}),
 					/* @__PURE__ */ Y("button", {
 						class: "primary",
 						disabled: !!n.busy || !i,
-						onClick: d,
+						onClick: _,
 						children: "Save settings"
 					})
 				]

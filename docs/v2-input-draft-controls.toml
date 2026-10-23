@@ -1,0 +1,19 @@
+# Real served-browser regressions; each row restores generated assets as well as source.
+
+[[control]]
+name = "input_timer_edit_waits_for_blur"
+file = "web/src/input-settings-ui.tsx"
+anchor = "onInput={e=>updateTimer(key,e.currentTarget.value)}"
+replacement = "onChange={e=>updateTimer(key,e.currentTarget.value)}"
+target = "command"
+argv = ["python3", "-c", "from pathlib import Path\nimport subprocess\nimport sys\nassets={p:p.read_bytes() for p in Path(\"web/dist\").rglob(\"*\") if p.is_file()}\nresult=None\ntry:\n    build=subprocess.run([\"npm\",\"--prefix\",\"web\",\"run\",\"build\"])\n    if build.returncode:\n        sys.exit(build.returncode)\n    result=subprocess.run([\"cargo\",\"test\",\"--offline\",\"--target\",\"aarch64-apple-darwin\",\"--lib\",\"browser_functional_phone_and_desktop\",\"--\",\"--ignored\",\"--nocapture\"])\nfinally:\n    for path,data in assets.items():\n        path.write_bytes(data)\nsys.exit(result.returncode)\n"]
+expect_text = "input numeric edit was lost before blur"
+
+[[control]]
+name = "input_sensor_intermediate_text_is_normalized"
+file = "web/src/input-settings-ui.tsx"
+anchor = "value={sensorText[key]??(Number.isFinite(raw)?sensorDisplay(key,raw):'')}"
+replacement = "value={Number.isFinite(raw)?sensorDisplay(key,raw):''}"
+target = "command"
+argv = ["python3", "-c", "from pathlib import Path\nimport subprocess\nimport sys\nassets={p:p.read_bytes() for p in Path(\"web/dist\").rglob(\"*\") if p.is_file()}\nresult=None\ntry:\n    build=subprocess.run([\"npm\",\"--prefix\",\"web\",\"run\",\"build\"])\n    if build.returncode:\n        sys.exit(build.returncode)\n    result=subprocess.run([\"cargo\",\"test\",\"--offline\",\"--target\",\"aarch64-apple-darwin\",\"--lib\",\"browser_functional_phone_and_desktop\",\"--\",\"--ignored\",\"--nocapture\"])\nfinally:\n    for path,data in assets.items():\n        path.write_bytes(data)\nsys.exit(result.returncode)\n"]
+expect_text = "intermediate hold text was erased"

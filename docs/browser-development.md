@@ -22,6 +22,13 @@ before showing success. Unknown filters are read-only. Explicit dismissal revoke
 synchronously and layout cleanup revokes on navigation. The actual browser flow
 checks phone/desktop save/reopen, retained inventory, sensor labels and held entry
 read cancellation. Dialog-bound assertions use the actual viewport dimensions.
+Timer/sensor text updates on input and remains separate from its parsed native
+draft, so another control's render cannot erase an uncommitted number or an
+intermediate hold value. Merge nested timers, sensors, filters and groups from
+current state, capturing DOM values before deferred setters. Actual browser cases
+edit numbers before dropdowns, retain invalid intermediate hold text and prove
+that an invalid mixed patch sends no job or physical change. Save/reopen/restore
+checks compare complete native profiles. Controls: `v2-input-draft-controls.toml`.
 
 The input-settings rejection test varies one failure at a time: keep actual
 settings equal to the requested patch except in the explicit mismatch case.

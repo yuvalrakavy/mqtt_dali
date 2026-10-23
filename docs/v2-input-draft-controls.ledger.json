@@ -1,0 +1,39 @@
+{
+ "rows": {
+  "input_sensor_intermediate_text_is_normalized": {
+   "last_real": {
+    "at": "2026-10-23T06:33:48Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:35a29d612e918794",
+     "row": "4775daeedab3c369",
+     "test": null
+    },
+    "path": "command",
+    "secs": 27.6,
+    "sha": "9d2cfaa15947d1fdec7951bd391d0b0142bbaaf6",
+    "verdict": "RED"
+   }
+  },
+  "input_timer_edit_waits_for_blur": {
+   "last_real": {
+    "at": "2026-10-23T06:33:20Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:35a29d612e918794",
+     "row": "98e6023307056d32",
+     "test": null
+    },
+    "path": "command",
+    "secs": 24.5,
+    "sha": "9d2cfaa15947d1fdec7951bd391d0b0142bbaaf6",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}
