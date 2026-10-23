@@ -86,6 +86,11 @@ pub enum Edit {
         address: u8,
         representation: Option<crate::config::ColorRepresentation>,
     },
+    GroupColorRepresentation {
+        bus: u8,
+        address: u8,
+        representation: Option<crate::config::ColorRepresentation>,
+    },
     RenameInput {
         bus: u8,
         address: u8,

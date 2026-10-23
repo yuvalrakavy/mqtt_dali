@@ -406,7 +406,6 @@ fn validate_active(active: &BTreeMap<String, (Origin, Projection)>) -> Result<()
                     && record.members.iter().all(|m| outputs.get(m) == Some(&bus))
                     && target.instance().is_none()
                     && record.instance_type.is_none()
-                    && record.color_representation.is_none()
             }
             Location::Scene { bus, slot } => {
                 bus < 4

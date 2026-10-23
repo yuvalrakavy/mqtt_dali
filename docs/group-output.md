@@ -60,7 +60,9 @@ Both use the same strict parser and original authority. Typed callers use
 `ServiceHandle::read_group_output` / `set_group_output` with a checked gear Intent,
 original RequestContext and absolute deadline. Base scalar Desired/State also
 uses this owned operation; see [MQTT group bindings](mqtt-outputs.md#hardware-groups).
-DT8 group colour remains pending.
+DT8 group color uses the same owner and native group destination; see
+[group color](group-color.md). A selected group representation also enables color
+sampling during ordinary group reads. Base-only writes clear earlier color evidence.
 Protected HTTP retains complete group results up to 1 MiB, including long saved
 fixture names. Job lists and live summaries omit the result; fetch it by job id.
 

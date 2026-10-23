@@ -240,9 +240,14 @@ fn group_output_jobs_keep_complete_dense_rosters_with_a_bounded_result_budget() 
         reason: None,
         configuration_changed: false,
     };
-    for command in ["read_group_output", "set_group_output"] {
+    for command in [
+        "read_group_output",
+        "set_group_output",
+        "read_group_color",
+        "set_group_color",
+    ] {
         report.operation = command;
-        report.outcome = if command == "read_group_output" {
+        report.outcome = if command.starts_with("read_") {
             "observed"
         } else {
             "sent"

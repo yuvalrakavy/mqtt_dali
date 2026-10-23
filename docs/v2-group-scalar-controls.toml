@@ -4,7 +4,7 @@ name = "group_scalar_request_validation_has_no_group_dispatch"
 file = "src/service/proxy.rs"
 anchor = '''                if group::is_group(&snapshot, target) {
                     group::route(&snapshot, target, context, true)?;
-                    group::intent(values)?;
+                    group::intent(values, colour::configured(&snapshot, target))?;
                     return Ok(());
                 }'''
 replacement = ''

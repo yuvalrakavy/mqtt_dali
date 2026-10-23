@@ -147,6 +147,7 @@ fn group_membership_consumer_preserves_origins_and_fixture_intent_but_retires_ch
                         name: "Accent".into(),
                         description: None,
                         members: vec![0],
+                        color_representation: None,
                     },
                 },
             ],
@@ -502,6 +503,77 @@ fn input_expansion_consumer_keeps_parent_child_and_intent_continuity() {
 }
 
 // Deliberately construct the new wire contract without producer edit/replay helpers.
+#[test]
+fn group_color_consumer_preserves_identity_and_retires_old_contract_values() {
+    let initial = model();
+    let target = "Bus1.Groups.All";
+    let mut selected: Value = serde_json::from_slice(&initial.state_bytes().unwrap()).unwrap();
+    let inventory = &mut selected["Inventory"];
+    inventory["revision"] = json!(2);
+    inventory["buses"][0]["groups"][0]["binding_revision"] = json!(2);
+    inventory["buses"][0]["groups"][0]["color_representation"] = json!("xy");
+    let from = inventory["identity_ledger"]["baseline"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["target"] == target)
+        .unwrap()
+        .clone();
+    let mut to = from.clone();
+    to["binding_revision"] = json!(2);
+    to["color_representation"] = json!("xy");
+    inventory["identity_ledger"]["batches"] =
+        json!([{"revision":2,"transitions":[{"from":from,"to":to}]}]);
+    let mut consumer = Consumer::default();
+    consumer.accept(&initial.state_bytes().unwrap()).unwrap();
+    let id = consumer.by_target(target).unwrap().id;
+    let output = consumer
+        .by_target("Bus1.Outputs.Light1")
+        .unwrap()
+        .record
+        .clone();
+    consumer.set_intent(target, json!({"Brightness":0.4}));
+    consumer
+        .observe(
+            target,
+            "0123456789abcdef0123456789abcdef.1",
+            br#"{"Brightness":0.4}"#,
+        )
+        .unwrap();
+    consumer
+        .accept(&serde_json::to_vec(&selected).unwrap())
+        .expect("independent consumer rejected valid group color selection");
+    assert_eq!(consumer.by_target(target).unwrap().id, id);
+    assert!(consumer.by_target(target).unwrap().intent.is_none());
+    assert!(consumer.by_target(target).unwrap().observed.is_none());
+    assert!(!consumer.accepts_state(target, "0123456789abcdef0123456789abcdef.1"));
+    assert!(consumer.accepts_state(target, "0123456789abcdef0123456789abcdef.2"));
+    let mut cleared = selected.clone();
+    let inventory = &mut cleared["Inventory"];
+    inventory["revision"] = json!(3);
+    inventory["buses"][0]["groups"][0]["binding_revision"] = json!(3);
+    inventory["buses"][0]["groups"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("color_representation");
+    let from = to.clone();
+    let mut to = to;
+    to["binding_revision"] = json!(3);
+    to.as_object_mut().unwrap().remove("color_representation");
+    inventory["identity_ledger"]["batches"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"revision":3,"transitions":[{"from":from,"to":to}]}));
+    consumer
+        .accept(&serde_json::to_vec(&cleared).unwrap())
+        .expect("valid historical group color was treated as wrong-space metadata");
+    assert_eq!(consumer.by_target(target).unwrap().id, id);
+    assert_eq!(
+        consumer.by_target("Bus1.Outputs.Light1").unwrap().record,
+        output
+    );
+}
+
 fn color_document() -> Value {
     let mut value: Value = serde_json::from_slice(&model().state_bytes().unwrap()).unwrap();
     let current = &mut value["Inventory"];
@@ -630,17 +702,17 @@ fn color_selection_consumer_drops_intent_even_when_fixture_is_also_renamed() {
 fn color_selection_consumer_rejects_wrong_space_even_in_past_history() {
     let mut document = color_document();
     let current = &mut document["Inventory"];
-    current["buses"][0]["groups"][0]["binding_revision"] = json!(2);
-    let group = current["identity_ledger"]["baseline"]
+    current["buses"][0]["scenes"] =
+        json!([{"slot":0,"name":"Evening","target":"Bus1.Scenes.Evening","binding_revision":2}]);
+    let scene = json!({"target":"Bus1.Scenes.Evening","binding_revision":1,"location":{"kind":"scene","bus":0,"slot":0},"color_representation":"xy"});
+    let mut to = scene.clone();
+    to["binding_revision"] = json!(2);
+    to.as_object_mut().unwrap().remove("color_representation");
+    current["identity_ledger"]["baseline"]
         .as_array_mut()
         .unwrap()
-        .iter_mut()
-        .find(|p| p["target"] == "Bus1.Groups.All")
-        .unwrap();
-    let mut to = group.clone();
-    to["binding_revision"] = json!(2);
-    group["color_representation"] = json!("xy");
-    let edge = json!({"from":group.clone(),"to":to});
+        .push(scene.clone());
+    let edge = json!({"from":scene,"to":to});
     current["identity_ledger"]["batches"][0]["transitions"]
         .as_array_mut()
         .unwrap()

@@ -4,6 +4,16 @@ import { Controller } from './controller.ts';
 import type { Snapshot } from './model.ts';
 
 const epoch='0123456789abcdef0123456789abcdef';
+test('group color uses original authority and group inspection rather than output reads',async()=>{
+  const ui=new Controller(),p={target:'Bus.Groups.Color',binding_revision:1,location:{kind:'group',bus:0,group_address:0}};
+  ui.client.views.value={inventory:{inventory_epoch:epoch,revision:1,buses:[{bus:0,name:'Bus',enabled:true,outputs:[],groups:[{name:'Color',group_address:0,target:p.target,binding_revision:1}]}],identity_ledger:{baseline:[p],batches:[]}}};
+  const row=ui.currentRows[0],calls:any[]=[];ui.client.job=async(...args)=>{calls.push(args);return {outcome:'sent'};};
+  await ui.read(row);await ui.groupColor(row,{ColorX:0.25});
+  assert.deepEqual(calls,[[`${epoch}.1`,p.target,'read_group_color',{}],[`${epoch}.1`,p.target,'set_group_color',{expected_revision:1,values:{ColorX:0.25}}]]);
+  ui.client.job=async()=>({outcome:'unconfirmed'});await assert.rejects(ui.groupColor(row,{ColorX:0.5}),/unconfirmed/);
+  ui.snapshot.inventory.buses[0].groups![0].binding_revision=2;
+  await assert.rejects(ui.groupColor(row,{ColorX:0.5}),/changed/);ui.client.close();
+});
 test('logout bypasses busy work, stops later batch steps and deduplicates its request',async()=>{
   const ui=new Controller();ui.busy=1;ui.progress='Discovering';let calls=0,release!:()=>void;
   ui.client.logout=async()=>{calls++;await new Promise<void>(r=>release=r);};

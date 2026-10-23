@@ -10,6 +10,7 @@ mod commissioning;
 mod discovery;
 mod feedback;
 mod fixture_status;
+mod group_color;
 mod group_scalar;
 
 async fn refresh(broker: &FakeBroker, topic: &str) -> Value {

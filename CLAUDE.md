@@ -206,8 +206,18 @@ scene recall, membership Program continuations and output address changes; exclu
 input-only and nonactivating scene work. Cached samples share existing ordinary
 Writing/Awaiting validity; final acceptance still requires Ready. Root revision
 and physical epoch changes permanently stale roster evidence. All group reads
-share the existing cursor and15s total ceiling. DT8 group colour remains pending.
+share the existing cursor and15s total ceiling.
 Controls: `docs/v2-group-output-controls.toml` and `docs/v2-group-scalar-controls.toml`.
+
+DT8 group color extends this owner with `group_output::color` and
+`proxy::group_color`; see `docs/group-color.md`. Optional group representation
+rotates only the group binding contract. Preflight all actual known members,
+including saved-membership drift, before color/base mutations. Use native group
+staging/ACTIVATE and fresh individual readback. Keep base/color availability
+independent; aggregate each selected scalar with explicit uniform/mixed/unknown
+flags. State is the color wire result; Report remains membership/base evidence.
+Reads without a selected representation require explicit read_group_color to
+inspect support. Existing failure handling leaves aborts unconfirmed/stale.
 
 The old runtime/CLI, modules and MQTT topics described below belong to
 `src/legacy_main.rs` / `mqtt_dali_v1`. They are not the canonical v2 interface.

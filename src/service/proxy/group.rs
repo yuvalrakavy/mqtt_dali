@@ -1,19 +1,16 @@
 //! Base group scalar adaptation; native execution and evidence stay with its owner.
 use super::*;
-use crate::dali::gear::Intent;
 
 pub(super) fn is_group(snapshot: &Snapshot, target: &str) -> bool {
     snapshot.model.projections().iter().any(|p| {
         p.target == target && matches!(p.location, crate::inventory::Location::Group { .. })
     })
 }
-pub(super) fn intent(values: &PropertyMap) -> Result<Intent, OpError> {
-    match state::intent(values, None)? {
-        output::WriteIntent::Base(intent) => Ok(intent),
-        _ => Err(OpError::Unsupported(
-            "group colour properties are not supported".into(),
-        )),
-    }
+pub(super) fn intent(
+    values: &PropertyMap,
+    representation: Option<crate::config::ColorRepresentation>,
+) -> Result<output::WriteIntent, OpError> {
+    state::intent(values, representation)
 }
 pub(super) fn route(
     snapshot: &Snapshot,
@@ -69,17 +66,14 @@ pub(super) async fn apply(
     context: &RequestContext,
 ) -> Result<(), OpError> {
     route(snapshot, target, context, true)?;
-    let intent = intent(values)?;
+    let intent = intent(values, super::colour::configured(snapshot, target))?;
     let deadline = Instant::now() + Duration::from_secs(15);
     let observed = observation(
         proxy
             .handle
             .group_evidence(
                 target,
-                group_output::Action::Set {
-                    expected: snapshot.model.inventory().revision,
-                    intent,
-                },
+                group_output::Action::from_intent(snapshot.model.inventory().revision, intent),
                 context.clone(),
                 deadline,
                 None,
@@ -88,7 +82,13 @@ pub(super) async fn apply(
             .map_err(op_error)?,
     )?;
     let state = accepted(&proxy.snapshot()?, target, &observed, deadline)?;
-    let current = state.state.values.get("Available") == Some(&Value::Bool(true));
+    let base = state.state.values.get("Available") == Some(&Value::Bool(true));
+    let color = state.state.values.get("ColorAvailable") == Some(&Value::Bool(true));
+    let current = match intent {
+        output::WriteIntent::Base(_) => base,
+        output::WriteIntent::Colour(_) => color,
+        output::WriteIntent::Combined(_, _) => base && color,
+    };
     proxy
         .reporter
         .as_ref()
@@ -135,7 +135,7 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
             };
             let available = quality == "current";
             let control = sample.filter(|_| available);
-            let values = PropertyMap::from_iter([
+            let mut values = PropertyMap::from_iter([
                 ("Available".into(), Value::Bool(available)),
                 ("Quality".into(), Value::from(quality)),
                 ("Coverage".into(), Value::from("saved_inventory")),
@@ -181,6 +181,7 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
                         .unwrap_or(Value::Null),
                 ),
             ]);
+            super::group_color::project(&mut values, p.color_representation, observation, stale);
             let context = fresh.map(|o| o.context.clone()).unwrap_or_else(|| {
                 RequestContext::new(token.clone())
                     .expect("validated group generation")

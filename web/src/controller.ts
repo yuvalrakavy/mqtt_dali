@@ -38,7 +38,13 @@ export class Controller {
     });
     this.edits=operation;return operation;
   }
-  async read(row:Row){const current=this.current(row.key);await this.client.job(current.generation,current.item.target,current.kind==='instance'?'read_input':'read_output',{});}
+  async read(row:Row){const current=this.current(row.key);await this.client.job(current.generation,current.item.target,current.kind==='group'?'read_group_color':current.kind==='instance'?'read_input':'read_output',{});}
+  async groupColor(row:Row,values:Record<string,number>){
+    const current=this.current(row.key);
+    if(current.kind!=='group'||current.generation!==row.generation||current.item.target!==row.item.target)throw new Error('This group changed. Review its current color settings.');
+    const result=await this.client.job(row.generation,row.item.target,'set_group_color',{expected_revision:this.snapshot.inventory.revision,values});
+    if(result.outcome!=='sent')throw new Error('Group color is unconfirmed. Read current values before retrying.');
+  }
   async apply(row:Row,values:Record<string,unknown>){const current=this.current(row.key);await this.client.job(current.generation,current.item.target,'apply_output',{values});}
   async blink(row:Row){
     const current=this.current(row.key),active=this.snapshot.identification;

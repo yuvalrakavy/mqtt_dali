@@ -1,0 +1,33 @@
+# Execute serially in an isolated mutation worktree; restore after each row.
+[[control]]
+name = "group_color_skips_actual_member_preflight"
+file = "src/service/group_output/color.rs"
+anchor = '''    roster(route, samples)?;
+    for sample in samples.iter().filter(|sample| member(sample, route)) {'''
+replacement = '''    roster(route, samples)?;
+    for sample in samples.iter().filter(|sample| member(sample, route)).take(1) {'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_color_preflights_actual_members)"]
+expect_text = 'assertion `left == right` failed'
+
+[[control]]
+name = "group_color_broadcasts_to_nonmembers"
+file = "src/service/group_output/color.rs"
+anchor = 'let destination = Destination::Group(route.group);'
+replacement = 'let destination = Destination::Broadcast; let _ = route;'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_color_native_tcp_temperature)"]
+expect_text = "native color group affected a nonmember"
+
+[[control]]
+name = "group_color_invents_uniform_scalar"
+file = "src/service/proxy/group_color.rs"
+anchor = '''                    if mixed {
+                        Value::Null
+                    } else {
+                        samples[0].clone()
+                    },'''
+replacement = '                    samples[0].clone(),'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_color_aggregate_clears_unknowns)"]
+expect_text = 'assertion `left == right` failed'

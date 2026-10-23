@@ -70,7 +70,8 @@ pub(super) fn admit(
                         short_address: *address,
                     })
                 }
-                MetadataEdit::RenameGroup { bus, address, .. } => {
+                MetadataEdit::RenameGroup { bus, address, .. }
+                | MetadataEdit::GroupColorRepresentation { bus, address, .. } => {
                     Some(crate::inventory::Location::Group {
                         bus: *bus,
                         group_address: *address,

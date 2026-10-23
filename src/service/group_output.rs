@@ -16,6 +16,7 @@ use crate::{
 };
 use serde::Serialize;
 use std::time::Duration;
+mod color;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Values {
@@ -26,6 +27,20 @@ pub struct Values {
     pub brightness_mixed: Option<bool>,
     pub known_members: usize,
     pub unresolved: Vec<u8>,
+}
+/// A native group color change, optionally combined with power or brightness.
+#[derive(Debug, Clone, Copy)]
+pub struct ColorIntent {
+    pub color: crate::dali::colour::Intent,
+    pub base: Option<Intent>,
+}
+impl From<ColorIntent> for output::WriteIntent {
+    fn from(intent: ColorIntent) -> Self {
+        match intent.base {
+            Some(base) => Self::Combined(base, intent.color),
+            None => Self::Colour(intent.color),
+        }
+    }
 }
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Member {
@@ -58,17 +73,32 @@ pub struct Report {
 #[derive(Debug, Clone)]
 pub(super) enum Action {
     Read,
-    Set { expected: u64, intent: Intent },
+    ReadColor,
+    Set {
+        expected: u64,
+        intent: Intent,
+    },
+    Color {
+        expected: u64,
+        intent: output::WriteIntent,
+    },
 }
 impl Action {
     pub(super) fn writing(&self) -> bool {
-        matches!(self, Self::Set { .. })
+        matches!(self, Self::Set { .. } | Self::Color { .. })
     }
     pub(super) fn name(&self) -> &'static str {
-        if self.writing() {
-            "set_group_output"
-        } else {
-            "read_group_output"
+        match self {
+            Self::Read => "read_group_output",
+            Self::ReadColor => "read_group_color",
+            Self::Set { .. } => "set_group_output",
+            Self::Color { .. } => "set_group_color",
+        }
+    }
+    pub(super) fn from_intent(expected: u64, intent: output::WriteIntent) -> Self {
+        match intent {
+            output::WriteIntent::Base(intent) => Self::Set { expected, intent },
+            intent => Self::Color { expected, intent },
         }
     }
 }
@@ -81,6 +111,7 @@ pub(super) struct Route {
     revision: u64,
     members: Vec<Member>,
     action: Action,
+    representation: Option<crate::config::ColorRepresentation>,
 }
 pub(super) struct Request {
     pub target: String,
@@ -101,11 +132,17 @@ pub struct Observation {
     pub context: RequestContext,
     stamp: output::Stamp,
     pub stale: bool,
+    colors: Option<std::collections::BTreeMap<u8, output::colour::Observation>>,
 }
 impl Observation {
     /// Original sampled report. Check staleness and current lifecycle before use.
     pub fn report(&self) -> &Report {
         &self.report
+    }
+    pub fn color_observations(
+        &self,
+    ) -> Option<&std::collections::BTreeMap<u8, output::colour::Observation>> {
+        self.colors.as_ref()
     }
 }
 pub(super) enum Reply {
@@ -203,10 +240,25 @@ pub(super) fn resolve(
     if cause.generation().is_some_and(|v| v != token) {
         return Err(reject("retired group generation"));
     }
-    if let Action::Set { expected, .. } = action {
+    if let Action::Set { expected, .. } | Action::Color { expected, .. } = action {
         if cause.generation().is_none() || *expected != snapshot.model.inventory().revision {
             return Err(reject(
                 "original group generation and inventory revision required",
+            ));
+        }
+    }
+    if let Action::Color { intent, .. } = action {
+        use crate::{config::ColorRepresentation as Representation, dali::colour::ColourType};
+        let kind = group
+            .color_representation
+            .map(|representation| match representation {
+                Representation::Temperature => ColourType::Temperature,
+                Representation::Xy => ColourType::Xy,
+                Representation::Rgbwaf => ColourType::Rgbwaf,
+            });
+        if intent.colour().is_none() || intent.colour().map(|color| color.kind()) != kind {
+            return Err(reject(
+                "group color intent requires the selected representation",
             ));
         }
     }
@@ -245,6 +297,7 @@ pub(super) fn resolve(
         revision: snapshot.model.inventory().revision,
         members,
         action: action.clone(),
+        representation: group.color_representation,
     })
 }
 pub(super) fn admit(handle: &ServiceHandle, route: &Route) -> Result<(), ServiceError> {
@@ -347,8 +400,34 @@ pub(super) async fn execute(
         .iter()
         .map(|m| Sample::unvisited(ShortAddress::new(m.address).unwrap()))
         .collect::<Vec<_>>();
+    let mut colors = color::included(&r).then(color::Samples::new);
+    let mut rejection = None;
     let result: Result<(), commissioning::Error> = async {
-        if let Action::Set { intent, .. } = r.action {
+        if let Action::Color { intent, .. } = r.action {
+            report.outcome = "unconfirmed";
+            read_members(&bus, &r, &mut samples).await?;
+            if let Err(reason) = color::roster(&r, &samples) {
+                rejection = Some(reason);
+                return Ok(());
+            }
+            let captured = colors.as_mut().unwrap();
+            color::read(&bus, &r, &samples, captured, false).await?;
+            if let Err(reason) = color::preflight(&r, &samples, captured, intent.colour().unwrap())
+            {
+                rejection = Some(reason);
+                return Ok(());
+            }
+            // From the first mutation, only fresh post-write samples can confirm.
+            color::invalidate(captured);
+            for sample in &mut samples {
+                *sample = Sample::unvisited(sample.address);
+            }
+            color::write(&bus, &r, intent).await?;
+            report.outcome = "sent";
+            read_members(&bus, &r, &mut samples).await?;
+            color::read(&bus, &r, &samples, captured, true).await?;
+            return Ok(());
+        } else if let Action::Set { intent, .. } = r.action {
             report.outcome = "unconfirmed";
             bus.command(
                 DaliFrame::Bits16(intent.frame(Destination::Group(r.group))),
@@ -359,28 +438,9 @@ pub(super) async fn execute(
         } else {
             report.outcome = "observed";
         }
-        for sample in &mut samples {
-            sample.membership_low = Some(
-                bus.query(DaliFrame::Bits16(frames::query(sample.address, false)))
-                    .await?,
-            );
-            sample.membership_high = Some(
-                bus.query(DaliFrame::Bits16(frames::query(sample.address, true)))
-                    .await?,
-            );
-            if sample
-                .membership()
-                .is_some_and(|mask| mask & (1 << r.group.raw()) != 0)
-            {
-                sample.actual_level = Some(
-                    bus.query(DaliFrame::Bits16(sample.address.query(Query::ActualLevel)))
-                        .await?,
-                );
-                sample.status = Some(
-                    bus.query(DaliFrame::Bits16(sample.address.query(Query::Status)))
-                        .await?,
-                );
-            }
+        read_members(&bus, &r, &mut samples).await?;
+        if let Some(captured) = &mut colors {
+            color::read(&bus, &r, &samples, captured, false).await?;
         }
         Ok(())
     }
@@ -392,7 +452,7 @@ pub(super) async fn execute(
             TransactionError::StreamLoss
         ))
     );
-    let error = result.err().map(|e| {
+    let mut error = result.err().map(|e| {
         let reason = match e {
             commissioning::Error::Transaction(e) => e.to_string(),
             commissioning::Error::Evidence(e) => e.into(),
@@ -405,16 +465,74 @@ pub(super) async fn execute(
             reject(reason)
         }
     });
+    if error.is_none() {
+        if let Some(reason) = rejection {
+            report.reason = Some(reason.clone());
+            report.outcome = "unconfirmed";
+            error = Some(reject(reason));
+        } else if let Action::Color { intent, .. } = r.action {
+            let base_current = intent.base().is_none()
+                || report
+                    .values
+                    .as_ref()
+                    .is_some_and(|v| matches!(v.quality, "uniform" | "mixed"));
+            if !base_current
+                || !color::confirms(
+                    &r,
+                    &samples,
+                    colors.as_ref().unwrap(),
+                    intent.colour().unwrap(),
+                )
+            {
+                let reason = "post-write group color/base evidence is incomplete".to_owned();
+                report.reason = Some(reason.clone());
+                report.outcome = "unconfirmed";
+                error = Some(ServiceError::Uncertain(reason));
+            }
+        }
+    }
     Outcome {
         observation: Observation {
             report: Arc::new(report),
             context: r.context,
             stamp,
             stale: false,
+            colors,
         },
         error,
         recovery,
     }
+}
+
+async fn read_members(
+    bus: &commissioning::Bus<'_>,
+    route: &Route,
+    samples: &mut [Sample],
+) -> Result<(), commissioning::Error> {
+    for sample in samples {
+        sample.membership_low = Some(
+            bus.query(DaliFrame::Bits16(frames::query(sample.address, false)))
+                .await?,
+        );
+        sample.membership_high = Some(
+            bus.query(DaliFrame::Bits16(frames::query(sample.address, true)))
+                .await?,
+        );
+        if sample
+            .membership()
+            .is_some_and(|mask| mask & (1 << route.group.raw()) != 0)
+        {
+            sample.actual_level = Some(
+                bus.query(DaliFrame::Bits16(sample.address.query(Query::ActualLevel)))
+                    .await?,
+            );
+            sample.status = Some(
+                bus.query(DaliFrame::Bits16(sample.address.query(Query::Status)))
+                    .await?,
+            );
+        }
+    }
+    Ok(())
 }
 pub(super) fn accept(
     snapshot: &Snapshot,
@@ -458,6 +576,37 @@ pub(super) fn finish(q: Request, result: Result<Observation, ServiceError>) {
     let _ = q.reply.send(result);
 }
 impl ServiceHandle {
+    /// Inspect actual members' native color support, including unconfigured groups.
+    pub async fn read_group_color(
+        &self,
+        target: &str,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.group_output(target, Action::ReadColor, context, deadline, None)
+            .await
+    }
+    /// Change a native group's selected color family after checking every known member.
+    pub async fn set_group_color(
+        &self,
+        target: &str,
+        expected: u64,
+        intent: ColorIntent,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.group_output(
+            target,
+            Action::Color {
+                expected,
+                intent: intent.into(),
+            },
+            context,
+            deadline,
+            None,
+        )
+        .await
+    }
     /// Sample actual membership and individual levels for the whole saved bus roster.
     /// A supplied generation must match; an omitted one is captured once.
     pub async fn read_group_output(

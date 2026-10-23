@@ -182,6 +182,12 @@ impl Fixture {
     pub(super) fn disk(&self) -> Inventory {
         serde_json::from_slice(&fs::read(&self.paths.current).unwrap()).unwrap()
     }
+    pub(super) fn write_inventory(&self, inventory: &Inventory) {
+        fs::write(&self.paths.current, serde_json::to_vec(inventory).unwrap()).unwrap();
+    }
+    pub(super) fn current_bytes(&self) -> Vec<u8> {
+        fs::read(&self.paths.current).unwrap()
+    }
     pub(super) fn add_button(&self) {
         let mut inventory = self.disk();
         inventory.buses[0].inputs = serde_json::from_value(json!([
@@ -563,7 +569,7 @@ async fn mqtt_color_selection_is_durable_fenced_and_completes_under_original_tok
             4,
         ),
         (
-            json!({"command":"set_color_representation","target":"Bus1.Groups.All","expected_revision":4,"color_representation":"xy"}),
+            json!({"command":"set_color_representation","target":"Bus1.Groups.All","expected_revision":4,"color_representation":{"xy":null}}),
             1,
         ),
         (

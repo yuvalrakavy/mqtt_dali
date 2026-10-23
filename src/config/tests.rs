@@ -1,4 +1,5 @@
 use super::*;
+mod group_color;
 mod scene_metadata;
 use serde_json::{json, Value};
 use std::fs;

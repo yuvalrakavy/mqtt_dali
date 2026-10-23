@@ -121,6 +121,9 @@ pub struct Group {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub members: Vec<u8>,
+    /// Public color contract, independent of observed member support.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_representation: Option<ColorRepresentation>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -341,6 +344,7 @@ impl LegacyInventory {
                         name: group.description,
                         description: None,
                         members: group.members,
+                        color_representation: None,
                     })
                     .collect(),
             })

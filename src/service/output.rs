@@ -19,13 +19,13 @@ pub(super) enum WriteIntent {
     Combined(Intent, crate::dali::colour::Intent),
 }
 impl WriteIntent {
-    fn base(self) -> Option<Intent> {
+    pub(in crate::service) fn base(self) -> Option<Intent> {
         match self {
             Self::Base(base) | Self::Combined(base, _) => Some(base),
             _ => None,
         }
     }
-    fn colour(self) -> Option<crate::dali::colour::Intent> {
+    pub(in crate::service) fn colour(self) -> Option<crate::dali::colour::Intent> {
         match self {
             Self::Colour(colour) | Self::Combined(_, colour) => Some(colour),
             _ => None,

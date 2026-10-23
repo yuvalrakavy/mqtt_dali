@@ -206,7 +206,7 @@ impl Observation {
         self.preflight(intent)?;
         Ok(Some(intent))
     }
-    pub(super) fn preflight(&self, intent: Intent) -> Result<(), String> {
+    pub(in crate::service) fn preflight(&self, intent: Intent) -> Result<(), String> {
         if self.dt8 != Some(true) || !self.supported(intent.kind()) {
             return Err("requested colour representation is unsupported or unknown".into());
         }
@@ -237,7 +237,7 @@ impl Observation {
         }
         Ok(())
     }
-    pub(super) fn confirms(&self, intent: Intent) -> bool {
+    pub(in crate::service) fn confirms(&self, intent: Intent) -> bool {
         self.quality == Quality::Current
             && self.active() == Some(intent.kind())
             && intent
@@ -394,7 +394,7 @@ pub(in crate::service) async fn discover(
     }
     read_values(sample, link, route, stamp, deadline).await
 }
-pub(super) async fn read_values(
+pub(in crate::service) async fn read_values(
     sample: &mut Observation,
     link: &Transactions<Connection>,
     route: &Route,

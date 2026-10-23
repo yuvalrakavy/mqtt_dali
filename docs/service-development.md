@@ -357,7 +357,7 @@ response topic and correlation data when awaiting the result.
 | `reset_address_space` | `bus` (0..3), `space` (`outputs` or `inputs`), `expected_revision`; no target | Current controller token |
 | `remove_from_list` | Output/input-module `target`, `expected_revision` | Current selected item token |
 | `rename` | `target`, `name`, `expected_revision` | Current output/group token |
-| `set_color_representation` | Individual output `target`, `color_representation` (`temperature`, `xy`, `rgbwaf` or null), `expected_revision` | Current output token |
+| `set_color_representation` | Output or saved group `target`, `color_representation` (`temperature`, `xy`, `rgbwaf` or null), `expected_revision` | Current selected item token |
 | `rename_bus` | `bus`, `name`, `expected_revision` | Controller token |
 | `describe` | `description` (string or null), `expected_revision` | Controller token |
 | `recover` | None; valid only while uncertain | Prior confirmed controller token |
@@ -378,7 +378,9 @@ fixture's physical identity. The field is required; null clears it. This metadat
 command performs no UART operation and does not configure a physical colour mode.
 The selected-family MQTT properties use the same owned physical service; see
 [colour controls](mqtt-outputs.md#colour-controls). A setting alone does not prove
-hardware capability or change persistent operating modes.
+hardware capability or change persistent operating modes. Saved groups use the
+same optional metadata and identity rules; native control/readback is documented
+in [group color](group-color.md).
 
 Optional MQTT v5 `traceparent` follows each command through BridgeKit's worker
 and the metadata actor. Inventory publication uses the committed generation

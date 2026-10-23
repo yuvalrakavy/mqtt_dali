@@ -190,6 +190,17 @@ pub(super) fn project(
                         .find(|o| o.short_address == short_address)
                         .unwrap()
                         .color_representation
+                } else if let Location::Group { bus, group_address } = location {
+                    inventory
+                        .buses
+                        .iter()
+                        .find(|b| b.bus == bus)
+                        .unwrap()
+                        .groups
+                        .iter()
+                        .find(|group| group.group_address == group_address)
+                        .unwrap()
+                        .color_representation
                 } else {
                     None
                 },
@@ -234,7 +245,6 @@ fn shape(projection: &Projection) -> Result<(), String> {
                 && target.namespace() == Some(Namespace::Groups)
                 && target.instance().is_none()
                 && projection.instance_type.is_none()
-                && projection.color_representation.is_none()
         }
         Location::Scene { bus, slot } => {
             bus < 4

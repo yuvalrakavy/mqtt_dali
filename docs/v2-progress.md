@@ -5,6 +5,16 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+Current work: DT8 hardware group color. Implementation and focused checks pass:
+82 affected native/consumer tests, 93 frontend tests and real phone/desktop
+Chrome against the TCP HAT emulator. Final mutation/source review and broad
+acceptance remain. The slice reuses native group operations and individual DT8
+readback, adds optional group representation selection and mixed color State,
+and extends the protected Groups screen. Split-address RGB/RGBW composition
+belongs to Home equipment/Store integration under the approved architecture §9;
+the bridge already supplies its individual and group brightness bindings.
+Implementation spec: `superpowers/specs/2026-10-23-dali-v2-group-color.md`.
+
 ## P4 — fixture status and simulated lamp failures
 
 Implementation `cafc74e` adds all eight read-only fixture flags plus
@@ -3069,9 +3079,9 @@ no verification. Physical hardware validation remains outstanding.
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
-| P2 ATX emulator | Core and bridge TCP connector implemented and verified locally | Emulator TCP listener/configurable web UI assigned to a parallel implementation; P4 extensions and physical validation remain explicit |
+| P2 ATX emulator | Core, persistent TCP connector/listener, configurable web UI and linked browser tabs implemented and verified locally | P4 extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, DT7 protocol/independent relay foundation, managed thresholds/virtual limits and virtual scene capture, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Retained DT7 metadata/presentation, extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
+| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual DT8 control and durable representation selection implemented; DT8 group color in final acceptance | Retained DT7 metadata/presentation, specialist settings/diagnostics, feedback parameters/source routing, remaining color modes/settings, identity/memory, data Parts 251–253 and DT1 emergency |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |

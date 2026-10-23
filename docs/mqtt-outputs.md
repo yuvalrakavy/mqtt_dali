@@ -24,9 +24,8 @@ Power true alone recalls maximum; it does not restore an application's remembere
 brightness. Nulls, unknown properties, wrong JSON types, out-of-range levels and
 contradictory pairs are rejected before any output command is sent. Native
 [group power/level commands](group-output.md) and [membership operations](groups.md)
-are available. Groups support the base scalar properties described below;
-individual DT8 colour controls follow in the next section. Group colour remains
-pending.
+are available. Groups support base scalars and selected DT8 color fields;
+see [hardware group color](group-color.md).
 
 BridgeKit coalesces pending Desired values by property. The driver validates and
 applies the complete effective map it receives. One rejected map can produce an
@@ -50,7 +49,10 @@ target-generation. For example, publish `0.5` at
 `{"PowerState":false}` at `DALI/Desired/Controller/Bus1.Groups.Kitchen`.
 No inventory revision parameter is needed in Desired. The driver captures one
 current revision and rejects a racing change without retokening or retrying.
-Colour and read-only/unknown properties reject the whole group map.
+Selected color fields are also accepted after group representation selection.
+Wrong-family and read-only/unknown properties reject the whole group map.
+The group's selection is independent of each output's selection; see
+[group color State and native preflight](group-color.md).
 
 The bridge sends one native group command. Actual hardware membership determines
 which fixtures receive it, including untracked or unaddressed members; saved

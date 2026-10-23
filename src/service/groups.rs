@@ -262,6 +262,7 @@ pub(super) fn edits(model: &Model, route: &Route, mask: u16) -> Vec<Edit> {
                     name,
                     description: None,
                     members: vec![address],
+                    color_representation: None,
                 },
             });
         }

@@ -109,28 +109,31 @@ fn color_selection_rotates_only_contract_generation_and_survives_reload() {
     group.color_representation = Some(ColorRepresentation::Xy);
     assert!(
         Model::new(illegal).is_err(),
-        "non-output color projection was accepted"
+        "unrecorded group color projection was accepted"
     );
 }
 
 #[test]
 fn color_selection_rejects_non_output_metadata_even_in_past_history() {
     let mut inventory = baseline();
+    inventory.buses[0]
+        .scenes
+        .push(serde_json::from_value(json!({"slot":0,"name":"Evening"})).unwrap());
+    let initial = Model::new(inventory.clone()).unwrap();
     inventory.revision = 2;
-    let initial = Model::new(baseline()).unwrap();
     let mut ledger = initial.ledger().clone();
-    let group = ledger
+    let scene = ledger
         .baseline
         .iter_mut()
-        .find(|p| p.target == "Bus1.Groups.All")
+        .find(|p| p.target == "Bus1.Scenes.Evening")
         .unwrap();
-    let mut to = group.clone();
+    let mut to = scene.clone();
     to.binding_revision = 2;
-    group.color_representation = Some(crate::config::ColorRepresentation::Xy);
+    scene.color_representation = Some(crate::config::ColorRepresentation::Xy);
     ledger.batches.push(Batch {
         revision: 2,
         transitions: vec![Transition {
-            from: Some(group.clone()),
+            from: Some(scene.clone()),
             to: Some(to),
         }],
     });
@@ -138,6 +141,57 @@ fn color_selection_rejects_non_output_metadata_even_in_past_history() {
     assert!(
         Model::new(inventory).is_err(),
         "past non-output color projection was accepted"
+    );
+}
+
+#[test]
+fn group_color_selection_rotates_its_contract_but_preserves_origin_members_and_outputs() {
+    use crate::config::ColorRepresentation;
+    let initial = Model::new(baseline()).unwrap();
+    let select = |representation| Edit::GroupColorRepresentation {
+        bus: 0,
+        address: 0,
+        representation,
+    };
+    let find = |m: &Model, target: &str| {
+        m.projections()
+            .into_iter()
+            .find(|p| p.target == target)
+            .unwrap()
+    };
+    let before = find(&initial, "Bus1.Groups.All");
+    let selected = initial
+        .edit(1, &[select(Some(ColorRepresentation::Xy))])
+        .unwrap();
+    let after = find(&selected, "Bus1.Groups.All");
+    assert_eq!(
+        after.binding_revision, 2,
+        "group color selection kept retired contract generation"
+    );
+    assert_eq!(after.color_representation, Some(ColorRepresentation::Xy));
+    assert_eq!(after.members, before.members);
+    assert_eq!(after.location, before.location);
+    let edge = &selected.ledger().batches[0].transitions[0];
+    assert_eq!(edge.from.as_ref(), Some(&before));
+    assert_eq!(edge.to.as_ref(), Some(&after));
+    for target in ["Bus1.Outputs.Light1", "Bus1.Outputs.Light2"] {
+        assert_eq!(find(&initial, target), find(&selected, target));
+    }
+    let same = selected
+        .edit(2, &[select(Some(ColorRepresentation::Xy))])
+        .unwrap();
+    assert_eq!(same.inventory(), selected.inventory());
+    let cleared = selected.edit(2, &[select(None)]).unwrap();
+    assert_eq!(find(&cleared, "Bus1.Groups.All").binding_revision, 3);
+    assert_eq!(find(&cleared, "Bus1.Groups.All").color_representation, None);
+    let reloaded = Model::new(
+        serde_json::from_slice(&serde_json::to_vec(cleared.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        reloaded.state_bytes().unwrap(),
+        cleared.state_bytes().unwrap(),
+        "valid historical group color was rejected or lost on reload"
     );
 }
 
@@ -583,6 +637,7 @@ fn edits_are_atomic_for_new_items_simultaneous_address_moves_and_invalid_groups(
                         name: "Work".into(),
                         description: None,
                         members: vec![9, 0],
+                        color_representation: None,
                     },
                 },
                 Edit::RenameGroup {

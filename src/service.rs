@@ -133,6 +133,11 @@ pub enum MetadataEdit {
         address: u8,
         representation: Option<crate::config::ColorRepresentation>,
     },
+    GroupColorRepresentation {
+        bus: u8,
+        address: u8,
+        representation: Option<crate::config::ColorRepresentation>,
+    },
     RenameInput {
         bus: u8,
         address: u8,
@@ -195,6 +200,7 @@ impl MetadataEdit {
                     name,
                     description: None,
                     members: Vec::new(),
+                    color_representation: None,
                 },
             },
             Self::RemoveOutput { bus, address } => Edit::RemoveOutput { bus, address },
@@ -205,6 +211,15 @@ impl MetadataEdit {
                 address,
                 representation,
             } => Edit::OutputColorRepresentation {
+                bus,
+                address,
+                representation,
+            },
+            Self::GroupColorRepresentation {
+                bus,
+                address,
+                representation,
+            } => Edit::GroupColorRepresentation {
                 bus,
                 address,
                 representation,

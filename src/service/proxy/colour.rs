@@ -4,7 +4,7 @@ use crate::{config::ColorRepresentation, dali::colour as codec};
 use codec::{ByteValue, ColourType, Reply, ValueQuery, WordValue};
 use output::colour::{Observation, Quality, Value as SampleValue};
 
-const FIELDS: [(&str, ValueQuery); 9] = [
+pub(super) const FIELDS: [(&str, ValueQuery); 9] = [
     ("ColorTemperature", ValueQuery::Temperature),
     ("ColorX", ValueQuery::X),
     ("ColorY", ValueQuery::Y),
@@ -129,6 +129,15 @@ pub(super) fn project(
     let stale = !live
         || observed.is_some_and(|o| o.quality == output::Quality::Stale)
         || sample.is_some_and(|s| s.quality == Quality::Stale);
+    project_sample(values, representation, sample, stale);
+}
+
+pub(super) fn project_sample(
+    values: &mut PropertyMap,
+    representation: Option<ColorRepresentation>,
+    sample: Option<&Observation>,
+    stale: bool,
+) {
     let quality = match (representation, sample) {
         (None, _) => "unconfigured",
         (_, None) => "unobserved",

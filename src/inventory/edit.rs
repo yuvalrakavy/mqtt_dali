@@ -143,6 +143,18 @@ fn apply(
                 .ok_or("unknown output")?
                 .color_representation = *representation;
         }
+        Edit::GroupColorRepresentation {
+            bus: index,
+            address,
+            representation,
+        } => {
+            bus(inventory, *index)?
+                .groups
+                .iter_mut()
+                .find(|group| group.group_address == *address)
+                .ok_or("unknown group")?
+                .color_representation = *representation;
+        }
         Edit::RenameInput {
             bus: index,
             address,

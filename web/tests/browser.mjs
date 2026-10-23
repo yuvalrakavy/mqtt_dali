@@ -4,6 +4,7 @@ import { outputSettingsFlow } from './output-settings.mjs';
 import { switchingSettingsFlow } from './switching-settings.mjs';
 import { feedbackFlow } from './feedback.mjs';
 import { groupOutputFlow } from './group-output.mjs';
+import { groupColorFlow } from './group-color.mjs';
 import { scenesFlow } from './scenes.mjs';
 import { reassignmentFlow } from './reassignment.mjs';
 import { restorationFlow } from './restoration.mjs';
@@ -39,7 +40,10 @@ try {
   assert.equal((await context.request.get(`${origin}/assets/app.js`,{maxRedirects:0})).status(),303);
   await page.getByLabel('Password',{exact:true}).fill('incorrect');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.getByRole('alert').filter({hasText:'invalid password'}).waitFor();
   await page.getByLabel('Password',{exact:true}).fill('browser-secret');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.getByRole('heading',{name:'BrowserController',exact:true}).waitFor();
-  if(process.env.DALI_BROWSER_FLOW==='switching'){
+  if(process.env.DALI_BROWSER_FLOW==='group-color'){
+    await groupColorFlow({page,context,origin,artifacts,inventory,control,until,noOverflow,dialogVisible});
+    assert.deepEqual(errors,[],'browser reported runtime or CSP errors');console.log(`PASS scoped group color: ${commands.length} real owned commands; screenshots ${artifacts}`);
+  }else if(process.env.DALI_BROWSER_FLOW==='switching'){
     await switchingSettingsFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
     assert.deepEqual(errors,[],'browser reported runtime or CSP errors');console.log(`PASS scoped DT7 phone/desktop: ${commands.length} real owned commands; screenshots ${artifacts}`);
   }else{

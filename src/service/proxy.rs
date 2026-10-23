@@ -5,6 +5,7 @@ use std::time::Duration;
 mod colour;
 mod feedback;
 mod group;
+mod group_color;
 mod state;
 
 #[derive(Clone, Copy)]
@@ -42,6 +43,7 @@ impl DeviceDriver for DaliProxy {
                 "configure_output",
                 "set_input_feedback",
                 "set_group_output",
+                "set_group_color",
                 "adopt_groups",
                 "repair_groups",
                 "restore_unaddressed_address",
@@ -63,6 +65,10 @@ impl DeviceDriver for DaliProxy {
             .map(|name| CommandSpec::new(name, CommandClass::WithReply))
             .chain(std::iter::once(CommandSpec::new(
                 "read_output_settings",
+                CommandClass::Read,
+            )))
+            .chain(std::iter::once(CommandSpec::new(
+                "read_group_color",
                 CommandClass::Read,
             )))
             .chain(std::iter::once(CommandSpec::new(
@@ -126,7 +132,7 @@ impl DeviceDriver for DaliProxy {
                 }
                 if group::is_group(&snapshot, target) {
                     group::route(&snapshot, target, context, true)?;
-                    group::intent(values)?;
+                    group::intent(values, colour::configured(&snapshot, target))?;
                     return Ok(());
                 }
                 Self::output_route(&snapshot, target, context, true)?;
@@ -1138,6 +1144,12 @@ enum PreparedAction {
 struct OutputValues {
     values: PropertyMap,
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GroupColorValues {
+    expected_revision: u64,
+    values: PropertyMap,
+}
 impl PreparedAction {
     fn prepare(
         snapshot: &Snapshot,
@@ -1560,6 +1572,31 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if matches!(
+        call.command.as_str(),
+        "read_group_color" | "set_group_color"
+    ) {
+        let target = target.ok_or_else(|| OpError::Rejected("group target required".into()))?;
+        if call.command == "read_group_color" {
+            if !call.params.is_empty() {
+                return Err(OpError::Rejected(
+                    "read_group_color accepts no parameters".into(),
+                ));
+            }
+            return Ok(Operation::GroupOutput(group_output::Action::ReadColor));
+        }
+        let params: GroupColorValues = decode(call)?;
+        let intent = group::intent(&params.values, colour::configured(snapshot, target))?;
+        if intent.colour().is_none() {
+            return Err(OpError::Rejected(
+                "set_group_color requires a color value".into(),
+            ));
+        }
+        return Ok(Operation::GroupOutput(group_output::Action::Color {
+            expected: params.expected_revision,
+            intent,
+        }));
+    }
     if matches!(
         call.command.as_str(),
         "read_group_output" | "set_group_output"
@@ -2008,18 +2045,24 @@ fn parse_metadata(
                 .into_iter()
                 .find(|p| p.target == target)
                 .ok_or_else(|| OpError::Rejected("unknown output".into()))?;
-            let crate::inventory::Location::Output { bus, short_address } = projection.location
-            else {
-                return Err(OpError::Unsupported("individual output required".into()));
+            let edit = match projection.location {
+                crate::inventory::Location::Output { bus, short_address } => {
+                    MetadataEdit::OutputColorRepresentation {
+                        bus,
+                        address: short_address,
+                        representation: params.color_representation,
+                    }
+                }
+                crate::inventory::Location::Group { bus, group_address } => {
+                    MetadataEdit::GroupColorRepresentation {
+                        bus,
+                        address: group_address,
+                        representation: params.color_representation,
+                    }
+                }
+                _ => return Err(OpError::Unsupported("output or group required".into())),
             };
-            (
-                params.expected_revision,
-                MetadataEdit::OutputColorRepresentation {
-                    bus,
-                    address: short_address,
-                    representation: params.color_representation,
-                },
-            )
+            (params.expected_revision, edit)
         }
         ("rename", Some(target)) if target != "__inventory" => {
             let params: Rename = decode(call)?;

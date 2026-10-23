@@ -142,7 +142,11 @@ impl Jobs {
         if let Some(record) = records.iter_mut().find(|r| r.id == id) {
             let (result, error) = if matches!(
                 record.command.as_str(),
-                "read_scene_settings" | "read_group_output" | "set_group_output"
+                "read_scene_settings"
+                    | "read_group_output"
+                    | "set_group_output"
+                    | "read_group_color"
+                    | "set_group_color"
             ) {
                 public_result_with_budget(result, SCENE_RESULT_BYTES)
             } else {
