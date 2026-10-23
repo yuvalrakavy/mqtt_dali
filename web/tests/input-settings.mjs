@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 export async function inputSettingsFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible}){
   const saved=await inventory(),input=saved.buses[0].inputs[0],button=input.instances[0];
+  const physicalBefore=await control({op:'snapshot'}),settingsBefore=physicalBefore.buses[0].inputs.find(i=>i.id==='buttons').settings[0];
   const row=name=>page.locator('.device-row').filter({has:page.getByRole('textbox',{name:`Name ${name}`,exact:true})});
   const idle=()=>until(async()=>await page.getByRole('button',{name:'Add unaddressed',exact:true}).isEnabled(),'input settings operation did not settle');
   const open=async name=>{await row(name).getByRole('button',{name:`Actions ${name}`,exact:true}).click();await page.getByRole('button',{name:'Event settings',exact:true}).click();await until(async()=>await page.getByLabel('Input enabled',{exact:true}).isEnabled(),'input settings read did not complete');};
@@ -17,7 +18,7 @@ export async function inputSettingsFlow({page,origin,artifacts,inventory,control
   await page.screenshot({path:join(artifacts,'phone-input-event-settings.png'),fullPage:true});
   await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'input settings save did not close');await idle();
   const native=await control({op:'snapshot'}),values=native.buses[0].inputs.find(i=>i.id==='buttons').settings[0];
-  assert.deepEqual(values,{enabled:false,priority:2,scheme:2,filter:247,groups:[0,255,31]},'input settings did not persist in physical model');
+  assert.deepEqual(values,{...settingsBefore,enabled:false,priority:2,scheme:2,filter:247,groups:[0,255,31]},'input settings did not persist or changed unrelated native settings');
   assert.deepEqual(await inventory(),saved,'event settings changed saved names, bindings or reservations');
   await page.setViewportSize({width:1440,height:1024});await open(button.name);await dialogVisible();await noOverflow();
   assert.equal(await page.getByLabel('Input enabled',{exact:true}).isChecked(),false);assert.equal(await page.getByLabel('Event priority',{exact:true}).inputValue(),'2');assert.equal(await page.getByLabel('Double press',{exact:true}).isChecked(),false);
