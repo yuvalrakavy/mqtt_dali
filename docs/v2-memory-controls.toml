@@ -52,3 +52,12 @@ replacement = 'if(false&&(this.cancelled||ui.cancelled||ui.signingOut||!ui.clien
 target = "command"
 argv = ["node","--test","web/src/device-info.test.ts"]
 expect_text = "late cancel read populated information"
+
+[[control]]
+name = "memory_prepared_job_discards_admission_revision"
+file = "src/service/memory.rs"
+anchor = 'if admitted_revision.is_some_and(|revision| revision != route.revision) {'
+replacement = 'if false && admitted_revision.is_some_and(|revision| revision != route.revision) {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(memory_prepared_job)"]
+expect_text = "memory prepared job renewed its admitted revision"

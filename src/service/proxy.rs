@@ -280,7 +280,7 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
-        if let Operation::Memory(action) = &change {
+        if let Operation::Memory(action, revision) = &change {
             let report = self
                 .handle
                 .memory(
@@ -288,6 +288,7 @@ impl DeviceDriver for DaliProxy {
                     *action,
                     context.clone(),
                     Instant::now() + Duration::from_secs(15),
+                    Some(*revision),
                 )
                 .await
                 .map_err(op_error)?;
@@ -456,7 +457,7 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
-            Operation::Memory(_) => {
+            Operation::Memory(..) => {
                 unreachable!("memory reads dispatched before metadata completion")
             }
             Operation::GroupOutput(action) => {
@@ -984,7 +985,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
-    Memory(memory::Action),
+    Memory(memory::Action, u64),
     GroupOutput(group_output::Action),
     InputFeedback(input::feedback::Action),
     InputSettings(input::settings::Action),
@@ -1022,7 +1023,7 @@ impl Operation {
                 context,
             )
             .map(|_| ()),
-            Self::Memory(action) => memory::resolve(
+            Self::Memory(action, _) => memory::resolve(
                 snapshot,
                 target.ok_or_else(|| ServiceError::Rejected("memory target required".into()))?,
                 *action,
@@ -1125,7 +1126,7 @@ impl Operation {
     }
     fn budget(&self) -> Duration {
         Duration::from_secs(match self {
-            Self::Memory(_) => 15,
+            Self::Memory(..) => 15,
             Self::GroupOutput(_) => 15,
             Self::InputFeedback(_) => 8,
             Self::InputSettings(_) => 8,
@@ -1377,7 +1378,7 @@ impl PreparedCommand {
             }
         };
         match operation {
-            Operation::Memory(action) => value(
+            Operation::Memory(action, revision) => value(
                 handle
                     .memory(
                         target.as_deref().ok_or_else(|| {
@@ -1386,6 +1387,7 @@ impl PreparedCommand {
                         action,
                         context,
                         deadline,
+                        Some(revision),
                     )
                     .await?,
             ),
@@ -1626,7 +1628,10 @@ fn parse(
                     "read_identity accepts no parameters".into(),
                 ));
             }
-            return Ok(Operation::Memory(memory::Action::Identity));
+            return Ok(Operation::Memory(
+                memory::Action::Identity,
+                snapshot.model.inventory().revision,
+            ));
         }
         #[derive(serde::Deserialize)]
         #[serde(deny_unknown_fields)]
@@ -1638,10 +1643,13 @@ fn parse(
         let params: Parameters = decode(call)?;
         let window = crate::dali::memory::Window::new(params.start, params.count)
             .map_err(|reason| OpError::Rejected(reason.into()))?;
-        return Ok(Operation::Memory(memory::Action::Read {
-            bank: params.bank,
-            window,
-        }));
+        return Ok(Operation::Memory(
+            memory::Action::Read {
+                bank: params.bank,
+                window,
+            },
+            snapshot.model.inventory().revision,
+        ));
     }
     if matches!(
         call.command.as_str(),

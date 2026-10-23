@@ -340,8 +340,14 @@ impl ServiceHandle {
         context: RequestContext,
         deadline: Instant,
     ) -> Result<Report, ServiceError> {
-        self.memory(target, Action::Read { bank, window }, context, deadline)
-            .await
+        self.memory(
+            target,
+            Action::Read { bank, window },
+            context,
+            deadline,
+            None,
+        )
+        .await
     }
     /// Read bank0 identity using the observed standard version's layout.
     pub async fn read_identity(
@@ -350,7 +356,7 @@ impl ServiceHandle {
         context: RequestContext,
         deadline: Instant,
     ) -> Result<Report, ServiceError> {
-        self.memory(target, Action::Identity, context, deadline)
+        self.memory(target, Action::Identity, context, deadline, None)
             .await
     }
     pub(super) async fn memory(
@@ -359,6 +365,7 @@ impl ServiceHandle {
         action: Action,
         context: RequestContext,
         deadline: Instant,
+        admitted_revision: Option<u64>,
     ) -> Result<Report, ServiceError> {
         let deadline = deadline.min(Instant::now() + Duration::from_secs(15));
         if Instant::now() >= deadline {
@@ -378,6 +385,13 @@ impl ServiceHandle {
             action,
             &context,
         )?;
+        // Prepared MQTT/HTTP commands carry their parse-time revision through
+        // any queue delay. Typed calls capture it here before their first await.
+        if admitted_revision.is_some_and(|revision| revision != route.revision) {
+            return Err(reject(
+                "original memory revision changed before service admission",
+            ));
+        }
         let revision = route.revision;
         let original = route.context;
         let (reply, receive) = oneshot::channel();

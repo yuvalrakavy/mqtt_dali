@@ -12,6 +12,7 @@ mod feedback;
 mod fixture_status;
 mod group_color;
 mod group_scalar;
+mod memory;
 
 async fn refresh(broker: &FakeBroker, topic: &str) -> Value {
     assert!(broker.send_with(
