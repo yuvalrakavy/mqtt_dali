@@ -5,6 +5,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 pub(super) struct SettingsPeer {
     pub path: PathBuf,
+    pub commands: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
     task: tokio::task::JoinHandle<()>,
 }
 impl Drop for SettingsPeer {
@@ -16,6 +17,8 @@ impl SettingsPeer {
     pub fn new(script: Vec<(String, String)>) -> Self {
         let pty = crate::service::hat::tests::Pty::new();
         let path = pty.path.clone();
+        let commands = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = commands.clone();
         let task = tokio::spawn(async move {
             // Capture the whole PTY, including the slave keeper, before borrowing
             // its peer. Disjoint capture of only peer would drop the slave early.
@@ -28,6 +31,7 @@ impl SettingsPeer {
                 if read.read_line(&mut line).await.unwrap() == 0 {
                     return;
                 }
+                seen.lock().unwrap().push(line.clone());
                 let reply = match line.as_str() {
                     "v\n" => "V013204\n".to_string(),
                     "d\n" => "D24\n".to_string(),
@@ -44,7 +48,11 @@ impl SettingsPeer {
                 write.write_all(reply.as_bytes()).await.unwrap();
             }
         });
-        Self { path, task }
+        Self {
+            path,
+            commands,
+            task,
+        }
     }
 }
 pub(super) fn script(instance: u8, kind: u8, enabled: &str) -> Vec<(String, String)> {
@@ -66,6 +74,21 @@ pub(super) fn script(instance: u8, kind: u8, enabled: &str) -> Vec<(String, Stri
             (format!("l01{instance:02X}91\n"), "JFF\n".into()),
             (format!("l01{instance:02X}92\n"), "JFF\n".into()),
         ]);
+    }
+    if kind == 1 {
+        for (opcode, value) in [
+            (0x0a, 25),
+            (0x0b, 25),
+            (0x0c, 0),
+            (0x0d, 10),
+            (0x0e, 8),
+            (0x0f, 20),
+        ] {
+            script.push((
+                format!("l01{instance:02X}{opcode:02X}\n"),
+                format!("J{value:02X}\n"),
+            ));
+        }
     }
     script.push((format!("l01{instance:02X}80\n"), format!("J{kind:02X}\n")));
     script

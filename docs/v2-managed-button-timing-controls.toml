@@ -1,0 +1,64 @@
+# Serial mutations only. Actual wire scopes, requested values and units are independent.
+
+[[control]]
+name = "button_timing_minimum_preflight_bypassed"
+file = "src/service/input/settings/button.rs"
+anchor = "value\n                .check_minimum(minimum)"
+replacement = "value\n                .check_minimum(if value.raw() == 0 { minimum } else { value.raw() })"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_button_timing_minimum_preflight)"]
+expect_text = "invalid timer minimum allowed a common setting write"
+
+[[control]]
+name = "button_timing_missing_minimum_fabricated_zero"
+file = "src/service/input/settings/button.rs"
+anchor = "let [short, short_min, double, double_min, repeat, stuck] = bytes;"
+replacement = "let [short, short_min, double, double_min, repeat, stuck] = bytes;\n    let double_min = double_min.or(Some(0));"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_button_timing_literal_minimum)"]
+expect_text = "missing timer minimum became zero"
+
+[[control]]
+name = "button_timing_ignored_write_claims_configured"
+file = "src/service/input/settings/button.rs"
+anchor = "&& self.short.is_none_or(|v| actual.short == Some(v))"
+replacement = "&& self.short.is_none_or(|_v| actual.short.is_some())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_button_timing_literal_minimum)"]
+expect_text = "timer write succeeded without complete matching actual timing"
+
+[[control]]
+name = "button_timing_ui_native_units_wrong"
+file = "web/src/button-timing.ts"
+anchor = "Number(display)/(key==='stuck'?1:20)"
+replacement = "Number(display)/(key==='stuck'?1:10)"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "timer UI conversion changed native units"
+
+[[control]]
+name = "button_timing_ui_actual_match_omitted"
+file = "web/src/input-settings.ts"
+anchor = "if(frozen.button_timers&&!timingMatches(frozen.button_timers,actual.button_timers))"
+replacement = "if(false&&frozen.button_timers&&!timingMatches(frozen.button_timers,actual.button_timers))"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "button timing save requires actual matching timer evidence"
+
+[[control]]
+name = "button_timing_ui_forged_complete_trusted"
+file = "web/src/button-timing.ts"
+anchor = "||raw.quality==='complete'&&!complete(raw)"
+replacement = "||false&&raw.quality==='complete'&&!complete(raw)"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "button timing validates claimed complete evidence and native steps"
+
+[[control]]
+name = "button_timing_ui_preflight_bypassed"
+file = "web/src/button-timing.ts"
+anchor = "if(!complete(proposed))throw"
+replacement = "if(false&&!complete(proposed))throw"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "invalid timing sent a mixed hardware patch"

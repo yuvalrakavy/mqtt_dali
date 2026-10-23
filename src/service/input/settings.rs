@@ -18,6 +18,8 @@ use tokio::{
     sync::{oneshot, OwnedSemaphorePermit},
     time::{timeout_at, Instant},
 };
+mod button;
+pub use button::{Patch as ButtonPatch, Values as ButtonValues};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -52,6 +54,12 @@ pub struct Patch {
         skip_serializing_if = "Option::is_none"
     )]
     pub groups: Option<[Option<u8>; 3]>,
+    #[serde(
+        default,
+        deserialize_with = "present",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub button_timers: Option<ButtonPatch>,
 }
 fn present<'de, T: Deserialize<'de>, D: serde::Deserializer<'de>>(
     d: D,
@@ -69,6 +77,7 @@ pub struct Values {
     pub filter_width: u8,
     /// Raw group bytes: FF is unassigned; null is unavailable.
     pub groups: [Option<u8>; 3],
+    pub button_timers: Option<ButtonValues>,
     pub quality: &'static str,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -118,7 +127,13 @@ impl Patch {
                 ));
             }
         }
-        if values.is_empty() {
+        if let Some(timers) = &self.button_timers {
+            if kind != 1 {
+                return Err(reject("button timers require a Part301 button instance"));
+            }
+            timers.plans()?;
+        }
+        if values.is_empty() && self.button_timers.is_none() {
             return Err(ServiceError::Rejected(
                 "change at least one input setting".into(),
             ));
@@ -138,6 +153,10 @@ impl Patch {
                     .zip(v.groups)
                     .all(|(wanted, actual)| actual == Some(wanted.unwrap_or(255)))
             })
+            && self
+                .button_timers
+                .as_ref()
+                .is_none_or(|p| v.button_timers.as_ref().is_some_and(|v| p.matches(v)))
     }
 }
 fn reject(error: impl std::fmt::Display) -> ServiceError {
@@ -167,6 +186,7 @@ pub(in crate::service) struct Route {
     pub action: Action,
     pub revision: u64,
     plans: Vec<frames::Setting>,
+    button_plans: Vec<crate::dali::input::button::Value>,
 }
 pub(in crate::service) struct Request {
     pub target: String,
@@ -203,6 +223,7 @@ pub(in crate::service) fn resolve(
 ) -> Result<Route, ServiceError> {
     let input = readback::resolve(snapshot, target, context)?;
     let mut plans = Vec::new();
+    let mut button_plans = Vec::new();
     if let Action::Configure { expected, settings } = action {
         if context.generation().is_none() || *expected != snapshot.model.inventory().revision {
             return Err(ServiceError::Rejected(
@@ -210,12 +231,19 @@ pub(in crate::service) fn resolve(
             ));
         }
         plans = settings.plans(input.kind)?;
+        button_plans = settings
+            .button_timers
+            .as_ref()
+            .map(ButtonPatch::plans)
+            .transpose()?
+            .unwrap_or_default();
     }
     Ok(Route {
         input,
         action: action.clone(),
         revision: snapshot.model.inventory().revision,
         plans,
+        button_plans,
     })
 }
 fn report(target: &str, route: &Route) -> Report {
@@ -310,6 +338,11 @@ async fn probe(bus: &Bus<'_>, route: &Route) -> Result<Probe, Error> {
             .zip(filter_bytes[2])
             .map(|((l, m), h)| u32::from_le_bytes([l, m, h, 0]))
     };
+    let button_timers = if route.input.kind == 1 {
+        Some(button::probe(bus, route).await?)
+    } else {
+        None
+    };
     let final_kind = byte(query(bus, route, InstanceQuery::Type).await?);
     if final_kind != kind {
         return Ok(Probe {
@@ -339,6 +372,7 @@ async fn probe(bus: &Bus<'_>, route: &Route) -> Result<Probe, Error> {
             filter_bytes,
             filter_width,
             groups,
+            button_timers,
             quality: if complete { "complete" } else { "partial" },
         }),
         outcome: if complete { "current" } else { "unavailable" },
@@ -371,8 +405,27 @@ pub(in crate::service) async fn execute(
         }
         report.before = report.settings.take();
         report.outcome = "unconfirmed";
+        if let Action::Configure { settings, .. } = &route.action {
+            if let Some(timers) = &settings.button_timers {
+                timers
+                    .preflight(
+                        report
+                            .before
+                            .as_ref()
+                            .and_then(|v| v.button_timers.as_ref()),
+                    )
+                    .map_err(Error::Evidence)?;
+            }
+        }
         for setting in &route.plans {
             for step in frames::plan(route.input.address, route.input.instance, *setting) {
+                attempted = true;
+                bus.command(DaliFrame::Bits24(step.frame), step.repeat)
+                    .await?;
+            }
+        }
+        for value in &route.button_plans {
+            for step in value.plan(route.input.address, route.input.instance) {
                 attempted = true;
                 bus.command(DaliFrame::Bits24(step.frame), step.repeat)
                     .await?;

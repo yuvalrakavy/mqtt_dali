@@ -5,6 +5,7 @@ use crate::service::input::{self, Evidence};
 mod peer;
 mod settings;
 mod settings_peer;
+mod timing;
 
 #[tokio::test]
 async fn input_readback_reply_and_cache_use_the_same_final_acceptance_evidence() {

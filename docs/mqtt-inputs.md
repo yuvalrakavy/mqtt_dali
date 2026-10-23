@@ -3,7 +3,8 @@
 This guide is for operators and MQTT consumers of the v2 development bridge.
 Named input instances now publish observed State and native events through the
 existing managed UART service. Addressed discovery and explicit native event
-configuration are implemented locally; see [event settings](input-event-settings.md).
+configuration, including Part301 button timing with device minima and actual
+readback, are implemented locally; see [event settings](input-event-settings.md).
 This boundary uses saved module/instance metadata. No
 physical I4 or switch certification is claimed by local emulator tests.
 

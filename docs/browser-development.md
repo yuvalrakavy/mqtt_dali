@@ -14,6 +14,16 @@ settings equal to the requested patch except in the explicit mismatch case.
 Otherwise a mismatch guard can hide a broken outcome/authority check. Intentional
 controls in `v2-managed-input-settings-controls.toml` exercise those guards.
 
+Part301 timing uses `button-timing.ts` within that same dialog and frozen scope.
+Keep raw ticks in the draft; show exact milliseconds (20ms steps) or stuck seconds.
+Validate reported minima and declared complete values independently, preflight
+before job submission and compare requested timers after readback. Partial timer
+evidence leaves common-only settings usable. The real phone/desktop flow fills,
+saves, reopens and restores all four timers, verifying native raw bytes and
+unchanged inventory. For no-submit assertions, check the actual command count
+before checking the error message, so another validation guard cannot hide I/O.
+Controls: `v2-managed-button-timing-controls.toml`.
+
 For bridge contributors: `web/` owns the responsive Preact/TypeScript application.
 Node is needed to change assets, not to run the bridge or compile its embedded
 assets with Cargo. Use Node 24.11 or newer with the exact npm lockfile:

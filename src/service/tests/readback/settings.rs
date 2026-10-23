@@ -195,6 +195,16 @@ async fn managed_input_settings_mqtt_preserves_original_reply_and_strict_params(
             json!({"expected_revision":1,"settings":{"enabled":true},"extra":true}),
             false,
         ),
+        (
+            3,
+            json!({"expected_revision":1,"settings":{"button_timers":{"short":255,"double":0}}}),
+            true,
+        ),
+        (
+            4,
+            json!({"expected_revision":1,"settings":{"button_timers":{"short_min":25}}}),
+            false,
+        ),
     ] {
         let reply = format!("test/input-settings/{index}");
         let mut call = json!({"command":"configure_input","target":target("Button")});
@@ -268,6 +278,7 @@ async fn managed_input_settings_common_types_patch_and_saved_identity() {
             event_scheme: Some(2),
             event_filter: Some(0),
             groups: Some([Some(0), None, Some(31)]),
+            ..Patch::default()
         };
         let report = handle
             .configure_input(&target, 1, patch, context(1), deadline())

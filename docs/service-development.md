@@ -20,6 +20,16 @@ The strict shared commands and operator workflow are in
 independent physical emulator. Their task must capture the whole PTY so its slave
 keeper survives disjoint field capture.
 
+Optional `settings::ButtonPatch` / `ButtonValues` use `settings/button.rs` under
+that same work item. Probe all six timer bytes before the closing type proof;
+keep timing quality independent of common settings. Preflight the whole mixed
+patch against fresh short/double minima before the first common setting write,
+then append the checked timer plans. Actual requested timers must match complete
+readback before success. FF and double0 retain their native meanings. The
+intentional controls are in `v2-managed-button-timing-controls.toml`; the literal
+peer records input commands so the no-write preflight assertion observes actual
+wire traffic, including a later invalid timer after an earlier valid one.
+
 This guide is for bridge contributors and embedders. The service library owns
 durable configuration, runtime routing, optional UART health, individual-output
 operations, selected-family DT8 MQTT controls and native input observations/actions. The canonical

@@ -12,6 +12,9 @@ hierarchy; it does not change which events a device sends.
    The bridge reads the actual device settings. Opening the dialog changes nothing.
 3. Choose whether the instance is enabled, its event priority, the source scheme,
    the events it should send and its three optional input-instance groups.
+   Buttons also show short/double/long-repeat/stuck timing when complete device
+   evidence is available. The first three fields use milliseconds in 20ms steps;
+   stuck uses whole seconds. Device minimums are shown; double0 disables timing.
    On a phone, scroll the dialog to reach its actions.
 4. Choose **Save settings**. The bridge changes only edited fields and reads them
    back. Success means the actual supported settings matched the request.
@@ -34,8 +37,8 @@ groups 0..15. Each of the three group slots may be unassigned.
 
 Unknown instance types show their full raw filter without editable event labels.
 Generic enable/priority/scheme/group settings remain available when complete
-standard readback exists. Timers, feedback and calibrated sensor units remain
-separate capabilities. No physical HAT certification or power-cycle persistence
+standard readback exists. Sensor timers, feedback and calibrated sensor units
+remain separate capabilities. No physical HAT certification or power-cycle persistence
 claim follows from local emulator/readback checks.
 
 The saved name, identity, bindings, inventory revision and configuration file
@@ -82,6 +85,23 @@ rejected. Common filter masks are FF for buttons, 01 for absolute/light and 1F
 for occupancy. Reserved bits and semantic filter writes to unknown types are
 rejected before sending. A raw filter FF is data, not MASK.
 
+For Part301 buttons, the same patch optionally contains native timer bytes:
+
+```json
+{"button_timers":{"short":50,"double":20,"repeat":8,"stuck":20}}
+```
+
+Put that object inside `settings`, alongside common fields if needed. `short`,
+`double` and `repeat` use20ms ticks (50 means1s); `stuck` uses seconds. Omit
+unchanged timers. Short's static range is10..255 plus the actual device minimum;
+double is0 (disabled) or the device minimum..100; repeat5..100; stuck5..255.
+The bridge reads short/double minima before any setting write in a mixed patch,
+then reads actual settings afterward. An invalid later timer prevents earlier
+common/timer fields from being programmed. Empty nested patches, null, unknown
+keys, writable minima and non-button timer patches are rejected. FF is valid
+short/stuck data, not MASK. The web UI converts display units exactly and never
+rounds a non-native step into a different threshold.
+
 Authenticated HTTP jobs accept these same command names/parameters and require
 their normal CSRF/session/original-target authority. The typed Rust APIs are
 `ServiceHandle::read_input_settings` and `configure_input` with `input::settings::Patch`.
@@ -95,6 +115,14 @@ bytes: 255 means unassigned, null means unavailable. Common filters have width 8
 unknown types preserve all 24 bits. Reports use `current`, `configured`,
 `unconfirmed`, `unavailable` or `type_mismatch`. `configuration_changed:false`
 means saved bridge inventory was not edited; hardware settings may have changed.
+
+`settings.button_timers` is null for non-buttons. Buttons report nullable raw
+short/short_min/double/double_min/repeat/stuck and an independent complete/partial
+quality. A partial timer read leaves basic event settings usable; `current`
+describes complete common settings, not a claim that every optional timer is
+known. Any requested timer change requires complete valid timing evidence and
+matching actual readback. A missing minimum stays null, including when requesting
+double0. Unavailable timings appear read-only in the dialog.
 
 Only complete, matching readback with current authority, physical epoch and the
 original deadline can report `current`/`configured`. A write failure after possible

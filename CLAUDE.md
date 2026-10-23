@@ -291,7 +291,12 @@ data, and builds individual read-query frames; see `docs/dali-input-contract.md`
 Part301 timing uses `dali::input::button`: checked static ranges, separately
 queried short/double minima and exact units. Its independent emulator profile
 retains settings across HAT reboot/readdress but schedules no gestures. Timer
-commands/browser fields remain pending. Controls: `docs/v2-button-timing-controls.toml`.
+read/patch controls use optional `button_timers` inside existing input settings;
+see `docs/input-event-settings.md`. Keep optional timer quality separate from
+common settings, preflight the whole mixed patch against fresh minima before
+any write, and confirm actual requested timer values. The dialog converts exact
+20ms steps and freezes its original read limits. Controls:
+`docs/v2-button-timing-controls.toml`, `docs/v2-managed-button-timing-controls.toml`.
 The codec is pure. Saved Inputs/Instances use the existing named identity ledger
 and durable metadata rename path; see `docs/inventory-contract.md`. Module
 replacement retires every child lifetime; ordinary rename preserves them. Replay

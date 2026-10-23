@@ -9,7 +9,7 @@ metadata rename use the [inventory contract](inventory-contract.md).
 Enable, priority, event scheme, filter and instance-group configuration are
 available through the managed service and protected browser controls; see
 [input event settings](input-event-settings.md). The button timing codec/model
-below is implemented; managed timer controls, sensor timers, feedback and natural
+below is implemented with managed button controls; sensor timers, feedback and natural
 emulator stimuli remain pending.
 
 Input short addresses are 0..63, independently of output addresses. Instances
@@ -99,7 +99,7 @@ for true and silence for false, so an absent device must be ruled out separately
 This slice supplies pure plans and an [independent emulator model](emulator.md#input-event-settings-model).
 Managed MQTT/HTTP commands and browser controls now use these plans; see
 [event settings](input-event-settings.md). Existing discovery does not configure
-inputs. Managed timers and feedback are separate work.
+inputs. Sensor timers and feedback are separate work.
 
 ## Push-button timing plans
 
@@ -126,8 +126,10 @@ l01000A
 DTR0 receives 50, then the short setting is repeated as ordinary 24-bit frames
 within100ms. Current query returns `J32` in this model. Keep the complete plan
 under one bus permit. A HAT `N` terminal confirms transmission, not application.
-This foundation has no managed MQTT/HTTP timer command or browser field yet;
-it does not recognize gestures or change settings during discovery.
+Managed MQTT/HTTP `configure_input` accepts an optional `button_timers` patch;
+the same protected dialog exposes exact display units and device minima. See
+[event settings](input-event-settings.md). Neither path recognizes gestures or
+changes settings during discovery.
 
 The command map and units follow [python-dali Part 301](https://github.com/sde1000/python-dali/blob/master/dali/device/pushbutton.py).
 [Beckhoff's variable table](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5908386187.html)

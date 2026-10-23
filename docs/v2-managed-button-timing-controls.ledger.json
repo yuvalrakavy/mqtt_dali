@@ -1,0 +1,124 @@
+{
+ "rows": {
+  "button_timing_ignored_write_claims_configured": {
+   "last_real": {
+    "at": "2026-10-23T02:47:05Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:399237df92a68052",
+     "row": "283e0758676defcc",
+     "test": null
+    },
+    "path": "command",
+    "secs": 20.5,
+    "sha": "bd2603b8fbfe2ebb6b64663cbb3d7ce5f88f74c6",
+    "verdict": "RED"
+   }
+  },
+  "button_timing_minimum_preflight_bypassed": {
+   "last_real": {
+    "at": "2026-10-23T02:46:23Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:95126be21dcc7b31",
+     "row": "ae3479aa333a233a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.5,
+    "sha": "bd2603b8fbfe2ebb6b64663cbb3d7ce5f88f74c6",
+    "verdict": "RED"
+   }
+  },
+  "button_timing_missing_minimum_fabricated_zero": {
+   "last_real": {
+    "at": "2026-10-23T02:46:44Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3310087116356caf",
+     "row": "d9f6f4ba0cbc8215",
+     "test": null
+    },
+    "path": "command",
+    "secs": 20.9,
+    "sha": "bd2603b8fbfe2ebb6b64663cbb3d7ce5f88f74c6",
+    "verdict": "RED"
+   }
+  },
+  "button_timing_ui_actual_match_omitted": {
+   "last_real": {
+    "at": "2026-10-23T02:47:06Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:da56dc943b7e5c85",
+     "row": "a59a92c0bf7a8104",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.3,
+    "sha": "bd2603b8fbfe2ebb6b64663cbb3d7ce5f88f74c6",
+    "verdict": "RED"
+   }
+  },
+  "button_timing_ui_forged_complete_trusted": {
+   "last_real": {
+    "at": "2026-10-23T02:47:06Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:54322254da68ab3c",
+     "row": "b75c91c13db6acc6",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.3,
+    "sha": "bd2603b8fbfe2ebb6b64663cbb3d7ce5f88f74c6",
+    "verdict": "RED"
+   }
+  },
+  "button_timing_ui_native_units_wrong": {
+   "last_real": {
+    "at": "2026-10-23T02:47:05Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:54322254da68ab3c",
+     "row": "6d02fc46d21d775f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.5,
+    "sha": "bd2603b8fbfe2ebb6b64663cbb3d7ce5f88f74c6",
+    "verdict": "RED"
+   }
+  },
+  "button_timing_ui_preflight_bypassed": {
+   "last_real": {
+    "at": "2026-10-23T02:47:06Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:54322254da68ab3c",
+     "row": "88c08720d384e8fc",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.3,
+    "sha": "bd2603b8fbfe2ebb6b64663cbb3d7ce5f88f74c6",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

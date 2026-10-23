@@ -187,8 +187,9 @@ existing repeat owner. Input/output interruption breaks the pair. See the
 Timer changes preserve values, captured latches, other settings and unselected
 instances/devices/buses. Readdress and HAT reboot retain physical timer state.
 The profile does not schedule actual short/double/long gestures; raw injected
-events still bypass settings. There is no managed timer command/UI yet, and no
-scenario schema or disk-persistence change. Intentional faults are recorded in
+events still bypass settings. Managed timer read/patch/readback and the protected
+dialog now use this profile; literal service peers separately test minima and
+ignored writes. There is no scenario schema or disk-persistence change. Intentional faults are recorded in
 `v2-button-timing-controls.toml` and its ledger.
 
 ## Colour fixtures

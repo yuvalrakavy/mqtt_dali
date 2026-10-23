@@ -15,16 +15,25 @@ export async function inputSettingsFlow({page,origin,artifacts,inventory,control
   await page.getByLabel('Double press',{exact:true}).uncheck();
   await page.getByLabel('Primary group',{exact:true}).selectOption('0');
   await page.getByLabel('Instance group 2',{exact:true}).selectOption('31');
+  await page.getByLabel('Short press (ms)',{exact:true}).fill('1000');
+  await page.getByLabel('Double press (ms)',{exact:true}).fill('400');
+  await page.getByLabel('Long repeat (ms)',{exact:true}).fill('200');
+  await page.getByLabel('Stuck button (s)',{exact:true}).fill('30');
   await page.screenshot({path:join(artifacts,'phone-input-event-settings.png'),fullPage:true});
   await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'input settings save did not close');await idle();
   const native=await control({op:'snapshot'}),values=native.buses[0].inputs.find(i=>i.id==='buttons').settings[0];
-  assert.deepEqual(values,{...settingsBefore,enabled:false,priority:2,scheme:2,filter:247,groups:[0,255,31]},'input settings did not persist or changed unrelated native settings');
+  assert.deepEqual(values,{...settingsBefore,enabled:false,priority:2,scheme:2,filter:247,groups:[0,255,31],button_timers:{...settingsBefore.button_timers,short:50,double:20,repeat:10,stuck:30}},'input settings did not persist or changed unrelated native settings');
   assert.deepEqual(await inventory(),saved,'event settings changed saved names, bindings or reservations');
   await page.setViewportSize({width:1440,height:1024});await open(button.name);await dialogVisible();await noOverflow();
   assert.equal(await page.getByLabel('Input enabled',{exact:true}).isChecked(),false);assert.equal(await page.getByLabel('Event priority',{exact:true}).inputValue(),'2');assert.equal(await page.getByLabel('Double press',{exact:true}).isChecked(),false);
+  assert.equal(await page.getByLabel('Short press (ms)',{exact:true}).inputValue(),'1000');
+  assert.equal(await page.getByLabel('Double press (ms)',{exact:true}).inputValue(),'400');
+  assert.equal(await page.getByLabel('Long repeat (ms)',{exact:true}).inputValue(),'200');
+  assert.equal(await page.getByLabel('Stuck button (s)',{exact:true}).inputValue(),'30');
   await page.screenshot({path:join(artifacts,'desktop-input-event-settings.png'),fullPage:true});
   // Restore through the same actual form, demonstrating independent persisted fields.
   await page.getByLabel('Input enabled',{exact:true}).check();await page.getByLabel('Event priority',{exact:true}).selectOption('4');await page.getByLabel('Double press',{exact:true}).check();await page.getByLabel('Primary group',{exact:true}).selectOption('255');await page.getByLabel('Instance group 2',{exact:true}).selectOption('255');
+  await page.getByLabel('Short press (ms)',{exact:true}).fill('500');await page.getByLabel('Double press (ms)',{exact:true}).fill('0');await page.getByLabel('Long repeat (ms)',{exact:true}).fill('160');await page.getByLabel('Stuck button (s)',{exact:true}).fill('20');
   await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'restored input settings did not close');await idle();
   for(const instance of input.instances.filter(i=>[2,4].includes(i.instance_type))){await open(instance.name);await page.getByLabel(instance.instance_type===2?'Position changed':'Light level changed',{exact:true}).waitFor();const count=commands.length;await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal(commands.length,count,'cancelled input settings wrote hardware');}
   // A held entry read must not revive the form after actual dismissal/navigation.
@@ -39,5 +48,5 @@ export async function inputSettingsFlow({page,origin,artifacts,inventory,control
     await page.goto(`${origin}/buses/0`);await idle();
   }
   assert.deepEqual(await inventory(),saved);await noOverflow();
-  console.log('PASS input event settings: phone/desktop real menu/read/patch/readback, enable/filter/priority/groups, unchanged identity, common sensor labels, cancelled/retired dialog');
+  console.log('PASS input event settings: phone/desktop real menu/read/patch/readback, enable/filter/priority/groups/button timers with exact units, unchanged identity, common sensor labels, cancelled/retired dialog');
 }

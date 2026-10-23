@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState } from 'preact/hooks';
 import { Modal, useUi } from './ui.tsx';
 import { type PhysicalRow } from './model.ts';
 import { InputSettingsScope, changedSettings, eventFlags, type InputValues } from './input-settings.ts';
+import {timerKeys,timerDisplay,timerRaw} from './button-timing.ts';
 
 export function InputSettings({row,close}:{row:PhysicalRow;close:()=>void}){
   const ui=useUi(),[scope]=useState(()=>new InputSettingsScope(ui,row));
@@ -24,6 +25,13 @@ export function InputSettings({row,close}:{row:PhysicalRow;close:()=>void}){
       <p class="hint">{draft.event_scheme===2?'Device and instance identifies the source uniquely.':draft.event_scheme===1?'Device and type is routed only when exactly one matching instance is saved.':'This scheme is currently diagnostic only in the bridge. Use Device and instance for routed events.'}</p>
       <fieldset><legend>Events to send</legend>{flags?flags.map((label,bit)=><label><input type="checkbox" checked={!!(draft.event_filter&(1<<bit))} onChange={e=>update({event_filter:e.currentTarget.checked?draft.event_filter|(1<<bit):draft.event_filter&~(1<<bit)})}/>{label}</label>):<p>Raw filter: {draft.event_filter.toString(16).toUpperCase().padStart(6,'0')}. This instance type has no known common event labels.</p>}</fieldset>
       <fieldset><legend>Input instance groups</legend>{['Primary group','Instance group 1','Instance group 2'].map((label,index)=><label>{label}<select aria-label={label} value={draft.groups[index]} onChange={e=>{const groups=[...draft.groups];groups[index]=Number(e.currentTarget.value);update({groups});}}><option value="255">Unassigned</option>{Array.from({length:32},(_,n)=><option value={n}>{n}</option>)}</select></label>)}</fieldset>
+      {row.item.instance_type===1&&<fieldset><legend>Button timing</legend>{scope.values?.button_timers?.quality==='complete'&&draft.button_timers?<>
+        <div class="input-timer-grid">{timerKeys.map(key=>{
+          const timers=draft.button_timers!,minimum=key==='short'?timers.short_min!*20:key==='double'?0:key==='repeat'?100:5;
+          const label=({short:'Short press (ms)',double:'Double press (ms)',repeat:'Long repeat (ms)',stuck:'Stuck button (s)'})[key],raw=timers[key]!;
+          return <label>{label}<input type="number" inputMode="numeric" aria-label={label} min={minimum} max={key==='short'?5100:key==='stuck'?255:2000} step={key==='stuck'?1:20} value={Number.isFinite(raw)?timerDisplay(key,raw):''} onChange={e=>update({button_timers:{...timers,[key]:timerRaw(key,e.currentTarget.value)}})}/></label>;
+        })}</div><p class="hint">Short minimum: {draft.button_timers.short_min!*20}ms. Double minimum: {draft.button_timers.double_min!*20}ms; 0 disables double press. Other millisecond values use 20ms steps.</p>
+      </>:<p class="hint">Button timing is unavailable or incomplete. Basic event settings remain available.</p>}</fieldset>}
     </fieldset>}
     <div class="dialog-actions"><button onClick={dismiss}>Cancel</button><button disabled={!!ui.busy} onClick={load}>Refresh settings</button><button class="primary" disabled={!!ui.busy||!draft} onClick={save}>Save settings</button></div>
   </Modal>;
