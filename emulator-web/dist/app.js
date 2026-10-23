@@ -1,4 +1,4 @@
-// ../../mqtt_dali-v2/web/node_modules/preact/dist/preact.mjs
+// node_modules/preact/dist/preact.mjs
 var e, t, n, r, i, a, o, s, c, l, u = {}, d = [], f = /^m(i|n|o|s|text|space)$/, p = Array.isArray, m = d.slice, h = Object.assign;
 function g(e) {
 	e && e.parentNode && e.remove();
@@ -259,7 +259,7 @@ e = { __e: function(e, t, n, r) {
 }, y.prototype.render = v, n = [], i = 0, a = function(e, t) {
 	return e.__v.__b - t.__v.__b;
 }, o = Symbol(), s = /(PointerCapture)$|Capture$/i, c = 0, l = {};
-// ../../mqtt_dali-v2/web/node_modules/preact/hooks/dist/hooks.mjs
+// node_modules/preact/hooks/dist/hooks.mjs
 var F, I, L, R, z = Object.is, B = 0, ie = [], V = [], H = e, ae = H.__b, oe = H.__r, se = H.diffed, ce = H.__c, le = H.unmount, ue = H.__;
 function U(e, t) {
 	H.__h && H.__h(I, e, B || t), B = 0;
@@ -397,7 +397,7 @@ function ve(e, t) {
 function ye(e, t) {
 	return typeof t == "function" ? t(e) : t;
 }
-// ../../mqtt_dali-v2/web/node_modules/preact/jsx-runtime/dist/jsxRuntime.mjs
+// node_modules/preact/jsx-runtime/dist/jsxRuntime.mjs
 var be = 0;
 Array.isArray;
 function J(t, n, r, i, a, o) {

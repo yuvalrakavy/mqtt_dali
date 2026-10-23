@@ -1,0 +1,22 @@
+{
+ "rows": {
+  "emulator_integration_stimulus_is_inactive": {
+   "last_real": {
+    "at": "2026-10-23T11:43:42Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5605b028a9090966",
+     "row": "b8f5cfd717d6861d",
+     "test": null
+    },
+    "path": "command",
+    "secs": 28.2,
+    "sha": "06e76d42ddcef8b94db247c4813c1b111a02bfb6",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

@@ -98,3 +98,12 @@ plus scheduler delay; large jumps coalesce repeats/reports. Semantic queried
 values above 32 bits require raw byte controls. Priority/arbitration physics,
 physical fades and actual HAT certification remain outside the software profile.
 Advanced profile editing uses strict JSON where no dedicated form is provided.
+
+## Root integration checkpoint
+
+Feature and handoff integrated as `a60adbe`/`06e76d4`. Root added the managed
+both-profile TCP discovery/rename/feedback/native-input MQTT test and the opt-in
+linked browser mode described in `emulator-web.md`. Full combined778 native tests
+and the explicit218.235-second phone/desktop browser flow pass. This closes the
+combined managed/native and actual bridge/emulator-tab gap stated above.
+Root's progress ledger records final lint/Pi/control/source acceptance separately.

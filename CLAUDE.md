@@ -57,7 +57,10 @@ does not establish emptiness. Transaction negative controls are recorded in
 PTY tests are local and never open `/dev/serial0` or contact a real DALI bus.
 
 The standalone `dali_hat_emulator` owns a separate strict physical scenario and
-exposes a PTY plus optional mode-0600 Unix control socket in a private directory.
+exposes a PTY or persistent `--hat-listen IP:port`, an optional private Unix
+control socket and its own loopback `--web-listen IP:port` configuration UI.
+See `docs/emulator-web.md` for scenario editing/capture/reset, semantic button/
+sensor controls, native settings persistence and Host/Origin/CSRF rules.
 It uses an independent ATX codec/model, seeded addressing, configurable repeat
 terminal count and faults; no broker or bridge inventory. See `docs/emulator.md`
 and `examples/emulator/basic-i4.json`. `docs/support-matrix.md` distinguishes base
@@ -71,9 +74,12 @@ DrainRead uses kernel recv, not readiness-cache Pending, as proof of Empty.
 Async connect is bounded/retryable; UART's blocking-open timeout stays terminal.
 A new TCP connection requires a fresh remote HAT parser/output session and clears
 old parser-poison flags; a UART reopen does not. See `docs/running-v2.md`,
-`docs/v2-tcp-hat-controls.toml` and the spec. The emulator UI/listener is assigned
-to a separate session via `docs/handoffs/2026-10-23-emulator-ui.md`; this session
-must avoid editing emulator files while that work is active.
+`docs/v2-tcp-hat-controls.toml` and the spec. The emulator UI/listener is implemented and integrated from the completed
+parallel branch; result `docs/handoffs/2026-10-23-emulator-ui-result.md`.
+`DALI_BROWSER_HAT_TCP=1` runs the opt-in full browser fixture with both web tabs
+and the persistent TCP listener; default remains PTY. Managed integration and
+its stimulus control are in `src/service/tests/emulator_tcp.rs` and
+`docs/v2-emulator-integration-controls.toml`.
 
 The default build target is `armv7-unknown-linux-musleabihf` (set in `.cargo/config.toml`). To cross-compile for Pi:
 

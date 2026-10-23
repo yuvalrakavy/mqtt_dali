@@ -13,7 +13,7 @@ import { connect } from 'node:net';
 import { writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const [origin,socket,artifacts]=process.argv.slice(2);
+const [origin,socket,artifacts,emulatorOrigin]=process.argv.slice(2);
 const browser=await chromium.launch({channel:process.env.DALI_BROWSER_CHANNEL||'chrome',headless:true});
 const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
 const page=await context.newPage();page.setDefaultTimeout(15000);
@@ -21,6 +21,8 @@ const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console'
 page.on('pageerror',error=>console.log('PAGE ERROR',error.stack));
 const commands=[];page.on('request',request=>{if(request.url()===`${origin}/api/jobs`&&request.method()==='POST')commands.push(request.postDataJSON());});
 let releaseAdmission=()=>{};
+let emulatorPage;
+const emulatorCard=id=>emulatorPage.locator(".card").filter({has:emulatorPage.getByRole("heading",{name:id,exact:true})});
 async function until(probe,message,ms=20000){const start=Date.now();while(Date.now()-start<ms){if(await probe())return;await new Promise(r=>setTimeout(r,40));}throw new Error(message);}
 async function control(action){return new Promise((resolve,reject)=>{const client=connect(socket),timer=setTimeout(()=>{client.destroy();reject(new Error('Emulator control expired'));},2000);let data='';client.on('connect',()=>client.end(`${JSON.stringify(action)}\n`));client.on('data',chunk=>data+=chunk);client.on('error',reject);client.on('end',()=>{clearTimeout(timer);try{const reply=JSON.parse(data);if(reply.error)reject(new Error(reply.error));else resolve(reply.result);}catch(e){reject(e);}});});}
 const inventory=async()=>JSON.parse(await readFile(join(artifacts,'dali.v2.json'),'utf8'));
@@ -31,6 +33,7 @@ async function closeDialog(){await page.getByRole('button',{name:'Close dialog',
 async function noOverflow(){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'page overflows horizontally');}
 async function dialogVisible(){await page.locator('dialog').waitFor({state:'visible'});const box=await page.locator('dialog').boundingBox(),viewport=page.viewportSize();assert.ok(box&&viewport&&box.x>=0&&box.y>=0&&box.x+box.width<=viewport.width&&box.y+box.height<=viewport.height,'dialog is clipped by the viewport');}
 try {
+  if(emulatorOrigin){emulatorPage=await context.newPage();await emulatorPage.goto(emulatorOrigin);await emulatorPage.getByText('Emulator online',{exact:false}).waitFor();}
   await page.goto(`${origin}/buses/0`);await until(()=>Promise.resolve(page.url().endsWith('/login')),'unauthenticated page did not redirect');
   assert.equal((await context.request.get(`${origin}/assets/app.js`,{maxRedirects:0})).status(),303);
   await page.getByLabel('Password',{exact:true}).fill('incorrect');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.getByRole('alert').filter({hasText:'invalid password'}).waitFor();
@@ -64,9 +67,10 @@ try {
   await page.getByRole('button',{name:'Save name Hall',exact:true}).click();await named('HallNew').waitFor();
   await page.getByRole('button',{name:'Light*',exact:true}).click();await until(async()=>await page.locator('.output-grid.device-row').count()===0,'Light* filter did not hide renamed fixtures');await page.getByRole('button',{name:'All',exact:true}).click();
   // Native input activity updates an existing row without replacing its dirty name.
-  const input=page.locator('.input-grid.device-row').filter({hasText:'Part 301'}).first(),inputName=input.getByRole('textbox');await inputName.fill('DoorButton');await control({op:'input_event',bus:0,frame:0x008001});await until(async()=>await input.innerText().then(t=>t.includes('Pressed')),'native input state did not reach browser');assert.equal(await inputName.inputValue(),'DoorButton','native activity replaced the dirty draft');await inputName.press('Enter');await named('DoorButton').waitFor();
+  const input=page.locator('.input-grid.device-row').filter({hasText:'Part 301'}).first(),inputName=input.getByRole('textbox');await inputName.fill('DoorButton');if(emulatorPage)await emulatorCard('buttons').getByRole('button',{name:'Press',exact:true}).first().click();else await control({op:'input_event',bus:0,frame:0x008001});await until(async()=>await input.innerText().then(t=>t.includes('Pressed')),'native input state did not reach browser');assert.equal(await inputName.inputValue(),'DoorButton','native activity replaced the dirty draft');if(emulatorPage)await emulatorCard('buttons').getByRole('button',{name:'Release',exact:true}).first().click();await inputName.press('Enter');await named('DoorButton').waitFor();
   // On/off and committed slider changes affect the independent physical model.
   await row('KitchenSide').getByRole('button',{name:'Power KitchenSide',exact:true}).click();await until(async()=>(await control({op:'snapshot'})).buses[0].outputs[1].level===0,'power toggle did not affect physical fixture');
+  if(emulatorPage){await until(()=>emulatorCard('plain').locator('progress').getAttribute('value').then(v=>Number(v)===0),'emulator tab did not show the bridge power change');await emulatorPage.screenshot({path:join(artifacts,'phone-emulator-linked.png'),fullPage:true});}
   const range=row('KitchenSide').getByRole('slider');await until(async()=>!await range.isDisabled(),'brightness remained disabled');await range.focus();await range.press('ArrowRight');await range.press('Tab');await until(async()=>(await control({op:'snapshot'})).buses[0].outputs[1].level>0,'brightness commit did not affect fixture');
   // Phone actions and colour form must fit and persist an actual DT8 write.
   await row('KitchenMain').getByRole('button',{name:'Actions KitchenMain',exact:true}).click();await dialogVisible();await page.getByRole('button',{name:'Colour representation and values',exact:true}).click();await dialogVisible();await page.getByLabel('Colour representation',{exact:true}).selectOption('temperature');await until(async()=>await page.locator('dialog').count()===0,'representation save did not finish');

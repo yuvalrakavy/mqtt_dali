@@ -140,3 +140,21 @@ The Playwright runner owns disposable loopback endpoints/process/scenario/socket
 and writes desktop/phone screenshots to its printed temporary directory. It uses
 Chrome (`DALI_BROWSER_CHANNEL` overrides the channel). No physical HAT or
 production broker is contacted.
+
+## Run the combined bridge/browser acceptance
+
+With local Chrome and the bridge web dependencies installed, the existing opt-in
+browser fixture can use the persistent TCP HAT and open both UIs:
+
+```sh
+DALI_BROWSER_HAT_TCP=1 DALI_BROWSER_CHANNEL=chrome cargo nextest run \
+  --target aarch64-apple-darwin --lib --run-ignored only \
+  -E 'test(browser_functional_phone_and_desktop)'
+```
+
+It owns disposable listeners/configuration and an ephemeral broker, exercises
+the bridge's phone/desktop workflows, presses a semantic button in the emulator
+tab, and observes the bridge's output change in that tab. Artifacts are retained
+at the path printed on completion. Without the environment flag it uses the
+existing PTY fixture. This is local Chrome viewport coverage, not physical
+iPhone/Safari or HAT certification.

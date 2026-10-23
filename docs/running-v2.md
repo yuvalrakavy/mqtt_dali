@@ -45,10 +45,18 @@ applies to both transports. Numeric endpoints avoid DNS workers. Plain TCP is
 for a local or explicitly trusted emulator; web authentication does not protect
 the raw HAT endpoint.
 
-This slice supplies the bridge connector. The standalone emulator TCP listener
-and its own configuration UI are assigned to a parallel implementation; its
-current entry point still provides the PTY/control socket. See the
-[handoff](handoffs/2026-10-23-emulator-ui.md) for that shared boundary.
+Run the standalone emulator with its separate configuration UI:
+
+```sh
+dali_hat_emulator --scenario examples/emulator/colour-i4.json \
+  --hat-listen 127.0.0.1:5580 --web-listen 127.0.0.1:5581
+```
+
+Open `http://127.0.0.1:5581` beside the bridge's own authenticated web UI.
+Use the emulator to configure fixtures, stimulate buttons/sensors and observe
+native changes caused by the bridge. PTY/control-socket mode remains available.
+See [the emulator UI guide](emulator-web.md) for scenario capture/reset and the
+exact loopback security/access contract.
 
 The broker
 can have any MQTT consumer. Retained `DALI/State/<controller>/__inventory`

@@ -1,0 +1,9 @@
+# The independent physical stimulus must actually traverse the managed TCP bridge.
+[[control]]
+name = "emulator_integration_stimulus_is_inactive"
+file = "src/service/tests/emulator_tcp.rs"
+anchor = '"stimulus":{"kind":"button","pressed":true}'
+replacement = '"stimulus":{"kind":"button","pressed":false}'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(standalone_tcp_emulator_drives)"]
+expect_text = "semantic emulator input did not reach managed MQTT actions"

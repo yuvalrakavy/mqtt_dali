@@ -5,6 +5,31 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P2c — integrated configurable emulator and linked browser tabs
+
+Integrated parallel implementation `d28a5d7` as `a60adbe`, with result handoff
+`06e76d4`. Standalone emulator now retains the installation across replaceable
+raw TCP HAT clients, serves its own optional loopback UI, edits/imports/exports/
+captures/resets strict scenarios and generates semantic button/sensor events.
+PTY/control-socket compatibility and native settings/colour persistence remain.
+Operator guide: [emulator UI](emulator-web.md).
+
+Root's new managed test drives addressed discovery, rename, actual brightness,
+indicator Desired and native semantic input actions through the actual listener
+under both terminal profiles. The opt-in browser fixture accepts
+`DALI_BROWSER_HAT_TCP=1`; the default PTY path is preserved. Its second real tab
+presses the emulator's button and observes bridge state without losing a name
+draft, while a bridge power change appears in the emulator's native level.
+
+Combined full native acceptance passes **778/778** across eleven binaries, plus
+the explicit full real phone/desktop browser test (218.235s, both tabs, no runtime
+or CSP errors). Browser artifacts:
+`/tmp/dali-browser-121fd67d2cc2c6c2655bbca87cdb3e42/`.
+Final integration control, lint/Pi/assets/wait checks and source review are being
+recorded. No physical HAT, live Store, publication, deployment or main merge.
+An explicitly requested visible demo runs separately with its own broker/config;
+its disposable process details are in `/tmp/dali-visible-current.json`.
+
 ## P4i8 — input feedback scalar bindings
 
 Accepted implementation `1cb2055` with compatibility correction `1cb11ea`.
@@ -46,11 +71,10 @@ Native parameter settings, broader feedback profiles and physical certification
 remain separate work.
 Spec: [feedback bindings](superpowers/specs/2026-10-23-dali-v2-feedback-bindings.md).
 
-The parallel emulator agent completed its configurable standalone TCP HAT and
-separate web UI on `feat/dali-emulator-ui`, implementation `d28a5d7` and handoff
-`533f3ed`. It has not yet been integrated into this checkout. The agent reports
-653 library tests, nine standalone tests, registry, scoped Clippy/Pi and actual
-phone/desktop browser acceptance. Root integration verification remains pending.
+The parallel emulator implementation and handoff were subsequently integrated;
+the P2c checkpoint above records root-owned combined acceptance. The original
+agent also reported653 library/nine standalone tests and phone/desktop UI checks;
+those are separate from the root integration evidence.
 
 ## P2b — bridge TCP connector and emulator UI handoff
 
