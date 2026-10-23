@@ -22,11 +22,16 @@ presses the emulator's button and observes bridge state without losing a name
 draft, while a bridge power change appears in the emulator's native level.
 
 Combined full native acceptance passes **778/778** across eleven binaries, plus
-the explicit full real phone/desktop browser test (218.235s, both tabs, no runtime
-or CSP errors). Browser artifacts:
+the explicit full real phone/desktop browser test (218.235s, linked tabs; no bridge-page runtime or CSP errors).
+The emulator tab has separate functional assertions; this combined test does
+not attach its console/error collector to that tab. Browser artifacts:
 `/tmp/dali-browser-121fd67d2cc2c6c2655bbca87cdb3e42/`.
-Final integration control, lint/Pi/assets/wait checks and source review are being
-recorded. No physical HAT, live Store, publication, deployment or main merge.
+The inactive-stimulus negative control returns its named RED; restored native
+acceptance passes both profiles. Strict Clippy, Pi library/four binaries,
+TypeScript/assets reproduction, normal wait0, affected control plans, formatting
+and whitespace pass. Frozen integration b0e6890 receives APPROVE from a fresh
+same-family/source-only review. Rebuilding with locally installed dependencies
+normalizes three generated dependency-path comments; behavior is unchanged. No physical HAT, live Store, publication, deployment or main merge.
 An explicitly requested visible demo runs separately with its own broker/config;
 its disposable process details are in `/tmp/dali-visible-current.json`.
 
