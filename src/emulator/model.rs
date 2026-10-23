@@ -1,6 +1,9 @@
 use super::scenario::{Output, Scenario};
 use serde::Serialize;
 #[cfg(test)]
+#[path = "model/diagnostics_tests.rs"]
+mod diagnostics_tests;
+#[cfg(test)]
 #[path = "model/energy_tests.rs"]
 mod energy_tests;
 #[cfg(test)]

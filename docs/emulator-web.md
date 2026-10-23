@@ -82,6 +82,12 @@ the editor can configure raw counters, signed scale bytes, TMASK or silence.
 Omitted flags preserve existing read-only profiles. Capture/export does not turn
 temporary frozen values into configuration, and no automatic energy model is added.
 
+`examples/emulator/diagnostics-i4.json` adds [Part253 diagnostics/maintenance](diagnostics-data.md).
+Output banks205/206 opt into the same snapshot behavior with limits29/33 bytes;
+static207 and input modules cannot latch. The editor configures raw counters,
+measurements and MASK/TMASK codes. These remain configured observations, without
+automatic aging, counter accumulation or thermal simulation.
+
 Existing strict version-1 files remain valid. Optional capture fields:
 
 - Output `settings`: min/max, power-on/failure levels, packed fade and virtual

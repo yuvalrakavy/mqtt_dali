@@ -8,9 +8,13 @@ The approved architecture and phase acceptance criteria are in
 Current work: Part253 driver/light-source diagnostics and static luminaire
 maintenance ratings. The fresh T2 design review APPROVES the39-field layout,
 per-field MASK/TMASK interpretation and reuse of the existing memory owner.
-Native decoder/model tests are prepared; five browser-decoder tests pass,
-including a deliberate invalid-range defect caught by its named test. Managed
-native/browser integration is next; this is not yet accepted diagnostic support.
+The decoder, independent model, strict managed MQTT/HTTP/typed read and protected
+dialog are implemented. All41 focused native tests and118 frontend tests pass;
+the new native behaviors first failed against the stub/missing command, and a
+deliberate browser invalid-range defect was caught by its named test. Real
+phone/desktop Chrome45.957s, strict Clippy, wait lint0 and affected control plans
+pass. Final mutation/source/full regression checks remain;
+this is not yet accepted diagnostic support.
 Spec: `superpowers/specs/2026-10-24-dali-v2-diagnostics-data.md`.
 
 Most recent completed capability: Part252 exact energy and power captures,

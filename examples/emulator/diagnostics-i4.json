@@ -1,0 +1,16 @@
+{
+  "version":1,
+  "buses":[{
+    "number":0,
+    "outputs":[{
+      "id":"diagnostic-white","short_address":0,"device_type":8,"level":91,"groups":1,
+      "colour":{"active":"temperature","temperature":{"value":300,"coolest":200,"warmest":500,"physical_coolest":150,"physical_warmest":550}},
+      "memory":{"version":8,"banks":[
+        {"bank":205,"latch":true,"bytes":[28,0,255,1,18,52,86,120,1,2,3,8,252,50,99,1,3,0,4,1,5,0,6,1,7,0,8,35,100]},
+        {"bank":206,"latch":true,"bytes":[32,0,255,1,1,2,3,2,3,4,0,0,14,16,18,52,86,120,1,225,4,210,0,1,1,2,0,3,1,4,0,5,85]},
+        {"bank":207,"bytes":[7,0,255,1,50,0,255,253]}
+      ]}
+    }],
+    "inputs":[{"id":"panel","short_address":0,"instances":[1]}]
+  }]
+}

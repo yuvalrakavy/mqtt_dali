@@ -114,8 +114,9 @@ Load [the energy scenario](../examples/emulator/energy-i4.json) in the separate
 emulator browser. Its three banks exercise fractional active readings, large
 apparent counters and TMASK/zero load-side readings. In the scenario JSON editor,
 add `"latch":true` to a standard energy bank to opt into snapshot behavior.
-Latching is limited to output banks202–204 with at most16 bytes. Other banks and
-input profiles remain read-only. Existing scenarios can omit this flag.
+Energy latching is limited to output banks202–204 with at most16 bytes.
+[Diagnostic banks205/206](diagnostics-data.md) have their own29/33-byte limits;
+static207 and input profiles cannot latch. Existing scenarios can omit this flag.
 
 Configured raw bytes remain installation data. The emulator's runtime latch and
 write-enable state are separate; location2 reportsAA/FF according to that latch.
@@ -126,8 +127,8 @@ their configured levels until edited; energy-consumption simulation is not impli
 
 Local verification covers independent literal/model behavior, both HAT terminal
 profiles, generic MQTT, protected jobs and real phone/desktop browsers. Physical
-HAT/fixture validation remains pending. Part253 diagnostics and maintenance are
-tracked separately.
+HAT/fixture validation remains pending. [Part253 diagnostics and maintenance](diagnostics-data.md)
+reuse this owner and snapshot path for their dynamic banks.
 
 Primary sources: [energy definitions](https://github.com/sde1000/python-dali/blob/master/dali/memory/energy.py),
 [memory values/latches](https://github.com/sde1000/python-dali/blob/master/dali/memory/location.py),

@@ -24,8 +24,9 @@ Banks are 0–255. Read 1–64 bytes at a time within locations 0–254; a range
 wrap. Bank 0 contains identity information. Other banks depend on the product
 and supported DALI parts. **Read luminaire data** on output fixtures interprets
 supported Part251 bank1 data; see [luminaire identity and ratings](luminaire-data.md).
-Expand **Energy and power** for explicit, snapshotted [Part252 reads](energy-data.md)
-on individual fixtures.
+On individual fixtures, expand **Energy and power** for snapshotted
+[Part252 reads](energy-data.md), or **Diagnostics and maintenance** for
+[Part253 captures](diagnostics-data.md).
 
 The report belongs to the original device and configuration revision. Close,
 sign-out, navigation, rename, address changes or replacement retire a pending

@@ -52,6 +52,13 @@ raw counters/scales, units and explicit unavailable/invalid status. See
 [energy and power](energy-data.md) for parameters, terminal-profile requirement,
 snapshot semantics and the report. It is also a Read command, separate from State.
 
+`read_diagnostics` requires integer `bank`205,206 or207 on an individual saved
+output. Driver/light-source captures include exact counts/measurements, boolean
+conditions, per-field statuses and verified snapshots. Static luminaire ratings
+use no latch. See [diagnostics and maintenance](diagnostics-data.md) for units,
+MASK/TMASK, terminal-policy requirements and the captured report. This Read
+command does not reset counters or replace ordinary fixture status State.
+
 Common individual fixture settings use explicit `read_output_settings` and
 `configure_output` commands, with original target-generation and expected revision
 for writes. They return readback reports, separate from scalar Desired/State and

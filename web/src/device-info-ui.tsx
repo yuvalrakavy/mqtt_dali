@@ -4,21 +4,24 @@ import type {PhysicalRow} from './model.ts';
 import {DeviceInfoScope,memoryWindow,type MemoryReport,type MemoryReading} from './device-info.ts';
 import {luminaireFields,luminaireDisplay} from './luminaire.ts';
 import {energyDisplay} from './energy.ts';
+import {diagnosticDisplay,diagnosticFields,type DiagnosticBank} from './diagnostics.ts';
 const energyBanks={202:'Active input',203:'Apparent input',204:'Load-side active'} as const;
+const diagnosticBanks={205:'Driver',206:'Light source',207:'Luminaire maintenance'} as const;
 const hex=(v:number)=>v.toString(16).toUpperCase().padStart(2,'0');
 const value=(r:MemoryReading|null)=>r===null?'Not read':r.kind==='value'?`0x${hex(r.raw)} (${r.raw})`:r.kind==='no_response'?'No response':r.kind==='receive_collision'?'Receive collision':'Transmit collision';
 export function DeviceInfo({row,close}:{row:PhysicalRow;close:()=>void}){
   const ui=useUi(),[scope]=useState(()=>new DeviceInfoScope(ui,row));
   const [result,setResult]=useState<MemoryReport|null>(null),[error,setError]=useState(''),[bank,setBank]=useState('0'),[start,setStart]=useState('0'),[count,setCount]=useState('16');
   const [selectedEnergy,setSelectedEnergy]=useState('202');
+  const [selectedDiagnostic,setSelectedDiagnostic]=useState('205');
   useLayoutEffect(()=>()=>{scope.cancelled=true;},[scope]);
   const dismiss=()=>{scope.cancelled=true;close();};
-  const read=(kind:'identity'|'memory'|'luminaire'|'energy'='identity')=>void ui.run(async()=>{
+  const read=(kind:'identity'|'memory'|'luminaire'|'energy'|'diagnostics'='identity')=>void ui.run(async()=>{
     setResult(null);setError('');
     try{
       const number=(text:string)=>text.trim()===''?NaN:Number(text);
       const window=kind==='memory'?memoryWindow(number(bank),number(start),number(count)):undefined;
-      const r=kind==='luminaire'?await scope.readLuminaire():kind==='energy'?await scope.readEnergy(number(selectedEnergy)):await scope.read(window);if(!scope.cancelled)setResult(r);
+      const r=kind==='luminaire'?await scope.readLuminaire():kind==='energy'?await scope.readEnergy(number(selectedEnergy)):kind==='diagnostics'?await scope.readDiagnostics(number(selectedDiagnostic)):await scope.read(window);if(!scope.cancelled)setResult(r);
     }catch(e){if(!scope.cancelled)setError((e as Error).message);throw e;}
   });
   useEffect(()=>{read();},[]);
@@ -46,6 +49,11 @@ export function DeviceInfo({row,close}:{row:PhysicalRow;close:()=>void}){
           <details><summary>Counter details</summary><dl class="device-information">{(['energy','power'] as const).map(key=><><dt key={`${key}-raw-label`}>{key==='energy'?'Energy':'Power'} raw / scale</dt><dd key={`${key}-raw`}>{result.energy!.fields[key].raw??'Unavailable'} / {result.energy!.fields[key].scale??'Unavailable'}</dd></>)}</dl></details>
         </>:<p class="hint">{result.energy.format_status==='unrecognized'?`Unrecognized energy bank version ${result.energy.version}. Raw bytes are available below.`:'Energy data is unavailable from these readings.'}</p>}
       </section>}
+      {result.diagnostics&&<section aria-label="Diagnostic data"><p class="hint">{diagnosticBanks[result.bank as DiagnosticBank]} · Captured diagnostic and maintenance data.</p>
+        {result.diagnostics.format_status==='supported'?<><p class="hint">{result.bank===207?'Static maintenance ratings.':'Snapshot confirmed and released.'}</p><dl class="device-information">{diagnosticFields(result.bank as DiagnosticBank).map(({key,label})=><><dt key={`${key}-label`}>{label}</dt><dd key={`${key}-value`} data-diagnostic-field={key}>{diagnosticDisplay(result.diagnostics!.fields[key])}</dd></>)}</dl>
+          <details><summary>Raw diagnostic values</summary><dl class="device-information">{diagnosticFields(result.bank as DiagnosticBank).map(({key,label})=><><dt key={`${key}-raw-label`}>{label}</dt><dd key={`${key}-raw`}>{result.diagnostics!.fields[key].raw??'Unavailable'}</dd></>)}</dl></details>
+        </>:<p class="hint">{result.diagnostics.format_status==='unrecognized'?`Unrecognized diagnostic bank version ${result.diagnostics.version}. Raw bytes are available below.`:'Diagnostic data is unavailable from these readings.'}</p>}
+      </section>}
       <details open={result.operation==='read_memory'}><summary>Captured bank {result.bank} bytes</summary><table class="memory-readings"><thead><tr><th>Location</th><th>Reading</th></tr></thead><tbody>{result.readings.map(item=><tr key={item.address}><td>0x{hex(item.address)}</td><td>{value(item.reading)}</td></tr>)}</tbody></table></details>
     </section>}
     <details key="memory-controls"><summary>Read a memory bank</summary><p class="hint">Read-only access. Unsupported banks or locations may return no response.</p><fieldset disabled={!!ui.busy} class="memory-window">
@@ -57,6 +65,10 @@ export function DeviceInfo({row,close}:{row:PhysicalRow;close:()=>void}){
     {row.kind==='output'&&<details key="energy-controls"><summary>Energy and power</summary><p class="hint">Read one standard energy bank as a captured snapshot. Changing the selection does not read the fixture.</p><fieldset disabled={!!ui.busy}>
       <label class="field">Energy bank<select aria-label="Energy bank" value={selectedEnergy} onChange={e=>setSelectedEnergy(e.currentTarget.value)}>{Object.entries(energyBanks).map(([bank,label])=><option key={bank} value={bank}>{label}</option>)}</select></label>
       <button disabled={!!ui.busy} onClick={()=>read('energy')}>Read energy data</button>
+    </fieldset></details>}
+    {row.kind==='output'&&<details key="diagnostic-controls"><summary>Diagnostics and maintenance</summary><p class="hint">Read one standard bank. Changing the selection does not read the fixture.</p><fieldset disabled={!!ui.busy}>
+      <label class="field">Diagnostic bank<select aria-label="Diagnostic bank" value={selectedDiagnostic} onChange={e=>setSelectedDiagnostic(e.currentTarget.value)}>{Object.entries(diagnosticBanks).map(([bank,label])=><option key={bank} value={bank}>{label}</option>)}</select></label>
+      <button disabled={!!ui.busy} onClick={()=>read('diagnostics')}>Read diagnostic data</button>
     </fieldset></details>}
     <div class="dialog-actions"><button onClick={dismiss}>Close</button>{row.kind==='output'&&<button disabled={!!ui.busy} onClick={()=>read('luminaire')}>Read luminaire data</button>}<button class="primary" disabled={!!ui.busy} onClick={()=>read()}>Read identity again</button></div>
   </Modal>;

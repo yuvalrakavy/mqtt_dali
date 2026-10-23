@@ -524,6 +524,18 @@ output-only, at most16 bytes and separate from persistent bytes. Stable keyed re
 controls preserve expanded state across failed reads. See `docs/energy-data.md`
 and `docs/v2-energy-controls.toml`.
 
+Part253 uses `dali::diagnostics` and `Action::Diagnostics`: checked output banks
+205/206 snapshot through1C/20, static207 through7 without a latch. `Action::snapshot`
+gates repeated-command policy before traffic for dynamic banks only. Reuse the
+existing Memory owner/permit/revision/generation/stamp/deadline and verified
+FF→AA/stableAA/releasedFF path, with no cache cuts or counter resets. Per-field
+MASK is read_protected in diagnostics, unknown in maintenance, invalid when not
+supported; TMASK is temporary. Boolean0/1 only, temperature unsigned raw−60,
+exact numeric strings. Emulator latch profiles205/206 permit29/33 bytes and
+remain output-only; static207 cannot latch. Protected keyed controls preserve
+original scope, failed-read clearing and read-on-selection refusal. See
+`docs/diagnostics-data.md` and `docs/v2-diagnostics-controls.toml`.
+
 ## Architecture (legacy)
 
 ### Module Dependency Flow

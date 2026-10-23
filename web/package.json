@@ -6,7 +6,7 @@
   "engines": {"node": ">=24.11.0"},
   "scripts": {
     "build": "tsc --noEmit && node scripts/build.mjs",
-    "test": "node --test src/model.test.ts src/client.test.ts src/controller.test.ts src/scene-settings.test.ts src/reassignment.test.ts src/restoration.test.ts src/input-settings.test.ts src/feedback.test.ts src/group-output.test.ts src/group-color.test.ts src/output-settings.test.ts src/fixture-status.test.ts src/device-info.test.ts",
+    "test": "node --test src/model.test.ts src/client.test.ts src/controller.test.ts src/scene-settings.test.ts src/reassignment.test.ts src/restoration.test.ts src/input-settings.test.ts src/feedback.test.ts src/group-output.test.ts src/group-color.test.ts src/output-settings.test.ts src/fixture-status.test.ts src/diagnostics.test.ts src/device-info.test.ts",
     "check-dist": "node scripts/build.mjs --check"
   },
   "dependencies": {"preact": "11.0.1"},

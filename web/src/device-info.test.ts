@@ -6,6 +6,7 @@ import {DeviceInfoScope,decodeMemory,memoryWindow} from './device-info.ts';
 import {readFileSync} from 'node:fs';
 import {luminaireDisplay} from './luminaire.ts';
 import {energyBank,energyDisplay} from './energy.ts';
+import {diagnosticDisplay} from './diagnostics.ts';
 function fixture(){
   const ui=new Controller(),epoch='0123456789abcdef0123456789abcdef',target='Bus1.Outputs.Lamp';
   ui.client.views.ready=true;ui.client.views.value={phase:'ready',identity:{controller:'Controller'},hardware:{state:'ready',buses:[{bus:0,status:2}]},states:[],inventory:{name:'Controller',revision:1,inventory_epoch:epoch,buses:[{bus:0,name:'Bus1',enabled:true,outputs:[{name:'Lamp',target,binding_revision:1,short_address:0}]}],identity_ledger:{baseline:[{target,binding_revision:1,location:{kind:'output',bus:0,short_address:0}}],batches:[]}}} as unknown as Snapshot;
@@ -14,6 +15,29 @@ function fixture(){
   ui.client.job=async(g,t,c,p)=>{calls.push({generation:g,target:t,command:c,params:p});return report();};
   return {ui,row,scope,calls,report};
 }
+function diagnostics(f:ReturnType<typeof fixture>){
+  const bytes=[7,0,255,1,50,0,255,253];
+  return {...f.report(),operation:'read_diagnostics',bank:207,start:0,count:8,quality:'complete',readings:bytes.map((raw,address)=>({address,reading:{kind:'value',raw}})),diagnostics:{version:1,format_status:'supported',fields:{rated_life:{status:'value',raw:50,value:'50000',unit:'h'},reference_temperature:{status:'value',raw:0,value:'-60',unit:'°C'},rated_starts:{status:'value',raw:65533,value:'6553300',unit:'count'}},snapshot:null}};
+}
+test('diagnostic scope uses original fixture authority and explicit checked bank without a write completion',async()=>{
+  const f=fixture();f.ui.client.job=async(g,t,c,p)=>{f.calls.push({generation:g,target:t,command:c,params:p});return diagnostics(f);};
+  const r=await f.scope.readDiagnostics(207);assert.equal(diagnosticDisplay(r.diagnostics!.fields.rated_life),'50000 h');assert.equal(r.diagnostics!.snapshot,null);
+  assert.deepEqual(f.calls,[{generation:f.row.generation,target:f.row.item.target,command:'read_diagnostics',params:{bank:207}}]);
+  for(const bank of [202,204,208,205.5,NaN])await assert.rejects(f.scope.readDiagnostics(bank));assert.equal(f.calls.length,1);assert.equal(f.scope.result,null);f.ui.client.close();
+});
+test('diagnostic report requires selected bank, output scope and omission on older report families',()=>{
+  const f=fixture(),r=diagnostics(f);assert.doesNotThrow(()=>decodeMemory(r,'read_diagnostics',undefined,undefined,207));
+  for(const patch of [{bank:206},{space:'inputs'},{energy:{}},{luminaire:{}},{identity:{}},{quality:'partial'},{count:33}])assert.throws(()=>decodeMemory({...r,...patch},'read_diagnostics',undefined,undefined,207));
+  assert.throws(()=>decodeMemory({...f.report(),diagnostics:r.diagnostics},'read_memory',{bank:255,start:0,count:3}));
+  assert.throws(()=>decodeMemory({...identity(),diagnostics:r.diagnostics},'read_identity'));f.ui.client.close();
+});
+test('diagnostic late, wrong-target and lost reads retire their original scope and clear previous evidence',async()=>{
+  for(const reason of ['cancel','epoch','revision','generation','lost','target','bank']){
+    const f=fixture();f.ui.client.job=async()=>diagnostics(f);await f.scope.readDiagnostics(207);
+    f.ui.client.job=async()=>{const r=diagnostics(f);if(reason==='cancel')f.scope.cancelled=true;if(reason==='epoch')f.ui.client.views.epoch++;if(reason==='revision')f.ui.snapshot.inventory.revision++;if(reason==='generation')f.ui.snapshot.inventory.buses[0].outputs[0].binding_revision++;if(reason==='lost')throw new Error('Reply lost');if(reason==='target')r.target='Bus1.Outputs.Other';if(reason==='bank')r.bank=206;return r;};
+    await assert.rejects(f.scope.readDiagnostics(207),undefined,`late ${reason} diagnostic read populated dialog`);assert.equal(f.scope.result,null);f.ui.client.close();
+  }
+});
 test('memory windows include bank255/location254 and reject wrap, fractional or unbounded reads',()=>{
   assert.deepEqual(memoryWindow(255,254,1),{bank:255,start:254,count:1});assert.doesNotThrow(()=>memoryWindow(0,191,64));
   for(const args of [[0,254,2],[0,255,1],[0,0,0],[0,0,65],[256,0,1],[-1,0,1],[0,1.5,1],[0,0,NaN]])assert.throws(()=>memoryWindow(...args as [number,number,number]));

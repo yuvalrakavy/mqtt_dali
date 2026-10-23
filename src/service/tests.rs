@@ -3,6 +3,7 @@ use crate::{config::Inventory, inventory::Location};
 use serde_json::json;
 mod buses;
 mod commissioning;
+mod diagnostics;
 mod discovery;
 mod emulator_tcp;
 mod energy;

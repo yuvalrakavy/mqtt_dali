@@ -30,6 +30,17 @@ values are strings; allFF energy mantissas are invalid, while TMASK is temporary
 Keep input/group refusal, original parsed revision and optional report omission.
 Controls: `v2-energy-controls.toml`.
 
+`Action::Diagnostics` and pure `dali::diagnostics` add output-only checked-bank
+[`read_diagnostics`](diagnostics-data.md). Banks205/206 reuse `capture_snapshot`
+with standard limits28/32 and the same pre-traffic repeat-policy guard; static207
+extends through7 without scratch writes and works under Unverified policy.
+Keep per-field read-protected/unknown/TMASK/invalid semantics, exact numeric
+strings and real booleans; Celsius is unsigned raw minus60. These captured
+observations never overwrite ordinary fixture status or reset counters. Optional
+report omission, original authority, caches and public raw limit remain intact.
+Controls: `v2-diagnostics-controls.toml`; shared energy controls still exercise
+fresh latch/release and admission after the helper generalization.
+
 Common output settings use `output::settings` and concrete `Work::OutputSettings`
 with [checked native plans](gear-settings.md). Shared strict MQTT/HTTP and typed
 read/configure keep original context/revision/deadline/permit through settlement.

@@ -1,0 +1,71 @@
+[[control]]
+name = "diagnostics_temperature_uses_signed_raw"
+file = "src/dali/diagnostics.rs"
+anchor = 'Kind::Temperature => Value::Number((raw.unwrap() as i64 - 60).to_string()),'
+replacement = 'Kind::Temperature => Value::Number((raw.unwrap() as u8 as i8 as i64 - 60).to_string()),'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(diagnostics_maintenance_static)"]
+expect_text = "Part253 numeric conversion changed"
+
+[[control]]
+name = "diagnostics_mask_meaning_is_guessed"
+file = "src/dali/diagnostics.rs"
+anchor = 'Some(raw) if raw == maximum => definition.mask,'
+replacement = 'Some(raw) if raw == maximum => Status::ReadProtected,'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(diagnostics_reserved_values)"]
+expect_text = "Part253 MASK/TMASK meaning changed"
+
+[[control]]
+name = "diagnostics_invalid_boolean_becomes_false"
+file = "src/dali/diagnostics.rs"
+anchor = 'Some(raw) if raw > definition.maximum => Status::Invalid,'
+replacement = 'Some(raw) if raw > definition.maximum && !matches!(definition.kind, Kind::Boolean) => Status::Invalid,'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(diagnostics_boolean_and_percentage)"]
+expect_text = "Part253 invalid boolean/percentage accepted"
+
+[[control]]
+name = "diagnostics_unknown_version_authorizes_capture"
+file = "src/service/memory.rs"
+anchor = 'let snapshot = if data.format_status == diagnostics::FormatStatus::Supported {'
+replacement = 'let snapshot = if true {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(diagnostics_managed_mqtt)"]
+expect_text = "diagnostic header/version bound was ignored"
+
+[[control]]
+name = "diagnostics_static_maintenance_is_latched"
+file = "src/dali/diagnostics.rs"
+anchor = 'self != Self::Maintenance'
+replacement = 'true'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(diagnostics_managed_mqtt)"]
+expect_text = "managed diagnostic read-class command failed"
+
+[[control]]
+name = "diagnostics_capture_keeps_energy_length"
+file = "src/service/memory.rs"
+anchor = 'extend_capture(report, last.min(last_location));'
+replacement = 'extend_capture(report, last.min(15));'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(diagnostics_managed_mqtt)"]
+expect_text = "diagnostic standard bank was truncated"
+
+[[control]]
+name = "diagnostics_model_keeps_energy_profile_limit"
+file = "src/emulator/memory.rs"
+anchor = '206 => 33,'
+replacement = '206 => 16,'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(diagnostics_model_full_banks)"]
+expect_text = "Part253 latch profile refused"
+
+[[control]]
+name = "diagnostics_ui_invalid_boolean_is_usable"
+file = "web/src/diagnostics.ts"
+anchor = "raw>d.maximum?'invalid':'value'"
+replacement = "raw>d.maximum&&d.kind!=='boolean'?'invalid':'value'"
+target = "command"
+argv = ["node","--test","--test-name-pattern=invalid booleans and percentages","web/src/diagnostics.test.ts"]
+expect_text = "invalid raw code converted to a value:overall_failure"

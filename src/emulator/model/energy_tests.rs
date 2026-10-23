@@ -155,7 +155,7 @@ fn energy_model_latch_profile_is_opt_in_bounded_and_output_only() {
     let original = serde_json::to_value(&s).unwrap();
     for (bank, bytes) in [
         (1, vec![Some(0u8); 16]),
-        (205, vec![Some(0); 16]),
+        (207, vec![Some(0); 8]),
         (202, vec![Some(0); 17]),
     ] {
         let mut j = original.clone();

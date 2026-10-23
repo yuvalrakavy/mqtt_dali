@@ -916,13 +916,13 @@ impl Hat {
         request: super::memory::Request,
         route: super::memory::Route,
     ) {
-        if matches!(request.action, super::memory::Action::Energy(_))
+        if request.action.snapshot()
             && self
                 .settings
                 .as_ref()
                 .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
         {
-            super::memory::finish(request, Err(ServiceError::Rejected("energy snapshots require --uart-repeat-terminals 1 or 2 for a known HAT profile".into())));
+            super::memory::finish(request, Err(ServiceError::Rejected("memory snapshots require --uart-repeat-terminals 1 or 2 for a known HAT profile".into())));
             return;
         }
         self.enqueue_physical(physical::Work::Memory(request, route));

@@ -56,8 +56,8 @@ expect_text = "energy read leaked newer live payload"
 [[control]]
 name = "energy_unverified_profile_sends_native_prefix"
 file = "src/service/hat.rs"
-anchor = 'if matches!(request.action, super::memory::Action::Energy(_))'
-replacement = 'if false && matches!(request.action, super::memory::Action::Energy(_))'
+anchor = 'if request.action.snapshot()'
+replacement = 'if false && request.action.snapshot()'
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(energy_managed_mqtt)"]
 expect_text = "unverified energy read did not refuse before native commands"

@@ -117,7 +117,7 @@ function j(t) {
 	};
 }
 function M(t, n, r, i, a, o, s, c, l, u) {
-	var d, p, h, v, S, C, w, E, D, O, k, A, j, M, N, P, re, I, L, R, z = n.type;
+	var d, p, h, v, S, C, w, E, D, O, k, A, j, M, N, P, re, ie, I, L, R = n.type;
 	if (n.constructor !== void 0) return null;
 	if (128 & r.__u && (l = 32 & r.__u, d = r.__c.__z)) {
 		if (n.__u |= l, p = o = [], d.nodeType == 8) for (h = 1, v = d.nextSibling; v; v = v.nextSibling) {
@@ -131,11 +131,11 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 		c = o[0];
 	}
 	(d = e.__b) && d(n);
-	n: if (typeof z == "function") {
+	n: if (typeof R == "function") {
 		S = s.length;
 		try {
-			if (O = n.props, k = (d = z.prototype) && d.render, A = (d = z.contextType) && i[d.__c], j = d ? A ? A.props.value : d.__ : i, r.__c ? 2 & (C = n.__c = r.__c).__g && (C.__g |= 1) : (k ? n.__c = C = new z(O, j) : (n.__c = C = new b(O, j), C.constructor = z, C.render = ne), A && A.sub(C), C.state || (C.state = {}), C.__n = i, C.__g |= 8, C.__h = [], C.__k = []), k && (C.__s || (C.__s = C.state), z.getDerivedStateFromProps && (C.__s == C.state && (C.__s = g({}, C.__s)), g(C.__s, z.getDerivedStateFromProps(O, C.__s)))), w = C.props, E = C.state, C.__v = n, r.__c) {
-				if (k && !z.getDerivedStateFromProps && O !== w && C.componentWillReceiveProps && C.componentWillReceiveProps(O, j), n.__v == r.__v && !(8 & C.__g) || !(4 & C.__g) && C.shouldComponentUpdate && !1 === C.shouldComponentUpdate(O, C.__s, j)) {
+			if (O = n.props, k = (d = R.prototype) && d.render, A = (d = R.contextType) && i[d.__c], j = d ? A ? A.props.value : d.__ : i, r.__c ? 2 & (C = n.__c = r.__c).__g && (C.__g |= 1) : (k ? n.__c = C = new R(O, j) : (n.__c = C = new b(O, j), C.constructor = R, C.render = ne), A && A.sub(C), C.state || (C.state = {}), C.__n = i, C.__g |= 8, C.__h = [], C.__k = []), k && (C.__s || (C.__s = C.state), R.getDerivedStateFromProps && (C.__s == C.state && (C.__s = g({}, C.__s)), g(C.__s, R.getDerivedStateFromProps(O, C.__s)))), w = C.props, E = C.state, C.__v = n, r.__c) {
+				if (k && !R.getDerivedStateFromProps && O !== w && C.componentWillReceiveProps && C.componentWillReceiveProps(O, j), n.__v == r.__v && !(8 & C.__g) || !(4 & C.__g) && C.shouldComponentUpdate && !1 === C.shouldComponentUpdate(O, C.__s, j)) {
 					n.__v != r.__v && (C.props = O, C.state = C.__s, C.__g &= -9), n.__e = r.__e, n.__k = r.__k, n.__k.some(function(e) {
 						e && (e.__ = n);
 					}), f.push.apply(C.__h, C.__k), C.__k = [], C.__h.length && s.push(C), c = x(r);
@@ -144,7 +144,7 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 				C.componentWillUpdate && C.componentWillUpdate(O, C.__s, j), k && C.componentDidUpdate && C.__h.push(function() {
 					C.componentDidUpdate(w, E, D);
 				});
-			} else k && !z.getDerivedStateFromProps && C.componentWillMount && C.componentWillMount(), k && C.componentDidMount && C.__h.push(C.componentDidMount);
+			} else k && !R.getDerivedStateFromProps && C.componentWillMount && C.componentWillMount(), k && C.componentDidMount && C.__h.push(C.componentDidMount);
 			if (C.context = j, C.props = O, C.__P = t, C.__g &= -5, M = e.__r, N = 0, k) C.state = C.__s, C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), f.push.apply(C.__h, C.__k), C.__k = [];
 			else do
 				C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), C.state = C.__s;
@@ -156,22 +156,22 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 			if (s.length = S, n.__v = null, l || o) {
 				if (t.then) {
 					if (re = 0, n.__u |= l ? 160 : 128, o) {
-						for (~(L = o.indexOf(c || void 0)) || (L = o.length); (R = o[L - 1]) && R.nodeType == 8;) L--;
-						for (; L < o.length; L++) if (R = o[L]) {
-							if (o[L] = null, R.nodeType == 8) {
-								if (R.data.startsWith("$s")) re++ || (I = R);
-								else if (re && R.data.startsWith("/$s") && !--re) {
-									c = R;
+						for (~(I = o.indexOf(c || void 0)) || (I = o.length); (L = o[I - 1]) && L.nodeType == 8;) I--;
+						for (; I < o.length; I++) if (L = o[I]) {
+							if (o[I] = null, L.nodeType == 8) {
+								if (L.data.startsWith("$s")) re++ || (ie = L);
+								else if (re && L.data.startsWith("/$s") && !--re) {
+									c = L;
 									break;
 								}
 							} else if (!re) break;
 						}
 					}
-					if (!I) {
+					if (!ie) {
 						for (; c && c.nodeType == 8 && c.nextSibling;) c = c.nextSibling;
-						I = c;
+						ie = c;
 					}
-					n.__c.__z || (n.__c.__z = I), n.__e = c;
+					n.__c.__z || (n.__c.__z = ie), n.__e = c;
 				} else o && o.some(_);
 			} else n.__e = r.__e;
 			n.__k || (n.__k = r.__k || []), t.then || ee(n), e.__e(t, n, r);
@@ -241,7 +241,7 @@ function re(t, n) {
 	var r, i, a, o;
 	e.__ && e.__(t, n), n.nodeType == 9 && (n = n.documentElement), i = (r = t && 32 & t.__u) ? null : n.__k, n.__k = v(y, { children: [t] }), a = [], o = [], M(n, n.__k, i || d, d, n.namespaceURI, i ? null : n.firstChild ? h.call(n.childNodes) : null, a, i ? i.__e : n.firstChild, r, o), N(a, n.__k, o), n.__k.props.children = null;
 }
-function I(e) {
+function ie(e) {
 	function t(e) {
 		var n, r;
 		return this.getChildContext || (n = /* @__PURE__ */ new Set(), (r = {})[t.__c] = this, this.getChildContext = function() {
@@ -281,32 +281,32 @@ e = { __e: function(e, t, n, r) {
 	return e.__v.__b - t.__v.__b;
 }, o = Symbol(), s = /(PointerCapture)$|Capture$/i, c = 0, l = {}, u = 0;
 // node_modules/preact/hooks/dist/hooks.mjs
-var L, R, z, ie, ae = Object.is, oe = 0, se = [], ce = [], B = e, le = B.__b, ue = B.__r, de = B.diffed, fe = B.__c, pe = B.unmount, me = B.__;
-function he(e, t) {
-	B.__h && B.__h(R, e, oe || t), oe = 0;
-	var n = R.__H || (R.__H = {
+var I, L, R, ae, oe = Object.is, se = 0, ce = [], le = [], z = e, ue = z.__b, de = z.__r, fe = z.diffed, pe = z.__c, me = z.unmount, he = z.__;
+function ge(e, t) {
+	z.__h && z.__h(L, e, se || t), se = 0;
+	var n = L.__H || (L.__H = {
 		__: [],
 		__h: []
 	});
 	return e >= n.__.length && n.__.push({}), n.__[e];
 }
-function V(e) {
-	return oe = 1, ge(Oe, e);
+function B(e) {
+	return se = 1, _e(ke, e);
 }
-function ge(e, t, n) {
-	var r = he(L++, 2);
-	if (r.t = e, !r.__c && (r.__ = [n ? n(t) : Oe(void 0, t), function(e) {
+function _e(e, t, n) {
+	var r = ge(I++, 2);
+	if (r.t = e, !r.__c && (r.__ = [n ? n(t) : ke(void 0, t), function(e) {
 		var t = r.__N ? r.__N[0] : r.__[0], n = r.t(t, e);
-		ae(t, n) || (r.__N = [n, r.__[1]], r.__c.setState({}));
-	}], r.__c = R, !R.__f)) {
-		R.__f = !0;
-		var i = R.shouldComponentUpdate;
-		R.shouldComponentUpdate = function(e, t, n) {
+		oe(t, n) || (r.__N = [n, r.__[1]], r.__c.setState({}));
+	}], r.__c = L, !L.__f)) {
+		L.__f = !0;
+		var i = L.shouldComponentUpdate;
+		L.shouldComponentUpdate = function(e, t, n) {
 			var r = this.__H;
 			if (!r) return !0;
 			var a = !1, o = this.props != e;
 			if (r.__.some(function(e) {
-				e.__N && (a = !0, ae(e.__[0], e.__N[0]) || (o = !0));
+				e.__N && (a = !0, oe(e.__[0], e.__N[0]) || (o = !0));
 			}), i) {
 				var s = i.call(this, e, t, n);
 				return a ? s || o : s;
@@ -316,75 +316,75 @@ function ge(e, t, n) {
 	}
 	return r.__;
 }
-function H(e, t) {
-	var n = he(L++, 3);
-	!B.__s && De(n.__H, t) && (n.__P = !0, n.__ = e, n.u = t, R.__H.__h.push(n));
+function V(e, t) {
+	var n = ge(I++, 3);
+	!z.__s && Oe(n.__H, t) && (n.__P = !0, n.__ = e, n.u = t, L.__H.__h.push(n));
 }
-function _e(e, t) {
-	var n = he(L++, 4);
-	!B.__s && De(n.__H, t) && (n.__P = !1, n.__ = e, n.u = t, R.__h.push(n));
+function ve(e, t) {
+	var n = ge(I++, 4);
+	!z.__s && Oe(n.__H, t) && (n.__P = !1, n.__ = e, n.u = t, L.__h.push(n));
 }
-function ve(e) {
-	return oe = 5, ye(function() {
+function ye(e) {
+	return se = 5, be(function() {
 		return { current: e };
 	}, []);
 }
-function ye(e, t) {
-	var n = he(L++, 7);
-	return De(n.__H, t) && (n.__ = e(), n.__H = t), n.__;
+function be(e, t) {
+	var n = ge(I++, 7);
+	return Oe(n.__H, t) && (n.__ = e(), n.__H = t), n.__;
 }
-function be(e) {
-	var t = R.context[e.__c], n = he(L++, 9);
-	return n.c = e, t ? (n.__ ?? (n.__ = !0, t.sub(R)), t.props.value) : e.__;
+function xe(e) {
+	var t = L.context[e.__c], n = ge(I++, 9);
+	return n.c = e, t ? (n.__ ?? (n.__ = !0, t.sub(L)), t.props.value) : e.__;
 }
-function xe() {
+function Se() {
 	var e;
 	do {
-		for (; e = ce.shift();) try {
-			Te(e);
+		for (; e = le.shift();) try {
+			Ee(e);
 		} catch (t) {
-			B.__e(t, { __: (e = e.__P) && e.__v });
+			z.__e(t, { __: (e = e.__P) && e.__v });
 		}
-		for (; e = se.shift();) {
+		for (; e = ce.shift();) {
 			var t = e.__H;
 			if (e.__P && t) try {
-				t.__h.some(Te), t.__h.some(Ee), t.__h = [];
+				t.__h.some(Ee), t.__h.some(De), t.__h = [];
 			} catch (n) {
-				t.__h = [], B.__e(n, e.__v);
+				t.__h = [], z.__e(n, e.__v);
 			}
 		}
-	} while (ce.length);
+	} while (le.length);
 }
-B.__b = function(e) {
-	R = null, le && le(e);
-}, B.__ = function(e, t) {
-	e && t.__k && t.__k.__m && (e.__m = t.__k.__m), me && me(e, t);
-}, B.__r = function(e) {
-	ue && ue(e), L = 0;
-	var t = (R = e.__c).__H;
-	t && (z == R ? R.__h = [] : (t.__h.some(Te), t.__h.some(Ee), L = 0), t.__h = [], t.__.some(function(e) {
+z.__b = function(e) {
+	L = null, ue && ue(e);
+}, z.__ = function(e, t) {
+	e && t.__k && t.__k.__m && (e.__m = t.__k.__m), he && he(e, t);
+}, z.__r = function(e) {
+	de && de(e), I = 0;
+	var t = (L = e.__c).__H;
+	t && (R == L ? L.__h = [] : (t.__h.some(Ee), t.__h.some(De), I = 0), t.__h = [], t.__.some(function(e) {
 		e.__N && (e.__ = e.__N), e.u = e.__N = void 0;
-	})), z = R;
-}, B.diffed = function(e) {
-	de && de(e);
+	})), R = L;
+}, z.diffed = function(e) {
+	fe && fe(e);
 	var t = e.__c;
-	t && t.__H && (t.__H.__h.length && we(se.push(t)), t.__H.__.some(function(e) {
+	t && t.__H && (t.__H.__h.length && Te(ce.push(t)), t.__H.__.some(function(e) {
 		e.u && (e.__H = e.u);
-	})), z = R = null;
-}, B.__c = function(e, t) {
+	})), R = L = null;
+}, z.__c = function(e, t) {
 	t.some(function(e) {
 		try {
-			e.__h.some(Te), e.__h = e.__h.filter(function(e) {
-				return !e.__ || Ee(e);
+			e.__h.some(Ee), e.__h = e.__h.filter(function(e) {
+				return !e.__ || De(e);
 			});
 		} catch (n) {
 			t.some(function(e) {
 				e.__h && (e.__h = []);
-			}), t = [], B.__e(n, e.__v);
+			}), t = [], z.__e(n, e.__v);
 		}
-	}), fe && fe(e, t);
-}, B.unmount = function(e) {
-	pe && pe(e);
+	}), pe && pe(e, t);
+}, z.unmount = function(e) {
+	me && me(e);
 	var t, n, r = e.__c;
 	r && r.__H && (r.__H.__.some(function(r) {
 		try {
@@ -393,45 +393,45 @@ B.__b = function(e) {
 					for (n = e.__; n && (!n.__c || !n.__c.__P);) n = n.__;
 					n = n && n.__c;
 				}
-				r.__P = n, we(ce.push(r));
-			} else Te(r);
+				r.__P = n, Te(le.push(r));
+			} else Ee(r);
 		} catch (e) {
 			t = e;
 		}
-	}), r.__H = void 0, t && B.__e(t, r.__v));
+	}), r.__H = void 0, t && z.__e(t, r.__v));
 };
-var Se = typeof requestAnimationFrame == "function";
-function Ce(e) {
-	var t, n = function() {
-		clearTimeout(r), Se && cancelAnimationFrame(t), setTimeout(e);
-	}, r = setTimeout(n, 35);
-	Se && (t = requestAnimationFrame(n));
-}
+var Ce = typeof requestAnimationFrame == "function";
 function we(e) {
-	e != 1 && ie == B.requestAnimationFrame || ((ie = B.requestAnimationFrame) || Ce)(xe);
+	var t, n = function() {
+		clearTimeout(r), Ce && cancelAnimationFrame(t), setTimeout(e);
+	}, r = setTimeout(n, 35);
+	Ce && (t = requestAnimationFrame(n));
 }
 function Te(e) {
-	var t = R, n = e.__c;
-	typeof n == "function" && (e.__c = void 0, n()), R = t;
+	e != 1 && ae == z.requestAnimationFrame || ((ae = z.requestAnimationFrame) || we)(Se);
 }
 function Ee(e) {
-	var t = R;
-	e.__c = e.__(), R = t;
+	var t = L, n = e.__c;
+	typeof n == "function" && (e.__c = void 0, n()), L = t;
 }
-function De(e, t) {
-	return !e || e.length != t.length || t.some(function(t, n) {
-		return !ae(t, e[n]);
-	});
+function De(e) {
+	var t = L;
+	e.__c = e.__(), L = t;
 }
 function Oe(e, t) {
+	return !e || e.length != t.length || t.some(function(t, n) {
+		return !oe(t, e[n]);
+	});
+}
+function ke(e, t) {
 	return typeof t == "function" ? t(e) : t;
 }
 // src/model.ts
-function U(e, t) {
+function H(e, t) {
 	if (!/^[a-f0-9]{32}$/.test(e) || !Number.isSafeInteger(t) || t < 1) throw Error("Invalid inventory authority; refresh the controller.");
 	return `${e}.${t}`;
 }
-function ke(e, t) {
+function Ae(e, t) {
 	let n = /* @__PURE__ */ new Map(), r = (e) => `${t}:${e.binding_revision}:${e.target}`;
 	for (let t of e.baseline) {
 		if (n.has(t.target)) throw Error("Duplicate inventory identity");
@@ -463,10 +463,10 @@ function ke(e, t) {
 	}
 	return new Map([...n].map(([e, t]) => [e, t.key]));
 }
-function W(e) {
+function je(e) {
 	let t = e.inventory;
-	U(t.inventory_epoch, t.revision);
-	let n = ke(t.identity_ledger, t.inventory_epoch), r = [];
+	H(t.inventory_epoch, t.revision);
+	let n = Ae(t.identity_ledger, t.inventory_epoch), r = [];
 	for (let e of t.buses) {
 		let i = (i, a, o) => {
 			let s = n.get(a.target);
@@ -477,7 +477,7 @@ function W(e) {
 				bus: e,
 				item: a,
 				parent: o,
-				generation: U(t.inventory_epoch, a.binding_revision)
+				generation: H(t.inventory_epoch, a.binding_revision)
 			});
 		};
 		for (let t of e.outputs) i("output", t);
@@ -490,7 +490,7 @@ function W(e) {
 				kind: "scene",
 				bus: e,
 				item: i,
-				generation: U(t.inventory_epoch, i.binding_revision)
+				generation: H(t.inventory_epoch, i.binding_revision)
 			});
 		}
 		for (let t of e.inputs ?? []) {
@@ -500,27 +500,27 @@ function W(e) {
 	}
 	return r;
 }
-function Ae(e, t) {
+function Me(e, t) {
 	if (!e) return !0;
 	let n = e.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".");
 	return RegExp(`^${n}$`, "iu").test(t);
 }
-function G(e, t) {
+function U(e, t) {
 	return e.phase === "ready" && t.enabled && e.hardware.state === "ready" && !!e.hardware.buses?.some((e) => e.bus === t.bus && e.status === 2);
 }
-function je(e, t) {
+function Ne(e, t) {
 	return e.states.find((e) => e.target === t.item.target && e.generation === t.generation)?.values ?? {};
 }
-var Me = (e) => ({
+var Pe = (e) => ({
 	1: "Part 301 · button",
 	2: "Part 302 · input",
 	3: "Part 303 · occupancy",
 	4: "Part 304 · light sensor"
 })[e ?? 0] ?? `Type ${e ?? "unknown"}`;
-function Ne(e) {
+function Fe(e) {
 	return typeof e.Status == "boolean" ? e.Status ? "Pressed" : "Released" : typeof e.InputState == "boolean" ? e.InputState ? "On" : "Off" : typeof e.Occupied == "boolean" ? e.Occupied ? "Occupied" : "Vacant" : typeof e.InputValueRaw == "string" ? `${typeof e.Position == "number" ? `${Math.round(e.Position * 100)}% · ` : ""}0x${e.InputValueRaw} / ${e.ValueResolution} bit` : typeof e.PositionRaw == "number" ? `${e.PositionRaw} raw` : typeof e.LightLevelRaw == "number" ? `${e.LightLevelRaw} raw` : "Unknown";
 }
-var Pe = class {
+var Ie = class {
 	constructor(e, t, n) {
 		this.error = "", this.text = this.saved = e, this.baseline = {
 			target: t,
@@ -542,7 +542,7 @@ var Pe = class {
 			this.pending = void 0;
 		}), this.pending) : (this.error = "A name is required.", Promise.reject(Error(this.error)));
 	}
-}, Fe = class {
+}, Le = class {
 	constructor() {
 		this.epoch = 0, this.value = null, this.jobBook = [], this.ready = !1;
 	}
@@ -560,24 +560,24 @@ var Pe = class {
 	}
 };
 // src/client.ts
-function Ie(e) {
+function Re(e) {
 	let t = {
 		...e,
 		inventory: e.inventory.Inventory
 	};
-	return W(t), t;
+	return je(t), t;
 }
-function K(e, t, n, r) {
+function W(e, t, n, r) {
 	let i = e.inventory.buses.find((e) => e.bus === r), a = t.inventory.buses.find((e) => e.bus === r);
 	return e.inventory.inventory_epoch === t.inventory.inventory_epoch && t.inventory.revision === n && !!i && !!a && i.name === a.name && a.enabled;
 }
-var Le = class extends Error {
+var ze = class extends Error {
 	constructor(e, t) {
 		super(t), this.status = e;
 	}
-}, Re = class {
+}, Be = class {
 	constructor() {
-		this.views = new Fe(), this.csrf = "", this.error = "", this.events = [], this.lost = 0, this.stopped = !1, this.session = 0, this.activeAt = 0, this.requests = /* @__PURE__ */ new Set(), this.sleepers = /* @__PURE__ */ new Map(), this.listeners = /* @__PURE__ */ new Set();
+		this.views = new Le(), this.csrf = "", this.error = "", this.events = [], this.lost = 0, this.stopped = !1, this.session = 0, this.activeAt = 0, this.requests = /* @__PURE__ */ new Set(), this.sleepers = /* @__PURE__ */ new Map(), this.listeners = /* @__PURE__ */ new Set();
 	}
 	subscribe(e) {
 		return this.listeners.add(e), () => this.listeners.delete(e);
@@ -615,10 +615,10 @@ var Le = class extends Error {
 				body: t === void 0 ? void 0 : JSON.stringify(t)
 			});
 			if (n !== this.session || this.stopped) throw Error("Session ended.");
-			if (i.status === 401) throw this.expired(), new Le(401, "Sign in required.");
+			if (i.status === 401) throw this.expired(), new ze(401, "Sign in required.");
 			let a = i.status === 204 ? null : await i.json();
 			if (n !== this.session || this.stopped) throw Error("Session ended.");
-			if (!i.ok) throw new Le(i.status, a?.error ?? "The controller refused this request.");
+			if (!i.ok) throw new ze(i.status, a?.error ?? "The controller refused this request.");
 			return a;
 		} finally {
 			clearTimeout(i), this.requests.delete(r);
@@ -637,7 +637,7 @@ var Le = class extends Error {
 		let r = () => !this.stopped && this.session === t && this.views.epoch === e && this.source === n;
 		n.addEventListener("snapshot", (t) => {
 			if (r()) try {
-				this.views.snapshot(e, Ie(JSON.parse(t.data))), this.error = "", this.notify();
+				this.views.snapshot(e, Re(JSON.parse(t.data))), this.error = "", this.notify();
 			} catch {
 				this.error = "Invalid controller snapshot.", this.views.ready = !1, this.notify();
 			}
@@ -726,9 +726,9 @@ var Le = class extends Error {
 		for (let [e, t] of this.sleepers) clearTimeout(e), t(/* @__PURE__ */ Error("Session ended."));
 		this.sleepers.clear(), this.views.clear(), this.csrf = "", this.events = [], this.notify();
 	}
-}, ze = class {
+}, Ve = class {
 	constructor() {
-		this.client = new Re(), this.drafts = /* @__PURE__ */ new Map(), this.hints = /* @__PURE__ */ new Map(), this.error = "", this.notice = "", this.busy = 0, this.progress = "", this.cancelled = !1, this.signingOut = !1, this.edits = Promise.resolve();
+		this.client = new Be(), this.drafts = /* @__PURE__ */ new Map(), this.hints = /* @__PURE__ */ new Map(), this.error = "", this.notice = "", this.busy = 0, this.progress = "", this.cancelled = !1, this.signingOut = !1, this.edits = Promise.resolve();
 	}
 	touch() {
 		this.client.notify();
@@ -751,7 +751,7 @@ var Le = class extends Error {
 		return e;
 	}
 	get currentRows() {
-		return W(this.snapshot);
+		return je(this.snapshot);
 	}
 	current(e) {
 		let t = this.currentRows.find((t) => t.key === e);
@@ -838,7 +838,7 @@ var Le = class extends Error {
 	}
 	async configureBus(e, t, n) {
 		let r = this.snapshot;
-		await this.metadata("configure_bus", null, U(r.inventory.inventory_epoch, r.inventory.revision), {
+		await this.metadata("configure_bus", null, H(r.inventory.inventory_epoch, r.inventory.revision), {
 			bus: e,
 			name: t,
 			enabled: n
@@ -864,14 +864,14 @@ var Le = class extends Error {
 		this.cancelled = !1;
 		let n = this.snapshot.inventory.revision, r = this.snapshot, i = async (t, i) => {
 			if (this.cancelled) return null;
-			if (!K(r, this.snapshot, n, e.bus)) throw Error("Bus configuration changed during discovery. Review before starting again.");
-			let a = await this.client.job(U(r.inventory.inventory_epoch, n), null, t, {
+			if (!W(r, this.snapshot, n, e.bus)) throw Error("Bus configuration changed during discovery. Review before starting again.");
+			let a = await this.client.job(H(r.inventory.inventory_epoch, n), null, t, {
 				...i,
 				expected_revision: n
 			});
 			if (!Number.isSafeInteger(a.revision)) throw Error("The controller returned an invalid inventory revision.");
 			let o = await this.changed(a.revision);
-			if (n = a.revision, !K(r, o, n, e.bus)) throw Error("Configuration changed during discovery. Completed steps remain saved.");
+			if (n = a.revision, !W(r, o, n, e.bus)) throw Error("Configuration changed during discovery. Completed steps remain saved.");
 			return a.probe && this.hint(a), a;
 		};
 		try {
@@ -895,7 +895,7 @@ var Le = class extends Error {
 			}
 			for (let t of this.currentRows.filter((t) => t.bus.bus === e.bus && (t.kind === "output" || t.kind === "instance"))) {
 				if (this.cancelled) break;
-				if (!K(r, this.snapshot, n, e.bus)) throw Error("Configuration changed before refresh.");
+				if (!W(r, this.snapshot, n, e.bus)) throw Error("Configuration changed before refresh.");
 				this.progress = `Reading ${t.item.name}`, this.touch(), await this.read(t);
 			}
 			this.notice = this.cancelled ? "Stopped after the current operation. Completed changes remain saved." : "Discovery and current-value refresh finished.";
@@ -905,7 +905,7 @@ var Le = class extends Error {
 	}
 	async createGroup(e, t, n) {
 		let r = this.snapshot;
-		await this.metadata("create_group", null, U(r.inventory.inventory_epoch, r.inventory.revision), {
+		await this.metadata("create_group", null, H(r.inventory.inventory_epoch, r.inventory.revision), {
 			bus: e.bus,
 			group: t,
 			name: n
@@ -927,9 +927,9 @@ var Le = class extends Error {
 		let r = this.current(e.key);
 		return this.metadata(t, r.item.target, r.generation, { reviewed_mask: n });
 	}
-}, Be = 0;
+}, He = 0;
 Array.isArray;
-function q(t, n, r, i, a, o) {
+function G(t, n, r, i, a, o) {
 	n || (n = {});
 	var s, c, l = n;
 	if ("ref" in l && typeof t != "function") for (c in l = {}, n) c == "ref" ? s = n[c] : l[c] = n[c];
@@ -944,25 +944,25 @@ function q(t, n, r, i, a, o) {
 		__e: null,
 		__c: null,
 		constructor: void 0,
-		__v: --Be,
+		__v: --He,
 		__i: -1,
 		__u: 0
 	};
 	return (a || o) && (u.__source = a, u.__self = o), e.vnode && e.vnode(u), u;
 }
 // src/ui.tsx
-var Ve = I(null);
-function J() {
-	let e = be(Ve);
+var Ue = ie(null);
+function K() {
+	let e = xe(Ue);
 	if (!e) throw Error("Controller is unavailable.");
 	return e;
 }
-function He() {
-	let e = J();
-	return e.progress ? /* @__PURE__ */ q("div", {
+function We() {
+	let e = K();
+	return e.progress ? /* @__PURE__ */ G("div", {
 		class: "progress",
 		role: "status",
-		children: [/* @__PURE__ */ q("span", { children: e.progress }), /* @__PURE__ */ q("button", {
+		children: [/* @__PURE__ */ G("span", { children: e.progress }), /* @__PURE__ */ G("button", {
 			onClick: () => {
 				e.cancelled = !0, e.touch();
 			},
@@ -971,22 +971,22 @@ function He() {
 		})]
 	}) : null;
 }
-function Ue(e) {
+function Ge(e) {
 	history.pushState(null, "", e), dispatchEvent(new PopStateEvent("popstate"));
 }
-function We(e) {
-	return /* @__PURE__ */ q("a", {
+function Ke(e) {
+	return /* @__PURE__ */ G("a", {
 		href: e.href,
 		class: e.class,
 		onClick: (t) => {
-			t.metaKey || t.ctrlKey || t.shiftKey || t.altKey || (t.preventDefault(), Ue(e.href));
+			t.metaKey || t.ctrlKey || t.shiftKey || t.altKey || (t.preventDefault(), Ge(e.href));
 		},
 		children: e.children
 	});
 }
-function Y(e) {
-	let t = J(), n = ve(null);
-	return H(() => (n.current?.showModal(), () => n.current?.close()), []), /* @__PURE__ */ q("dialog", {
+function q(e) {
+	let t = K(), n = ye(null);
+	return V(() => (n.current?.showModal(), () => n.current?.close()), []), /* @__PURE__ */ G("dialog", {
 		ref: n,
 		onCancel: (t) => {
 			t.preventDefault(), e.close();
@@ -994,17 +994,17 @@ function Y(e) {
 		onClick: (t) => {
 			t.target === t.currentTarget && e.close();
 		},
-		children: /* @__PURE__ */ q("div", {
+		children: /* @__PURE__ */ G("div", {
 			class: "dialog-body",
 			children: [
-				/* @__PURE__ */ q("header", { children: [/* @__PURE__ */ q("h2", { children: e.title }), /* @__PURE__ */ q("button", {
+				/* @__PURE__ */ G("header", { children: [/* @__PURE__ */ G("h2", { children: e.title }), /* @__PURE__ */ G("button", {
 					type: "button",
 					onClick: e.close,
 					"aria-label": "Close dialog",
 					children: "×"
 				})] }),
 				e.children,
-				t.error && /* @__PURE__ */ q("p", {
+				t.error && /* @__PURE__ */ G("p", {
 					class: "error",
 					role: "alert",
 					children: t.error
@@ -1013,17 +1013,17 @@ function Y(e) {
 		})
 	});
 }
-function Ge({ row: e }) {
-	let t = J(), n = t.drafts.get(e.key), r = () => {
+function qe({ row: e }) {
+	let t = K(), n = t.drafts.get(e.key), r = () => {
 		let n = t.drafts.get(e.key);
 		n && (n.commit((n, r) => t.rename(e.key, n, r)).catch(() => {}).finally(() => t.touch()), t.touch());
-	}, i = ve(null);
-	return /* @__PURE__ */ q("div", {
+	}, i = ye(null);
+	return /* @__PURE__ */ G("div", {
 		class: "name-cell",
 		children: [
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: `name-edit ${n?.dirty ? "dirty" : ""}`,
-				children: [/* @__PURE__ */ q("input", {
+				children: [/* @__PURE__ */ G("input", {
 					ref: i,
 					class: "name-field",
 					"aria-label": `Name ${e.item.name}`,
@@ -1034,13 +1034,13 @@ function Ge({ row: e }) {
 					spellcheck: !1,
 					onInput: (n) => {
 						let r = t.drafts.get(e.key);
-						r || (r = new Pe(e.item.name, e.item.target, e.generation), t.drafts.set(e.key, r)), r.text = n.currentTarget.value, r.error = "", t.touch();
+						r || (r = new Ie(e.item.name, e.item.target, e.generation), t.drafts.set(e.key, r)), r.text = n.currentTarget.value, r.error = "", t.touch();
 					},
 					onBlur: r,
 					onKeyDown: (n) => {
 						n.key === "Enter" && (n.preventDefault(), r()), n.key === "Escape" && (t.drafts.delete(e.key), t.touch(), i.current?.blur());
 					}
-				}), n?.dirty && /* @__PURE__ */ q("button", {
+				}), n?.dirty && /* @__PURE__ */ G("button", {
 					type: "button",
 					"aria-label": `Save name ${e.item.name}`,
 					disabled: !!n.pending,
@@ -1049,18 +1049,18 @@ function Ge({ row: e }) {
 					children: "✓"
 				})]
 			}),
-			n?.pending && /* @__PURE__ */ q("p", {
+			n?.pending && /* @__PURE__ */ G("p", {
 				class: "hint",
 				role: "status",
 				children: "Saving…"
 			}),
-			n?.error && /* @__PURE__ */ q("p", {
+			n?.error && /* @__PURE__ */ G("p", {
 				class: "error",
 				role: "alert",
 				children: [
 					n.error,
 					" ",
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						class: "text-button",
 						onPointerDown: (e) => e.preventDefault(),
 						onClick: () => {
@@ -1074,7 +1074,7 @@ function Ge({ row: e }) {
 	});
 }
 // src/fixture-status.ts
-var Ke = [
+var Je = [
 	["GearFailure", "Gear failure"],
 	["LampFailure", "Lamp failure"],
 	["LampOn", "Lamp on"],
@@ -1084,13 +1084,13 @@ var Ke = [
 	["MissingShortAddress", "Missing short address"],
 	["PowerFailure", "Power failure"]
 ];
-function qe(e) {
+function Ye(e) {
 	let t = e.FixtureStatusQuality, n = typeof t == "string" && [
 		"unobserved",
 		"current",
 		"unavailable",
 		"stale"
-	].includes(t) ? t : "unobserved", r = e.FixtureStatusRaw, i = n === "current" && typeof r == "number" && Number.isInteger(r) && r >= 0 && r <= 255 && Ke.every(([t]) => typeof e[t] == "boolean"), a = i ? Ke.filter(([t]) => [
+	].includes(t) ? t : "unobserved", r = e.FixtureStatusRaw, i = n === "current" && typeof r == "number" && Number.isInteger(r) && r >= 0 && r <= 255 && Je.every(([t]) => typeof e[t] == "boolean"), a = i ? Je.filter(([t]) => [
 		"GearFailure",
 		"LampFailure",
 		"LimitError",
@@ -1102,7 +1102,7 @@ function qe(e) {
 		raw: i ? r : null,
 		severity: o,
 		faults: a,
-		flags: Ke.map(([t, n]) => ({
+		flags: Je.map(([t, n]) => ({
 			key: t,
 			label: n,
 			value: i ? e[t] : null
@@ -1111,39 +1111,39 @@ function qe(e) {
 	};
 }
 // src/fixture-status-ui.tsx
-function Je({ row: e }) {
-	let t = J(), [n, r] = V(!1), i = t.physical(e.key), a = qe(je(t.snapshot, i)), o = t.client.views.ready && G(t.snapshot, i.bus);
-	return /* @__PURE__ */ q(y, { children: [a.severity !== "clear" && /* @__PURE__ */ q("button", {
+function Xe({ row: e }) {
+	let t = K(), [n, r] = B(!1), i = t.physical(e.key), a = Ye(Ne(t.snapshot, i)), o = t.client.views.ready && U(t.snapshot, i.bus);
+	return /* @__PURE__ */ G(y, { children: [a.severity !== "clear" && /* @__PURE__ */ G("button", {
 		type: "button",
 		class: `fixture-status ${a.severity}`,
 		"aria-label": `Fixture status ${i.item.name}`,
 		title: a.summary,
 		onClick: () => r(!0),
-		children: a.severity === "unknown" ? /* @__PURE__ */ q("svg", {
+		children: a.severity === "unknown" ? /* @__PURE__ */ G("svg", {
 			viewBox: "0 0 24 24",
 			"aria-hidden": "true",
 			fill: "none",
 			stroke: "currentColor",
 			"stroke-width": "1.8",
-			children: [/* @__PURE__ */ q("circle", {
+			children: [/* @__PURE__ */ G("circle", {
 				cx: "12",
 				cy: "12",
 				r: "9"
-			}), /* @__PURE__ */ q("path", { d: "M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1-1.5 2.5M12 16v1" })]
-		}) : /* @__PURE__ */ q("svg", {
+			}), /* @__PURE__ */ G("path", { d: "M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1-1.5 2.5M12 16v1" })]
+		}) : /* @__PURE__ */ G("svg", {
 			viewBox: "0 0 24 24",
 			"aria-hidden": "true",
 			fill: "none",
 			stroke: "currentColor",
 			"stroke-width": "1.8",
-			children: /* @__PURE__ */ q("path", { d: "M12 3 2 21h20L12 3Z M12 9v5 M12 17v1" })
+			children: /* @__PURE__ */ G("path", { d: "M12 3 2 21h20L12 3Z M12 9v5 M12 17v1" })
 		})
-	}), n && /* @__PURE__ */ q(Y, {
+	}), n && /* @__PURE__ */ G(q, {
 		title: `Fixture status · ${i.item.name}`,
 		close: () => r(!1),
 		children: [
-			/* @__PURE__ */ q("p", { children: a.summary }),
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", { children: a.summary }),
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					"Status: ",
@@ -1152,17 +1152,17 @@ function Je({ row: e }) {
 					a.raw === null ? "unknown" : `0x${a.raw.toString(16).toUpperCase().padStart(2, "0")}`
 				]
 			}),
-			/* @__PURE__ */ q("dl", {
+			/* @__PURE__ */ G("dl", {
 				class: "fixture-status-list",
-				children: a.flags.map((e) => /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("dt", { children: e.label }, `${e.key}-label`), /* @__PURE__ */ q("dd", { children: e.value === null ? "Unknown" : e.value ? "Yes" : "No" }, e.key)] }))
+				children: a.flags.map((e) => /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("dt", { children: e.label }, `${e.key}-label`), /* @__PURE__ */ G("dd", { children: e.value === null ? "Unknown" : e.value ? "Yes" : "No" }, e.key)] }))
 			}),
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: "Reported by the fixture on its last read. This does not measure physical illumination."
 			}),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "dialog-actions",
-				children: /* @__PURE__ */ q("button", {
+				children: /* @__PURE__ */ G("button", {
 					disabled: !o || !!t.busy,
 					onClick: () => void t.run(() => t.read(i)),
 					children: "Read current values"
@@ -1172,7 +1172,7 @@ function Je({ row: e }) {
 	})] });
 }
 // src/luminaire.ts
-var Ye = [
+var Ze = [
 	["manufacturer_gtin", "Luminaire GTIN"],
 	["luminaire_id", "Luminaire ID"],
 	["manufacture_year", "Manufacture year (YY)"],
@@ -1187,7 +1187,7 @@ var Ye = [
 	["light_distribution", "Light distribution"],
 	["oem_color", "OEM color text"],
 	["identification", "Identification text"]
-], Xe = {
+], Qe = {
 	manufacturer_gtin: null,
 	luminaire_id: null,
 	manufacture_year: null,
@@ -1202,7 +1202,7 @@ var Ye = [
 	light_distribution: null,
 	oem_color: null,
 	identification: null
-}, Ze = {
+}, $e = {
 	manufacture_year: [0, 99],
 	manufacture_week: [1, 53],
 	input_power_nominal: [0, 65534],
@@ -1212,30 +1212,30 @@ var Ye = [
 	light_output_nominal: [0, 16777214],
 	cri: [0, 100],
 	cct: [0, 17e3]
-}, X = () => {
+}, J = () => {
 	throw Error("Luminaire data is incomplete or invalid. Read again.");
 };
-function Qe(e, t) {
+function et(e, t) {
 	if (!t || ![
 		"value",
 		"unknown",
 		"unavailable",
 		"invalid"
-	].includes(t.status)) return X();
-	let n = e === "cct" && t.status === "value" && t.value === "part_209" ? null : Xe[e];
-	if (t.unit !== n) return X();
-	if (t.status !== "value") return t.value === null ? void 0 : X();
+	].includes(t.status)) return J();
+	let n = e === "cct" && t.status === "value" && t.value === "part_209" ? null : Qe[e];
+	if (t.unit !== n) return J();
+	if (t.status !== "value") return t.value === null ? void 0 : J();
 	let r = t.value;
 	if (e !== "cct" || r !== "part_209") {
-		if (e in Ze) {
-			let [t, n] = Ze[e];
-			return typeof r != "number" || !Number.isInteger(r) || r < t || r > n ? X() : void 0;
+		if (e in $e) {
+			let [t, n] = $e[e];
+			return typeof r != "number" || !Number.isInteger(r) || r < t || r > n ? J() : void 0;
 		}
-		if (typeof r != "string") return X();
+		if (typeof r != "string") return J();
 		if (e === "manufacturer_gtin") {
-			if (!/^\d{14}$/.test(r)) return X();
+			if (!/^\d{14}$/.test(r)) return J();
 		} else if (e === "luminaire_id") {
-			if (!/^[0-9A-F]{16}$/.test(r)) return X();
+			if (!/^[0-9A-F]{16}$/.test(r)) return J();
 		} else if (e === "light_distribution") {
 			if (![
 				"not_specified",
@@ -1244,29 +1244,29 @@ function Qe(e, t) {
 				"type_iii",
 				"type_iv",
 				"type_v"
-			].includes(r)) return X();
-		} else if (r.length > (e === "oem_color" ? 24 : 60) || [...r].some((e) => e.charCodeAt(0) === 0 || e.charCodeAt(0) > 127)) return X();
+			].includes(r)) return J();
+		} else if (r.length > (e === "oem_color" ? 24 : 60) || [...r].some((e) => e.charCodeAt(0) === 0 || e.charCodeAt(0) > 127)) return J();
 	}
 }
-function $e(e, t) {
-	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || t.length < 1 || t.length > 120) return X();
+function tt(e, t) {
+	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || t.length < 1 || t.length > 120) return J();
 	let n = t[0];
-	if (n === null || n === 255) return t.length !== 1 || e.format_id !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 ? X() : {
+	if (n === null || n === 255) return t.length !== 1 || e.format_id !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 ? J() : {
 		data: structuredClone(e),
 		partial: n === 255
 	};
 	let r = t[17] ?? null, i = t[18] ?? null, a = r === null || i === null ? null : r << 8 | i, o = a === 3 ? "supported" : a === null ? "unavailable" : "unrecognized";
-	if (e.format_id !== a || e.format_status !== o || t.length !== Math.min(n, a === 3 ? 119 : 18) + 1) return X();
+	if (e.format_id !== a || e.format_status !== o || t.length !== Math.min(n, a === 3 ? 119 : 18) + 1) return J();
 	if (a === 3) {
-		if (Object.keys(e.fields).length !== Ye.length) return X();
-		for (let [t] of Ye) Qe(t, e.fields[t]);
-	} else if (Object.keys(e.fields).length !== 0) return X();
+		if (Object.keys(e.fields).length !== Ze.length) return J();
+		for (let [t] of Ze) et(t, e.fields[t]);
+	} else if (Object.keys(e.fields).length !== 0) return J();
 	return {
 		data: structuredClone(e),
 		partial: a !== 3 || n < 119
 	};
 }
-function et(e, t) {
+function nt(e, t) {
 	return t.status === "value" ? e === "cct" && t.value === "part_209" ? "Variable (Part 209 indication)" : e === "light_distribution" ? {
 		not_specified: "Not specified",
 		type_i: "Type I",
@@ -1277,111 +1277,240 @@ function et(e, t) {
 	}[String(t.value)] : (e === "manufacture_year" ? String(t.value).padStart(2, "0") : t.value === "" ? "Not specified" : String(t.value)) + (t.unit ? ` ${t.unit}` : "") : t.status === "invalid" ? "Invalid data" : t.status === "unavailable" ? "Unavailable" : "Unknown";
 }
 // src/energy.ts
-function tt(e) {
+function rt(e) {
 	if (e !== 202 && e !== 203 && e !== 204) throw Error("Choose energy bank 202, 203 or 204.");
 	return e;
 }
-var nt = () => {
+var it = () => {
 	throw Error("Energy data is incomplete or invalid. Read again.");
-}, rt = (e, t) => {
+}, at = (e, t) => {
 	let n = BigInt(e);
 	if (t >= 0) return (n * 10n ** BigInt(t)).toString();
 	let r = -t, i = 10n ** BigInt(r), a = n % i;
 	return a === 0n ? (n / i).toString() : `${n / i}.${a.toString().padStart(r, "0").replace(/0+$/, "")}`;
 };
-function it(e, t, n, r, i) {
+function ot(e, t, n, r, i) {
 	let a = t[n] ?? null, o = a === null ? null : a >= 128 ? a - 256 : a, s = t.slice(n + 1, n + r + 1), c = s.length === r && s.every((e) => e !== null) ? s.reduce((e, t) => e * 256 + t, 0) : null, l = 2 ** (r * 8) - 1, u = o !== null && (o < -6 || o > 6) ? "invalid" : o === null || c === null ? "unavailable" : c === l - 1 ? "temporarily_unavailable" : c === l ? "invalid" : "value";
-	if (!e || e.status !== u || e.raw !== c || e.scale !== o || e.unit !== i || e.value !== (u === "value" ? rt(c, o) : null)) return nt();
+	if (!e || e.status !== u || e.raw !== c || e.scale !== o || e.unit !== i || e.value !== (u === "value" ? at(c, o) : null)) return it();
 }
-function at(e, t, n) {
-	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || n.length < 1 || n.length > 16) return nt();
+function st(e, t, n) {
+	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || n.length < 1 || n.length > 16) return it();
 	let r = n[0];
-	if (r === null || r === 255) return n.length !== 1 || e.version !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 || e.snapshot !== null ? nt() : {
+	if (r === null || r === 255) return n.length !== 1 || e.version !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 || e.snapshot !== null ? it() : {
 		data: structuredClone(e),
 		partial: r === 255
 	};
 	let i = n[3] ?? null, a = i === 1 ? "supported" : i === null ? "unavailable" : "unrecognized";
-	if (e.version !== i || e.format_status !== a || n.length !== Math.min(r, i === 1 ? 15 : 3) + 1) return nt();
+	if (e.version !== i || e.format_status !== a || n.length !== Math.min(r, i === 1 ? 15 : 3) + 1) return it();
 	if (i === 1) {
-		if (Object.keys(e.fields).length !== 2) return nt();
-		it(e.fields.energy, n, 4, 6, t === 203 ? "VAh" : "Wh"), it(e.fields.power, n, 11, 4, t === 203 ? "VA" : "W");
+		if (Object.keys(e.fields).length !== 2) return it();
+		ot(e.fields.energy, n, 4, 6, t === 203 ? "VAh" : "Wh"), ot(e.fields.power, n, 11, 4, t === 203 ? "VA" : "W");
 		let r = e.snapshot;
-		if (!r || Object.keys(r).length !== 3) return nt();
+		if (!r || Object.keys(r).length !== 3) return it();
 		for (let [e, t] of [
 			["start", 170],
 			["end", 170],
 			["release", 255]
 		]) {
 			let n = r[e];
-			if (!n || n.kind !== "value" || n.raw !== t || Object.keys(n).length !== 2) return nt();
+			if (!n || n.kind !== "value" || n.raw !== t || Object.keys(n).length !== 2) return it();
 		}
-	} else if (Object.keys(e.fields).length !== 0 || e.snapshot !== null) return nt();
+	} else if (Object.keys(e.fields).length !== 0 || e.snapshot !== null) return it();
 	return {
 		data: structuredClone(e),
 		partial: i !== 1 || r < 15
 	};
 }
-function ot(e) {
+function ct(e) {
 	return e.status === "value" ? `${e.value} ${e.unit}` : e.status === "temporarily_unavailable" ? "Temporarily unavailable" : e.status === "invalid" ? "Invalid data" : "Unavailable";
 }
+// src/diagnostics.ts
+function lt(e) {
+	if (e !== 205 && e !== 206 && e !== 207) throw Error("Choose diagnostic bank205,206 or207.");
+	return e;
+}
+var Y = (e, t, n, r, i = "count", a = 0, o = "invalid", s = 2 ** (r * 8) - 3) => ({
+	key: e,
+	label: t,
+	start: n,
+	width: r,
+	unit: i,
+	scale: a,
+	maximum: s,
+	mask: o,
+	kind: "number"
+}), ut = (e, t, n, r = "read_protected") => ({
+	...Y(e, t, n, 1, null, 0, r, 1),
+	kind: "boolean"
+}), dt = (e, t, n, r) => ({
+	...Y(e, t, n, 1, "°C", 0, r),
+	kind: "temperature"
+}), X = (e, t, n) => [ut(e, t, n), Y(`${e}_counter`, `${t} count`, n + 1, 1, "count", 0, "read_protected")], ft = {
+	205: [
+		Y("operating_time", "Driver operating time", 4, 4, "s"),
+		Y("start_counter", "Driver starts", 8, 3),
+		Y("supply_voltage", "Supply voltage", 11, 2, "Vrms", -1, "read_protected"),
+		Y("supply_frequency", "Supply frequency", 13, 1, "Hz", 0, "read_protected"),
+		Y("power_factor", "Power factor", 14, 1, null, -2, "read_protected", 100),
+		ut("overall_failure", "Driver failure", 15, "invalid"),
+		Y("overall_failure_counter", "Driver failure count", 16, 1),
+		...X("undervoltage", "Undervoltage", 17),
+		...X("overvoltage", "Overvoltage", 19),
+		...X("power_limit", "Power limitation", 21),
+		...X("thermal_derating", "Thermal derating", 23),
+		...X("thermal_shutdown", "Thermal shutdown", 25),
+		dt("temperature", "Driver temperature", 27, "invalid"),
+		Y("output_current_percent", "Output current", 28, 1, "%", 0, "invalid", 100)
+	],
+	206: [
+		Y("resettable_start_counter", "Resettable light-source starts", 4, 3),
+		Y("start_counter", "Light-source starts", 7, 3),
+		Y("resettable_on_time", "Resettable on time", 10, 4, "s"),
+		Y("on_time", "Light-source on time", 14, 4, "s"),
+		Y("voltage", "Light-source voltage", 18, 2, "V", -1),
+		Y("current", "Light-source current", 20, 2, "A", -3),
+		ut("overall_failure", "Light-source failure", 22, "invalid"),
+		Y("overall_failure_counter", "Light-source failure count", 23, 1),
+		...X("short_circuit", "Short circuit", 24),
+		...X("open_circuit", "Open circuit", 26),
+		...X("thermal_derating", "Thermal derating", 28),
+		...X("thermal_shutdown", "Thermal shutdown", 30),
+		dt("temperature", "Light-source temperature", 32, "read_protected")
+	],
+	207: [
+		Y("rated_life", "Rated median useful life", 4, 1, "h", 3, "unknown"),
+		dt("reference_temperature", "Reference driver temperature", 5, "unknown"),
+		Y("rated_starts", "Rated light-source starts", 6, 2, "count", 2, "unknown")
+	]
+}, pt = (e) => ft[e].map(({ key: e, label: t }) => ({
+	key: e,
+	label: t
+})), Z = () => {
+	throw Error("Diagnostic data is incomplete or invalid. Read again.");
+};
+function mt(e, t) {
+	let n = BigInt(e);
+	if (t >= 0) return (n * 10n ** BigInt(t)).toString();
+	let r = -t, i = 10n ** BigInt(r), a = n % i;
+	return a === 0n ? (n / i).toString() : `${n / i}.${a.toString().padStart(r, "0").replace(/0+$/, "")}`;
+}
+function ht(e, t) {
+	let n = t.slice(e.start, e.start + e.width), r = n.length === e.width && n.every((e) => e !== null) ? n.reduce((e, t) => e * 256 + t, 0) : null, i = 2 ** (e.width * 8) - 1, a = r === null ? "unavailable" : r === i - 1 ? "temporarily_unavailable" : r === i ? e.mask : r > e.maximum ? "invalid" : "value";
+	return {
+		status: a,
+		raw: r,
+		value: a === "value" ? e.kind === "boolean" ? r === 1 : e.kind === "temperature" ? String(r - 60) : mt(r, e.scale) : null,
+		unit: e.unit
+	};
+}
+function gt(e, t, n) {
+	lt(t);
+	let r = t === 205 ? 28 : t === 206 ? 32 : 7;
+	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || n.length < 1 || n.length > r + 1 || n.some((e) => e !== null && (!Number.isInteger(e) || e < 0 || e > 255))) return Z();
+	let i = n[0];
+	if (i === null || i === 255) return n.length !== 1 || e.version !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 || e.snapshot !== null ? Z() : {
+		data: structuredClone(e),
+		partial: i === 255
+	};
+	let a = n[3] ?? null, o = a === 1 ? "supported" : a === null ? "unavailable" : "unrecognized";
+	if (e.version !== a || e.format_status !== o || n.length !== Math.min(i, a === 1 ? r : 3) + 1) return Z();
+	if (a === 1) {
+		let r = ft[t];
+		if (Object.keys(e.fields).length !== r.length) return Z();
+		for (let t of r) {
+			let r = e.fields[t.key], i = ht(t, n);
+			if (!r || r.status !== i.status || r.raw !== i.raw || r.value !== i.value || r.unit !== i.unit) return Z();
+		}
+		if (t !== 207) {
+			let t = e.snapshot;
+			if (!t || Object.keys(t).length !== 3) return Z();
+			for (let [e, n] of [
+				["start", 170],
+				["end", 170],
+				["release", 255]
+			]) {
+				let r = t[e];
+				if (!r || r.kind !== "value" || r.raw !== n || Object.keys(r).length !== 2) return Z();
+			}
+		} else if (e.snapshot !== null) return Z();
+	} else if (Object.keys(e.fields).length !== 0 || e.snapshot !== null) return Z();
+	return {
+		data: structuredClone(e),
+		partial: a !== 1 || i < r
+	};
+}
+function _t(e) {
+	return e.status === "value" ? typeof e.value == "boolean" ? e.value ? "Yes" : "No" : `${e.value}${e.unit ? " " + e.unit : ""}` : {
+		temporarily_unavailable: "Temporarily unavailable",
+		read_protected: "Read protected",
+		unknown: "Unknown",
+		unavailable: "Unavailable",
+		invalid: "Invalid data"
+	}[e.status];
+}
 // src/device-info.ts
-var st = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255, Z = () => {
+var vt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255, Q = () => {
 	throw Error("Device information is incomplete or invalid. Read again.");
 };
-function ct(e, t, n) {
-	if (!st(e) || !st(t) || !Number.isInteger(n) || n < 1 || n > 64 || t + n > 255) throw Error("Choose bank 0–255 and 1–64 bytes within locations 0–254.");
+function yt(e, t, n) {
+	if (!vt(e) || !vt(t) || !Number.isInteger(n) || n < 1 || n > 64 || t + n > 255) throw Error("Choose bank 0–255 and 1–64 bytes within locations 0–254.");
 	return {
 		bank: e,
 		start: t,
 		count: n
 	};
 }
-function lt(e) {
-	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? Z() : e.kind === "value" && st(e.raw) && Object.keys(e).length === 2 || e.kind === "no_response" && Object.keys(e).length === 1 || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || st(e.code)) && Object.keys(e).length === 2 ? e : Z();
+function bt(e) {
+	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? Q() : e.kind === "value" && vt(e.raw) && Object.keys(e).length === 2 || e.kind === "no_response" && Object.keys(e).length === 1 || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || vt(e.code)) && Object.keys(e).length === 2 ? e : Q();
 }
-var ut = (e) => e?.kind === "value" ? e.raw : null;
-function dt(e, t, n, r) {
+var xt = (e) => e?.kind === "value" ? e.raw : null;
+function St(e, t, n, r, i) {
 	if (!e || e.operation !== t || e.outcome !== "observed" || e.configuration_changed !== !1 || ![
 		"complete",
 		"partial",
 		"unavailable"
-	].includes(e.quality) || e.reason !== null && typeof e.reason != "string" || !Array.isArray(e.readings) || t !== "read_energy_data" && e.energy !== void 0) return Z();
-	if (t === "read_energy_data") {
-		if (e.bank !== r || e.start !== 0 || !Number.isInteger(e.count) || e.count < 1 || e.count > 16 || e.space !== "outputs" || e.identity !== null || e.luminaire !== void 0) return Z();
-	} else if (t === "read_luminaire_data") {
-		if (e.bank !== 1 || e.start !== 0 || !Number.isInteger(e.count) || e.count < 1 || e.count > 120 || e.space !== "outputs" || e.identity !== null) return Z();
-	} else if (ct(e.bank, e.start, e.count), e.luminaire !== void 0) return Z();
-	if (e.readings.length !== e.count) return Z();
-	let i = e.readings.map((t, n) => !t || t.address !== e.start + n ? Z() : {
-		address: t.address,
-		reading: lt(t.reading)
-	}), a = lt(e.version), o = i.map((e) => ut(e.reading)), s = o.every((e) => e !== null) ? "complete" : o.some((e) => e !== null) ? "partial" : "unavailable";
-	if (t === "read_memory") {
-		if (!n || e.bank !== n.bank || e.start !== n.start || e.count !== n.count || e.identity !== null || a !== null) return Z();
+	].includes(e.quality) || e.reason !== null && typeof e.reason != "string" || !Array.isArray(e.readings) || t !== "read_energy_data" && e.energy !== void 0 || t !== "read_diagnostics" && e.diagnostics !== void 0) return Q();
+	if (t === "read_diagnostics") {
+		if (e.bank !== i || e.start !== 0 || !Number.isInteger(e.count) || e.count < 1 || e.count > 33 || e.space !== "outputs" || e.identity !== null || e.luminaire !== void 0) return Q();
 	} else if (t === "read_energy_data") {
-		if (a !== null || r === void 0) return Z();
-		at(e.energy, r, o).partial && (s = "partial");
+		if (e.bank !== r || e.start !== 0 || !Number.isInteger(e.count) || e.count < 1 || e.count > 16 || e.space !== "outputs" || e.identity !== null || e.luminaire !== void 0) return Q();
 	} else if (t === "read_luminaire_data") {
-		if (a !== null) return Z();
-		$e(e.luminaire, o).partial && (s = "partial");
+		if (e.bank !== 1 || e.start !== 0 || !Number.isInteger(e.count) || e.count < 1 || e.count > 120 || e.space !== "outputs" || e.identity !== null) return Q();
+	} else if (yt(e.bank, e.start, e.count), e.luminaire !== void 0) return Q();
+	if (e.readings.length !== e.count) return Q();
+	let a = e.readings.map((t, n) => !t || t.address !== e.start + n ? Q() : {
+		address: t.address,
+		reading: bt(t.reading)
+	}), o = bt(e.version), s = a.map((e) => xt(e.reading)), c = s.every((e) => e !== null) ? "complete" : s.some((e) => e !== null) ? "partial" : "unavailable";
+	if (t === "read_memory") {
+		if (!n || e.bank !== n.bank || e.start !== n.start || e.count !== n.count || e.identity !== null || o !== null) return Q();
+	} else if (t === "read_diagnostics") {
+		if (o !== null || i === void 0) return Q();
+		gt(e.diagnostics, i, s).partial && (c = "partial");
+	} else if (t === "read_energy_data") {
+		if (o !== null || r === void 0) return Q();
+		st(e.energy, r, s).partial && (c = "partial");
+	} else if (t === "read_luminaire_data") {
+		if (o !== null) return Q();
+		tt(e.luminaire, s).partial && (c = "partial");
 	} else {
-		if (e.bank !== 0 || e.start !== 0 || e.count > 27) return Z();
-		let t = ut(a), n = t === 1 ? "legacy" : t !== null && t >= 8 && t <= 254 ? "modern" : "unknown", r = n === "legacy" ? 14 : n === "modern" ? 26 : 10, i = o[0];
+		if (e.bank !== 0 || e.start !== 0 || e.count > 27) return Q();
+		let t = xt(o), n = t === 1 ? "legacy" : t !== null && t >= 8 && t <= 254 ? "modern" : "unknown", r = n === "legacy" ? 14 : n === "modern" ? 26 : 10, i = s[0];
 		if (i === null || i === 255) {
-			if (e.count !== 1 || e.identity !== null) return Z();
-			i === 255 && (s = "partial");
+			if (e.count !== 1 || e.identity !== null) return Q();
+			i === 255 && (c = "partial");
 		} else {
-			if (e.count !== Math.min(i, r) + 1) return Z();
-			(n === "unknown" || i < r) && (s = "partial");
+			if (e.count !== Math.min(i, r) + 1) return Q();
+			(n === "unknown" || i < r) && (c = "partial");
 			let t = e.identity, a = n === "legacy" ? 32 : n === "modern" ? 64 : null;
-			if (!t || t.layout !== n || t.serial_bits !== a || t.gtin !== null && (typeof t.gtin != "string" || !/^\d{14}$/.test(t.gtin)) || t.serial_number !== null && (a === null || typeof t.serial_number != "string" || !RegExp(`^[0-9A-F]{${a / 4}}$`).test(t.serial_number)) || t.last_memory_bank !== null && !st(t.last_memory_bank)) return Z();
-			for (let e of ["firmware_version", "hardware_version"]) if (t[e] !== null && (!Array.isArray(t[e]) || t[e].length !== 2 || !t[e].every(st))) return Z();
-			if (n !== "modern" && t.hardware_version !== null) return Z();
+			if (!t || t.layout !== n || t.serial_bits !== a || t.gtin !== null && (typeof t.gtin != "string" || !/^\d{14}$/.test(t.gtin)) || t.serial_number !== null && (a === null || typeof t.serial_number != "string" || !RegExp(`^[0-9A-F]{${a / 4}}$`).test(t.serial_number)) || t.last_memory_bank !== null && !vt(t.last_memory_bank)) return Q();
+			for (let e of ["firmware_version", "hardware_version"]) if (t[e] !== null && (!Array.isArray(t[e]) || t[e].length !== 2 || !t[e].every(vt))) return Q();
+			if (n !== "modern" && t.hardware_version !== null) return Q();
 		}
 	}
-	return e.quality === s ? structuredClone(e) : Z();
+	return e.quality === c ? structuredClone(e) : Q();
 }
-var ft = class {
+var Ct = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.result = null, t.kind !== "output" && t.kind !== "input") throw Error("Select an individual fixture or input module.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -1389,7 +1518,7 @@ var ft = class {
 	assert() {
 		let { ui: e, row: t } = this, n = e.currentRows.find((e) => e.key === t.key);
 		if (this.cancelled || e.cancelled || e.signingOut || !e.client.views.ready || e.client.views.epoch !== this.epoch) throw Error("Device information closed. Reopen to read again.");
-		if (!K(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !G(e.snapshot, t.bus) || !n || n.kind !== t.kind || n.item.target !== t.item.target || n.generation !== t.generation || n.item.short_address !== t.item.short_address) throw Error("Device configuration changed. Reopen device information.");
+		if (!W(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !U(e.snapshot, t.bus) || !n || n.kind !== t.kind || n.item.target !== t.item.target || n.generation !== t.generation || n.item.short_address !== t.item.short_address) throw Error("Device configuration changed. Reopen device information.");
 	}
 	read(e) {
 		return this.request(e ? "read_memory" : "read_identity", e);
@@ -1400,45 +1529,52 @@ var ft = class {
 	readEnergy(e) {
 		return this.request("read_energy_data", void 0, e);
 	}
-	async request(e, t, n) {
-		if (this.result = null, this.assert(), (e === "read_luminaire_data" || e === "read_energy_data") && this.row.kind !== "output") throw Error("Select an individual output fixture for luminaire/energy data.");
-		let r = t ? ct(t.bank, t.start, t.count) : void 0, i = e === "read_energy_data" ? tt(n) : void 0, a = await this.ui.client.job(this.row.generation, this.row.item.target, e, i === void 0 ? r ?? {} : { bank: i });
-		this.assert();
-		let o = this.row;
-		if (!a || a.target !== o.item.target || a.target_generation !== o.generation || a.revision !== this.initial.inventory.revision || a.bus !== o.bus.bus || a.address !== o.item.short_address || a.space !== (o.kind === "output" ? "outputs" : "inputs")) return Z();
-		let s = dt(a, e, r, i);
-		return this.result = s, structuredClone(s);
+	readDiagnostics(e) {
+		return this.request("read_diagnostics", void 0, e);
 	}
-}, pt = {
+	async request(e, t, n) {
+		if (this.result = null, this.assert(), (e === "read_luminaire_data" || e === "read_energy_data" || e === "read_diagnostics") && this.row.kind !== "output") throw Error("Select an individual output fixture for luminaire, energy or diagnostic data.");
+		let r = t ? yt(t.bank, t.start, t.count) : void 0, i = e === "read_energy_data" ? rt(n) : void 0, a = e === "read_diagnostics" ? lt(n) : void 0, o = await this.ui.client.job(this.row.generation, this.row.item.target, e, i === void 0 && a === void 0 ? r ?? {} : { bank: i ?? a });
+		this.assert();
+		let s = this.row;
+		if (!o || o.target !== s.item.target || o.target_generation !== s.generation || o.revision !== this.initial.inventory.revision || o.bus !== s.bus.bus || o.address !== s.item.short_address || o.space !== (s.kind === "output" ? "outputs" : "inputs")) return Q();
+		let c = St(o, e, r, i, a);
+		return this.result = c, structuredClone(c);
+	}
+}, wt = {
 	202: "Active input",
 	203: "Apparent input",
 	204: "Load-side active"
-}, mt = (e) => e.toString(16).toUpperCase().padStart(2, "0"), ht = (e) => e === null ? "Not read" : e.kind === "value" ? `0x${mt(e.raw)} (${e.raw})` : e.kind === "no_response" ? "No response" : e.kind === "receive_collision" ? "Receive collision" : "Transmit collision";
-function gt({ row: e, close: t }) {
-	let n = J(), [r] = V(() => new ft(n, e)), [i, a] = V(null), [o, s] = V(""), [c, l] = V("0"), [u, d] = V("0"), [f, p] = V("16"), [m, h] = V("202");
-	_e(() => () => {
+}, Tt = {
+	205: "Driver",
+	206: "Light source",
+	207: "Luminaire maintenance"
+}, Et = (e) => e.toString(16).toUpperCase().padStart(2, "0"), Dt = (e) => e === null ? "Not read" : e.kind === "value" ? `0x${Et(e.raw)} (${e.raw})` : e.kind === "no_response" ? "No response" : e.kind === "receive_collision" ? "Receive collision" : "Transmit collision";
+function Ot({ row: e, close: t }) {
+	let n = K(), [r] = B(() => new Ct(n, e)), [i, a] = B(null), [o, s] = B(""), [c, l] = B("0"), [u, d] = B("0"), [f, p] = B("16"), [m, h] = B("202"), [g, _] = B("205");
+	ve(() => () => {
 		r.cancelled = !0;
 	}, [r]);
-	let g = () => {
+	let v = () => {
 		r.cancelled = !0, t();
-	}, _ = (e = "identity") => void n.run(async () => {
+	}, b = (e = "identity") => void n.run(async () => {
 		a(null), s("");
 		try {
-			let t = (e) => e.trim() === "" ? NaN : Number(e), n = e === "memory" ? ct(t(c), t(u), t(f)) : void 0, i = e === "luminaire" ? await r.readLuminaire() : e === "energy" ? await r.readEnergy(t(m)) : await r.read(n);
+			let t = (e) => e.trim() === "" ? NaN : Number(e), n = e === "memory" ? yt(t(c), t(u), t(f)) : void 0, i = e === "luminaire" ? await r.readLuminaire() : e === "energy" ? await r.readEnergy(t(m)) : e === "diagnostics" ? await r.readDiagnostics(t(g)) : await r.read(n);
 			r.cancelled || a(i);
 		} catch (e) {
 			throw r.cancelled || s(e.message), e;
 		}
 	});
-	H(() => {
-		_();
+	V(() => {
+		b();
 	}, []);
-	let v = i?.identity, b = (e) => e ? e.join(".") : "Unknown";
-	return /* @__PURE__ */ q(Y, {
+	let x = i?.identity, S = (e) => e ? e.join(".") : "Unknown";
+	return /* @__PURE__ */ G(q, {
 		title: `Device information · ${e.item.name}`,
-		close: g,
+		close: v,
 		children: [
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					r.initial.inventory.name,
@@ -1451,117 +1587,143 @@ function gt({ row: e, close: t }) {
 					". Captured readings; refresh to read again."
 				]
 			}),
-			o && /* @__PURE__ */ q("p", {
+			o && /* @__PURE__ */ G("p", {
 				class: "error",
 				role: "alert",
 				children: o
 			}),
-			!i && !o && /* @__PURE__ */ q("p", {
+			!i && !o && /* @__PURE__ */ G("p", {
 				role: "status",
 				children: n.busy ? "Reading device information…" : "Choose a read below."
 			}),
-			i && /* @__PURE__ */ q("section", {
+			i && /* @__PURE__ */ G("section", {
 				"aria-label": "Device information result",
 				children: [
-					/* @__PURE__ */ q("p", { children: ["Read quality: ", /* @__PURE__ */ q("strong", { children: i.quality })] }),
-					i.reason && /* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", { children: ["Read quality: ", /* @__PURE__ */ G("strong", { children: i.quality })] }),
+					i.reason && /* @__PURE__ */ G("p", {
 						class: "hint",
 						children: i.reason
 					}),
-					i.operation === "read_identity" && /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("dl", {
+					i.operation === "read_identity" && /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("dl", {
 						class: "device-information",
 						children: [
-							/* @__PURE__ */ q("dt", { children: "GTIN" }),
-							/* @__PURE__ */ q("dd", { children: v?.gtin ?? "Unknown" }),
-							/* @__PURE__ */ q("dt", { children: "Serial number" }),
-							/* @__PURE__ */ q("dd", { children: [v?.serial_number ?? "Unknown", v?.serial_number ? ` (${v.serial_bits}-bit)` : ""] }),
-							/* @__PURE__ */ q("dt", { children: "Firmware version" }),
-							/* @__PURE__ */ q("dd", { children: b(v?.firmware_version) }),
-							/* @__PURE__ */ q("dt", { children: "Hardware version" }),
-							/* @__PURE__ */ q("dd", { children: b(v?.hardware_version) }),
-							/* @__PURE__ */ q("dt", { children: "Identity layout" }),
-							/* @__PURE__ */ q("dd", { children: v?.layout ?? "Unknown" }),
-							/* @__PURE__ */ q("dt", { children: "DALI version byte" }),
-							/* @__PURE__ */ q("dd", { children: ht(i.version) }),
-							/* @__PURE__ */ q("dt", { children: "Last memory bank" }),
-							/* @__PURE__ */ q("dd", { children: v?.last_memory_bank ?? "Unknown" })
+							/* @__PURE__ */ G("dt", { children: "GTIN" }),
+							/* @__PURE__ */ G("dd", { children: x?.gtin ?? "Unknown" }),
+							/* @__PURE__ */ G("dt", { children: "Serial number" }),
+							/* @__PURE__ */ G("dd", { children: [x?.serial_number ?? "Unknown", x?.serial_number ? ` (${x.serial_bits}-bit)` : ""] }),
+							/* @__PURE__ */ G("dt", { children: "Firmware version" }),
+							/* @__PURE__ */ G("dd", { children: S(x?.firmware_version) }),
+							/* @__PURE__ */ G("dt", { children: "Hardware version" }),
+							/* @__PURE__ */ G("dd", { children: S(x?.hardware_version) }),
+							/* @__PURE__ */ G("dt", { children: "Identity layout" }),
+							/* @__PURE__ */ G("dd", { children: x?.layout ?? "Unknown" }),
+							/* @__PURE__ */ G("dt", { children: "DALI version byte" }),
+							/* @__PURE__ */ G("dd", { children: Dt(i.version) }),
+							/* @__PURE__ */ G("dt", { children: "Last memory bank" }),
+							/* @__PURE__ */ G("dd", { children: x?.last_memory_bank ?? "Unknown" })
 						]
-					}), !v && /* @__PURE__ */ q("p", {
+					}), !x && /* @__PURE__ */ G("p", {
 						class: "hint",
 						children: "Identity is unavailable from these readings."
 					})] }),
-					i.luminaire && /* @__PURE__ */ q("section", {
+					i.luminaire && /* @__PURE__ */ G("section", {
 						"aria-label": "Luminaire data",
-						children: [/* @__PURE__ */ q("p", {
+						children: [/* @__PURE__ */ G("p", {
 							class: "hint",
 							children: "Manufacturer-supplied luminaire data. These readings do not change saved names or bindings."
-						}), i.luminaire.format_status === "supported" ? /* @__PURE__ */ q("dl", {
+						}), i.luminaire.format_status === "supported" ? /* @__PURE__ */ G("dl", {
 							class: "device-information",
-							children: Ye.map(([e, t]) => /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("dt", { children: t }, `${e}-label`), /* @__PURE__ */ q("dd", {
+							children: Ze.map(([e, t]) => /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("dt", { children: t }, `${e}-label`), /* @__PURE__ */ G("dd", {
 								"data-luminaire-field": e,
-								children: et(e, i.luminaire.fields[e])
+								children: nt(e, i.luminaire.fields[e])
 							}, `${e}-value`)] }))
-						}) : /* @__PURE__ */ q("p", {
+						}) : /* @__PURE__ */ G("p", {
 							class: "hint",
 							children: i.luminaire.format_status === "unrecognized" ? `Unrecognized luminaire data format 0x${i.luminaire.format_id.toString(16).toUpperCase().padStart(4, "0")}. Raw bytes are available below.` : "Luminaire data is unavailable from these readings."
 						})]
 					}),
-					i.energy && /* @__PURE__ */ q("section", {
+					i.energy && /* @__PURE__ */ G("section", {
 						"aria-label": "Energy data",
-						children: [/* @__PURE__ */ q("p", {
+						children: [/* @__PURE__ */ G("p", {
 							class: "hint",
-							children: [pt[i.bank], " · Captured energy and power."]
-						}), i.energy.format_status === "supported" ? /* @__PURE__ */ q(y, { children: [
-							/* @__PURE__ */ q("p", {
+							children: [wt[i.bank], " · Captured energy and power."]
+						}), i.energy.format_status === "supported" ? /* @__PURE__ */ G(y, { children: [
+							/* @__PURE__ */ G("p", {
 								class: "hint",
 								children: "Snapshot confirmed and released."
 							}),
-							/* @__PURE__ */ q("dl", {
+							/* @__PURE__ */ G("dl", {
 								class: "device-information",
-								children: ["energy", "power"].map((e) => /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("dt", { children: e === "energy" ? "Energy" : "Power" }, `${e}-label`), /* @__PURE__ */ q("dd", {
+								children: ["energy", "power"].map((e) => /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("dt", { children: e === "energy" ? "Energy" : "Power" }, `${e}-label`), /* @__PURE__ */ G("dd", {
 									"data-energy-field": e,
-									children: ot(i.energy.fields[e])
+									children: ct(i.energy.fields[e])
 								}, `${e}-value`)] }))
 							}),
-							/* @__PURE__ */ q("details", { children: [/* @__PURE__ */ q("summary", { children: "Counter details" }), /* @__PURE__ */ q("dl", {
+							/* @__PURE__ */ G("details", { children: [/* @__PURE__ */ G("summary", { children: "Counter details" }), /* @__PURE__ */ G("dl", {
 								class: "device-information",
-								children: ["energy", "power"].map((e) => /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("dt", { children: [e === "energy" ? "Energy" : "Power", " raw / scale"] }, `${e}-raw-label`), /* @__PURE__ */ q("dd", { children: [
+								children: ["energy", "power"].map((e) => /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("dt", { children: [e === "energy" ? "Energy" : "Power", " raw / scale"] }, `${e}-raw-label`), /* @__PURE__ */ G("dd", { children: [
 									i.energy.fields[e].raw ?? "Unavailable",
 									" / ",
 									i.energy.fields[e].scale ?? "Unavailable"
 								] }, `${e}-raw`)] }))
 							})] })
-						] }) : /* @__PURE__ */ q("p", {
+						] }) : /* @__PURE__ */ G("p", {
 							class: "hint",
 							children: i.energy.format_status === "unrecognized" ? `Unrecognized energy bank version ${i.energy.version}. Raw bytes are available below.` : "Energy data is unavailable from these readings."
 						})]
 					}),
-					/* @__PURE__ */ q("details", {
+					i.diagnostics && /* @__PURE__ */ G("section", {
+						"aria-label": "Diagnostic data",
+						children: [/* @__PURE__ */ G("p", {
+							class: "hint",
+							children: [Tt[i.bank], " · Captured diagnostic and maintenance data."]
+						}), i.diagnostics.format_status === "supported" ? /* @__PURE__ */ G(y, { children: [
+							/* @__PURE__ */ G("p", {
+								class: "hint",
+								children: i.bank === 207 ? "Static maintenance ratings." : "Snapshot confirmed and released."
+							}),
+							/* @__PURE__ */ G("dl", {
+								class: "device-information",
+								children: pt(i.bank).map(({ key: e, label: t }) => /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("dt", { children: t }, `${e}-label`), /* @__PURE__ */ G("dd", {
+									"data-diagnostic-field": e,
+									children: _t(i.diagnostics.fields[e])
+								}, `${e}-value`)] }))
+							}),
+							/* @__PURE__ */ G("details", { children: [/* @__PURE__ */ G("summary", { children: "Raw diagnostic values" }), /* @__PURE__ */ G("dl", {
+								class: "device-information",
+								children: pt(i.bank).map(({ key: e, label: t }) => /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("dt", { children: t }, `${e}-raw-label`), /* @__PURE__ */ G("dd", { children: i.diagnostics.fields[e].raw ?? "Unavailable" }, `${e}-raw`)] }))
+							})] })
+						] }) : /* @__PURE__ */ G("p", {
+							class: "hint",
+							children: i.diagnostics.format_status === "unrecognized" ? `Unrecognized diagnostic bank version ${i.diagnostics.version}. Raw bytes are available below.` : "Diagnostic data is unavailable from these readings."
+						})]
+					}),
+					/* @__PURE__ */ G("details", {
 						open: i.operation === "read_memory",
-						children: [/* @__PURE__ */ q("summary", { children: [
+						children: [/* @__PURE__ */ G("summary", { children: [
 							"Captured bank ",
 							i.bank,
 							" bytes"
-						] }), /* @__PURE__ */ q("table", {
+						] }), /* @__PURE__ */ G("table", {
 							class: "memory-readings",
-							children: [/* @__PURE__ */ q("thead", { children: /* @__PURE__ */ q("tr", { children: [/* @__PURE__ */ q("th", { children: "Location" }), /* @__PURE__ */ q("th", { children: "Reading" })] }) }), /* @__PURE__ */ q("tbody", { children: i.readings.map((e) => /* @__PURE__ */ q("tr", { children: [/* @__PURE__ */ q("td", { children: ["0x", mt(e.address)] }), /* @__PURE__ */ q("td", { children: ht(e.reading) })] }, e.address)) })]
+							children: [/* @__PURE__ */ G("thead", { children: /* @__PURE__ */ G("tr", { children: [/* @__PURE__ */ G("th", { children: "Location" }), /* @__PURE__ */ G("th", { children: "Reading" })] }) }), /* @__PURE__ */ G("tbody", { children: i.readings.map((e) => /* @__PURE__ */ G("tr", { children: [/* @__PURE__ */ G("td", { children: ["0x", Et(e.address)] }), /* @__PURE__ */ G("td", { children: Dt(e.reading) })] }, e.address)) })]
 						})]
 					})
 				]
 			}),
-			/* @__PURE__ */ q("details", { children: [
-				/* @__PURE__ */ q("summary", { children: "Read a memory bank" }),
-				/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("details", { children: [
+				/* @__PURE__ */ G("summary", { children: "Read a memory bank" }),
+				/* @__PURE__ */ G("p", {
 					class: "hint",
 					children: "Read-only access. Unsupported banks or locations may return no response."
 				}),
-				/* @__PURE__ */ q("fieldset", {
+				/* @__PURE__ */ G("fieldset", {
 					disabled: !!n.busy,
 					class: "memory-window",
 					children: [
-						/* @__PURE__ */ q("label", {
+						/* @__PURE__ */ G("label", {
 							class: "field",
-							children: ["Bank", /* @__PURE__ */ q("input", {
+							children: ["Bank", /* @__PURE__ */ G("input", {
 								"aria-label": "Memory bank",
 								type: "number",
 								inputMode: "numeric",
@@ -1572,9 +1734,9 @@ function gt({ row: e, close: t }) {
 								onInput: (e) => l(e.currentTarget.value)
 							})]
 						}),
-						/* @__PURE__ */ q("label", {
+						/* @__PURE__ */ G("label", {
 							class: "field",
-							children: ["First location", /* @__PURE__ */ q("input", {
+							children: ["First location", /* @__PURE__ */ G("input", {
 								"aria-label": "First memory location",
 								type: "number",
 								inputMode: "numeric",
@@ -1585,9 +1747,9 @@ function gt({ row: e, close: t }) {
 								onInput: (e) => d(e.currentTarget.value)
 							})]
 						}),
-						/* @__PURE__ */ q("label", {
+						/* @__PURE__ */ G("label", {
 							class: "field",
-							children: ["Byte count", /* @__PURE__ */ q("input", {
+							children: ["Byte count", /* @__PURE__ */ G("input", {
 								"aria-label": "Memory byte count",
 								type: "number",
 								inputMode: "numeric",
@@ -1598,56 +1760,82 @@ function gt({ row: e, close: t }) {
 								onInput: (e) => p(e.currentTarget.value)
 							})]
 						}),
-						/* @__PURE__ */ q("button", {
+						/* @__PURE__ */ G("button", {
 							disabled: !!n.busy,
-							onClick: () => _("memory"),
+							onClick: () => b("memory"),
 							children: "Read memory"
 						})
 					]
 				})
 			] }, "memory-controls"),
-			e.kind === "output" && /* @__PURE__ */ q("details", { children: [
-				/* @__PURE__ */ q("summary", { children: "Energy and power" }),
-				/* @__PURE__ */ q("p", {
+			e.kind === "output" && /* @__PURE__ */ G("details", { children: [
+				/* @__PURE__ */ G("summary", { children: "Energy and power" }),
+				/* @__PURE__ */ G("p", {
 					class: "hint",
 					children: "Read one standard energy bank as a captured snapshot. Changing the selection does not read the fixture."
 				}),
-				/* @__PURE__ */ q("fieldset", {
+				/* @__PURE__ */ G("fieldset", {
 					disabled: !!n.busy,
-					children: [/* @__PURE__ */ q("label", {
+					children: [/* @__PURE__ */ G("label", {
 						class: "field",
-						children: ["Energy bank", /* @__PURE__ */ q("select", {
+						children: ["Energy bank", /* @__PURE__ */ G("select", {
 							"aria-label": "Energy bank",
 							value: m,
 							onChange: (e) => h(e.currentTarget.value),
-							children: Object.entries(pt).map(([e, t]) => /* @__PURE__ */ q("option", {
+							children: Object.entries(wt).map(([e, t]) => /* @__PURE__ */ G("option", {
 								value: e,
 								children: t
 							}, e))
 						})]
-					}), /* @__PURE__ */ q("button", {
+					}), /* @__PURE__ */ G("button", {
 						disabled: !!n.busy,
-						onClick: () => _("energy"),
+						onClick: () => b("energy"),
 						children: "Read energy data"
 					})]
 				})
 			] }, "energy-controls"),
-			/* @__PURE__ */ q("div", {
+			e.kind === "output" && /* @__PURE__ */ G("details", { children: [
+				/* @__PURE__ */ G("summary", { children: "Diagnostics and maintenance" }),
+				/* @__PURE__ */ G("p", {
+					class: "hint",
+					children: "Read one standard bank. Changing the selection does not read the fixture."
+				}),
+				/* @__PURE__ */ G("fieldset", {
+					disabled: !!n.busy,
+					children: [/* @__PURE__ */ G("label", {
+						class: "field",
+						children: ["Diagnostic bank", /* @__PURE__ */ G("select", {
+							"aria-label": "Diagnostic bank",
+							value: g,
+							onChange: (e) => _(e.currentTarget.value),
+							children: Object.entries(Tt).map(([e, t]) => /* @__PURE__ */ G("option", {
+								value: e,
+								children: t
+							}, e))
+						})]
+					}), /* @__PURE__ */ G("button", {
+						disabled: !!n.busy,
+						onClick: () => b("diagnostics"),
+						children: "Read diagnostic data"
+					})]
+				})
+			] }, "diagnostic-controls"),
+			/* @__PURE__ */ G("div", {
 				class: "dialog-actions",
 				children: [
-					/* @__PURE__ */ q("button", {
-						onClick: g,
+					/* @__PURE__ */ G("button", {
+						onClick: v,
 						children: "Close"
 					}),
-					e.kind === "output" && /* @__PURE__ */ q("button", {
+					e.kind === "output" && /* @__PURE__ */ G("button", {
 						disabled: !!n.busy,
-						onClick: () => _("luminaire"),
+						onClick: () => b("luminaire"),
 						children: "Read luminaire data"
 					}),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						class: "primary",
 						disabled: !!n.busy,
-						onClick: () => _(),
+						onClick: () => b(),
 						children: "Read identity again"
 					})
 				]
@@ -1656,50 +1844,50 @@ function gt({ row: e, close: t }) {
 	});
 }
 // src/button-timing.ts
-var _t = [
+var kt = [
 	"short",
 	"double",
 	"repeat",
 	"stuck"
-], vt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function yt(e) {
-	return vt(e.short) && vt(e.short_min) && e.short_min >= 10 && e.short >= e.short_min && vt(e.double) && vt(e.double_min) && e.double_min >= 10 && e.double_min <= 100 && (e.double === 0 || e.double >= e.double_min && e.double <= 100) && vt(e.repeat) && e.repeat >= 5 && e.repeat <= 100 && vt(e.stuck) && e.stuck >= 5;
+], At = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function jt(e) {
+	return At(e.short) && At(e.short_min) && e.short_min >= 10 && e.short >= e.short_min && At(e.double) && At(e.double_min) && e.double_min >= 10 && e.double_min <= 100 && (e.double === 0 || e.double >= e.double_min && e.double <= 100) && At(e.repeat) && e.repeat >= 5 && e.repeat <= 100 && At(e.stuck) && e.stuck >= 5;
 }
-function bt(e) {
+function Mt(e) {
 	if (e == null) return null;
 	if (typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality) || [
-		..._t,
+		...kt,
 		"short_min",
 		"double_min"
-	].some((t) => e[t] !== null && !vt(e[t])) || e.quality === "complete" && !yt(e)) throw Error("Button timing evidence is incomplete or invalid. Inspect again.");
+	].some((t) => e[t] !== null && !At(e[t])) || e.quality === "complete" && !jt(e)) throw Error("Button timing evidence is incomplete or invalid. Inspect again.");
 	return structuredClone(e);
 }
-function xt(e, t) {
-	if (!t || t.quality !== "complete" || !yt(t)) throw Error("Complete button timing evidence is required. Inspect again.");
-	if (!Object.keys(e).length || Object.keys(e).some((e) => !_t.includes(e))) throw Error("Change at least one known button timer.");
-	if (!yt({
+function Nt(e, t) {
+	if (!t || t.quality !== "complete" || !jt(t)) throw Error("Complete button timing evidence is required. Inspect again.");
+	if (!Object.keys(e).length || Object.keys(e).some((e) => !kt.includes(e))) throw Error("Change at least one known button timer.");
+	if (!jt({
 		...t,
 		...e
 	})) throw Error("Button timing must use whole native steps within the range and device minimum.");
 }
-function St(e, t) {
-	return !!t && t.quality === "complete" && yt(t) && _t.every((n) => e[n] === void 0 || e[n] === t[n]);
+function Pt(e, t) {
+	return !!t && t.quality === "complete" && jt(t) && kt.every((n) => e[n] === void 0 || e[n] === t[n]);
 }
-var Ct = (e, t) => t * (e === "stuck" ? 1 : 20), wt = (e, t) => t.trim() === "" ? NaN : Number(t) / (e === "stuck" ? 1 : 20);
-function Tt(e, t) {
+var Ft = (e, t) => t * (e === "stuck" ? 1 : 20), It = (e, t) => t.trim() === "" ? NaN : Number(t) / (e === "stuck" ? 1 : 20);
+function Lt(e, t) {
 	let n = {};
-	for (let r of _t) e[r] !== t[r] && (n[r] = t[r] ?? NaN);
+	for (let r of kt) e[r] !== t[r] && (n[r] = t[r] ?? NaN);
 	return n;
 }
 // src/sensor-settings.ts
-var Et = [
+var Rt = [
 	"report",
 	"deadtime",
 	"hold",
 	"hysteresis",
 	"hysteresis_min"
-], Dt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function Ot(e) {
+], zt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function Bt(e) {
 	return e === 2 ? ["report", "deadtime"] : e === 3 ? [
 		"report",
 		"deadtime",
@@ -1711,40 +1899,40 @@ function Ot(e) {
 		"hysteresis_min"
 	] : [];
 }
-function kt(e, t) {
-	return Dt(e.report) && Dt(e.deadtime) && (t === 2 || t === 3 && Dt(e.hold) && e.hold_supported === (e.hold !== 255) || t === 4 && Dt(e.hysteresis) && e.hysteresis <= 25 && Dt(e.hysteresis_min));
+function Vt(e, t) {
+	return zt(e.report) && zt(e.deadtime) && (t === 2 || t === 3 && zt(e.hold) && e.hold_supported === (e.hold !== 255) || t === 4 && zt(e.hysteresis) && e.hysteresis <= 25 && zt(e.hysteresis_min));
 }
-function At(e, t) {
+function Ht(e, t) {
 	if (e == null) return null;
-	let n = Ot(t);
-	if (!n.length || typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality) || Et.some((t) => e[t] !== null && !Dt(e[t])) || Et.some((t) => !n.includes(t) && e[t] !== null) || (t === 3 ? e.hold_supported !== (e.hold === null ? null : e.hold !== 255) : e.hold_supported !== null) || e.quality === "complete" && !kt(e, t)) throw Error("Sensor settings evidence is incomplete or invalid. Inspect again.");
+	let n = Bt(t);
+	if (!n.length || typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality) || Rt.some((t) => e[t] !== null && !zt(e[t])) || Rt.some((t) => !n.includes(t) && e[t] !== null) || (t === 3 ? e.hold_supported !== (e.hold === null ? null : e.hold !== 255) : e.hold_supported !== null) || e.quality === "complete" && !Vt(e, t)) throw Error("Sensor settings evidence is incomplete or invalid. Inspect again.");
 	return structuredClone(e);
 }
-function jt(e, t, n) {
-	if (!t || t.quality !== "complete" || !kt(t, n)) throw Error("Complete sensor settings evidence is required. Inspect again.");
+function Ut(e, t, n) {
+	if (!t || t.quality !== "complete" || !Vt(t, n)) throw Error("Complete sensor settings evidence is required. Inspect again.");
 	let r = Object.keys(e);
-	if (!r.length || r.some((e) => !Ot(n).includes(e))) throw Error("Choose known settings for this sensor type.");
+	if (!r.length || r.some((e) => !Bt(n).includes(e))) throw Error("Choose known settings for this sensor type.");
 	if (e.hold !== void 0 && t.hold_supported !== !0) throw Error("This sensor does not support hold time.");
-	if (r.some((t) => !Dt(e[t]) || t === "hold" && e[t] === 255 || t === "hysteresis" && e[t] > 25)) throw Error("Sensor values must use valid native steps and ranges. Hold time is 1s or a 10s increment.");
+	if (r.some((t) => !zt(e[t]) || t === "hold" && e[t] === 255 || t === "hysteresis" && e[t] > 25)) throw Error("Sensor values must use valid native steps and ranges. Hold time is 1s or a 10s increment.");
 }
-function Mt(e, t, n) {
-	return !!t && t.quality === "complete" && kt(t, n) && Et.every((n) => e[n] === void 0 || e[n] === t[n] && (n !== "hold" || t.hold_supported === !0));
+function Wt(e, t, n) {
+	return !!t && t.quality === "complete" && Vt(t, n) && Rt.every((n) => e[n] === void 0 || e[n] === t[n] && (n !== "hold" || t.hold_supported === !0));
 }
-function Nt(e, t) {
+function Gt(e, t) {
 	return e === "deadtime" ? t * 50 : e === "hold" ? t === 0 ? 1 : t * 10 : t;
 }
-function Pt(e, t) {
+function Kt(e, t) {
 	if (t.trim() === "") return NaN;
 	let n = Number(t);
 	return e === "deadtime" ? n / 50 : e === "hold" ? n === 1 ? 0 : n >= 10 ? n / 10 : NaN : n;
 }
-function Ft(e, t) {
+function qt(e, t) {
 	let n = {};
-	for (let r of Et) e[r] !== t[r] && (n[r] = t[r] ?? NaN);
+	for (let r of Rt) e[r] !== t[r] && (n[r] = t[r] ?? NaN);
 	return n;
 }
 // src/input-settings.ts
-var It = {
+var Jt = {
 	1: [
 		"Released",
 		"Pressed",
@@ -1764,7 +1952,7 @@ var It = {
 		"No movement"
 	],
 	4: ["Light level changed"]
-}, Lt = class {
+}, Yt = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.values = null, t.kind !== "instance") throw Error("Select an input instance.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -1772,7 +1960,7 @@ var It = {
 	assert() {
 		let e = this.ui, t = e.currentRows.find((e) => e.key === this.row.key);
 		if (this.cancelled || e.cancelled || e.signingOut || !e.client.views.ready || e.client.views.epoch !== this.epoch) throw Error("Input settings stopped. Reopen to inspect current settings.");
-		if (!K(this.initial, e.snapshot, this.initial.inventory.revision, this.row.bus.bus) || !G(e.snapshot, this.row.bus) || !t || t.kind !== "instance" || t.item.target !== this.row.item.target || t.generation !== this.row.generation || t.parent?.short_address !== this.row.parent?.short_address || t.item.number !== this.row.item.number || t.item.instance_type !== this.row.item.instance_type) throw Error("Input configuration changed. Reopen settings.");
+		if (!W(this.initial, e.snapshot, this.initial.inventory.revision, this.row.bus.bus) || !U(e.snapshot, this.row.bus) || !t || t.kind !== "instance" || t.item.target !== this.row.item.target || t.generation !== this.row.generation || t.parent?.short_address !== this.row.parent?.short_address || t.item.number !== this.row.item.number || t.item.instance_type !== this.row.item.instance_type) throw Error("Input configuration changed. Reopen settings.");
 	}
 	accepted(e, t) {
 		this.assert();
@@ -1789,8 +1977,8 @@ var It = {
 		if (!Array.isArray(r.filter_bytes) || r.filter_bytes.length !== 3 || r.filter_bytes.some((e, t) => t < r.filter_width / 8 ? e !== (r.event_filter >>> 8 * t & 255) : e !== null)) throw Error("Input filter evidence is incomplete. Inspect again.");
 		return {
 			...structuredClone(r),
-			button_timers: bt(r.button_timers),
-			sensor_settings: At(r.sensor_settings, n.item.instance_type ?? -1)
+			button_timers: Mt(r.button_timers),
+			sensor_settings: Ht(r.sensor_settings, n.item.instance_type ?? -1)
 		};
 	}
 	async read() {
@@ -1803,9 +1991,9 @@ var It = {
 		let t = structuredClone(e);
 		if (t.button_timers) {
 			if (this.row.item.instance_type !== 1) throw Error("Button timing requires a button instance.");
-			xt(t.button_timers, this.values.button_timers);
+			Nt(t.button_timers, this.values.button_timers);
 		}
-		t.sensor_settings && jt(t.sensor_settings, this.values.sensor_settings, this.row.item.instance_type ?? -1);
+		t.sensor_settings && Ut(t.sensor_settings, this.values.sensor_settings, this.row.item.instance_type ?? -1);
 		let n = await this.ui.client.job(this.row.generation, this.row.item.target, "configure_input", {
 			expected_revision: this.initial.inventory.revision,
 			settings: t
@@ -1817,12 +2005,12 @@ var It = {
 			"event_filter"
 		]) if (t[e] !== void 0 && t[e] !== r[e]) throw Error("Input settings do not match the requested values. Inspect again.");
 		if (t.groups && JSON.stringify(t.groups.map((e) => e ?? 255)) !== JSON.stringify(r.groups)) throw Error("Input groups do not match the requested values. Inspect again.");
-		if (t.button_timers && !St(t.button_timers, r.button_timers)) throw Error("Button timing does not match the requested values. Inspect again.");
-		if (t.sensor_settings && !Mt(t.sensor_settings, r.sensor_settings, this.row.item.instance_type ?? -1)) throw Error("Sensor settings do not match the requested values. Inspect again.");
+		if (t.button_timers && !Pt(t.button_timers, r.button_timers)) throw Error("Button timing does not match the requested values. Inspect again.");
+		if (t.sensor_settings && !Wt(t.sensor_settings, r.sensor_settings, this.row.item.instance_type ?? -1)) throw Error("Sensor settings do not match the requested values. Inspect again.");
 		return this.values = r, this.ui.notice = "Input event settings verified in hardware.", structuredClone(r);
 	}
 };
-function Rt(e, t) {
+function Xt(e, t) {
 	let n = {};
 	for (let r of [
 		"enabled",
@@ -1831,19 +2019,19 @@ function Rt(e, t) {
 		"event_filter"
 	]) e[r] !== t[r] && Object.assign(n, { [r]: t[r] });
 	if (JSON.stringify(e.groups) !== JSON.stringify(t.groups) && (n.groups = t.groups.map((e) => e === 255 ? null : e)), e.button_timers && t.button_timers) {
-		let r = Tt(e.button_timers, t.button_timers);
+		let r = Lt(e.button_timers, t.button_timers);
 		Object.keys(r).length && (n.button_timers = r);
 	}
 	if (e.sensor_settings && t.sensor_settings) {
-		let r = Ft(e.sensor_settings, t.sensor_settings);
+		let r = qt(e.sensor_settings, t.sensor_settings);
 		Object.keys(r).length && (n.sensor_settings = r);
 	}
 	return n;
 }
 // src/input-settings-ui.tsx
-function zt({ row: e, close: t }) {
-	let n = J(), [r] = V(() => new Lt(n, e)), [i, a] = V(null), [o, s] = V(""), [c, l] = V({}), [u, d] = V({});
-	_e(() => () => {
+function Zt({ row: e, close: t }) {
+	let n = K(), [r] = B(() => new Yt(n, e)), [i, a] = B(null), [o, s] = B(""), [c, l] = B({}), [u, d] = B({});
+	ve(() => () => {
 		r.cancelled = !0;
 	}, [r]);
 	let f = () => {
@@ -1857,7 +2045,7 @@ function zt({ row: e, close: t }) {
 			throw r.cancelled || s(e.message), e;
 		}
 	});
-	H(() => {
+	V(() => {
 		p();
 	}, []);
 	let m = (e) => a((t) => t ? {
@@ -1869,7 +2057,7 @@ function zt({ row: e, close: t }) {
 			[e]: t
 		})), m((n) => ({ button_timers: n.button_timers ? {
 			...n.button_timers,
-			[e]: wt(e, t)
+			[e]: It(e, t)
 		} : n.button_timers }));
 	}, g = (e, t) => {
 		d((n) => ({
@@ -1877,21 +2065,21 @@ function zt({ row: e, close: t }) {
 			[e]: t
 		})), m((n) => ({ sensor_settings: n.sensor_settings ? {
 			...n.sensor_settings,
-			[e]: Pt(e, t)
+			[e]: Kt(e, t)
 		} : n.sensor_settings }));
 	}, _ = () => void n.run(async () => {
 		try {
 			if (!i || !r.values) return;
-			await r.save(Rt(r.values, i)), f();
+			await r.save(Xt(r.values, i)), f();
 		} catch (e) {
 			throw r.cancelled || s(e.message), e;
 		}
-	}), v = It[e.item.instance_type ?? -1];
-	return /* @__PURE__ */ q(Y, {
+	}), v = Jt[e.item.instance_type ?? -1];
+	return /* @__PURE__ */ G(q, {
 		title: `Event settings · ${e.item.name}`,
 		close: f,
 		children: [
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					r.initial.inventory.name,
@@ -1904,25 +2092,25 @@ function zt({ row: e, close: t }) {
 					". Changes are applied to this input's hardware."
 				]
 			}),
-			o && /* @__PURE__ */ q("p", {
+			o && /* @__PURE__ */ G("p", {
 				class: "error",
 				role: "alert",
 				children: o
 			}),
-			!i && !o && /* @__PURE__ */ q("p", {
+			!i && !o && /* @__PURE__ */ G("p", {
 				role: "status",
 				children: "Reading input settings…"
 			}),
-			i && /* @__PURE__ */ q("fieldset", {
+			i && /* @__PURE__ */ G("fieldset", {
 				class: "input-settings-form",
 				disabled: !!n.busy,
 				children: [
-					/* @__PURE__ */ q("label", { children: [/* @__PURE__ */ q("input", {
+					/* @__PURE__ */ G("label", { children: [/* @__PURE__ */ G("input", {
 						type: "checkbox",
 						checked: i.enabled,
 						onChange: (e) => m({ enabled: e.currentTarget.checked })
 					}), " Input enabled"] }),
-					/* @__PURE__ */ q("label", { children: ["Event priority", /* @__PURE__ */ q("select", {
+					/* @__PURE__ */ G("label", { children: ["Event priority", /* @__PURE__ */ G("select", {
 						"aria-label": "Event priority",
 						value: i.event_priority,
 						onChange: (e) => m({ event_priority: Number(e.currentTarget.value) }),
@@ -1931,12 +2119,12 @@ function zt({ row: e, close: t }) {
 							3,
 							4,
 							5
-						].map((e) => /* @__PURE__ */ q("option", {
+						].map((e) => /* @__PURE__ */ G("option", {
 							value: e,
 							children: [e, e === 2 ? " · highest" : e === 5 ? " · lowest" : ""]
 						}))
 					})] }),
-					/* @__PURE__ */ q("label", { children: ["Event addressing", /* @__PURE__ */ q("select", {
+					/* @__PURE__ */ G("label", { children: ["Event addressing", /* @__PURE__ */ G("select", {
 						"aria-label": "Event addressing",
 						value: i.event_scheme,
 						onChange: (e) => m({ event_scheme: Number(e.currentTarget.value) }),
@@ -1946,32 +2134,32 @@ function zt({ row: e, close: t }) {
 							"Device and instance",
 							"Device group and type",
 							"Instance group and type"
-						].map((e, t) => /* @__PURE__ */ q("option", {
+						].map((e, t) => /* @__PURE__ */ G("option", {
 							value: t,
 							children: e
 						}))
 					})] }),
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", {
 						class: "hint",
 						children: i.event_scheme === 2 ? "Device and instance identifies the source uniquely." : i.event_scheme === 1 ? "Device and type is routed only when exactly one matching instance is saved." : "This scheme is currently diagnostic only in the bridge. Use Device and instance for routed events."
 					}),
-					/* @__PURE__ */ q("fieldset", { children: [/* @__PURE__ */ q("legend", { children: "Events to send" }), v ? v.map((e, t) => /* @__PURE__ */ q("label", { children: [/* @__PURE__ */ q("input", {
+					/* @__PURE__ */ G("fieldset", { children: [/* @__PURE__ */ G("legend", { children: "Events to send" }), v ? v.map((e, t) => /* @__PURE__ */ G("label", { children: [/* @__PURE__ */ G("input", {
 						type: "checkbox",
 						checked: !!(i.event_filter & 1 << t),
 						onChange: (e) => {
 							let n = e.currentTarget.checked;
 							m((e) => ({ event_filter: n ? e.event_filter | 1 << t : e.event_filter & ~(1 << t) }));
 						}
-					}), e] })) : /* @__PURE__ */ q("p", { children: [
+					}), e] })) : /* @__PURE__ */ G("p", { children: [
 						"Raw filter: ",
 						i.event_filter.toString(16).toUpperCase().padStart(6, "0"),
 						". This instance type has no known common event labels."
 					] })] }),
-					/* @__PURE__ */ q("fieldset", { children: [/* @__PURE__ */ q("legend", { children: "Input instance groups" }), [
+					/* @__PURE__ */ G("fieldset", { children: [/* @__PURE__ */ G("legend", { children: "Input instance groups" }), [
 						"Primary group",
 						"Instance group 1",
 						"Instance group 2"
-					].map((e, t) => /* @__PURE__ */ q("label", { children: [e, /* @__PURE__ */ q("select", {
+					].map((e, t) => /* @__PURE__ */ G("label", { children: [e, /* @__PURE__ */ G("select", {
 						"aria-label": e,
 						value: i.groups[t],
 						onChange: (e) => {
@@ -1981,35 +2169,35 @@ function zt({ row: e, close: t }) {
 								return r[t] = n, { groups: r };
 							});
 						},
-						children: [/* @__PURE__ */ q("option", {
+						children: [/* @__PURE__ */ G("option", {
 							value: "255",
 							children: "Unassigned"
-						}), Array.from({ length: 32 }, (e, t) => /* @__PURE__ */ q("option", {
+						}), Array.from({ length: 32 }, (e, t) => /* @__PURE__ */ G("option", {
 							value: t,
 							children: t
 						}))]
 					})] }))] }),
-					e.item.instance_type === 1 && /* @__PURE__ */ q("fieldset", { children: [/* @__PURE__ */ q("legend", { children: "Button timing" }), r.values?.button_timers?.quality === "complete" && i.button_timers ? /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("div", {
+					e.item.instance_type === 1 && /* @__PURE__ */ G("fieldset", { children: [/* @__PURE__ */ G("legend", { children: "Button timing" }), r.values?.button_timers?.quality === "complete" && i.button_timers ? /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("div", {
 						class: "input-timer-grid",
-						children: _t.map((e) => {
+						children: kt.map((e) => {
 							let t = i.button_timers, n = e === "short" ? t.short_min * 20 : e === "double" ? 0 : e === "repeat" ? 100 : 5, r = {
 								short: "Short press (ms)",
 								double: "Double press (ms)",
 								repeat: "Long repeat (ms)",
 								stuck: "Stuck button (s)"
 							}[e], a = t[e];
-							return /* @__PURE__ */ q("label", { children: [r, /* @__PURE__ */ q("input", {
+							return /* @__PURE__ */ G("label", { children: [r, /* @__PURE__ */ G("input", {
 								type: "number",
 								inputMode: "numeric",
 								"aria-label": r,
 								min: n,
 								max: e === "short" ? 5100 : e === "stuck" ? 255 : 2e3,
 								step: e === "stuck" ? 1 : 20,
-								value: c[e] ?? (Number.isFinite(a) ? Ct(e, a) : ""),
+								value: c[e] ?? (Number.isFinite(a) ? Ft(e, a) : ""),
 								onInput: (t) => h(e, t.currentTarget.value)
 							})] });
 						})
-					}), /* @__PURE__ */ q("p", {
+					}), /* @__PURE__ */ G("p", {
 						class: "hint",
 						children: [
 							"Short minimum: ",
@@ -2018,15 +2206,15 @@ function zt({ row: e, close: t }) {
 							i.button_timers.double_min * 20,
 							"ms; 0 disables double press. Other millisecond values use 20ms steps."
 						]
-					})] }) : /* @__PURE__ */ q("p", {
+					})] }) : /* @__PURE__ */ G("p", {
 						class: "hint",
 						children: "Button timing is unavailable or incomplete. Basic event settings remain available."
 					})] }),
-					Ot(e.item.instance_type ?? -1).length > 0 && /* @__PURE__ */ q("fieldset", { children: [/* @__PURE__ */ q("legend", { children: "Sensor settings" }), r.values?.sensor_settings?.quality === "complete" && i.sensor_settings ? /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("div", {
+					Bt(e.item.instance_type ?? -1).length > 0 && /* @__PURE__ */ G("fieldset", { children: [/* @__PURE__ */ G("legend", { children: "Sensor settings" }), r.values?.sensor_settings?.quality === "complete" && i.sensor_settings ? /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("div", {
 						class: "input-timer-grid",
-						children: Ot(e.item.instance_type).map((e) => {
+						children: Bt(e.item.instance_type).map((e) => {
 							let t = i.sensor_settings;
-							if (e === "hold" && !t.hold_supported) return /* @__PURE__ */ q("p", {
+							if (e === "hold" && !t.hold_supported) return /* @__PURE__ */ G("p", {
 								class: "hint",
 								children: "Hold time is not supported by this sensor."
 							});
@@ -2037,43 +2225,43 @@ function zt({ row: e, close: t }) {
 								hysteresis: "Hysteresis (%)",
 								hysteresis_min: "Minimum hysteresis (sensor units)"
 							}[e], r = t[e];
-							return /* @__PURE__ */ q("label", { children: [n, /* @__PURE__ */ q("input", {
+							return /* @__PURE__ */ G("label", { children: [n, /* @__PURE__ */ G("input", {
 								type: "number",
 								inputMode: "numeric",
 								"aria-label": n,
 								min: +(e === "hold"),
 								max: e === "deadtime" ? 12750 : e === "hold" ? 2540 : e === "hysteresis" ? 25 : 255,
 								step: e === "deadtime" ? 50 : 1,
-								value: u[e] ?? (Number.isFinite(r) ? Nt(e, r) : ""),
+								value: u[e] ?? (Number.isFinite(r) ? Gt(e, r) : ""),
 								onInput: (t) => g(e, t.currentTarget.value)
 							})] });
 						})
-					}), /* @__PURE__ */ q("p", {
+					}), /* @__PURE__ */ G("p", {
 						class: "hint",
 						children: [
 							"0 disables reporting, deadtime or percentage hysteresis.",
 							e.item.instance_type === 3 ? " Hold time: 1s or 10s increments." : "",
 							e.item.instance_type === 4 ? " Minimum hysteresis uses sensor input units." : ""
 						]
-					})] }) : /* @__PURE__ */ q("p", {
+					})] }) : /* @__PURE__ */ G("p", {
 						class: "hint",
 						children: "Sensor settings are unavailable or incomplete. Basic event settings remain available."
 					})] })
 				]
 			}),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "dialog-actions",
 				children: [
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						onClick: f,
 						children: "Cancel"
 					}),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						disabled: !!n.busy,
 						onClick: p,
 						children: "Refresh settings"
 					}),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						class: "primary",
 						disabled: !!n.busy || !i,
 						onClick: _,
@@ -2085,115 +2273,115 @@ function zt({ row: e, close: t }) {
 	});
 }
 // src/output-settings.ts
-var Bt = [
+var Qt = [
 	"upward_on",
 	"upward_off",
 	"downward_on",
 	"downward_off"
-], Vt = [
+], $t = [
 	"minimum_level",
 	"maximum_level",
 	"power_on_level",
 	"system_failure_level",
 	"fade_time",
 	"fade_rate"
-], Q = () => {
+], $ = () => {
 	throw Error("Output settings evidence is incomplete or inconsistent. Refresh to inspect again.");
-}, Ht = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
-function Ut(e) {
+}, en = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
+function tn(e) {
 	return (e * 100 / 254).toFixed(1);
 }
-function Wt(e) {
+function nn(e) {
 	let t = e.trim() === "" ? NaN : Number(e);
 	return Number.isFinite(t) && t >= 0 && t <= 100 ? Math.round(t * 254 / 100) : NaN;
 }
-var Gt = Array.from({ length: 16 }, (e, t) => ({
+var rn = Array.from({ length: 16 }, (e, t) => ({
 	code: t,
 	label: t === 0 ? "Use other fade settings (code 0)" : `${(.5 * 2 ** (t / 2)).toFixed(t < 4 ? 2 : 1)} s`
-})), Kt = Array.from({ length: 15 }, (e, t) => ({
+})), an = Array.from({ length: 15 }, (e, t) => ({
 	code: t + 1,
 	label: `${(506 / 2 ** ((t + 1) / 2)).toFixed(1)} steps/s`
 }));
-function qt(e) {
+function on(e) {
 	return e.physical_minimum === null ? null : e.switching_support === !0 && e.switching?.adjustable_thresholds === !0 ? 1 : e.physical_minimum;
 }
-function Jt(e, t) {
+function sn(e, t) {
 	return t?.switching_support === !0 && t.switching?.adjustable_thresholds === !0 && t.switching[e] !== null;
 }
-function Yt(e) {
-	if (!e || typeof e != "object" || Array.isArray(e)) return Q();
+function cn(e) {
+	if (!e || typeof e != "object" || Array.isArray(e)) return $();
 	for (let t of [
 		"physical_minimum",
 		"minimum_level",
 		"maximum_level"
-	]) if (e[t] !== null && !Ht(e[t], 1, 254)) return Q();
+	]) if (e[t] !== null && !en(e[t], 1, 254)) return $();
 	for (let t of [
 		"power_on_level",
 		"system_failure_level",
 		"fade_raw"
-	]) if (e[t] !== null && !Ht(e[t], 0, 255)) return Q();
+	]) if (e[t] !== null && !en(e[t], 0, 255)) return $();
 	let t = e.fade_raw === null ? null : e.fade_raw >> 4, n = e.fade_raw === null || !(e.fade_raw & 15) ? null : e.fade_raw & 15;
-	if (e.fade_time !== t || e.fade_rate !== n || e.switching_support !== void 0 && e.switching_support !== null && typeof e.switching_support != "boolean") return Q();
+	if (e.fade_time !== t || e.fade_rate !== n || e.switching_support !== void 0 && e.switching_support !== null && typeof e.switching_support != "boolean") return $();
 	if (e.switching_support === !0) {
 		let t = e.switching;
-		if (!t || typeof t != "object" || Array.isArray(t)) return Q();
+		if (!t || typeof t != "object" || Array.isArray(t)) return $();
 		for (let e of [
 			"features_raw",
 			"switch_status_raw",
 			"gear_type_raw",
 			"extended_version_raw",
-			...Bt
-		]) if (t[e] !== null && !Ht(t[e], +!!e.startsWith("upward_"), 255)) return Q();
-		if (t.adjustable_thresholds !== (t.features_raw === null ? null : !!(t.features_raw & 8)) || t.physical_selection !== (t.features_raw === null ? null : !!(t.features_raw & 128))) return Q();
+			...Qt
+		]) if (t[e] !== null && !en(t[e], +!!e.startsWith("upward_"), 255)) return $();
+		if (t.adjustable_thresholds !== (t.features_raw === null ? null : !!(t.features_raw & 8)) || t.physical_selection !== (t.features_raw === null ? null : !!(t.features_raw & 128))) return $();
 		let n = [
 			"features_raw",
 			"switch_status_raw",
 			"gear_type_raw",
 			"extended_version_raw",
-			...Bt
+			...Qt
 		].every((e) => t[e] !== null);
-		if (t.quality !== (n ? "complete" : "partial")) return Q();
-	} else if (e.switching !== void 0) return Q();
-	let r = qt(e), i = e.physical_minimum !== null && r !== null && e.minimum_level !== null && e.maximum_level !== null && r <= e.minimum_level && e.minimum_level <= e.maximum_level && e.power_on_level !== null && e.system_failure_level !== null && e.fade_raw !== null && n !== null;
-	return e.quality === (i ? "complete" : "partial") ? structuredClone(e) : Q();
+		if (t.quality !== (n ? "complete" : "partial")) return $();
+	} else if (e.switching !== void 0) return $();
+	let r = on(e), i = e.physical_minimum !== null && r !== null && e.minimum_level !== null && e.maximum_level !== null && r <= e.minimum_level && e.minimum_level <= e.maximum_level && e.power_on_level !== null && e.system_failure_level !== null && e.fade_raw !== null && n !== null;
+	return e.quality === (i ? "complete" : "partial") ? structuredClone(e) : $();
 }
-function Xt(e, t) {
-	return t ? e === "minimum_level" || e === "maximum_level" ? t.physical_minimum !== null && qt(t) !== null && t.minimum_level !== null && t.maximum_level !== null && qt(t) <= t.minimum_level && t.minimum_level <= t.maximum_level : e === "fade_time" || e === "fade_rate" ? t.fade_raw !== null : t[e] !== null : !1;
+function ln(e, t) {
+	return t ? e === "minimum_level" || e === "maximum_level" ? t.physical_minimum !== null && on(t) !== null && t.minimum_level !== null && t.maximum_level !== null && on(t) <= t.minimum_level && t.minimum_level <= t.maximum_level : e === "fade_time" || e === "fade_rate" ? t.fade_raw !== null : t[e] !== null : !1;
 }
-function Zt(e, t) {
+function un(e, t) {
 	if (!e || typeof e != "object" || Array.isArray(e) || !Object.keys(e).length) throw Error("Change at least one output setting.");
 	for (let [n, r] of Object.entries(e)) if (n === "switching") {
 		if (!r || typeof r != "object" || Array.isArray(r) || !Object.keys(r).length) throw Error("Change at least one relay threshold.");
-		for (let [e, n] of Object.entries(r)) if (!Bt.includes(e) || !Jt(e, t) || !Ht(n, +!!e.startsWith("upward_"), 255)) throw Error("Fresh adjustable relay evidence and valid thresholds are required.");
+		for (let [e, n] of Object.entries(r)) if (!Qt.includes(e) || !sn(e, t) || !en(n, +!!e.startsWith("upward_"), 255)) throw Error("Fresh adjustable relay evidence and valid thresholds are required.");
 	} else {
-		if (!Vt.includes(n) || !Xt(n, t)) throw Error("Fresh supported setting evidence is required. Refresh first.");
-		if (!Ht(r, +(n === "minimum_level" || n === "maximum_level" || n === "fade_rate"), n === "minimum_level" || n === "maximum_level" ? 254 : n === "fade_time" || n === "fade_rate" ? 15 : 255)) throw Error("Enter valid brightness levels and native fade choices.");
+		if (!$t.includes(n) || !ln(n, t)) throw Error("Fresh supported setting evidence is required. Refresh first.");
+		if (!en(r, +(n === "minimum_level" || n === "maximum_level" || n === "fade_rate"), n === "minimum_level" || n === "maximum_level" ? 254 : n === "fade_time" || n === "fade_rate" ? 15 : 255)) throw Error("Enter valid brightness levels and native fade choices.");
 	}
 	if (e.minimum_level !== void 0 || e.maximum_level !== void 0) {
 		let n = e.minimum_level ?? t.minimum_level, r = e.maximum_level ?? t.maximum_level;
-		if (n < qt(t) || n > r) throw Error("Minimum must meet the physical minimum or supported virtual minimum and not exceed maximum.");
+		if (n < on(t) || n > r) throw Error("Minimum must meet the physical minimum or supported virtual minimum and not exceed maximum.");
 	}
 }
-function Qt(e, t) {
+function dn(e, t) {
 	let n = {};
-	for (let r of Vt) e[r] !== t[r] && Object.assign(n, { [r]: t[r] });
+	for (let r of $t) e[r] !== t[r] && Object.assign(n, { [r]: t[r] });
 	if (e.switching && t.switching) {
 		let r = {};
-		for (let n of Bt) e.switching[n] !== t.switching[n] && Object.assign(r, { [n]: t.switching[n] });
+		for (let n of Qt) e.switching[n] !== t.switching[n] && Object.assign(r, { [n]: t.switching[n] });
 		Object.keys(r).length && (n.switching = r);
 	}
 	return n;
 }
-function $t(e, t = !1) {
-	return !e || typeof e != "object" || Array.isArray(e) ? Q() : e.kind === "value" ? !Ht(e.raw, 0, 255) || t && e.raw === 255 ? Q() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? Q() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || Ht(e.code, 0, 255)) ? null : Q();
+function fn(e, t = !1) {
+	return !e || typeof e != "object" || Array.isArray(e) ? $() : e.kind === "value" ? !en(e.raw, 0, 255) || t && e.raw === 255 ? $() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? $() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || en(e.code, 0, 255)) ? null : $();
 }
-function en(e, t) {
+function pn(e, t) {
 	if (t.switching_support === void 0 && e.device_type === void 0) return;
-	let n = $t(e.device_type), r = n === null || n === 255 ? null : n === 7;
+	let n = fn(e.device_type), r = n === null || n === 255 ? null : n === 7;
 	if (n === 255) {
 		let t = -1;
 		for (let n = 0; n < 9; n++) {
-			let i = $t(e[`device_type_${n}`]);
+			let i = fn(e[`device_type_${n}`]);
 			if (i === 254) {
 				r = n >= 2 ? !1 : null;
 				break;
@@ -2206,7 +2394,7 @@ function en(e, t) {
 			t = i;
 		}
 	}
-	if (t.switching_support !== r) return Q();
+	if (t.switching_support !== r) return $();
 	if (t.switching) for (let [n, r] of Object.entries({
 		features_raw: "switching_features",
 		switch_status_raw: "switching_status",
@@ -2217,11 +2405,11 @@ function en(e, t) {
 		downward_on: "switching_downward_on",
 		downward_off: "switching_downward_off"
 	})) {
-		let i = $t(e[r]);
-		if (n.startsWith("upward_") && i === 0 && (i = null), t.switching[n] !== i) return Q();
+		let i = fn(e[r]);
+		if (n.startsWith("upward_") && i === 0 && (i = null), t.switching[n] !== i) return $();
 	}
 }
-var tn = class {
+var mn = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.values = null, this.result = null, t.kind !== "output") throw Error("Select an individual output.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -2229,7 +2417,7 @@ var tn = class {
 	assert() {
 		let { ui: e, row: t } = this, n = e.currentRows.find((e) => e.key === t.key);
 		if (this.cancelled || e.cancelled || e.signingOut || !e.client.views.ready || e.client.views.epoch !== this.epoch) throw Error("Output settings stopped. Reopen to inspect again.");
-		if (!K(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !G(e.snapshot, t.bus) || !n || n.kind !== "output" || n.item.target !== t.item.target || n.generation !== t.generation || n.item.short_address !== t.item.short_address) throw Error("Output configuration changed. Reopen settings.");
+		if (!W(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !U(e.snapshot, t.bus) || !n || n.kind !== "output" || n.item.target !== t.item.target || n.generation !== t.generation || n.item.short_address !== t.item.short_address) throw Error("Output configuration changed. Reopen settings.");
 	}
 	identifying() {
 		let e = this.ui.snapshot.identification;
@@ -2242,7 +2430,7 @@ var tn = class {
 	accepted(e, t) {
 		this.assert();
 		let { row: n, initial: r } = this;
-		if (!e || e.operation !== t || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== r.inventory.revision || e.bus !== n.bus.bus || e.address !== n.item.short_address || e.configuration_changed !== !1 || !e.readings || typeof e.readings != "object" || Array.isArray(e.readings)) return Q();
+		if (!e || e.operation !== t || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== r.inventory.revision || e.bus !== n.bus.bus || e.address !== n.item.short_address || e.configuration_changed !== !1 || !e.readings || typeof e.readings != "object" || Array.isArray(e.readings)) return $();
 		let i = {};
 		for (let t of [
 			"status",
@@ -2255,14 +2443,14 @@ var tn = class {
 			"system_failure_level",
 			"fade_time_rate",
 			"closing_status"
-		]) i[t] = $t(e.readings[t], [
+		]) i[t] = fn(e.readings[t], [
 			"actual_level",
 			"physical_minimum",
 			"minimum_level",
 			"maximum_level"
 		].includes(t));
-		let a = i.status !== null && i.closing_status !== null, o = e.settings === null ? null : Yt(e.settings);
-		if (o !== null !== a) return Q();
+		let a = i.status !== null && i.closing_status !== null, o = e.settings === null ? null : cn(e.settings);
+		if (o !== null !== a) return $();
 		if (o) {
 			for (let e of [
 				"physical_minimum",
@@ -2271,15 +2459,15 @@ var tn = class {
 				"power_on_level",
 				"system_failure_level"
 			]) {
-				let t = e === "power_on_level" || e === "system_failure_level" || Ht(i[e], 1, 254) ? i[e] : null;
-				if (o[e] !== t) return Q();
+				let t = e === "power_on_level" || e === "system_failure_level" || en(i[e], 1, 254) ? i[e] : null;
+				if (o[e] !== t) return $();
 			}
-			if (o.fade_raw !== i.fade_time_rate) return Q();
-			en(e.readings, o);
+			if (o.fade_raw !== i.fade_time_rate) return $();
+			pn(e.readings, o);
 		}
 		if (t === "configure_output") {
 			if (e.outcome !== "configured" || o === null) throw Error("Output settings were not confirmed. Refresh to inspect again.");
-		} else if (e.outcome !== (o === null ? "unavailable" : o.quality === "complete" ? "current" : "partial")) return Q();
+		} else if (e.outcome !== (o === null ? "unavailable" : o.quality === "complete" ? "current" : "partial")) return $();
 		return {
 			settings: o,
 			status: a ? i.closing_status : null,
@@ -2295,20 +2483,20 @@ var tn = class {
 	async save(e) {
 		if (this.assert(), this.identifying()) throw Error("Stop Blink before changing fixture settings.");
 		let t = structuredClone(e);
-		Zt(t, this.values), this.values = null, this.result = null;
+		un(t, this.values), this.values = null, this.result = null;
 		let n = await this.ui.client.job(this.row.generation, this.row.item.target, "configure_output", {
 			expected_revision: this.initial.inventory.revision,
 			settings: t
 		}), r = this.accepted(n, "configure_output");
-		for (let e of Vt) if (t[e] !== void 0 && r.settings?.[e] !== t[e]) throw Error("Output settings do not match requested values. Refresh to inspect again.");
-		for (let e of Bt) if (t.switching?.[e] !== void 0 && r.settings?.switching?.[e] !== t.switching[e]) throw Error("Relay thresholds do not match requested values. Refresh to inspect again.");
+		for (let e of $t) if (t[e] !== void 0 && r.settings?.[e] !== t[e]) throw Error("Output settings do not match requested values. Refresh to inspect again.");
+		for (let e of Qt) if (t.switching?.[e] !== void 0 && r.settings?.switching?.[e] !== t.switching[e]) throw Error("Relay thresholds do not match requested values. Refresh to inspect again.");
 		return this.values = r.settings, this.result = r, this.ui.notice = "Fixture settings verified in hardware.", structuredClone(r);
 	}
 };
 // src/output-settings-ui.tsx
-function nn({ row: e, close: t }) {
-	let n = J(), [r] = V(() => new tn(n, e)), [i, a] = V(null), [o, s] = V(null), [c, l] = V(""), [u, d] = V({}), [f, p] = V({}), [m, h] = V({});
-	_e(() => () => {
+function hn({ row: e, close: t }) {
+	let n = K(), [r] = B(() => new mn(n, e)), [i, a] = B(null), [o, s] = B(null), [c, l] = B(""), [u, d] = B({}), [f, p] = B({}), [m, h] = B({});
+	ve(() => () => {
 		r.cancelled = !0;
 	}, [r]);
 	let g = () => {
@@ -2322,7 +2510,7 @@ function nn({ row: e, close: t }) {
 			throw r.cancelled || l(e.message), e;
 		}
 	});
-	H(() => {
+	V(() => {
 		_();
 	}, []);
 	let v = (e, t) => a((n) => n ? {
@@ -2330,9 +2518,9 @@ function nn({ row: e, close: t }) {
 		[e]: t
 	} : null), b = () => {
 		if (!i || !r.values) return;
-		let e = Qt(r.values, i);
+		let e = dn(r.values, i);
 		try {
-			Zt(e, r.values);
+			un(e, r.values);
 		} catch (e) {
 			l(e.message);
 			return;
@@ -2345,37 +2533,37 @@ function nn({ row: e, close: t }) {
 				throw r.cancelled || (a(null), s(null), l(e.message)), e;
 			}
 		});
-	}, x = (e, t) => /* @__PURE__ */ q("label", { children: [t, /* @__PURE__ */ q("input", {
+	}, x = (e, t) => /* @__PURE__ */ G("label", { children: [t, /* @__PURE__ */ G("input", {
 		type: "number",
 		inputMode: "decimal",
 		min: "0",
 		max: "100",
 		step: "0.1",
 		"aria-label": t,
-		value: u[e] ?? (i?.[e] !== null && Number.isFinite(i?.[e]) ? Ut(i[e]) : ""),
+		value: u[e] ?? (i?.[e] !== null && Number.isFinite(i?.[e]) ? tn(i[e]) : ""),
 		placeholder: "Unknown",
-		disabled: !Xt(e, r.values),
+		disabled: !ln(e, r.values),
 		onInput: (t) => {
 			let n = t.currentTarget.value;
 			d((t) => ({
 				...t,
 				[e]: n
-			})), v(e, Wt(n)), (e === "power_on_level" || e === "system_failure_level") && p((t) => ({
+			})), v(e, nn(n)), (e === "power_on_level" || e === "system_failure_level") && p((t) => ({
 				...t,
 				[e]: "level"
 			}));
 		}
 	})] }), S = (e, t, n) => {
 		let a = i?.[e], o = f[e] ?? (a === null ? "unknown" : a === 0 ? "off" : a === 255 ? "special" : "level");
-		return /* @__PURE__ */ q("fieldset", { children: [
-			/* @__PURE__ */ q("legend", { children: t }),
-			/* @__PURE__ */ q("label", { children: [
+		return /* @__PURE__ */ G("fieldset", { children: [
+			/* @__PURE__ */ G("legend", { children: t }),
+			/* @__PURE__ */ G("label", { children: [
 				t,
 				" mode",
-				/* @__PURE__ */ q("select", {
+				/* @__PURE__ */ G("select", {
 					"aria-label": `${t} mode`,
 					value: o,
-					disabled: !Xt(e, r.values),
+					disabled: !ln(e, r.values),
 					onChange: (t) => {
 						let n = t.currentTarget.value;
 						p((t) => ({
@@ -2387,19 +2575,19 @@ function nn({ row: e, close: t }) {
 						}), v(e, n === "off" ? 0 : n === "special" ? 255 : 254);
 					},
 					children: [
-						a === null && /* @__PURE__ */ q("option", {
+						a === null && /* @__PURE__ */ G("option", {
 							value: "unknown",
 							children: "Unknown"
 						}),
-						/* @__PURE__ */ q("option", {
+						/* @__PURE__ */ G("option", {
 							value: "off",
 							children: i?.switching_support === !0 ? "Virtual level 0" : "Off"
 						}),
-						/* @__PURE__ */ q("option", {
+						/* @__PURE__ */ G("option", {
 							value: "special",
 							children: n
 						}),
-						/* @__PURE__ */ q("option", {
+						/* @__PURE__ */ G("option", {
 							value: "level",
 							children: i?.switching_support === !0 ? "Set virtual level" : "Set level"
 						})
@@ -2423,11 +2611,11 @@ function nn({ row: e, close: t }) {
 		downward_on: "Downward on threshold",
 		downward_off: "Downward off threshold"
 	};
-	return /* @__PURE__ */ q(Y, {
+	return /* @__PURE__ */ G(q, {
 		title: `Settings · ${e.item.name}`,
 		close: g,
 		children: [
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					r.initial.inventory.name,
@@ -2438,78 +2626,78 @@ function nn({ row: e, close: t }) {
 					". Changes are saved to this fixture."
 				]
 			}),
-			c && /* @__PURE__ */ q("p", {
+			c && /* @__PURE__ */ G("p", {
 				class: "error",
 				role: "alert",
 				children: c
 			}),
-			!i && !c && /* @__PURE__ */ q("p", {
+			!i && !c && /* @__PURE__ */ G("p", {
 				role: "status",
 				children: "Reading fixture settings…"
 			}),
-			i && /* @__PURE__ */ q("fieldset", {
+			i && /* @__PURE__ */ G("fieldset", {
 				class: "input-settings-form",
 				disabled: !!n.busy,
 				children: [
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("div", {
 						class: "input-timer-grid",
 						children: [x("minimum_level", w ? "Minimum virtual level (%)" : "Minimum brightness (%)"), x("maximum_level", w ? "Maximum virtual level (%)" : "Maximum brightness (%)")]
 					}),
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", {
 						class: "hint",
 						children: [
 							"Physical minimum: ",
-							i.physical_minimum === null ? "unknown" : `${Ut(i.physical_minimum)}%`,
+							i.physical_minimum === null ? "unknown" : `${tn(i.physical_minimum)}%`,
 							". ",
 							w ? "These limits control a virtual level. Changing limits can operate the relay contact." : "Limits can change a light that is already on. An off light stays off."
 						]
 					}),
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("div", {
 						class: "input-timer-grid",
 						children: [S("power_on_level", "Power on", "Last active level"), S("system_failure_level", "Bus failure", "Keep current level")]
 					}),
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("div", {
 						class: "input-timer-grid",
-						children: [/* @__PURE__ */ q("label", { children: ["Fade time", /* @__PURE__ */ q("select", {
+						children: [/* @__PURE__ */ G("label", { children: ["Fade time", /* @__PURE__ */ G("select", {
 							"aria-label": "Fade time",
 							value: i.fade_time ?? "",
-							disabled: !Xt("fade_time", r.values),
+							disabled: !ln("fade_time", r.values),
 							onChange: (e) => v("fade_time", Number(e.currentTarget.value)),
-							children: [i.fade_time === null && /* @__PURE__ */ q("option", {
+							children: [i.fade_time === null && /* @__PURE__ */ G("option", {
 								value: "",
 								children: "Unknown"
-							}), Gt.map((e) => /* @__PURE__ */ q("option", {
+							}), rn.map((e) => /* @__PURE__ */ G("option", {
 								value: e.code,
 								children: e.label
 							}))]
-						})] }), /* @__PURE__ */ q("label", { children: ["Dimming rate", /* @__PURE__ */ q("select", {
+						})] }), /* @__PURE__ */ G("label", { children: ["Dimming rate", /* @__PURE__ */ G("select", {
 							"aria-label": "Dimming rate",
 							value: i.fade_rate ?? "",
-							disabled: !Xt("fade_rate", r.values),
+							disabled: !ln("fade_rate", r.values),
 							onChange: (e) => v("fade_rate", Number(e.currentTarget.value)),
-							children: [i.fade_rate === null && /* @__PURE__ */ q("option", {
+							children: [i.fade_rate === null && /* @__PURE__ */ G("option", {
 								value: "",
 								disabled: !0,
 								children: i.fade_raw === null ? "Unknown" : "Unknown (reserved code 0)"
-							}), Kt.map((e) => /* @__PURE__ */ q("option", {
+							}), an.map((e) => /* @__PURE__ */ G("option", {
 								value: e.code,
 								children: e.label
 							}))]
 						})] })]
 					}),
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", {
 						class: "hint",
 						children: "Fade durations are nominal. Code 0 uses other supported fade settings and does not guarantee an instant transition. Dimming rate is used by up/down commands."
 					}),
-					w && i.switching && /* @__PURE__ */ q("fieldset", { children: [
-						/* @__PURE__ */ q("legend", { children: "Relay thresholds" }),
-						/* @__PURE__ */ q("p", {
+					w && i.switching && /* @__PURE__ */ G("fieldset", { children: [
+						/* @__PURE__ */ G("legend", { children: "Relay thresholds" }),
+						/* @__PURE__ */ G("p", {
 							class: "hint",
 							children: [i.switching.adjustable_thresholds === !0 ? "Adjustable thresholds" : i.switching.adjustable_thresholds === !1 ? "Fixed thresholds" : "Threshold support unknown", ". Native virtual levels control when the contact turns on or off. Disabled thresholds do not act."]
 						}),
-						/* @__PURE__ */ q("div", {
+						/* @__PURE__ */ G("div", {
 							class: "input-timer-grid switching-threshold-grid",
-							children: Bt.map((e) => {
+							children: Qt.map((e) => {
 								let t = i?.switching?.[e], n = t === 255, o = +!!e.startsWith("upward_"), s = T[e], c = (t) => a((n) => n?.switching ? {
 									...n,
 									switching: {
@@ -2517,9 +2705,9 @@ function nn({ row: e, close: t }) {
 										[e]: t
 									}
 								} : n);
-								return /* @__PURE__ */ q("fieldset", { children: [
-									/* @__PURE__ */ q("legend", { children: s }),
-									/* @__PURE__ */ q("label", { children: ["Native level", /* @__PURE__ */ q("input", {
+								return /* @__PURE__ */ G("fieldset", { children: [
+									/* @__PURE__ */ G("legend", { children: s }),
+									/* @__PURE__ */ G("label", { children: ["Native level", /* @__PURE__ */ G("input", {
 										type: "number",
 										inputMode: "numeric",
 										min: o,
@@ -2528,7 +2716,7 @@ function nn({ row: e, close: t }) {
 										"aria-label": s,
 										value: m[e] ?? (t !== null && !n && Number.isFinite(t) ? String(t) : ""),
 										placeholder: n ? "Disabled" : "Unknown",
-										disabled: n || !Jt(e, r.values),
+										disabled: n || !sn(e, r.values),
 										onInput: (t) => {
 											let n = t.currentTarget.value;
 											h((t) => ({
@@ -2539,13 +2727,13 @@ function nn({ row: e, close: t }) {
 											c(Number.isInteger(r) && r >= o && r <= 254 ? r : NaN);
 										}
 									})] }),
-									/* @__PURE__ */ q("label", {
+									/* @__PURE__ */ G("label", {
 										class: "check-field",
-										children: [/* @__PURE__ */ q("input", {
+										children: [/* @__PURE__ */ G("input", {
 											type: "checkbox",
 											"aria-label": `Disable ${s.toLowerCase()}`,
 											checked: n,
-											disabled: !Jt(e, r.values),
+											disabled: !sn(e, r.values),
 											onChange: (t) => {
 												let n = t.currentTarget.checked, r = m[e], i = r === void 0 ? o : r.trim() === "" ? NaN : Number(r);
 												c(n ? 255 : Number.isInteger(i) && i >= o && i <= 254 ? i : NaN);
@@ -2555,52 +2743,52 @@ function nn({ row: e, close: t }) {
 								] });
 							})
 						}),
-						i.switching.quality === "partial" && /* @__PURE__ */ q("p", {
+						i.switching.quality === "partial" && /* @__PURE__ */ G("p", {
 							class: "hint",
 							children: "Some relay readings are unavailable. Readable supported thresholds remain editable."
 						})
 					] }),
-					i.quality === "partial" && /* @__PURE__ */ q("p", {
+					i.quality === "partial" && /* @__PURE__ */ G("p", {
 						class: "hint",
 						children: "Some readings are unavailable. Settings with readable support remain available."
 					})
 				]
 			}),
-			o && /* @__PURE__ */ q("details", { children: [
-				/* @__PURE__ */ q("summary", { children: "Fixture diagnostics" }),
-				/* @__PURE__ */ q("p", { children: w ? `Actual contact: ${o.actual_level === 254 ? "On" : o.actual_level === 0 ? "Off" : "unknown"}` : `Actual brightness: ${o.actual_level === null ? "unknown" : `${Ut(o.actual_level)}%`}` }),
-				/* @__PURE__ */ q("p", { children: ["Reported version byte: ", o.version === null ? "unknown" : `0x${o.version.toString(16).toUpperCase().padStart(2, "0")}`] }),
-				/* @__PURE__ */ q("p", { children: ["Active status flags: ", o.status === null ? "unknown" : C.filter((e, t) => o.status & 1 << t).join(", ") || "none"] }),
-				w && i?.switching && /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("p", { children: [
+			o && /* @__PURE__ */ G("details", { children: [
+				/* @__PURE__ */ G("summary", { children: "Fixture diagnostics" }),
+				/* @__PURE__ */ G("p", { children: w ? `Actual contact: ${o.actual_level === 254 ? "On" : o.actual_level === 0 ? "Off" : "unknown"}` : `Actual brightness: ${o.actual_level === null ? "unknown" : `${tn(o.actual_level)}%`}` }),
+				/* @__PURE__ */ G("p", { children: ["Reported version byte: ", o.version === null ? "unknown" : `0x${o.version.toString(16).toUpperCase().padStart(2, "0")}`] }),
+				/* @__PURE__ */ G("p", { children: ["Active status flags: ", o.status === null ? "unknown" : C.filter((e, t) => o.status & 1 << t).join(", ") || "none"] }),
+				w && i?.switching && /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("p", { children: [
 					"Relay feature byte: ",
 					i.switching.features_raw ?? "unknown",
 					" · type byte: ",
 					i.switching.gear_type_raw ?? "unknown",
 					" · extended version: ",
 					i.switching.extended_version_raw ?? "unknown"
-				] }), /* @__PURE__ */ q("p", { children: [
+				] }), /* @__PURE__ */ G("p", { children: [
 					"Raw switching status: ",
 					i.switching.switch_status_raw ?? "unknown",
 					" (threshold diagnostics; not contact position)"
 				] })] })
 			] }),
-			r.identifying() && /* @__PURE__ */ q("p", {
+			r.identifying() && /* @__PURE__ */ G("p", {
 				class: "hint",
 				children: "Stop Blink before changing fixture settings."
 			}),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "dialog-actions",
 				children: [
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						onClick: g,
 						children: "Cancel"
 					}),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						disabled: !!n.busy,
 						onClick: _,
 						children: "Refresh settings"
 					}),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						class: "primary",
 						disabled: !!n.busy || !i || r.identifying(),
 						onClick: b,
@@ -2612,14 +2800,14 @@ function nn({ row: e, close: t }) {
 	});
 }
 // src/feedback.ts
-var rn = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function an(e) {
+var gn = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function _n(e) {
 	let t = () => {
 		throw Error("Feedback evidence is incomplete or invalid. Refresh to inspect again.");
 	};
 	if (!e || typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality)) return t();
 	let { features: n, capability: r, supported: i, active: a } = e;
-	if (n !== null && (!Array.isArray(n) || n.length > 65 || n.some((e, t) => !Number.isInteger(e) || typeof e != "number" || e < 32 || e > 96 || t > 0 && n[t - 1] >= e)) || r !== null && !rn(r) || i !== null && typeof i != "boolean" || a !== null && typeof a != "boolean") return t();
+	if (n !== null && (!Array.isArray(n) || n.length > 65 || n.some((e, t) => !Number.isInteger(e) || typeof e != "number" || e < 32 || e > 96 || t > 0 && n[t - 1] >= e)) || r !== null && !gn(r) || i !== null && typeof i != "boolean" || a !== null && typeof a != "boolean") return t();
 	let o = null, s = "partial";
 	if (n === null) {
 		if (r !== null || a !== null) return t();
@@ -2633,10 +2821,10 @@ function an(e) {
 	else if (a !== null) return t();
 	return i !== o || e.quality !== s ? t() : structuredClone(e);
 }
-function on(e) {
+function vn(e) {
 	return !!e && e.quality === "complete" && e.supported === !0 && e.features?.includes(32) && typeof e.capability == "number" && !!(e.capability & 9) && typeof e.active == "boolean";
 }
-var sn = class {
+var yn = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.values = null, t.kind !== "input" && t.kind !== "instance") throw Error("Select an input module or instance.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -2644,17 +2832,17 @@ var sn = class {
 	assert() {
 		let { ui: e, row: t } = this, n = e.currentRows.find((e) => e.key === t.key);
 		if (this.cancelled || e.cancelled || e.signingOut || !e.client.views.ready || e.client.views.epoch !== this.epoch) throw Error("Feedback stopped. Reopen to inspect again.");
-		if (!K(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !G(e.snapshot, t.bus) || !n || n.kind !== t.kind || n.item.target !== t.item.target || n.generation !== t.generation || (t.kind === "input" ? n.item.short_address !== t.item.short_address : n.parent?.short_address !== t.parent?.short_address || n.item.number !== t.item.number || n.item.instance_type !== t.item.instance_type)) throw Error("Input configuration changed. Reopen feedback.");
+		if (!W(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !U(e.snapshot, t.bus) || !n || n.kind !== t.kind || n.item.target !== t.item.target || n.generation !== t.generation || (t.kind === "input" ? n.item.short_address !== t.item.short_address : n.parent?.short_address !== t.parent?.short_address || n.item.number !== t.item.number || n.item.instance_type !== t.item.instance_type)) throw Error("Input configuration changed. Reopen feedback.");
 	}
 	accepted(e, t) {
 		this.assert();
 		let n = this.row, r = n.kind === "input" ? n.item.short_address : n.parent?.short_address, i = n.kind === "instance" ? n.item.number : null;
 		if (e.operation !== t || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== this.initial.inventory.revision || e.bus !== n.bus.bus || e.address !== r || e.instance !== i || e.configuration_changed !== !1 || n.kind === "input" && e.reported_type !== null || n.kind === "instance" && e.feedback !== null && e.reported_type !== n.item.instance_type) throw Error("Feedback result changed. Refresh to inspect again.");
-		let a = e.feedback === null ? null : an(e.feedback);
+		let a = e.feedback === null ? null : _n(e.feedback);
 		if (t === "set_input_feedback") {
-			if (e.outcome !== "set" || !on(a)) throw Error("Feedback was not confirmed. Refresh to inspect again.");
+			if (e.outcome !== "set" || !vn(a)) throw Error("Feedback was not confirmed. Refresh to inspect again.");
 		} else if (e.outcome === "current") {
-			if (!on(a)) throw Error("Current feedback evidence is incomplete.");
+			if (!vn(a)) throw Error("Current feedback evidence is incomplete.");
 		} else if (e.outcome === "unsupported") {
 			if (!a || a.quality !== "complete" || a.supported !== !1) throw Error("Unsupported feedback evidence is incomplete.");
 		} else if (e.outcome === "unavailable") {
@@ -2668,7 +2856,7 @@ var sn = class {
 		return this.values = t, structuredClone(t);
 	}
 	async set(e) {
-		if (this.assert(), typeof e != "boolean" || !on(this.values)) throw Error("Complete supported feedback evidence is required. Refresh first.");
+		if (this.assert(), typeof e != "boolean" || !vn(this.values)) throw Error("Complete supported feedback evidence is required. Refresh first.");
 		this.values = null;
 		let t = await this.ui.client.job(this.row.generation, this.row.item.target, "set_input_feedback", {
 			expected_revision: this.initial.inventory.revision,
@@ -2679,9 +2867,9 @@ var sn = class {
 	}
 };
 // src/feedback-ui.tsx
-function cn({ row: e, close: t }) {
-	let n = J(), [r] = V(() => new sn(n, e)), [i, a] = V(null), [o, s] = V(!1), [c, l] = V("");
-	_e(() => () => {
+function bn({ row: e, close: t }) {
+	let n = K(), [r] = B(() => new yn(n, e)), [i, a] = B(null), [o, s] = B(!1), [c, l] = B("");
+	ve(() => () => {
 		r.cancelled = !0;
 	}, [r]);
 	let u = () => {
@@ -2695,7 +2883,7 @@ function cn({ row: e, close: t }) {
 			throw r.cancelled || l(e.message), e;
 		}
 	});
-	H(() => {
+	V(() => {
 		d();
 	}, []);
 	let f = () => void n.run(async () => {
@@ -2707,11 +2895,11 @@ function cn({ row: e, close: t }) {
 			throw r.cancelled || (s(!0), l(e.message)), e;
 		}
 	}), p = i?.capability ?? 0;
-	return /* @__PURE__ */ q(Y, {
+	return /* @__PURE__ */ G(q, {
 		title: `Feedback · ${e.item.name}`,
 		close: u,
 		children: [
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					r.initial.inventory.name,
@@ -2722,25 +2910,25 @@ function cn({ row: e, close: t }) {
 					e.kind === "instance" ? ` / instance ${e.item.number}` : " · module"
 				]
 			}),
-			c && /* @__PURE__ */ q("p", {
+			c && /* @__PURE__ */ G("p", {
 				class: "error",
 				role: "alert",
 				children: c
 			}),
-			!o && !c && /* @__PURE__ */ q("p", {
+			!o && !c && /* @__PURE__ */ G("p", {
 				role: "status",
 				children: "Reading feedback…"
 			}),
-			o && (on(i) ? /* @__PURE__ */ q("div", {
+			o && (vn(i) ? /* @__PURE__ */ G("div", {
 				class: "toolbar",
 				children: [
-					/* @__PURE__ */ q("span", { children: [
+					/* @__PURE__ */ G("span", { children: [
 						p & 1 ? "Visible indicator" : "",
 						(p & 9) == 9 ? " and " : "",
 						p & 8 ? "Audible feedback" : ""
 					] }),
-					/* @__PURE__ */ q("span", { class: "spacer" }),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("span", { class: "spacer" }),
+					/* @__PURE__ */ G("button", {
 						class: `power ${i?.active ? "on" : "off"}`,
 						"aria-label": "Feedback active",
 						"aria-pressed": i?.active ?? !1,
@@ -2749,13 +2937,13 @@ function cn({ row: e, close: t }) {
 						children: i?.active ? "On" : "Off"
 					})
 				]
-			}) : /* @__PURE__ */ q("p", { children: i?.supported === !1 ? "This input does not report supported feedback." : "Feedback is unavailable. Refresh to read it again." })),
-			/* @__PURE__ */ q("div", {
+			}) : /* @__PURE__ */ G("p", { children: i?.supported === !1 ? "This input does not report supported feedback." : "Feedback is unavailable. Refresh to read it again." })),
+			/* @__PURE__ */ G("div", {
 				class: "dialog-actions",
-				children: [/* @__PURE__ */ q("button", {
+				children: [/* @__PURE__ */ G("button", {
 					onClick: u,
 					children: "Close"
-				}), /* @__PURE__ */ q("button", {
+				}), /* @__PURE__ */ G("button", {
 					disabled: !!n.busy,
 					onClick: d,
 					children: "Refresh feedback"
@@ -2765,7 +2953,7 @@ function cn({ row: e, close: t }) {
 	});
 }
 // src/restoration.ts
-var ln = class {
+var xn = class {
 	constructor(e, t) {
 		if (this.candidates = /* @__PURE__ */ new Set(), this.cancelled = !1, t.kind !== "output" && t.kind !== "input") throw Error("Select a saved fixture or input module.");
 		this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.original = structuredClone(t), this.space = t.kind === "output" ? "outputs" : "inputs", this.revision = this.initial.inventory.revision, this.address = t.item.short_address, this.generation = t.generation;
@@ -2776,8 +2964,8 @@ var ln = class {
 	}
 	assert() {
 		this.live();
-		let e = this.ui.snapshot, t = e.inventory.buses.find((e) => e.bus === this.original.bus.bus), n = W(e).find((e) => e.key === this.original.key);
-		if (!K(this.initial, e, this.revision, this.original.bus.bus) || !t || !G(e, t) || !n || n.kind === "scene" || n.item.target !== this.original.item.target || n.generation !== this.generation || n.item.short_address !== this.address) throw Error("Configuration or saved fixture changed. Review before continuing address recovery.");
+		let e = this.ui.snapshot, t = e.inventory.buses.find((e) => e.bus === this.original.bus.bus), n = je(e).find((e) => e.key === this.original.key);
+		if (!W(this.initial, e, this.revision, this.original.bus.bus) || !t || !U(e, t) || !n || n.kind === "scene" || n.item.target !== this.original.item.target || n.generation !== this.generation || n.item.short_address !== this.address) throw Error("Configuration or saved fixture changed. Review before continuing address recovery.");
 	}
 	async accept(e, t) {
 		if (this.live(), !Number.isSafeInteger(e) || Number(e) < this.revision) throw Error("Address recovery result changed. Inspect before retrying.");
@@ -2785,7 +2973,7 @@ var ln = class {
 	}
 	async controller(e, t) {
 		this.assert();
-		let n = await this.ui.client.job(U(this.initial.inventory.inventory_epoch, this.revision), null, e, {
+		let n = await this.ui.client.job(H(this.initial.inventory.inventory_epoch, this.revision), null, e, {
 			...t,
 			bus: this.original.bus.bus,
 			expected_revision: this.revision
@@ -2817,7 +3005,7 @@ var ln = class {
 			let t = this.ui.currentRows.find((t) => t.key === e.key);
 			if (!this.candidates.has(e.key) || !t || t.kind !== this.original.kind || t.bus.bus !== this.original.bus.bus || t.item.target !== e.item.target || t.generation !== e.generation) throw Error("Identified candidate changed. Review it again.");
 		}
-		return new un(this, e);
+		return new Sn(this, e);
 	}
 	async refresh() {
 		try {
@@ -2831,7 +3019,7 @@ var ln = class {
 			this.ui.notice = `Address restored at ${this.address}. Current-value refresh did not finish; use Refresh addressed or Read current values.`;
 		}
 	}
-}, un = class {
+}, Sn = class {
 	constructor(e, t) {
 		this.scope = e, this.revision = e.revision, this.candidate = t ? structuredClone(t) : void 0;
 	}
@@ -2860,7 +3048,7 @@ var ln = class {
 				candidate: r.item.target,
 				candidate_generation: r.generation
 			} : {}
-		}), c = r?.item.short_address ?? n.item.short_address, l = r ? U(e.initial.inventory.inventory_epoch, s.revision) : n.generation;
+		}), c = r?.item.short_address ?? n.item.short_address, l = r ? H(e.initial.inventory.inventory_epoch, s.revision) : n.generation;
 		if (s.operation !== o || s.target !== n.item.target || s.target_generation !== n.generation || s.current_generation !== l || s.bus !== n.bus.bus || s.previous_address !== n.item.short_address || s.address !== c || r && (s.candidate !== r.item.target || s.candidate_generation !== r.generation || s.source_address !== r.item.short_address)) throw Error("Address restoration result changed. Inspect hardware before retrying.");
 		if (await e.accept(s.revision, {
 			address: c,
@@ -2869,9 +3057,9 @@ var ln = class {
 		if (r && t.currentRows.some((e) => e.key === r.key)) throw Error("Address restored but candidate retirement is not visible. Inspect saved configuration.");
 		await e.refresh();
 	}
-}, dn = class {
+}, Cn = class {
 	constructor(e, t) {
-		this.scope = new ln(e, t);
+		this.scope = new xn(e, t);
 	}
 	async run() {
 		let e = this.scope, t = e.ui, n = e.original;
@@ -2893,8 +3081,8 @@ var ln = class {
 	}
 };
 // src/restoration-ui.tsx
-function fn({ scope: e, review: t, choose: n, close: r }) {
-	let i = J(), a = e.original, o = i.snapshot.identification, s = !!t?.candidate && o?.target === t.candidate.item.target && [
+function wn({ scope: e, review: t, choose: n, close: r }) {
+	let i = K(), a = e.original, o = i.snapshot.identification, s = !!t?.candidate && o?.target === t.candidate.item.target && [
 		"starting",
 		"blinking",
 		"restoring"
@@ -2908,27 +3096,27 @@ function fn({ scope: e, review: t, choose: n, close: r }) {
 			}
 		});
 	};
-	return /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("div", {
+	return /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("div", {
 		class: "card recovery",
 		role: "region",
 		"aria-label": "Lost address recovery",
 		children: [
-			/* @__PURE__ */ q("h3", { children: [
+			/* @__PURE__ */ G("h3", { children: [
 				"Recover ",
 				a.item.name,
 				" · previous address ",
 				a.item.short_address
 			] }),
-			/* @__PURE__ */ q("p", { children: "Keep this saved name, identity and bindings. Find and identify its new address on this list." }),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("p", { children: "Keep this saved name, identity and bindings. Find and identify its new address on this list." }),
+			/* @__PURE__ */ G("div", {
 				class: "toolbar",
 				children: [
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						disabled: !!i.busy,
 						onClick: () => c(() => e.find()),
 						children: "Find another candidate"
 					}),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						disabled: !!i.busy,
 						onClick: () => {
 							try {
@@ -2939,7 +3127,7 @@ function fn({ scope: e, review: t, choose: n, close: r }) {
 						},
 						children: "Restore sole unaddressed fixture"
 					}),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						onClick: () => {
 							e.cancelled = !0, r();
 						},
@@ -2947,7 +3135,7 @@ function fn({ scope: e, review: t, choose: n, close: r }) {
 					})
 				]
 			}),
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					"Candidates stay on this list if you close recovery. ",
@@ -2956,52 +3144,52 @@ function fn({ scope: e, review: t, choose: n, close: r }) {
 				]
 			})
 		]
-	}), t && /* @__PURE__ */ q(Y, {
+	}), t && /* @__PURE__ */ G(q, {
 		title: "Confirm address restoration",
 		close: () => n(null),
-		children: [t.candidate ? /* @__PURE__ */ q(y, { children: [
-			/* @__PURE__ */ q("p", { children: [
+		children: [t.candidate ? /* @__PURE__ */ G(y, { children: [
+			/* @__PURE__ */ G("p", { children: [
 				"Keep ",
-				/* @__PURE__ */ q("strong", { children: a.item.name }),
+				/* @__PURE__ */ G("strong", { children: a.item.name }),
 				" and adopt address ",
-				/* @__PURE__ */ q("strong", { children: t.candidate.item.short_address }),
+				/* @__PURE__ */ G("strong", { children: t.candidate.item.short_address }),
 				", currently assigned to ",
-				/* @__PURE__ */ q("strong", { children: t.candidate.item.name }),
+				/* @__PURE__ */ G("strong", { children: t.candidate.item.name }),
 				"."
 			] }),
-			/* @__PURE__ */ q("p", { children: [
+			/* @__PURE__ */ G("p", { children: [
 				"Previous address ",
-				/* @__PURE__ */ q("strong", { children: a.item.short_address }),
+				/* @__PURE__ */ G("strong", { children: a.item.short_address }),
 				" becomes available again. The original saved fixture and its bindings continue."
 			] }),
-			/* @__PURE__ */ q("p", { children: [
+			/* @__PURE__ */ G("p", { children: [
 				"The selected row ",
-				/* @__PURE__ */ q("strong", { children: t.candidate.item.name }),
+				/* @__PURE__ */ G("strong", { children: t.candidate.item.name }),
 				e.space === "inputs" ? " and its input instances" : "",
 				" will be removed",
 				e.space === "outputs" ? ", including any of its saved group or scene references" : "",
 				"."
 			] }),
-			s && /* @__PURE__ */ q("p", {
+			s && /* @__PURE__ */ G("p", {
 				class: "hint",
 				children: "The candidate’s prior light level must be restored before adopting its address."
 			})
-		] }) : /* @__PURE__ */ q(y, { children: [
-			/* @__PURE__ */ q("p", { children: [
+		] }) : /* @__PURE__ */ G(y, { children: [
+			/* @__PURE__ */ G("p", { children: [
 				"Restore ",
-				/* @__PURE__ */ q("strong", { children: a.item.name }),
+				/* @__PURE__ */ G("strong", { children: a.item.name }),
 				" at its previous address ",
-				/* @__PURE__ */ q("strong", { children: a.item.short_address }),
+				/* @__PURE__ */ G("strong", { children: a.item.short_address }),
 				"."
 			] }),
-			/* @__PURE__ */ q("p", { children: "I associate the sole unaddressed fixture on this bus with this saved name." }),
-			/* @__PURE__ */ q("p", { children: "No address is programmed if none or multiple unaddressed fixtures are found. Use candidate identification, or deliberately isolate the intended fixture, if several lost their addresses." })
-		] }), /* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("p", { children: "I associate the sole unaddressed fixture on this bus with this saved name." }),
+			/* @__PURE__ */ G("p", { children: "No address is programmed if none or multiple unaddressed fixtures are found. Use candidate identification, or deliberately isolate the intended fixture, if several lost their addresses." })
+		] }), /* @__PURE__ */ G("div", {
 			class: "dialog-actions",
-			children: [/* @__PURE__ */ q("button", {
+			children: [/* @__PURE__ */ G("button", {
 				onClick: () => n(null),
 				children: "Cancel"
-			}), /* @__PURE__ */ q("button", {
+			}), /* @__PURE__ */ G("button", {
 				class: "primary",
 				disabled: !!i.busy,
 				onClick: () => {
@@ -3016,15 +3204,15 @@ function fn({ scope: e, review: t, choose: n, close: r }) {
 	})] });
 }
 // src/devices.tsx
-function pn({ row: e, close: t }) {
-	let n = J(), r = n.physical(e.key), i = je(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
+function Tn({ row: e, close: t }) {
+	let n = K(), r = n.physical(e.key), i = Ne(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
 		"ColorRed",
 		"ColorGreen",
 		"ColorBlue",
 		"ColorWhite",
 		"ColorAmber",
 		"ColorFree"
-	] : [], [u, d] = V({}), f = (e) => ({
+	] : [], [u, d] = B({}), f = (e) => ({
 		ColorTemperature: "Temperature (K)",
 		ColorX: "x",
 		ColorY: "y",
@@ -3035,13 +3223,13 @@ function pn({ row: e, close: t }) {
 		ColorAmber: "Amber (%)",
 		ColorFree: "Free color (%)"
 	})[e], p = (e, t) => typeof t == "number" ? (a === "rgbwaf" ? t * 100 : t).toString() : "";
-	return /* @__PURE__ */ q(Y, {
+	return /* @__PURE__ */ G(q, {
 		title: `Color · ${r.item.name}`,
 		close: t,
 		children: [
-			/* @__PURE__ */ q("label", {
+			/* @__PURE__ */ G("label", {
 				class: "field",
-				children: ["Representation", /* @__PURE__ */ q("select", {
+				children: ["Representation", /* @__PURE__ */ G("select", {
 					"aria-label": "Color representation",
 					value: a,
 					disabled: !!n.busy,
@@ -3052,30 +3240,30 @@ function pn({ row: e, close: t }) {
 						});
 					},
 					children: [
-						/* @__PURE__ */ q("option", {
+						/* @__PURE__ */ G("option", {
 							value: "",
 							children: "None selected"
 						}),
-						/* @__PURE__ */ q("option", {
+						/* @__PURE__ */ G("option", {
 							value: "temperature",
 							children: "White temperature"
 						}),
-						/* @__PURE__ */ q("option", {
+						/* @__PURE__ */ G("option", {
 							value: "xy",
 							children: "CIE xy"
 						}),
-						/* @__PURE__ */ q("option", {
+						/* @__PURE__ */ G("option", {
 							value: "rgbwaf",
 							children: "RGBWAF channels"
 						})
 					]
 				})]
 			}),
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: "Choose the values this fixture uses. Selecting a representation does not change its physical operating mode."
 			}),
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					"Observed support: ",
@@ -3084,13 +3272,13 @@ function pn({ row: e, close: t }) {
 					c?.warmest_kelvin && c.coolest_kelvin ? ` · ${Math.round(c.warmest_kelvin)}–${Math.round(c.coolest_kelvin)} K` : ""
 				]
 			}),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "colour-fields",
-				children: l.map((e) => /* @__PURE__ */ q("label", {
+				children: l.map((e) => /* @__PURE__ */ G("label", {
 					class: "field",
 					children: [
 						f(e),
-						/* @__PURE__ */ q("input", {
+						/* @__PURE__ */ G("input", {
 							type: "number",
 							step: a === "temperature" ? 1 : "any",
 							min: +(a === "temperature"),
@@ -3103,24 +3291,24 @@ function pn({ row: e, close: t }) {
 								[e]: t.currentTarget.value
 							})
 						}),
-						/* @__PURE__ */ q("span", {
+						/* @__PURE__ */ G("span", {
 							class: "hint",
 							children: ["Actual: ", p(e, i[e]) || "unknown"]
 						})
 					]
 				}, e))
 			}),
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: i.ColorQuality === void 0 ? "Read the fixture to discover color support." : `Color status: ${i.ColorQuality}`
 			}),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "dialog-actions",
-				children: [/* @__PURE__ */ q("button", {
+				children: [/* @__PURE__ */ G("button", {
 					disabled: !!n.busy,
 					onClick: () => void n.run(() => n.read(r)),
 					children: "Read values"
-				}), /* @__PURE__ */ q("button", {
+				}), /* @__PURE__ */ G("button", {
 					class: "primary",
 					disabled: !!n.busy || !l.length,
 					onClick: () => n.run(async () => {
@@ -3142,18 +3330,18 @@ function pn({ row: e, close: t }) {
 		]
 	});
 }
-function mn({ row: e, close: t }) {
-	let n = J(), r = n.physical(e.key);
-	return /* @__PURE__ */ q(Y, {
+function En({ row: e, close: t }) {
+	let n = K(), r = n.physical(e.key);
+	return /* @__PURE__ */ G(q, {
 		title: `Groups · ${r.item.name}`,
 		close: t,
-		children: [/* @__PURE__ */ q("p", {
+		children: [/* @__PURE__ */ G("p", {
 			class: "hint",
 			children: "Saved membership. Verify groups to compare with hardware."
-		}), /* @__PURE__ */ q("div", {
+		}), /* @__PURE__ */ G("div", {
 			class: "checklist",
-			children: [(r.bus.groups ?? []).map((e) => /* @__PURE__ */ q("label", { children: [
-				/* @__PURE__ */ q("input", {
+			children: [(r.bus.groups ?? []).map((e) => /* @__PURE__ */ G("label", { children: [
+				/* @__PURE__ */ G("input", {
 					type: "checkbox",
 					checked: e.members?.includes(r.item.short_address) ?? !1,
 					disabled: !!n.busy,
@@ -3164,44 +3352,44 @@ function mn({ row: e, close: t }) {
 				}),
 				e.name,
 				" ",
-				/* @__PURE__ */ q("span", {
+				/* @__PURE__ */ G("span", {
 					class: "hint",
 					children: e.group_address
 				})
-			] }, e.group_address)), !r.bus.groups?.length && /* @__PURE__ */ q("p", { children: "No groups are saved. Open the Groups tab to create one." })]
+			] }, e.group_address)), !r.bus.groups?.length && /* @__PURE__ */ G("p", { children: "No groups are saved. Open the Groups tab to create one." })]
 		})]
 	});
 }
-function hn({ row: e, recover: t, select: n }) {
-	let r = J(), i = r.snapshot, a = je(i, e), [o, s] = V(null);
-	_e(() => () => {
+function Dn({ row: e, recover: t, select: n }) {
+	let r = K(), i = r.snapshot, a = Ne(i, e), [o, s] = B(null);
+	ve(() => () => {
 		o && (o.scope.cancelled = !0);
 	}, [o]);
 	let c = () => {
 		o && (o.scope.cancelled = !0), s(null);
-	}, [l, u] = V(!1), [d, f] = V(!1), [p, m] = V(!1), [h, g] = V(!1), [_, v] = V(!1), [b, x] = V(!1), [S, C] = V(!1), [w, T] = V(!1), [E, D] = V(null), O = G(i, e.bus) && r.client.views.ready, k = i.identification?.target === e.item.target ? i.identification : null, A = !!k && [
+	}, [l, u] = B(!1), [d, f] = B(!1), [p, m] = B(!1), [h, g] = B(!1), [_, v] = B(!1), [b, x] = B(!1), [S, C] = B(!1), [w, T] = B(!1), [E, D] = B(null), O = U(i, e.bus) && r.client.views.ready, k = i.identification?.target === e.item.target ? i.identification : null, A = !!k && [
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(k.phase), j = r.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), M = r.hints.get(e.key), ee = e.kind === "output" ? M?.length ? M.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Me(e.item.instance_type), N = a.ColorCapabilities?.dt8, te = e.kind === "output" && (N === !0 || N !== !1 && M?.includes(8) === !0), P = Ne(a), F = typeof a.Brightness == "number" ? Math.round(a.Brightness * 100) : null;
-	return /* @__PURE__ */ q("div", {
+	].includes(k.phase), j = r.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), M = r.hints.get(e.key), ee = e.kind === "output" ? M?.length ? M.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Pe(e.item.instance_type), N = a.ColorCapabilities?.dt8, te = e.kind === "output" && (N === !0 || N !== !1 && M?.includes(8) === !0), P = Fe(a), F = typeof a.Brightness == "number" ? Math.round(a.Brightness * 100) : null;
+	return /* @__PURE__ */ G("div", {
 		class: `device-row ${e.kind === "output" ? "output-grid" : "input-grid"} ${A ? "identifying" : ""} ${j && Date.now() - j.received < 5e3 ? "active-input" : ""}`,
 		"data-device-key": e.key,
 		children: [
-			/* @__PURE__ */ q("span", {
+			/* @__PURE__ */ G("span", {
 				class: "address",
 				children: e.parent ? `${e.parent.short_address} / ${e.item.number}` : e.item.short_address
 			}),
-			e.kind === "output" ? /* @__PURE__ */ q("div", {
+			e.kind === "output" ? /* @__PURE__ */ G("div", {
 				class: "fixture-name",
-				children: [/* @__PURE__ */ q(Ge, { row: e }), /* @__PURE__ */ q(Je, { row: e })]
-			}) : /* @__PURE__ */ q(Ge, { row: e }),
-			/* @__PURE__ */ q("span", {
+				children: [/* @__PURE__ */ G(qe, { row: e }), /* @__PURE__ */ G(Xe, { row: e })]
+			}) : /* @__PURE__ */ G(qe, { row: e }),
+			/* @__PURE__ */ G("span", {
 				class: "device-type",
 				children: ee
 			}),
-			e.kind === "output" ? /* @__PURE__ */ q(y, { children: [
-				/* @__PURE__ */ q("button", {
+			e.kind === "output" ? /* @__PURE__ */ G(y, { children: [
+				/* @__PURE__ */ G("button", {
 					class: `power ${a.PowerState === !0 ? "on" : a.PowerState === !1 ? "off" : "unknown"}`,
 					"aria-label": `Power ${e.item.name}`,
 					"aria-pressed": typeof a.PowerState == "boolean" ? a.PowerState : "mixed",
@@ -3209,9 +3397,9 @@ function hn({ row: e, recover: t, select: n }) {
 					onClick: () => void r.run(() => r.apply(e, { PowerState: a.PowerState !== !0 })),
 					children: a.PowerState === !0 ? "On" : a.PowerState === !1 ? "Off" : "?"
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "brightness",
-					children: [/* @__PURE__ */ q("input", {
+					children: [/* @__PURE__ */ G("input", {
 						type: "range",
 						min: "0",
 						max: "100",
@@ -3229,107 +3417,107 @@ function hn({ row: e, recover: t, select: n }) {
 								}
 							});
 						}
-					}), /* @__PURE__ */ q("output", { children: [E ?? F ?? "—", F === null ? "" : "%"] })]
+					}), /* @__PURE__ */ G("output", { children: [E ?? F ?? "—", F === null ? "" : "%"] })]
 				}),
-				te ? /* @__PURE__ */ q("button", {
+				te ? /* @__PURE__ */ G("button", {
 					class: "colour-button",
 					"aria-label": `Color ${e.item.name}`,
 					disabled: !O || !!r.busy || A,
 					onClick: () => x(!0),
 					children: e.item.color_representation === "temperature" && typeof a.ColorTemperature == "number" ? `${Math.round(a.ColorTemperature)} K` : e.item.color_representation === "xy" ? "xy controls" : e.item.color_representation === "rgbwaf" ? "RGB controls" : "Color"
-				}) : /* @__PURE__ */ q("span", {
+				}) : /* @__PURE__ */ G("span", {
 					class: "colour-button",
 					"aria-hidden": "true"
 				}),
-				/* @__PURE__ */ q("button", {
+				/* @__PURE__ */ G("button", {
 					class: A ? "primary blink" : "blink",
 					"aria-label": `${A ? "Stop blink" : "Blink"} ${e.item.name}`,
 					disabled: !O || !!r.busy || k?.phase === "restoring",
 					onClick: () => void r.run(() => r.blink(e)),
 					children: k?.phase === "restoring" ? "Restoring…" : A ? "Stop blink" : "Blink"
 				})
-			] }) : /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("span", {
+			] }) : /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("span", {
 				class: `input-state ${a.Available === !0 ? "" : "muted"}`,
 				children: e.kind === "input" ? `${e.item.instances?.length ?? 0} instances` : P
-			}), /* @__PURE__ */ q("span", {
+			}), /* @__PURE__ */ G("span", {
 				class: "activity",
 				children: j?.action ?? "No recent action"
 			})] }),
-			/* @__PURE__ */ q("button", {
+			/* @__PURE__ */ G("button", {
 				class: "menu-button",
 				"aria-label": `Actions ${e.item.name}`,
 				onClick: () => v(!0),
 				children: "⋮"
 			}),
-			_ && /* @__PURE__ */ q(Y, {
+			_ && /* @__PURE__ */ G(q, {
 				title: e.item.name,
 				close: () => v(!1),
-				children: /* @__PURE__ */ q("div", {
+				children: /* @__PURE__ */ G("div", {
 					class: "menu-actions",
 					children: [
-						(e.kind === "output" || e.kind === "input") && /* @__PURE__ */ q("button", {
+						(e.kind === "output" || e.kind === "input") && /* @__PURE__ */ G("button", {
 							disabled: !O || !!r.busy,
 							onClick: () => {
 								r.cancelled = !1, v(!1), m(!0);
 							},
 							children: "Device information"
 						}),
-						e.kind === "output" && /* @__PURE__ */ q("button", {
+						e.kind === "output" && /* @__PURE__ */ G("button", {
 							disabled: !O || !!r.busy,
 							onClick: () => {
 								r.cancelled = !1, v(!1), f(!0);
 							},
 							children: "Fixture settings"
 						}),
-						e.kind === "instance" && /* @__PURE__ */ q("button", {
+						e.kind === "instance" && /* @__PURE__ */ G("button", {
 							disabled: !O || !!r.busy,
 							onClick: () => {
 								r.cancelled = !1, v(!1), u(!0);
 							},
 							children: "Event settings"
 						}),
-						e.kind !== "output" && /* @__PURE__ */ q("button", {
+						e.kind !== "output" && /* @__PURE__ */ G("button", {
 							disabled: !O || !!r.busy,
 							onClick: () => {
 								r.cancelled = !1, v(!1), g(!0);
 							},
 							children: "Feedback"
 						}),
-						e.kind !== "input" && /* @__PURE__ */ q("button", {
+						e.kind !== "input" && /* @__PURE__ */ G("button", {
 							disabled: !O || !!r.busy,
 							onClick: () => {
 								v(!1), r.run(() => r.read(e));
 							},
 							children: "Read current values"
 						}),
-						e.kind === "output" && /* @__PURE__ */ q("button", {
+						e.kind === "output" && /* @__PURE__ */ G("button", {
 							onClick: () => {
 								v(!1), C(!0);
 							},
 							children: "Group membership"
 						}),
-						te && /* @__PURE__ */ q("button", {
+						te && /* @__PURE__ */ G("button", {
 							onClick: () => {
 								v(!1), x(!0);
 							},
 							children: "Color representation and values"
 						}),
-						e.kind !== "instance" && /* @__PURE__ */ q("button", {
+						e.kind !== "instance" && /* @__PURE__ */ G("button", {
 							disabled: !O || !!r.busy,
 							onClick: () => {
 								v(!1), t(e);
 							},
 							children: "Restore lost address"
 						}),
-						e.kind !== "instance" && /* @__PURE__ */ q("button", {
+						e.kind !== "instance" && /* @__PURE__ */ G("button", {
 							class: "danger",
 							disabled: !O || !!r.busy,
 							onClick: () => {
-								r.cancelled = !1, v(!1), s(new dn(r, e));
+								r.cancelled = !1, v(!1), s(new Cn(r, e));
 							},
 							children: "Clear short address"
 						}),
-						e.kind !== "instance" && /* @__PURE__ */ q("button", {
+						e.kind !== "instance" && /* @__PURE__ */ G("button", {
 							class: "danger",
 							onClick: () => {
 								v(!1), T(!0);
@@ -3339,44 +3527,44 @@ function hn({ row: e, recover: t, select: n }) {
 					]
 				})
 			}),
-			l && /* @__PURE__ */ q(zt, {
+			l && /* @__PURE__ */ G(Zt, {
 				row: e,
 				close: () => u(!1)
 			}),
-			d && /* @__PURE__ */ q(nn, {
+			d && /* @__PURE__ */ G(hn, {
 				row: e,
 				close: () => f(!1)
 			}),
-			p && /* @__PURE__ */ q(gt, {
+			p && /* @__PURE__ */ G(Ot, {
 				row: e,
 				close: () => m(!1)
 			}),
-			h && /* @__PURE__ */ q(cn, {
+			h && /* @__PURE__ */ G(bn, {
 				row: e,
 				close: () => g(!1)
 			}),
-			o && /* @__PURE__ */ q(Y, {
+			o && /* @__PURE__ */ G(q, {
 				title: "Clear short address?",
 				close: c,
 				children: [
-					/* @__PURE__ */ q("p", { children: [
+					/* @__PURE__ */ G("p", { children: [
 						"Clear address ",
-						/* @__PURE__ */ q("strong", { children: o.scope.original.item.short_address }),
+						/* @__PURE__ */ G("strong", { children: o.scope.original.item.short_address }),
 						" from ",
-						/* @__PURE__ */ q("strong", { children: o.scope.original.item.name }),
+						/* @__PURE__ */ G("strong", { children: o.scope.original.item.name }),
 						" on ",
 						o.scope.initial.inventory.name,
 						"/",
 						o.scope.original.bus.name,
 						"."
 					] }),
-					/* @__PURE__ */ q("p", { children: "The saved name, bindings and address reservation stay. The fixture will be unaddressed. Use Add unaddressed, then Restore lost address to identify it again." }),
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("p", { children: "The saved name, bindings and address reservation stay. The fixture will be unaddressed. Use Add unaddressed, then Restore lost address to identify it again." }),
+					/* @__PURE__ */ G("div", {
 						class: "dialog-actions",
-						children: [/* @__PURE__ */ q("button", {
+						children: [/* @__PURE__ */ G("button", {
 							onClick: c,
 							children: "Cancel"
-						}), /* @__PURE__ */ q("button", {
+						}), /* @__PURE__ */ G("button", {
 							class: "danger",
 							disabled: !!r.busy,
 							onClick: () => void r.run(async () => {
@@ -3387,35 +3575,35 @@ function hn({ row: e, recover: t, select: n }) {
 					})
 				]
 			}),
-			n && /* @__PURE__ */ q("div", {
+			n && /* @__PURE__ */ G("div", {
 				class: "row-error",
-				children: /* @__PURE__ */ q("button", {
+				children: /* @__PURE__ */ G("button", {
 					disabled: !O || !!r.busy,
 					onClick: n,
 					children: "Use this fixture"
 				})
 			}),
-			b && te && /* @__PURE__ */ q(pn, {
+			b && te && /* @__PURE__ */ G(Tn, {
 				row: e,
 				close: () => x(!1)
 			}),
-			S && /* @__PURE__ */ q(mn, {
+			S && /* @__PURE__ */ G(En, {
 				row: e,
 				close: () => C(!1)
 			}),
-			w && /* @__PURE__ */ q(Y, {
+			w && /* @__PURE__ */ G(q, {
 				title: `Remove ${e.item.name}?`,
 				close: () => T(!1),
-				children: [/* @__PURE__ */ q("p", { children: [
+				children: [/* @__PURE__ */ G("p", { children: [
 					"Remove this ",
 					e.kind === "input" ? "module and all its instances" : "fixture",
 					" from the saved list. Its hardware address stays unchanged and discovery can find it again."
-				] }), /* @__PURE__ */ q("div", {
+				] }), /* @__PURE__ */ G("div", {
 					class: "dialog-actions",
-					children: [/* @__PURE__ */ q("button", {
+					children: [/* @__PURE__ */ G("button", {
 						onClick: () => T(!1),
 						children: "Cancel"
-					}), /* @__PURE__ */ q("button", {
+					}), /* @__PURE__ */ G("button", {
 						class: "danger",
 						disabled: !!r.busy,
 						onClick: () => void r.run(async () => {
@@ -3425,50 +3613,50 @@ function hn({ row: e, recover: t, select: n }) {
 					})]
 				})]
 			}),
-			k?.phase === "interrupted" && /* @__PURE__ */ q("p", {
+			k?.phase === "interrupted" && /* @__PURE__ */ G("p", {
 				class: "hint row-error",
 				children: "Identification interrupted. Restoration was not confirmed."
 			})
 		]
 	});
 }
-function gn({ bus: e }) {
-	let t = J(), [n, r] = V(""), [i, a] = V(null), [o, s] = V(null);
-	H(() => () => {
+function On({ bus: e }) {
+	let t = K(), [n, r] = B(""), [i, a] = B(null), [o, s] = B(null);
+	V(() => () => {
 		i && (i.cancelled = !0);
 	}, [i]);
 	let c = (e) => {
-		t.cancelled = !1, s(null), r(""), a(new ln(t, e));
+		t.cancelled = !1, s(null), r(""), a(new xn(t, e));
 	}, l = (e) => i?.candidates.has(e.key) ? () => {
 		try {
 			s(i.review(e));
 		} catch (e) {
 			t.error = e.message, t.touch();
 		}
-	} : void 0, u = t.currentRows.filter((t) => t.kind !== "scene" && t.bus.bus === e.bus), d = (e) => Ae(n, e.item.name) || !!t.drafts.get(e.key)?.dirty || !!t.drafts.get(e.key)?.error, f = u.filter((e) => e.kind === "output" && d(e)), p = u.filter((e) => (e.kind === "input" || e.kind === "instance") && d(e)), m = G(t.snapshot, e) && t.client.views.ready, h = [...t.drafts].filter(([e, n]) => n.dirty && !t.currentRows.some((t) => t.key === e));
-	return /* @__PURE__ */ q(y, { children: [
-		/* @__PURE__ */ q("div", {
+	} : void 0, u = t.currentRows.filter((t) => t.kind !== "scene" && t.bus.bus === e.bus), d = (e) => Me(n, e.item.name) || !!t.drafts.get(e.key)?.dirty || !!t.drafts.get(e.key)?.error, f = u.filter((e) => e.kind === "output" && d(e)), p = u.filter((e) => (e.kind === "input" || e.kind === "instance") && d(e)), m = U(t.snapshot, e) && t.client.views.ready, h = [...t.drafts].filter(([e, n]) => n.dirty && !t.currentRows.some((t) => t.key === e));
+	return /* @__PURE__ */ G(y, { children: [
+		/* @__PURE__ */ G("div", {
 			class: "toolbar discovery",
 			children: [
-				/* @__PURE__ */ q("button", {
+				/* @__PURE__ */ G("button", {
 					class: "primary",
 					disabled: !m || !!t.busy,
 					onClick: () => void t.run(() => t.scan(e, !0)),
 					children: "Add unaddressed"
 				}),
-				/* @__PURE__ */ q("button", {
+				/* @__PURE__ */ G("button", {
 					disabled: !m || !!t.busy,
 					onClick: () => void t.run(() => t.scan(e, !1)),
 					children: "Refresh addressed"
 				}),
-				/* @__PURE__ */ q("span", {
+				/* @__PURE__ */ G("span", {
 					class: "hint",
 					children: "Existing names and addresses are preserved."
 				})
 			]
 		}),
-		/* @__PURE__ */ q(He, {}),
-		i && /* @__PURE__ */ q(fn, {
+		/* @__PURE__ */ G(We, {}),
+		i && /* @__PURE__ */ G(wn, {
 			scope: i,
 			review: o,
 			choose: s,
@@ -3476,10 +3664,10 @@ function gn({ bus: e }) {
 				s(null), a(null);
 			}
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "toolbar filter",
 			children: [
-				/* @__PURE__ */ q("input", {
+				/* @__PURE__ */ G("input", {
 					type: "search",
 					value: n,
 					placeholder: "Filter names · e.g. Light*",
@@ -3490,13 +3678,13 @@ function gn({ bus: e }) {
 					"",
 					"Light*",
 					"Input*"
-				].map((e) => /* @__PURE__ */ q("button", {
+				].map((e) => /* @__PURE__ */ G("button", {
 					class: n === e ? "soft" : "",
 					onClick: () => r(e),
 					children: e || "All"
 				})),
-				/* @__PURE__ */ q("span", { class: "spacer" }),
-				/* @__PURE__ */ q("span", {
+				/* @__PURE__ */ G("span", { class: "spacer" }),
+				/* @__PURE__ */ G("span", {
 					class: "hint",
 					children: [
 						u.filter((e) => e.kind === "output").length,
@@ -3507,81 +3695,81 @@ function gn({ bus: e }) {
 				})
 			]
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "section-heading",
-			children: [/* @__PURE__ */ q("h2", { children: "Outputs" }), /* @__PURE__ */ q("span", {
+			children: [/* @__PURE__ */ G("h2", { children: "Outputs" }), /* @__PURE__ */ G("span", {
 				class: "hint",
 				children: "✓, Enter or leave the field to save"
 			})]
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "device-table",
 			children: [
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "table-heading output-grid",
 					children: [
-						/* @__PURE__ */ q("span", { children: "Address" }),
-						/* @__PURE__ */ q("span", { children: "Name" }),
-						/* @__PURE__ */ q("span", { children: "Type" }),
-						/* @__PURE__ */ q("span", { children: "Power" }),
-						/* @__PURE__ */ q("span", { children: "Brightness" }),
-						/* @__PURE__ */ q("span", { children: "Color" }),
-						/* @__PURE__ */ q("span", { children: "Identify" }),
-						/* @__PURE__ */ q("span", {})
+						/* @__PURE__ */ G("span", { children: "Address" }),
+						/* @__PURE__ */ G("span", { children: "Name" }),
+						/* @__PURE__ */ G("span", { children: "Type" }),
+						/* @__PURE__ */ G("span", { children: "Power" }),
+						/* @__PURE__ */ G("span", { children: "Brightness" }),
+						/* @__PURE__ */ G("span", { children: "Color" }),
+						/* @__PURE__ */ G("span", { children: "Identify" }),
+						/* @__PURE__ */ G("span", {})
 					]
 				}),
-				f.map((e) => /* @__PURE__ */ q(hn, {
+				f.map((e) => /* @__PURE__ */ G(Dn, {
 					row: e,
 					recover: c,
 					select: l(e)
 				}, e.key)),
-				!f.length && /* @__PURE__ */ q("p", {
+				!f.length && /* @__PURE__ */ G("p", {
 					class: "empty",
 					children: n ? "No matching outputs." : "No outputs are saved. Start discovery to find the fixtures on this bus."
 				})
 			]
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "section-heading",
-			children: [/* @__PURE__ */ q("h2", { children: "Inputs" }), /* @__PURE__ */ q("span", {
+			children: [/* @__PURE__ */ G("h2", { children: "Inputs" }), /* @__PURE__ */ G("span", {
 				class: "hint",
 				children: "Operate a switch to see its current state and action."
 			})]
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "device-table",
 			children: [
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "table-heading input-grid",
 					children: [
-						/* @__PURE__ */ q("span", { children: "Addr / instance" }),
-						/* @__PURE__ */ q("span", { children: "Name" }),
-						/* @__PURE__ */ q("span", { children: "Type" }),
-						/* @__PURE__ */ q("span", { children: "Current state" }),
-						/* @__PURE__ */ q("span", { children: "Last action" }),
-						/* @__PURE__ */ q("span", {})
+						/* @__PURE__ */ G("span", { children: "Addr / instance" }),
+						/* @__PURE__ */ G("span", { children: "Name" }),
+						/* @__PURE__ */ G("span", { children: "Type" }),
+						/* @__PURE__ */ G("span", { children: "Current state" }),
+						/* @__PURE__ */ G("span", { children: "Last action" }),
+						/* @__PURE__ */ G("span", {})
 					]
 				}),
-				p.map((e) => /* @__PURE__ */ q(hn, {
+				p.map((e) => /* @__PURE__ */ G(Dn, {
 					row: e,
 					recover: c,
 					select: l(e)
 				}, e.key)),
-				!p.length && /* @__PURE__ */ q("p", {
+				!p.length && /* @__PURE__ */ G("p", {
 					class: "empty",
 					children: n ? "No matching inputs." : "No input modules are saved."
 				})
 			]
 		}),
-		h.map(([e, n]) => /* @__PURE__ */ q("div", {
+		h.map(([e, n]) => /* @__PURE__ */ G("div", {
 			class: "card retired",
 			children: [
-				/* @__PURE__ */ q("p", { children: ["Removed or replaced fixture · unsaved name: ", /* @__PURE__ */ q("strong", { children: n.text })] }),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("p", { children: ["Removed or replaced fixture · unsaved name: ", /* @__PURE__ */ G("strong", { children: n.text })] }),
+				/* @__PURE__ */ G("p", {
 					class: "error",
 					children: "This draft cannot be applied to a replacement."
 				}),
-				/* @__PURE__ */ q("button", {
+				/* @__PURE__ */ G("button", {
 					onClick: () => {
 						t.drafts.delete(e), t.touch();
 					},
@@ -3589,26 +3777,26 @@ function gn({ bus: e }) {
 				})
 			]
 		}, e)),
-		!m && /* @__PURE__ */ q("p", {
+		!m && /* @__PURE__ */ G("p", {
 			class: "hint",
 			children: e.enabled ? "Hardware controls are unavailable until the bus is ready." : "Enable this bus to use hardware controls."
 		})
 	] });
 }
 // src/group-output.ts
-var $ = () => {
+var kn = () => {
 	throw Error("Group evidence is incomplete or inconsistent. Refresh to inspect again.");
-}, _n = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function vn(e, t = !1) {
-	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? $() : e.kind === "value" ? !_n(e.raw) || t && e.raw === 255 ? $() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? $() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || _n(e.code)) ? null : $();
+}, An = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function jn(e, t = !1) {
+	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? kn() : e.kind === "value" ? !An(e.raw) || t && e.raw === 255 ? kn() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? kn() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || An(e.code)) ? null : kn();
 }
-function yn(e) {
+function Mn(e) {
 	if (!e || typeof e != "object" || Array.isArray(e) || Object.keys(e).some((e) => e !== "power" && e !== "brightness") || !Object.keys(e).length) throw Error("Specify group power or a level.");
 	if ("power" in e && typeof e.power != "boolean" || "brightness" in e && (typeof e.brightness != "number" || !Number.isFinite(e.brightness) || e.brightness < 0 || e.brightness > 1)) throw Error("Group power must be boolean and level must be between 0 and 1.");
 	if (e.power === !1 && typeof e.brightness == "number" && e.brightness > 0 || e.power === !0 && e.brightness === 0) throw Error("Group power and level contradict each other.");
 	return structuredClone(e);
 }
-var bn = class {
+var Nn = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.result = null, t.kind !== "group") throw Error("Select a saved hardware group.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -3616,7 +3804,7 @@ var bn = class {
 	assert() {
 		let { ui: e, row: t } = this, n = e.currentRows.find((e) => e.key === t.key);
 		if (this.cancelled || e.cancelled || e.signingOut || !e.client.views.ready || e.client.views.epoch !== this.epoch) throw Error("Group control stopped. Refresh to inspect again.");
-		if (!K(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !G(e.snapshot, t.bus) || !n || n.kind !== "group" || n.item.target !== t.item.target || n.generation !== t.generation || n.item.group_address !== t.item.group_address) throw Error("Group configuration changed. Refresh to inspect again.");
+		if (!W(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !U(e.snapshot, t.bus) || !n || n.kind !== "group" || n.item.target !== t.item.target || n.generation !== t.generation || n.item.group_address !== t.item.group_address) throw Error("Group configuration changed. Refresh to inspect again.");
 	}
 	current() {
 		try {
@@ -3628,18 +3816,18 @@ var bn = class {
 	accepted(e, t) {
 		this.assert();
 		let { row: n, initial: r } = this;
-		if (!e || e.operation !== t || e.outcome !== (t === "read_group_output" ? "observed" : "sent") || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== r.inventory.revision || e.bus !== n.bus.bus || e.group !== n.item.group_address || e.coverage !== "saved_inventory" || e.configuration_changed !== !1) return $();
+		if (!e || e.operation !== t || e.outcome !== (t === "read_group_output" ? "observed" : "sent") || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== r.inventory.revision || e.bus !== n.bus.bus || e.group !== n.item.group_address || e.coverage !== "saved_inventory" || e.configuration_changed !== !1) return kn();
 		let i = this.initial.inventory.buses.find((e) => e.bus === n.bus.bus).outputs;
-		if (!Array.isArray(e.members) || e.members.length !== i.length || !e.values) return $();
+		if (!Array.isArray(e.members) || e.members.length !== i.length || !e.values) return kn();
 		let a = /* @__PURE__ */ new Set(), o = [], s = [], c = !1, l = 0, u = !0, d = !0;
 		for (let t of e.members) {
 			let e = i.find((e) => e.short_address === t.address);
-			if (!e || a.has(t.address) || t.target !== e.target || t.target_generation !== `${r.inventory.inventory_epoch}.${e.binding_revision}` || t.expected_member !== (n.item.members?.includes(t.address) ?? !1)) return $();
+			if (!e || a.has(t.address) || t.target !== e.target || t.target_generation !== `${r.inventory.inventory_epoch}.${e.binding_revision}` || t.expected_member !== (n.item.members?.includes(t.address) ?? !1)) return kn();
 			a.add(t.address);
-			let f = vn(t.membership_low), p = vn(t.membership_high), m = vn(t.actual_level, !0), h = vn(t.status);
+			let f = jn(t.membership_low), p = jn(t.membership_high), m = jn(t.actual_level, !0), h = jn(t.status);
 			c || (c = f !== null || p !== null || m !== null || h !== null || t.actual_level?.kind === "mask");
 			let g = f === null || p === null ? null : !!((f | p << 8) & 1 << n.item.group_address);
-			if (t.member !== g) return $();
+			if (t.member !== g) return kn();
 			u && (u = g !== null), d && (d = g === t.expected_member), g === null ? s.push(t.address) : g && (l++, m === null || h === null ? s.push(t.address) : o.push(m));
 		}
 		let f, p = null, m = null, h = null, g = null;
@@ -3653,7 +3841,7 @@ var bn = class {
 			known_members: l,
 			unresolved: s
 		};
-		return Object.entries(v).some(([e, t]) => JSON.stringify(_[e]) !== JSON.stringify(t)) || e.membership_matches !== (u ? d : null) ? $() : {
+		return Object.entries(v).some(([e, t]) => JSON.stringify(_[e]) !== JSON.stringify(t)) || e.membership_matches !== (u ? d : null) ? kn() : {
 			values: structuredClone(v),
 			membership_matches: e.membership_matches
 		};
@@ -3665,7 +3853,7 @@ var bn = class {
 	}
 	async set(e) {
 		this.assert();
-		let t = yn(e);
+		let t = Mn(e);
 		this.result = null;
 		let n = await this.ui.client.job(this.row.generation, this.row.item.target, "set_group_output", {
 			expected_revision: this.initial.inventory.revision,
@@ -3675,44 +3863,44 @@ var bn = class {
 	}
 };
 // src/group-output-ui.tsx
-function xn({ row: e }) {
-	let t = J(), n = ve(null), [r, i] = V(null), [a, o] = V(50);
-	_e(() => () => {
+function Pn({ row: e }) {
+	let t = K(), n = ye(null), [r, i] = B(null), [a, o] = B(50);
+	ve(() => () => {
 		n.current && (n.current.cancelled = !0);
 	}, []);
 	let s = (r) => void t.run(async () => {
 		n.current && (n.current.cancelled = !0), t.cancelled = !1;
-		let a = new bn(t, e);
+		let a = new Nn(t, e);
 		n.current = a, i(null);
 		let o = r ? await a.set(r) : await a.read();
 		i(o);
-	}), c = n.current?.current() ? r : null, l = c?.values, u = G(t.snapshot, e.bus) && t.client.views.ready && !t.busy, d = typeof l?.power_state == "boolean" ? l.power_state : null;
-	return /* @__PURE__ */ q("section", {
+	}), c = n.current?.current() ? r : null, l = c?.values, u = U(t.snapshot, e.bus) && t.client.views.ready && !t.busy, d = typeof l?.power_state == "boolean" ? l.power_state : null;
+	return /* @__PURE__ */ G("section", {
 		class: "card",
 		"aria-label": "Group power and dimming",
 		children: [
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "toolbar",
 				children: [
-					/* @__PURE__ */ q("strong", { children: "Power" }),
-					d === null ? /* @__PURE__ */ q(y, { children: [
-						/* @__PURE__ */ q("span", {
+					/* @__PURE__ */ G("strong", { children: "Power" }),
+					d === null ? /* @__PURE__ */ G(y, { children: [
+						/* @__PURE__ */ G("span", {
 							class: "muted",
 							children: l?.power_mixed ? "Mixed" : "Unknown"
 						}),
-						/* @__PURE__ */ q("button", {
+						/* @__PURE__ */ G("button", {
 							"aria-label": "Group on",
 							disabled: !u,
 							onClick: () => s({ power: !0 }),
 							children: "On"
 						}),
-						/* @__PURE__ */ q("button", {
+						/* @__PURE__ */ G("button", {
 							"aria-label": "Group off",
 							disabled: !u,
 							onClick: () => s({ power: !1 }),
 							children: "Off"
 						})
-					] }) : /* @__PURE__ */ q("button", {
+					] }) : /* @__PURE__ */ G("button", {
 						class: `power ${d ? "on" : "off"}`,
 						"aria-label": "Group power",
 						"aria-pressed": d,
@@ -3720,19 +3908,19 @@ function xn({ row: e }) {
 						onClick: () => s({ power: !d }),
 						children: d ? "On" : "Off"
 					}),
-					/* @__PURE__ */ q("span", { class: "spacer" }),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("span", { class: "spacer" }),
+					/* @__PURE__ */ G("button", {
 						disabled: !u,
 						onClick: () => s(),
 						children: "Read group values"
 					})
 				]
 			}),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "toolbar",
 				children: [
-					/* @__PURE__ */ q("span", { children: ["Brightness: ", typeof l?.brightness == "number" ? `${Math.round(l.brightness * 100)}%` : l?.brightness_mixed ? "Mixed" : "Unknown"] }),
-					/* @__PURE__ */ q("label", { children: ["New level ", /* @__PURE__ */ q("input", {
+					/* @__PURE__ */ G("span", { children: ["Brightness: ", typeof l?.brightness == "number" ? `${Math.round(l.brightness * 100)}%` : l?.brightness_mixed ? "Mixed" : "Unknown"] }),
+					/* @__PURE__ */ G("label", { children: ["New level ", /* @__PURE__ */ G("input", {
 						type: "range",
 						"aria-label": "Group level command",
 						min: "0",
@@ -3742,15 +3930,15 @@ function xn({ row: e }) {
 						disabled: !u,
 						onInput: (e) => o(Number(e.currentTarget.value))
 					})] }),
-					/* @__PURE__ */ q("span", { children: [a, "%"] }),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("span", { children: [a, "%"] }),
+					/* @__PURE__ */ G("button", {
 						disabled: !u,
 						onClick: () => s({ brightness: a / 100 }),
 						children: "Set group level"
 					})
 				]
 			}),
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					"Commands use hardware group ",
@@ -3765,14 +3953,14 @@ function xn({ row: e }) {
 	});
 }
 // src/group-color.ts
-var Sn = [
+var Fn = [
 	"ColorRed",
 	"ColorGreen",
 	"ColorBlue",
 	"ColorWhite",
 	"ColorAmber",
 	"ColorFree"
-], Cn = (e) => ({
+], In = (e) => ({
 	ColorTemperature: "Temperature (K)",
 	ColorX: "x",
 	ColorY: "y",
@@ -3783,57 +3971,57 @@ var Sn = [
 	ColorAmber: "Amber (%)",
 	ColorFree: "Free color (%)"
 })[e] ?? e;
-function wn(e, t) {
-	return e === "temperature" ? ["ColorTemperature"] : e === "xy" ? ["ColorX", "ColorY"] : e === "rgbwaf" && Array.isArray(t) ? Sn.filter((e) => t.includes(e.slice(5).toLowerCase())) : [];
+function Ln(e, t) {
+	return e === "temperature" ? ["ColorTemperature"] : e === "xy" ? ["ColorX", "ColorY"] : e === "rgbwaf" && Array.isArray(t) ? Fn.filter((e) => t.includes(e.slice(5).toLowerCase())) : [];
 }
-function Tn(e, t, n) {
+function Rn(e, t, n) {
 	let r = e[t];
 	return typeof r == "number" ? String(Math.round(r * (n === "rgbwaf" ? 100 : 1) * 1e4) / 1e4) : e[`${t}Mixed`] === !0 ? "Mixed" : "Unknown";
 }
-function En(e, t, n) {
+function zn(e, t, n) {
 	let r = {};
 	for (let i of t) {
 		let t = e[i];
 		if (t === void 0 || t.trim() === "") continue;
 		let a = Number(t), o = n === "xy" ? 65534 / 65536 : n === "rgbwaf" ? 100 : 1e6, s = n === "temperature" ? 1e6 / 65534 : 0;
-		if (!Number.isFinite(a) || a < s || a > o) throw Error(`Enter a valid ${Cn(i)} value.`);
+		if (!Number.isFinite(a) || a < s || a > o) throw Error(`Enter a valid ${In(i)} value.`);
 		r[i] = n === "rgbwaf" ? a / 100 : a;
 	}
 	if (!Object.keys(r).length) throw Error("Change at least one color value.");
 	return r;
 }
 // src/group-color-ui.tsx
-function Dn({ row: e }) {
-	let t = J(), n = t.physical(e.key), r = je(t.snapshot, n), [i, a] = V(!1), [o, s] = V({}), c = n.item.color_representation ?? "", l = r.ColorCapabilities, u = l?.supported_representations?.filter((e) => [
+function Bn({ row: e }) {
+	let t = K(), n = t.physical(e.key), r = Ne(t.snapshot, n), [i, a] = B(!1), [o, s] = B({}), c = n.item.color_representation ?? "", l = r.ColorCapabilities, u = l?.supported_representations?.filter((e) => [
 		"temperature",
 		"xy",
 		"rgbwaf"
-	].includes(e)), d = wn(c, l?.common_rgbwaf_assignments), f = t.snapshot.identification, p = f && [
+	].includes(e)), d = Ln(c, l?.common_rgbwaf_assignments), f = t.snapshot.identification, p = f && [
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(f.phase) && t.currentRows.some((t) => t.item.target === f.target && t.bus.bus === e.bus.bus), m = G(t.snapshot, n.bus) && t.client.views.ready && !t.busy, h = m && !p && u?.includes(c) && !!d.length, g = () => void t.run(() => t.read(n));
-	return /* @__PURE__ */ q("section", {
+	].includes(f.phase) && t.currentRows.some((t) => t.item.target === f.target && t.bus.bus === e.bus.bus), m = U(t.snapshot, n.bus) && t.client.views.ready && !t.busy, h = m && !p && u?.includes(c) && !!d.length, g = () => void t.run(() => t.read(n));
+	return /* @__PURE__ */ G("section", {
 		class: "card",
 		"aria-label": "Group color",
 		children: [
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "toolbar",
 				children: [
-					/* @__PURE__ */ q("strong", { children: "Color" }),
-					/* @__PURE__ */ q("span", {
+					/* @__PURE__ */ G("strong", { children: "Color" }),
+					/* @__PURE__ */ G("span", {
 						class: "muted",
 						children: r.ColorQuality ?? "Unobserved"
 					}),
-					/* @__PURE__ */ q("span", { class: "spacer" }),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("span", { class: "spacer" }),
+					/* @__PURE__ */ G("button", {
 						disabled: !m,
 						onClick: g,
 						children: "Inspect color support"
 					})
 				]
 			}),
-			/* @__PURE__ */ q("p", {
+			/* @__PURE__ */ G("p", {
 				class: "hint",
 				children: [
 					"Common support: ",
@@ -3842,11 +4030,11 @@ function Dn({ row: e }) {
 					". Covers saved fixtures."
 				]
 			}),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "toolbar",
-				children: [/* @__PURE__ */ q("label", {
+				children: [/* @__PURE__ */ G("label", {
 					class: "field",
-					children: ["Representation", /* @__PURE__ */ q("select", {
+					children: ["Representation", /* @__PURE__ */ G("select", {
 						"aria-label": "Group color representation",
 						value: c,
 						disabled: !m || !!p || !u,
@@ -3854,16 +4042,16 @@ function Dn({ row: e }) {
 							let r = e.currentTarget.value;
 							t.run(() => t.representation(n, r));
 						},
-						children: [/* @__PURE__ */ q("option", {
+						children: [/* @__PURE__ */ G("option", {
 							value: "",
 							children: "None selected"
-						}), [.../* @__PURE__ */ new Set([...u ?? [], ...c ? [c] : []])].map((e) => /* @__PURE__ */ q("option", {
+						}), [.../* @__PURE__ */ new Set([...u ?? [], ...c ? [c] : []])].map((e) => /* @__PURE__ */ G("option", {
 							value: e,
 							disabled: !u?.includes(e),
 							children: e === "temperature" ? "White temperature" : e === "xy" ? "CIE xy" : "RGBWAF channels"
 						}, e))]
 					})]
-				}), /* @__PURE__ */ q("button", {
+				}), /* @__PURE__ */ G("button", {
 					disabled: !h,
 					onClick: () => {
 						s({}), a(!0);
@@ -3871,19 +4059,19 @@ function Dn({ row: e }) {
 					children: "Group color values"
 				})]
 			}),
-			u?.length === 0 && /* @__PURE__ */ q("p", {
+			u?.length === 0 && /* @__PURE__ */ G("p", {
 				class: "hint",
 				children: "One or more hardware members do not support a common color format. Review group membership."
 			}),
-			!!p && /* @__PURE__ */ q("p", {
+			!!p && /* @__PURE__ */ G("p", {
 				class: "hint",
 				children: "Stop blinking before changing group color."
 			}),
-			i && /* @__PURE__ */ q(Y, {
+			i && /* @__PURE__ */ G(q, {
 				title: `Color · ${n.item.name}`,
 				close: () => a(!1),
 				children: [
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", {
 						class: "hint",
 						children: [
 							"Color status: ",
@@ -3891,17 +4079,17 @@ function Dn({ row: e }) {
 							". Mixed values remain mixed until you change them."
 						]
 					}),
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("div", {
 						class: "colour-fields",
 						children: d.map((e) => {
-							let t = Tn(r, e, c);
-							return /* @__PURE__ */ q("label", {
+							let t = Rn(r, e, c);
+							return /* @__PURE__ */ G("label", {
 								class: "field",
 								children: [
-									Cn(e),
-									/* @__PURE__ */ q("input", {
+									In(e),
+									/* @__PURE__ */ G("input", {
 										type: "number",
-										"aria-label": Cn(e),
+										"aria-label": In(e),
 										min: +(c === "temperature"),
 										max: c === "rgbwaf" ? 100 : c === "xy" ? 65534 / 65536 : void 0,
 										step: "any",
@@ -3913,7 +4101,7 @@ function Dn({ row: e }) {
 											[e]: t.currentTarget.value
 										})
 									}),
-									/* @__PURE__ */ q("span", {
+									/* @__PURE__ */ G("span", {
 										class: "hint",
 										children: ["Actual: ", t]
 									})
@@ -3921,17 +4109,17 @@ function Dn({ row: e }) {
 							}, e);
 						})
 					}),
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("div", {
 						class: "dialog-actions",
-						children: [/* @__PURE__ */ q("button", {
+						children: [/* @__PURE__ */ G("button", {
 							disabled: !m,
 							onClick: g,
 							children: "Read current values"
-						}), /* @__PURE__ */ q("button", {
+						}), /* @__PURE__ */ G("button", {
 							class: "primary",
 							disabled: !h,
 							onClick: () => void t.run(async () => {
-								await t.groupColor(n, En(o, d, c)), a(!1);
+								await t.groupColor(n, zn(o, d, c)), a(!1);
 							}),
 							children: "Apply group color"
 						})]
@@ -3942,15 +4130,15 @@ function Dn({ row: e }) {
 	});
 }
 // src/groups.tsx
-function On({ bus: e }) {
-	let t = J(), [n, r] = V(0), [i, a] = V(""), [o, s] = V("add"), [c, l] = V(null), [u, d] = V(null), [f, p] = V(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = G(t.snapshot, e) && t.client.views.ready;
+function Vn({ bus: e }) {
+	let t = K(), [n, r] = B(0), [i, a] = B(""), [o, s] = B("add"), [c, l] = B(null), [u, d] = B(null), [f, p] = B(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = U(t.snapshot, e) && t.client.views.ready;
 	function v() {
 		let e = h.map((e) => ({
 			key: e.key,
 			generation: e.generation,
 			name: e.item.name,
 			before: m?.members?.includes(e.item.short_address) ?? !1,
-			after: o === "add" && (m?.members?.includes(e.item.short_address) ?? !1) || Ae(i, e.item.name)
+			after: o === "add" && (m?.members?.includes(e.item.short_address) ?? !1) || Me(i, e.item.name)
 		})).filter((e) => e.before !== e.after);
 		l({
 			changes: e,
@@ -3969,7 +4157,7 @@ function On({ bus: e }) {
 		try {
 			for (let i of n.changes) {
 				if (t.cancelled) break;
-				if (t.progress = `Assigning group ${n.slot} · ${i.name}`, t.touch(), !K(n.initial, t.snapshot, r, e.bus) || !t.currentRows.some((e) => e.key === n.groupKey)) throw Error("Group configuration changed after preview. Review the pattern again.");
+				if (t.progress = `Assigning group ${n.slot} · ${i.name}`, t.touch(), !W(n.initial, t.snapshot, r, e.bus) || !t.currentRows.some((e) => e.key === n.groupKey)) throw Error("Group configuration changed after preview. Review the pattern again.");
 				let a = t.current(i.key);
 				if (a.generation !== i.generation) throw Error("A selected fixture changed after preview. Review again.");
 				r = (await t.group(a, n.slot, i.after)).revision;
@@ -3985,7 +4173,7 @@ function On({ bus: e }) {
 		try {
 			for (let i of h) {
 				if (t.cancelled) break;
-				if (!K(n, t.snapshot, n.inventory.revision, e.bus) || t.current(i.key).generation !== i.generation) throw Error("Configuration changed during verification. Start verification again.");
+				if (!W(n, t.snapshot, n.inventory.revision, e.bus) || t.current(i.key).generation !== i.generation) throw Error("Configuration changed during verification. Start verification again.");
 				t.progress = `Verifying groups · ${i.item.name}`, t.touch();
 				let a = await t.readGroups(i);
 				r.push({
@@ -4011,33 +4199,33 @@ function On({ bus: e }) {
 			revision: t.snapshot.inventory.revision
 		} : n) ?? null), t.notice = n === "adopt_groups" ? "Hardware membership adopted." : "Saved membership repaired and re-read.";
 	}
-	return /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q(He, {}), /* @__PURE__ */ q("div", {
+	return /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G(We, {}), /* @__PURE__ */ G("div", {
 		class: "groups-layout",
-		children: [/* @__PURE__ */ q("aside", {
+		children: [/* @__PURE__ */ G("aside", {
 			class: "slots",
-			children: [/* @__PURE__ */ q("h2", { children: "Groups" }), Array.from({ length: 16 }, (t, i) => {
+			children: [/* @__PURE__ */ G("h2", { children: "Groups" }), Array.from({ length: 16 }, (t, i) => {
 				let a = e.groups?.find((e) => e.group_address === i);
-				return /* @__PURE__ */ q("button", {
+				return /* @__PURE__ */ G("button", {
 					class: n === i ? "selected" : "",
 					onClick: () => {
 						r(i), p("");
 					},
-					children: [/* @__PURE__ */ q("span", { children: i }), a?.name ?? "Unused slot"]
+					children: [/* @__PURE__ */ G("span", { children: i }), a?.name ?? "Unused slot"]
 				});
 			})]
-		}), /* @__PURE__ */ q("section", { children: [
-			/* @__PURE__ */ q("div", {
+		}), /* @__PURE__ */ G("section", { children: [
+			/* @__PURE__ */ G("div", {
 				class: "section-heading",
-				children: [/* @__PURE__ */ q("h2", { children: ["Group ", n] }), /* @__PURE__ */ q("button", {
+				children: [/* @__PURE__ */ G("h2", { children: ["Group ", n] }), /* @__PURE__ */ G("button", {
 					disabled: !_ || !!t.busy,
 					onClick: () => void t.run(x),
 					children: "Verify all groups"
 				})]
 			}),
-			m && g ? /* @__PURE__ */ q(y, { children: [
-				/* @__PURE__ */ q("div", {
+			m && g ? /* @__PURE__ */ G(y, { children: [
+				/* @__PURE__ */ G("div", {
 					class: "card group-title",
-					children: [/* @__PURE__ */ q(Ge, { row: g }), /* @__PURE__ */ q("span", {
+					children: [/* @__PURE__ */ G(qe, { row: g }), /* @__PURE__ */ G("span", {
 						class: "hint",
 						children: [
 							m.members?.length ?? 0,
@@ -4046,46 +4234,46 @@ function On({ bus: e }) {
 						]
 					})]
 				}),
-				/* @__PURE__ */ q(xn, { row: g }, g.key + ":" + g.generation),
-				/* @__PURE__ */ q(Dn, { row: g }, "color:" + g.key + ":" + g.generation),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G(Pn, { row: g }, g.key + ":" + g.generation),
+				/* @__PURE__ */ G(Bn, { row: g }, "color:" + g.key + ":" + g.generation),
+				/* @__PURE__ */ G("div", {
 					class: "toolbar pattern",
 					children: [
-						/* @__PURE__ */ q("input", {
+						/* @__PURE__ */ G("input", {
 							"aria-label": "Group name pattern",
 							value: i,
 							placeholder: "Name pattern · e.g. Kitchen*",
 							onInput: (e) => a(e.currentTarget.value)
 						}),
-						/* @__PURE__ */ q("select", {
+						/* @__PURE__ */ G("select", {
 							"aria-label": "Pattern assignment mode",
 							value: o,
 							onChange: (e) => s(e.currentTarget.value),
-							children: [/* @__PURE__ */ q("option", {
+							children: [/* @__PURE__ */ G("option", {
 								value: "add",
 								children: "Add matching fixtures"
-							}), /* @__PURE__ */ q("option", {
+							}), /* @__PURE__ */ G("option", {
 								value: "replace",
 								children: "Replace this group's members"
 							})]
 						}),
-						/* @__PURE__ */ q("button", {
+						/* @__PURE__ */ G("button", {
 							disabled: !i || !_ || !!t.busy,
 							onClick: v,
 							children: "Preview pattern"
 						})
 					]
 				}),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("p", {
 					class: "hint",
 					children: "Checkboxes show saved membership. Verification compares all 16 hardware group bits."
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "device-table membership-table",
-					children: h.map((e) => /* @__PURE__ */ q("label", {
+					children: h.map((e) => /* @__PURE__ */ G("label", {
 						class: "membership-row",
 						children: [
-							/* @__PURE__ */ q("input", {
+							/* @__PURE__ */ G("input", {
 								type: "checkbox",
 								"aria-label": `Assign ${e.item.name} to ${m.name}`,
 								checked: m.members?.includes(e.item.short_address) ?? !1,
@@ -4095,12 +4283,12 @@ function On({ bus: e }) {
 									t.run(() => t.group(e, n, i).then(() => {}));
 								}
 							}),
-							/* @__PURE__ */ q("span", {
+							/* @__PURE__ */ G("span", {
 								class: "address",
 								children: e.item.short_address
 							}),
-							/* @__PURE__ */ q("span", { children: e.item.name }),
-							/* @__PURE__ */ q("button", {
+							/* @__PURE__ */ G("span", { children: e.item.name }),
+							/* @__PURE__ */ G("button", {
 								type: "button",
 								disabled: !_ || !!t.busy,
 								onClick: (n) => {
@@ -4111,22 +4299,22 @@ function On({ bus: e }) {
 						]
 					}, e.key))
 				})
-			] }) : /* @__PURE__ */ q("div", {
+			] }) : /* @__PURE__ */ G("div", {
 				class: "card",
 				children: [
-					/* @__PURE__ */ q("h3", { children: ["Unused group slot ", n] }),
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("h3", { children: ["Unused group slot ", n] }),
+					/* @__PURE__ */ G("p", {
 						class: "muted",
 						children: "Save a group name before assigning fixtures. Existing hardware membership is adopted only after review."
 					}),
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("div", {
 						class: "toolbar",
-						children: [/* @__PURE__ */ q("input", {
+						children: [/* @__PURE__ */ G("input", {
 							"aria-label": "New group name",
 							placeholder: `Group${n + 1}`,
 							value: f,
 							onInput: (e) => p(e.currentTarget.value)
-						}), /* @__PURE__ */ q("button", {
+						}), /* @__PURE__ */ G("button", {
 							class: "primary",
 							disabled: !!t.busy,
 							onClick: () => void t.run(() => t.createGroup(e, n, f || `Group${n + 1}`)),
@@ -4135,28 +4323,28 @@ function On({ bus: e }) {
 					})
 				]
 			}),
-			c && /* @__PURE__ */ q(Y, {
+			c && /* @__PURE__ */ G(q, {
 				title: "Review pattern assignment",
 				close: () => l(null),
 				children: [
-					/* @__PURE__ */ q("p", { children: [
+					/* @__PURE__ */ G("p", { children: [
 						c.changes.length,
 						" changes in group ",
 						c.slot,
 						". Other groups stay unchanged."
 					] }),
-					/* @__PURE__ */ q("ul", { children: c.changes.map((e) => /* @__PURE__ */ q("li", { children: [
+					/* @__PURE__ */ G("ul", { children: c.changes.map((e) => /* @__PURE__ */ G("li", { children: [
 						e.after ? "Add" : "Remove",
 						" ",
 						e.name
 					] }, e.key)) }),
-					!c.changes.length && /* @__PURE__ */ q("p", { children: "No membership changes are needed." }),
-					/* @__PURE__ */ q("div", {
+					!c.changes.length && /* @__PURE__ */ G("p", { children: "No membership changes are needed." }),
+					/* @__PURE__ */ G("div", {
 						class: "dialog-actions",
-						children: [/* @__PURE__ */ q("button", {
+						children: [/* @__PURE__ */ G("button", {
 							onClick: () => l(null),
 							children: "Cancel"
-						}), /* @__PURE__ */ q("button", {
+						}), /* @__PURE__ */ G("button", {
 							class: "primary",
 							disabled: !c.changes.length || !!t.busy,
 							onClick: () => void t.run(b),
@@ -4165,26 +4353,26 @@ function On({ bus: e }) {
 					})
 				]
 			}),
-			u && /* @__PURE__ */ q(Y, {
+			u && /* @__PURE__ */ G(q, {
 				title: "Verify group assignments",
 				close: () => d(null),
-				children: [/* @__PURE__ */ q("p", {
+				children: [/* @__PURE__ */ G("p", {
 					class: "hint",
 					children: "Compare every saved fixture's complete hardware mask, including unnamed group slots. Missing replies stay unresolved."
 				}), u.map((e) => {
 					let n = t.currentRows.find((t) => t.key === e.key), r = e.report, i = r.probe?.quality === "complete" && !r.probe?.stale, a = i && r.probe.mask !== r.expected_mask;
-					return /* @__PURE__ */ q("section", {
+					return /* @__PURE__ */ G("section", {
 						class: "verify-row",
 						children: [
-							/* @__PURE__ */ q("h3", { children: n?.item.name ?? "Removed fixture" }),
-							/* @__PURE__ */ q("p", { children: i ? a ? `Different · saved ${r.expected_mask.toString(16).padStart(4, "0")} · hardware ${r.probe.mask.toString(16).padStart(4, "0")}` : "Assignments match" : "Unresolved hardware reply" }),
-							a && n && /* @__PURE__ */ q("div", {
+							/* @__PURE__ */ G("h3", { children: n?.item.name ?? "Removed fixture" }),
+							/* @__PURE__ */ G("p", { children: i ? a ? `Different · saved ${r.expected_mask.toString(16).padStart(4, "0")} · hardware ${r.probe.mask.toString(16).padStart(4, "0")}` : "Assignments match" : "Unresolved hardware reply" }),
+							a && n && /* @__PURE__ */ G("div", {
 								class: "dialog-actions",
-								children: [/* @__PURE__ */ q("button", {
+								children: [/* @__PURE__ */ G("button", {
 									disabled: !!t.busy,
 									onClick: () => void t.run(() => S(e, "adopt_groups")),
 									children: "Adopt hardware assignments"
-								}), /* @__PURE__ */ q("button", {
+								}), /* @__PURE__ */ G("button", {
 									class: "primary",
 									disabled: !!t.busy,
 									onClick: () => void t.run(() => S(e, "repair_groups")),
@@ -4199,24 +4387,24 @@ function On({ bus: e }) {
 	})] });
 }
 // src/scene-settings.ts
-var kn = () => ({
+var Hn = () => ({
 	level: { kind: "mask" },
 	color: { kind: "mask" }
-}), An = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
-function jn(e) {
-	if (!e || !e.level || !e.color || e.level.kind !== "mask" && !(e.level.kind === "value" && An(e.level.value, 0, 254))) return !1;
-	let t = e.color, n = (e, t, n) => e === null || An(e, t, n);
+}), Un = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
+function Wn(e) {
+	if (!e || !e.level || !e.color || e.level.kind !== "mask" && !(e.level.kind === "value" && Un(e.level.value, 0, 254))) return !1;
+	let t = e.color, n = (e, t, n) => e === null || Un(e, t, n);
 	return t.kind === "mask" || t.kind === "temperature" && n(t.value, 1, 65534) || t.kind === "xy" && n(t.x, 0, 65534) && n(t.y, 0, 65534) || t.kind === "rgbwaf" && Array.isArray(t.channels) && t.channels.length === 6 && t.channels.every((e) => n(e, 0, 254)) && n(t.control, 0, 191);
 }
-function Mn(e) {
+function Gn(e) {
 	if (!e) return "Unmanaged";
 	let t = e.level.kind === "mask" ? "Keep brightness" : e.level.value === 0 ? "Off" : `${+(e.level.value * 100 / 254).toFixed(1)}%`, n = e.color;
 	return n.kind === "mask" ? e.level.kind === "mask" ? "Leave unchanged" : t : `${t} · ${n.kind === "temperature" ? n.value === null ? "Tc MASK" : `${Math.round(1e6 / n.value)} K` : n.kind === "xy" ? "CIE xy" : "RGBWAF"}`;
 }
-var Nn = class {
+var Kn = class {
 	constructor(e) {
 		this.fields = {}, this.dirty = !1, this.error = "", this.original = structuredClone(e);
-		let t = e ?? kn();
+		let t = e ?? Hn();
 		this.action = t.level.kind === "mask" ? t.color.kind === "mask" ? "ignore" : "keep" : t.level.value === 0 ? "off" : "brightness", this.family = t.color.kind;
 	}
 	chooseAction(e) {
@@ -4230,16 +4418,16 @@ var Nn = class {
 	}
 	text(e) {
 		if (e in this.fields) return this.fields[e];
-		let t = this.original ?? kn(), n = t.color;
+		let t = this.original ?? Hn(), n = t.color;
 		if (e === "brightness") return t.level.kind === "value" ? String(+(t.level.value * 100 / 254).toFixed(3)) : "100";
 		if (e === "temperature") return n.kind === "temperature" && n.value !== null ? String(+(1e6 / n.value).toFixed(3)) : "";
 		if (e === "x" || e === "y") return n.kind === "xy" && n[e] !== null ? String(n[e] / 65536) : "";
 		if (e === "control") return n.kind === "rgbwaf" && n.control !== null ? String(n.control) : "";
-		let r = Pn.indexOf(e);
+		let r = qn.indexOf(e);
 		return r >= 0 && n.kind === "rgbwaf" && n.channels[r] !== null ? String(+(n.channels[r] * 100 / 254).toFixed(3)) : "";
 	}
 	setting() {
-		let e = this.original ?? kn(), t = (e, t, n, r, i) => {
+		let e = this.original ?? Hn(), t = (e, t, n, r, i) => {
 			if (!(e in this.fields)) return i;
 			let a = this.fields[e].trim();
 			if (a === "") return null;
@@ -4247,7 +4435,7 @@ var Nn = class {
 			if (!Number.isFinite(o) || o < t || o > n) throw Error(`Enter ${e} between ${t} and ${n}, or leave it blank for MASK.`);
 			return r(o);
 		};
-		if (this.action === "ignore") return kn();
+		if (this.action === "ignore") return Hn();
 		let n = { kind: "mask" };
 		if (this.action === "off" && (n = {
 			kind: "value",
@@ -4270,7 +4458,7 @@ var Nn = class {
 			y: t("y", 0, 65534 / 65536, (e) => Math.round(e * 65536), i.kind === "xy" ? i.y : null)
 		}), this.family === "rgbwaf" && (r = {
 			kind: "rgbwaf",
-			channels: Pn.map((e, n) => t(e, 0, 100, (e) => Math.round(e * 254 / 100), i.kind === "rgbwaf" ? i.channels[n] : null)),
+			channels: qn.map((e, n) => t(e, 0, 100, (e) => Math.round(e * 254 / 100), i.kind === "rgbwaf" ? i.channels[n] : null)),
 			control: t("control", 128, 191, (e) => {
 				if (!Number.isInteger(e)) throw Error("Control must be a whole native byte.");
 				return e;
@@ -4280,7 +4468,7 @@ var Nn = class {
 			level: n,
 			color: r
 		};
-		if (!jn(a)) throw Error("Scene values are invalid.");
+		if (!Wn(a)) throw Error("Scene values are invalid.");
 		return a;
 	}
 	commit(e) {
@@ -4292,7 +4480,7 @@ var Nn = class {
 			this.pending = void 0;
 		}), this.pending) : Promise.resolve();
 	}
-}, Pn = [
+}, qn = [
 	"red",
 	"green",
 	"blue",
@@ -4300,12 +4488,12 @@ var Nn = class {
 	"amber",
 	"free"
 ];
-function Fn(e) {
+function Jn(e) {
 	if (!e || e.quality !== "complete" || e.stale) return null;
 	try {
 		let t = (e, t) => {
 			if (e?.kind === "mask" && e.raw === t) return null;
-			if (e?.kind === "value" && An(e.raw, 0, t - 1)) return e.raw;
+			if (e?.kind === "value" && Un(e.raw, 0, t - 1)) return e.raw;
 			throw Error("Unresolved");
 		}, n = t(e.level, 255), r = n === null ? { kind: "mask" } : {
 			kind: "value",
@@ -4328,7 +4516,7 @@ function Fn(e) {
 			else if (n === 128) {
 				if (i = {
 					kind: "rgbwaf",
-					channels: Pn.map((e) => t(o[e], 255)),
+					channels: qn.map((e) => t(o[e], 255)),
 					control: t(o.control, 255)
 				}, a = 7, i.control !== null && i.control < 128) return null;
 			} else if (n !== null) return null;
@@ -4337,35 +4525,35 @@ function Fn(e) {
 			level: r,
 			color: i
 		};
-		return Object.keys(o).length === a && jn(s) ? s : null;
+		return Object.keys(o).length === a && Wn(s) ? s : null;
 	} catch {
 		return null;
 	}
 }
 // src/scene-controller.ts
-function In(e, t, n) {
+function Yn(e, t, n) {
 	if (!e || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== t.inventory.revision || e.bus !== n.bus.bus || e.slot !== n.item.slot || !Array.isArray(e.fixtures)) throw Error("Saved scene view changed. Refresh it.");
-	let r = W(t).filter((e) => e.kind === "output" && e.bus.bus === n.bus.bus), i = /* @__PURE__ */ new Map();
+	let r = je(t).filter((e) => e.kind === "output" && e.bus.bus === n.bus.bus), i = /* @__PURE__ */ new Map();
 	for (let t of e.fixtures) {
 		let e = r.find((e) => e.item.target === t.fixture);
-		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !jn(t.saved)) throw Error("Saved scene view is incomplete or changed.");
+		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !Wn(t.saved)) throw Error("Saved scene view is incomplete or changed.");
 		i.set(e.key, structuredClone(t.saved));
 	}
 	if (i.size !== r.length) throw Error("Saved scene view is incomplete.");
 	return i;
 }
-var Ln = class {
+var Xn = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.slot = n, this.revision = this.initial.inventory.revision;
-		let r = W(this.initial);
+		let r = je(this.initial);
 		this.scene = r.find((e) => e.kind === "scene" && e.bus.bus === t && e.item.slot === n), this.outputs = r.filter((e) => e.kind === "output" && e.bus.bus === t);
 	}
 	assert(e = !0) {
 		let t = this.ui.snapshot, n = this.initial.inventory, r = t.inventory, i = r.buses.find((e) => e.bus === this.bus), a = n.buses.find((e) => e.bus === this.bus);
 		if (this.cancelled || e && this.ui.cancelled || this.ui.signingOut || this.epoch !== this.ui.client.views.epoch || !this.ui.client.views.ready) throw Error("Operation stopped. Review before continuing.");
-		if (n.inventory_epoch !== r.inventory_epoch || r.revision !== this.revision || !i || !a || i.name !== a.name || t.phase !== "ready" || e && !G(t, i)) throw Error("Configuration or connection changed. Review the scene again.");
+		if (n.inventory_epoch !== r.inventory_epoch || r.revision !== this.revision || !i || !a || i.name !== a.name || t.phase !== "ready" || e && !U(t, i)) throw Error("Configuration or connection changed. Review the scene again.");
 		if (this.scene) {
-			let e = W(t).find((e) => e.key === this.scene.key);
+			let e = je(t).find((e) => e.key === this.scene.key);
 			if (!e || e.generation !== this.scene.generation || e.item.target !== this.scene.item.target) throw Error("Selected scene changed. Review it again.");
 		}
 	}
@@ -4377,7 +4565,7 @@ var Ln = class {
 	async saved() {
 		if (this.assert(!1), !this.scene) return new Map(this.outputs.map((e) => [e.key, null]));
 		let e = await this.ui.client.job(this.scene.generation, this.scene.item.target, "read_scene_settings");
-		return this.assert(!1), In(e, this.initial, this.scene);
+		return this.assert(!1), Yn(e, this.initial, this.scene);
 	}
 	async inspect(e, t = this.slot, n = !1) {
 		this.fixture(e);
@@ -4413,25 +4601,25 @@ var Ln = class {
 		return n;
 	}
 };
-function Rn(e) {
+function Zn(e) {
 	return structuredClone(e);
 }
-async function zn(e, t, n) {
+async function Qn(e, t, n) {
 	for (let r of t) e.fixture(r.row), n(`Saving scene ${e.slot} · ${r.row.item.name}`), await e.mutate(r.row, r.command, r.command === "set_scene_row" ? { setting: r.after } : { reviewed: r.reviewed });
 }
 // src/scenes.tsx
-function Bn({ row: e, visible: t, view: n, makeScope: r }) {
-	let i = J(), [a, o] = V(null), [s, c] = V(null), [l, u] = V(-1), [d, f] = V(!1), p = n && n.revision === i.snapshot.inventory.revision && n.epoch === i.client.views.epoch && n.rows.has(e.key), m = p && n ? n.rows.get(e.key) : a?.original ?? null, h = a?.error.startsWith("Saved settings are not confirmed");
-	H(() => () => {
+function $n({ row: e, visible: t, view: n, makeScope: r }) {
+	let i = K(), [a, o] = B(null), [s, c] = B(null), [l, u] = B(-1), [d, f] = B(!1), p = n && n.revision === i.snapshot.inventory.revision && n.epoch === i.client.views.epoch && n.rows.has(e.key), m = p && n ? n.rows.get(e.key) : a?.original ?? null, h = a?.error.startsWith("Saved settings are not confirmed");
+	V(() => () => {
 		s && (s.cancelled = !0);
-	}, [s]), H(() => {
-		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new Nn(n.rows.get(e.key))), c(null), u(n.revision));
+	}, [s]), V(() => {
+		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new Kn(n.rows.get(e.key))), c(null), u(n.revision));
 	}, [
 		n,
 		a?.dirty,
 		a?.pending
 	]);
-	let g = G(i.snapshot, e.bus) && i.client.views.ready;
+	let g = U(i.snapshot, e.bus) && i.client.views.ready;
 	function _() {
 		a?.dirty || c(r());
 	}
@@ -4439,7 +4627,7 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(b.phase), S = je(i.snapshot, e).ColorCapabilities;
+	].includes(b.phase), S = Ne(i.snapshot, e).ColorCapabilities;
 	function C() {
 		a && s && a.dirty && (a.commit(async (t) => {
 			if (i.busy) throw Error("Wait for the current operation, then save this draft.");
@@ -4451,9 +4639,9 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 			}
 		}).catch(() => {}).finally(() => i.touch()), i.touch());
 	}
-	let w = !g || !p || !n?.key || !!i.busy || !!a?.pending || v, T = (t, n) => /* @__PURE__ */ q("label", {
+	let w = !g || !p || !n?.key || !!i.busy || !!a?.pending || v, T = (t, n) => /* @__PURE__ */ G("label", {
 		class: "scene-field",
-		children: [n, /* @__PURE__ */ q("input", {
+		children: [n, /* @__PURE__ */ G("input", {
 			type: "number",
 			step: "any",
 			"aria-label": `${n} ${e.item.name}`,
@@ -4465,7 +4653,7 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 			}
 		})]
 	}, t);
-	return /* @__PURE__ */ q("article", {
+	return /* @__PURE__ */ G("article", {
 		hidden: !t && !a?.dirty && !a?.error,
 		class: `scene-fixture ${x ? "identifying" : ""}`,
 		"data-scene-fixture": e.item.name,
@@ -4475,32 +4663,32 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 		onKeyDown: (e) => {
 			e.key === "Enter" && e.target.tagName !== "BUTTON" && (e.preventDefault(), C());
 		},
-		children: [/* @__PURE__ */ q("div", {
+		children: [/* @__PURE__ */ G("div", {
 			class: "scene-fixture-title",
 			children: [
-				/* @__PURE__ */ q("span", {
+				/* @__PURE__ */ G("span", {
 					class: "address",
 					children: e.item.short_address
 				}),
-				/* @__PURE__ */ q("strong", { children: e.item.name }),
-				/* @__PURE__ */ q("span", {
+				/* @__PURE__ */ G("strong", { children: e.item.name }),
+				/* @__PURE__ */ G("span", {
 					class: `pill ${p && m && !h ? "" : "unknown"}`,
 					children: h ? "Saved · unconfirmed" : p ? m ? "Saved" : "Unmanaged" : "Refreshing"
 				}),
-				/* @__PURE__ */ q("button", {
+				/* @__PURE__ */ G("button", {
 					disabled: !g || !!i.busy || b?.phase === "restoring",
 					"aria-label": `${x ? "Stop blink" : "Blink"} ${e.item.name}`,
 					onClick: () => void i.run(() => i.blink(e)),
 					children: x ? "Stop" : "Blink"
 				})
 			]
-		}), a ? /* @__PURE__ */ q(y, { children: [
-			/* @__PURE__ */ q("div", {
+		}), a ? /* @__PURE__ */ G(y, { children: [
+			/* @__PURE__ */ G("div", {
 				class: "scene-editor",
 				children: [
-					/* @__PURE__ */ q("label", {
+					/* @__PURE__ */ G("label", {
 						class: "scene-field",
-						children: ["Action", /* @__PURE__ */ q("select", {
+						children: ["Action", /* @__PURE__ */ G("select", {
 							"aria-label": `Scene action ${e.item.name}`,
 							value: a.action,
 							disabled: w,
@@ -4508,19 +4696,19 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 								_(), a.chooseAction(e.currentTarget.value), i.touch();
 							},
 							children: [
-								/* @__PURE__ */ q("option", {
+								/* @__PURE__ */ G("option", {
 									value: "ignore",
 									children: "Leave unchanged"
 								}),
-								/* @__PURE__ */ q("option", {
+								/* @__PURE__ */ G("option", {
 									value: "off",
 									children: "Off"
 								}),
-								/* @__PURE__ */ q("option", {
+								/* @__PURE__ */ G("option", {
 									value: "brightness",
 									children: "Brightness"
 								}),
-								/* @__PURE__ */ q("option", {
+								/* @__PURE__ */ G("option", {
 									value: "keep",
 									children: "Keep brightness"
 								})
@@ -4528,23 +4716,23 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 						})]
 					}),
 					a.action === "brightness" && T("brightness", "Brightness (%)"),
-					a.action !== "ignore" && /* @__PURE__ */ q("label", {
+					a.action !== "ignore" && /* @__PURE__ */ G("label", {
 						class: "scene-field",
-						children: ["Color", /* @__PURE__ */ q("select", {
+						children: ["Color", /* @__PURE__ */ G("select", {
 							"aria-label": `Scene color ${e.item.name}`,
 							value: a.family,
 							disabled: w,
 							onChange: (e) => {
 								_(), a.chooseFamily(e.currentTarget.value), i.touch();
 							},
-							children: [/* @__PURE__ */ q("option", {
+							children: [/* @__PURE__ */ G("option", {
 								value: "mask",
 								children: "Keep color"
 							}), [
 								["temperature", "White temperature"],
 								["xy", "CIE xy"],
 								["rgbwaf", "RGBWAF"]
-							].map(([e, t]) => /* @__PURE__ */ q("option", {
+							].map(([e, t]) => /* @__PURE__ */ G("option", {
 								value: e,
 								disabled: !!S?.supported_representations && !S.supported_representations.includes(e) && a.family !== e,
 								children: t
@@ -4552,10 +4740,10 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 						})]
 					}),
 					a.action !== "ignore" && a.family === "temperature" && T("temperature", "Temperature (K)"),
-					a.action !== "ignore" && a.family === "xy" && /* @__PURE__ */ q(y, { children: [T("x", "x"), T("y", "y")] }),
-					a.action !== "ignore" && a.family === "rgbwaf" && /* @__PURE__ */ q(y, { children: [Pn.map((e) => T(e, `${e[0].toUpperCase() + e.slice(1)} (%)`)), /* @__PURE__ */ q("label", {
+					a.action !== "ignore" && a.family === "xy" && /* @__PURE__ */ G(y, { children: [T("x", "x"), T("y", "y")] }),
+					a.action !== "ignore" && a.family === "rgbwaf" && /* @__PURE__ */ G(y, { children: [qn.map((e) => T(e, `${e[0].toUpperCase() + e.slice(1)} (%)`)), /* @__PURE__ */ G("label", {
 						class: "scene-field",
-						children: ["RGBWAF control", /* @__PURE__ */ q("select", {
+						children: ["RGBWAF control", /* @__PURE__ */ G("select", {
 							"aria-label": `RGBWAF control ${e.item.name}`,
 							value: a.text("control"),
 							disabled: w,
@@ -4563,15 +4751,15 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 								_(), a.change("control", e.currentTarget.value), i.touch();
 							},
 							children: [
-								/* @__PURE__ */ q("option", {
+								/* @__PURE__ */ G("option", {
 									value: "",
 									children: "Keep control (MASK)"
 								}),
-								Array.from({ length: 64 }, (e, t) => /* @__PURE__ */ q("option", {
+								Array.from({ length: 64 }, (e, t) => /* @__PURE__ */ G("option", {
 									value: 128 + t,
 									children: ["Normalized · ", t.toString(2).padStart(6, "0")]
 								})),
-								a.text("control") !== "" && Number(a.text("control")) < 128 && /* @__PURE__ */ q("option", {
+								a.text("control") !== "" && Number(a.text("control")) < 128 && /* @__PURE__ */ G("option", {
 									value: a.text("control"),
 									disabled: !0,
 									children: ["Unsupported native mode ", a.text("control")]
@@ -4579,7 +4767,7 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 							]
 						})]
 					})] }),
-					a.dirty && /* @__PURE__ */ q("button", {
+					a.dirty && /* @__PURE__ */ G("button", {
 						class: "primary scene-save",
 						"aria-label": `Save scene settings ${e.item.name}`,
 						disabled: w,
@@ -4589,13 +4777,13 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 					})
 				]
 			}),
-			(v || a.error) && /* @__PURE__ */ q("p", {
+			(v || a.error) && /* @__PURE__ */ G("p", {
 				class: "error",
 				role: "alert",
 				children: [
 					a.error || "Configuration changed while this row was being edited. Review it again.",
 					" ",
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("button", {
 						class: "text-button",
 						disabled: !!a.pending,
 						onClick: () => {
@@ -4605,21 +4793,21 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 					})
 				]
 			}),
-			/* @__PURE__ */ q("div", {
+			/* @__PURE__ */ G("div", {
 				class: "scene-row-foot",
-				children: [/* @__PURE__ */ q("span", {
+				children: [/* @__PURE__ */ G("span", {
 					class: "hint",
-					children: [Mn(m), a.dirty ? " · Unsaved draft" : ""]
-				}), /* @__PURE__ */ q("button", {
+					children: [Gn(m), a.dirty ? " · Unsaved draft" : ""]
+				}), /* @__PURE__ */ G("button", {
 					class: "text-button",
 					onClick: () => f(!d),
 					children: d ? "Hide native values" : "Native values"
 				})]
 			}),
-			d && /* @__PURE__ */ q("div", {
+			d && /* @__PURE__ */ G("div", {
 				class: "scene-native",
 				children: [
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", {
 						class: "hint",
 						children: [
 							"Saved native codes; blank attributes are MASK. Color support: ",
@@ -4628,31 +4816,31 @@ function Bn({ row: e, visible: t, view: n, makeScope: r }) {
 							"."
 						]
 					}),
-					/* @__PURE__ */ q("pre", { children: JSON.stringify(m, null, 2) }),
-					/* @__PURE__ */ q("button", {
+					/* @__PURE__ */ G("pre", { children: JSON.stringify(m, null, 2) }),
+					/* @__PURE__ */ G("button", {
 						disabled: !g || !!i.busy,
 						onClick: () => void i.run(() => i.read(e)),
 						children: "Read capabilities"
 					})
 				]
 			})
-		] }) : /* @__PURE__ */ q("p", {
+		] }) : /* @__PURE__ */ G("p", {
 			class: "hint",
 			children: "Loading saved settings…"
 		})]
 	});
 }
-function Vn({ bus: e }) {
-	let t = J(), [n, r] = V(0), [i, a] = V(""), [o, s] = V(""), [c, l] = V(null), [u, d] = V(""), [f, p] = V(0), [m, h] = V(null), [g, _] = V(null), [v, b] = V(1), [x, S] = V("bus"), [C, w] = V(null), [T, E] = V(""), [D, O] = V(null), k = ve(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), ee = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), N = ee.filter((e) => Ae(i, e.item.name)), te = G(t.snapshot, e) && t.client.views.ready, P = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
+function er({ bus: e }) {
+	let t = K(), [n, r] = B(0), [i, a] = B(""), [o, s] = B(""), [c, l] = B(null), [u, d] = B(""), [f, p] = B(0), [m, h] = B(null), [g, _] = B(null), [v, b] = B(1), [x, S] = B("bus"), [C, w] = B(null), [T, E] = B(""), [D, O] = B(null), k = ye(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), ee = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), N = ee.filter((e) => Me(i, e.item.name)), te = U(t.snapshot, e) && t.client.views.ready, P = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
 	function F() {
 		for (let e of k.current) e.cancelled && k.current.delete(e);
-		let r = new Ln(t, e.bus, n);
+		let r = new Xn(t, e.bus, n);
 		return k.current.add(r), r;
 	}
-	H(() => () => {
+	V(() => () => {
 		for (let e of k.current) e.cancelled = !0;
 		k.current.clear();
-	}, [n]), H(() => {
+	}, [n]), V(() => {
 		let e = F(), n = !0;
 		return d(""), l(null), t.client.views.ready && e.saved().then((t) => {
 			n && l({
@@ -4684,56 +4872,56 @@ function Vn({ bus: e }) {
 		for (let e of g ?? []) e.scope.cancelled = !0;
 		_(null);
 	}
-	function I(e) {
+	function ie(e) {
 		if (!P || !c?.rows.has(e.key)) throw Error("Wait for complete saved settings.");
 		return c.rows.get(e.key);
 	}
-	function L(e, t, n, r = []) {
+	function I(e, t, n, r = []) {
 		t.assert(), h({
 			title: e,
 			scope: t,
-			changes: Rn(n),
+			changes: Zn(n),
 			unresolved: [...r]
 		});
 	}
-	function R() {
-		t.cancelled = !1, L("Clear selected fixtures", F(), N.map((e) => ({
+	function L() {
+		t.cancelled = !1, I("Clear selected fixtures", F(), N.map((e) => ({
 			row: e,
-			before: I(e),
-			after: kn(),
+			before: ie(e),
+			after: Hn(),
 			command: "set_scene_row"
 		})));
 	}
-	async function z() {
+	async function R() {
 		t.cancelled = !1;
 		let e = F(), r = [], i = [], a = !1;
 		try {
 			for (let a of N) {
 				e.fixture(a), t.progress = `Capturing current output · ${a.item.name}`, t.touch();
 				let o = await e.inspect(a, n, !0);
-				jn(o.candidate) ? r.push({
+				Wn(o.candidate) ? r.push({
 					row: a,
-					before: I(a),
+					before: ie(a),
 					after: o.candidate,
 					command: "set_scene_row"
 				}) : i.push(a.item.name);
 			}
-			L("Review captured output", e, r, i), a = !0;
+			I("Review captured output", e, r, i), a = !0;
 		} finally {
 			a || (e.cancelled = !0), t.progress = "", t.touch();
 		}
 	}
-	async function ie() {
+	async function ae() {
 		t.cancelled = !1;
-		let r = F(), i = new Ln(t, e.bus, v);
+		let r = F(), i = new Xn(t, e.bus, v);
 		k.current.add(i);
 		let a = !1;
 		try {
 			if (!i.scene) throw Error("Choose a named source scene.");
 			let e = await i.saved();
-			r.assert(), i.assert(), L(`Copy saved scene ${v} → ${n}`, r, N.filter((t) => e.get(t.key) !== null).map((t) => ({
+			r.assert(), i.assert(), I(`Copy saved scene ${v} → ${n}`, r, N.filter((t) => e.get(t.key) !== null).map((t) => ({
 				row: t,
-				before: I(t),
+				before: ie(t),
 				after: e.get(t.key),
 				command: "set_scene_row"
 			}))), a = !0;
@@ -4741,12 +4929,12 @@ function Vn({ bus: e }) {
 			i.cancelled = !0, a || (r.cancelled = !0);
 		}
 	}
-	async function ae() {
+	async function oe() {
 		let e = m;
 		if (e) {
 			h(null), t.cancelled = !1;
 			try {
-				await zn(e.scope, e.changes, (e) => {
+				await Qn(e.scope, e.changes, (e) => {
 					t.progress = e, t.touch();
 				}), t.notice = "Reviewed scene settings saved and verified.";
 			} finally {
@@ -4754,7 +4942,7 @@ function Vn({ bus: e }) {
 			}
 		}
 	}
-	async function oe(e) {
+	async function se(e) {
 		t.cancelled = !1;
 		let r = F(), i = [];
 		try {
@@ -4766,7 +4954,7 @@ function Vn({ bus: e }) {
 					row: e,
 					slot: a,
 					report: n,
-					candidate: Fn(n.stored)
+					candidate: Jn(n.stored)
 				});
 			}
 			t.notice = "Native scene reads complete. Review differences and unresolved fixtures.";
@@ -4774,25 +4962,25 @@ function Vn({ bus: e }) {
 			i.length && !r.cancelled && r.epoch === t.client.views.epoch && r.revision === t.snapshot.inventory.revision ? _(i) : r.cancelled = !0, t.progress = "", t.touch();
 		}
 	}
-	function se(e) {
+	function ce(e) {
 		if (!g) return;
 		t.cancelled = !1;
-		let r = g.filter((e) => e.slot === n && Ae(i, e.row.item.name)), a = F();
+		let r = g.filter((e) => e.slot === n && Me(i, e.row.item.name)), a = F();
 		for (let e of r) if (e.scope.assert(), e.scope.revision !== a.revision) throw Error("Verification is stale. Verify again.");
 		let o = r.filter((t) => t.candidate && (e === "adopt_scene_row" || t.report.saved !== null) && t.report.comparison !== "matching").map((t) => ({
 			row: t.row,
-			before: I(t.row),
+			before: ie(t.row),
 			after: e === "adopt_scene_row" ? t.candidate : t.report.saved,
 			reviewed: t.report.stored,
 			command: e
 		}));
-		re(), L(e === "adopt_scene_row" ? "Adopt reviewed native settings" : "Repair saved settings", a, o);
+		re(), I(e === "adopt_scene_row" ? "Adopt reviewed native settings" : "Repair saved settings", a, o);
 	}
-	async function ce() {
+	async function le() {
 		let r = F();
 		try {
 			r.assert(!1);
-			let i = await t.client.job(U(r.initial.inventory.inventory_epoch, r.revision), null, "create_scene", {
+			let i = await t.client.job(H(r.initial.inventory.inventory_epoch, r.revision), null, "create_scene", {
 				bus: e.bus,
 				slot: n,
 				name: o || `Scene${n + 1}`,
@@ -4804,7 +4992,7 @@ function Vn({ bus: e }) {
 			r.cancelled = !0;
 		}
 	}
-	async function B() {
+	async function z() {
 		t.cancelled = !1;
 		let e = F();
 		try {
@@ -4813,16 +5001,16 @@ function Vn({ bus: e }) {
 			e.cancelled = !0;
 		}
 	}
-	let le = !te || !P || !M || !!t.busy || !N.length;
-	return /* @__PURE__ */ q(y, { children: [
-		/* @__PURE__ */ q(He, {}),
-		/* @__PURE__ */ q("div", {
+	let ue = !te || !P || !M || !!t.busy || !N.length;
+	return /* @__PURE__ */ G(y, { children: [
+		/* @__PURE__ */ G(We, {}),
+		/* @__PURE__ */ G("div", {
 			class: "scene-mobile-slot",
-			children: /* @__PURE__ */ q("label", { children: ["Scene", /* @__PURE__ */ q("select", {
+			children: /* @__PURE__ */ G("label", { children: ["Scene", /* @__PURE__ */ G("select", {
 				"aria-label": "Scene slot",
 				value: n,
 				onChange: (e) => ne(Number(e.currentTarget.value)),
-				children: Array.from({ length: 16 }, (t, n) => /* @__PURE__ */ q("option", {
+				children: Array.from({ length: 16 }, (t, n) => /* @__PURE__ */ G("option", {
 					value: n,
 					children: [
 						n,
@@ -4832,33 +5020,33 @@ function Vn({ bus: e }) {
 				}))
 			})] })
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "groups-layout scene-layout",
-			children: [/* @__PURE__ */ q("aside", {
+			children: [/* @__PURE__ */ G("aside", {
 				class: "slots scene-slots",
-				children: [/* @__PURE__ */ q("h2", { children: "Scenes" }), Array.from({ length: 16 }, (t, r) => /* @__PURE__ */ q("button", {
+				children: [/* @__PURE__ */ G("h2", { children: "Scenes" }), Array.from({ length: 16 }, (t, r) => /* @__PURE__ */ G("button", {
 					class: r === n ? "selected" : "",
 					onClick: () => ne(r),
-					children: [/* @__PURE__ */ q("span", { children: r }), e.scenes?.find((e) => e.slot === r)?.name ?? "Unnamed"]
+					children: [/* @__PURE__ */ G("span", { children: r }), e.scenes?.find((e) => e.slot === r)?.name ?? "Unnamed"]
 				}))]
-			}), /* @__PURE__ */ q("section", { children: [
-				/* @__PURE__ */ q("div", {
+			}), /* @__PURE__ */ G("section", { children: [
+				/* @__PURE__ */ G("div", {
 					class: "section-heading",
-					children: [/* @__PURE__ */ q("h2", { children: ["Scene ", n] }), /* @__PURE__ */ q("button", {
+					children: [/* @__PURE__ */ G("h2", { children: ["Scene ", n] }), /* @__PURE__ */ G("button", {
 						disabled: !te || !!t.busy,
-						onClick: () => void t.run(() => oe(!0)),
+						onClick: () => void t.run(() => se(!0)),
 						children: "Verify all 16"
 					})]
 				}),
-				M ? /* @__PURE__ */ q("div", {
+				M ? /* @__PURE__ */ G("div", {
 					class: "card group-title",
 					children: [
-						/* @__PURE__ */ q(Ge, { row: M }),
-						/* @__PURE__ */ q("span", {
+						/* @__PURE__ */ G(qe, { row: M }),
+						/* @__PURE__ */ G("span", {
 							class: "hint",
 							children: ["Slot ", n]
 						}),
-						/* @__PURE__ */ q("button", {
+						/* @__PURE__ */ G("button", {
 							"aria-label": "Scene actions",
 							onClick: () => {
 								E(M.item.description ?? ""), w(structuredClone(M));
@@ -4866,48 +5054,48 @@ function Vn({ bus: e }) {
 							children: "⋮"
 						})
 					]
-				}) : /* @__PURE__ */ q("div", {
+				}) : /* @__PURE__ */ G("div", {
 					class: "card",
 					children: [
-						/* @__PURE__ */ q("h3", { children: ["Unnamed scene ", n] }),
-						/* @__PURE__ */ q("p", {
+						/* @__PURE__ */ G("h3", { children: ["Unnamed scene ", n] }),
+						/* @__PURE__ */ G("p", {
 							class: "muted",
 							children: "Name this slot before saving settings. Browsing leaves the fixtures unchanged."
 						}),
-						/* @__PURE__ */ q("div", {
+						/* @__PURE__ */ G("div", {
 							class: "toolbar",
-							children: [/* @__PURE__ */ q("input", {
+							children: [/* @__PURE__ */ G("input", {
 								"aria-label": "New scene name",
 								placeholder: `Scene${n + 1}`,
 								value: o,
 								onInput: (e) => s(e.currentTarget.value)
-							}), /* @__PURE__ */ q("button", {
+							}), /* @__PURE__ */ G("button", {
 								class: "primary",
 								disabled: !!t.busy || !t.client.views.ready,
-								onClick: () => void t.run(ce),
+								onClick: () => void t.run(le),
 								children: "Create scene"
 							})]
 						})
 					]
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "toolbar scene-actions",
 					children: [
-						/* @__PURE__ */ q("button", {
+						/* @__PURE__ */ G("button", {
 							class: "primary",
 							disabled: !te || !M || !!t.busy,
-							onClick: () => void t.run(B),
+							onClick: () => void t.run(z),
 							children: "Recall"
 						}),
-						/* @__PURE__ */ q("select", {
+						/* @__PURE__ */ G("select", {
 							"aria-label": "Recall scope",
 							value: x,
 							disabled: !!t.busy,
 							onChange: (e) => S(e.currentTarget.value),
-							children: [/* @__PURE__ */ q("option", {
+							children: [/* @__PURE__ */ G("option", {
 								value: "bus",
 								children: "Entire bus"
-							}), Array.from({ length: 16 }, (t, n) => /* @__PURE__ */ q("option", {
+							}), Array.from({ length: 16 }, (t, n) => /* @__PURE__ */ G("option", {
 								value: n,
 								children: [
 									"Group ",
@@ -4916,22 +5104,22 @@ function Vn({ bus: e }) {
 								]
 							}))]
 						}),
-						/* @__PURE__ */ q("button", {
+						/* @__PURE__ */ G("button", {
 							disabled: !te || !!t.busy,
-							onClick: () => void t.run(() => oe(!1)),
+							onClick: () => void t.run(() => se(!1)),
 							children: "Verify scene"
 						})
 					]
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "toolbar filter scene-filter",
-					children: [/* @__PURE__ */ q("input", {
+					children: [/* @__PURE__ */ G("input", {
 						type: "search",
 						"aria-label": "Scene fixture pattern",
 						placeholder: "Filter fixtures · e.g. Light*",
 						value: i,
 						onInput: (e) => a(e.currentTarget.value)
-					}), /* @__PURE__ */ q("span", {
+					}), /* @__PURE__ */ G("span", {
 						class: "hint",
 						children: [
 							N.length,
@@ -4941,24 +5129,24 @@ function Vn({ bus: e }) {
 						]
 					})]
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "toolbar scene-tools",
 					children: [
-						/* @__PURE__ */ q("button", {
-							disabled: le,
-							onClick: () => void t.run(z),
+						/* @__PURE__ */ G("button", {
+							disabled: ue,
+							onClick: () => void t.run(R),
 							children: "Capture current"
 						}),
-						/* @__PURE__ */ q("button", {
-							disabled: le,
-							onClick: () => void t.run(async () => R()),
+						/* @__PURE__ */ G("button", {
+							disabled: ue,
+							onClick: () => void t.run(async () => L()),
 							children: "Clear selected"
 						}),
-						/* @__PURE__ */ q("select", {
+						/* @__PURE__ */ G("select", {
 							"aria-label": "Copy source scene",
 							value: v,
 							onChange: (e) => b(Number(e.currentTarget.value)),
-							children: Array.from({ length: 16 }, (t, n) => /* @__PURE__ */ q("option", {
+							children: Array.from({ length: 16 }, (t, n) => /* @__PURE__ */ G("option", {
 								value: n,
 								children: [
 									"From ",
@@ -4968,71 +5156,71 @@ function Vn({ bus: e }) {
 								]
 							}))
 						}),
-						/* @__PURE__ */ q("button", {
-							disabled: le || v === n,
-							onClick: () => void t.run(ie),
+						/* @__PURE__ */ G("button", {
+							disabled: ue || v === n,
+							onClick: () => void t.run(ae),
 							children: "Copy saved"
 						})
 					]
 				}),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("p", {
 					class: "hint scene-explanation",
 					children: "Settings change native scene memory. Recall changes the lights. Blank color attributes keep that value (MASK)."
 				}),
-				u && /* @__PURE__ */ q("p", {
+				u && /* @__PURE__ */ G("p", {
 					class: "error",
 					role: "alert",
 					children: [
 						u,
 						" ",
-						/* @__PURE__ */ q("button", {
+						/* @__PURE__ */ G("button", {
 							onClick: () => p((e) => e + 1),
 							children: "Reload saved settings"
 						})
 					]
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "scene-fixtures",
-					children: ee.map((e) => /* @__PURE__ */ q(Bn, {
+					children: ee.map((e) => /* @__PURE__ */ G($n, {
 						row: e,
-						visible: Ae(i, e.item.name),
+						visible: Me(i, e.item.name),
 						view: c,
 						makeScope: F
 					}, `${n}:${e.key}`))
 				}),
-				!N.length && /* @__PURE__ */ q("p", {
+				!N.length && /* @__PURE__ */ G("p", {
 					class: "empty",
 					children: "No matching fixtures."
 				}),
-				m && /* @__PURE__ */ q(Y, {
+				m && /* @__PURE__ */ G(q, {
 					title: m.title,
 					close: () => {
 						m.scope.cancelled = !0, h(null);
 					},
 					children: [
-						/* @__PURE__ */ q("p", { children: [
+						/* @__PURE__ */ G("p", { children: [
 							"Scene ",
 							m.scope.slot,
 							" · ",
 							m.changes.length,
 							" fixtures. Current output and unselected fixtures are preserved."
 						] }),
-						m.changes.map((e) => /* @__PURE__ */ q("section", {
+						m.changes.map((e) => /* @__PURE__ */ G("section", {
 							class: "verify-row",
 							children: [
-								/* @__PURE__ */ q("h3", { children: e.row.item.name }),
-								/* @__PURE__ */ q("p", { children: [
-									Mn(e.before),
+								/* @__PURE__ */ G("h3", { children: e.row.item.name }),
+								/* @__PURE__ */ G("p", { children: [
+									Gn(e.before),
 									" → ",
-									Mn(e.after)
+									Gn(e.after)
 								] }),
-								/* @__PURE__ */ q("details", { children: [/* @__PURE__ */ q("summary", { children: "Native before / after" }), /* @__PURE__ */ q("pre", { children: JSON.stringify({
+								/* @__PURE__ */ G("details", { children: [/* @__PURE__ */ G("summary", { children: "Native before / after" }), /* @__PURE__ */ G("pre", { children: JSON.stringify({
 									before: e.before,
 									after: e.after
 								}, null, 2) })] })
 							]
 						}, e.row.key)),
-						!!m.unresolved.length && /* @__PURE__ */ q("p", {
+						!!m.unresolved.length && /* @__PURE__ */ G("p", {
 							class: "error",
 							children: [
 								"Unresolved; excluded: ",
@@ -5040,27 +5228,27 @@ function Vn({ bus: e }) {
 								"."
 							]
 						}),
-						/* @__PURE__ */ q("div", {
+						/* @__PURE__ */ G("div", {
 							class: "dialog-actions",
-							children: [/* @__PURE__ */ q("button", {
+							children: [/* @__PURE__ */ G("button", {
 								onClick: () => {
 									m.scope.cancelled = !0, h(null);
 								},
 								children: "Cancel"
-							}), /* @__PURE__ */ q("button", {
+							}), /* @__PURE__ */ G("button", {
 								class: "primary",
 								disabled: !!t.busy || !m.changes.length,
-								onClick: () => void t.run(ae),
+								onClick: () => void t.run(oe),
 								children: "Apply reviewed settings"
 							})]
 						})
 					]
 				}),
-				g && /* @__PURE__ */ q(Y, {
+				g && /* @__PURE__ */ G(q, {
 					title: "Verify native scenes",
 					close: re,
 					children: [
-						/* @__PURE__ */ q("p", {
+						/* @__PURE__ */ G("p", {
 							class: "hint",
 							children: [
 								"Results cover completed native reads. Adoption and repair below use this slot (",
@@ -5068,60 +5256,60 @@ function Vn({ bus: e }) {
 								") and the current name filter."
 							]
 						}),
-						g.map((e) => /* @__PURE__ */ q("section", {
+						g.map((e) => /* @__PURE__ */ G("section", {
 							class: "verify-row",
 							children: [
-								/* @__PURE__ */ q("h3", { children: [
+								/* @__PURE__ */ G("h3", { children: [
 									e.row.item.name,
 									" · scene ",
 									e.slot
 								] }),
-								/* @__PURE__ */ q("p", { children: [e.candidate ? {
+								/* @__PURE__ */ G("p", { children: [e.candidate ? {
 									matching: "Matching",
 									different: "Different",
 									unmanaged: "Unmanaged",
 									unresolved: "Unresolved"
 								}[e.report.comparison] ?? "Unresolved" : "Unresolved", e.candidate ? "" : " · native data cannot be adopted"] }),
-								/* @__PURE__ */ q("p", {
+								/* @__PURE__ */ G("p", {
 									class: "hint",
-									children: ["Saved: ", Mn(e.report.saved)]
+									children: ["Saved: ", Gn(e.report.saved)]
 								}),
-								/* @__PURE__ */ q("details", { children: [/* @__PURE__ */ q("summary", { children: "Native evidence" }), /* @__PURE__ */ q("pre", { children: JSON.stringify(e.report.stored, null, 2) })] })
+								/* @__PURE__ */ G("details", { children: [/* @__PURE__ */ G("summary", { children: "Native evidence" }), /* @__PURE__ */ G("pre", { children: JSON.stringify(e.report.stored, null, 2) })] })
 							]
 						}, `${e.slot}:${e.row.key}`)),
-						/* @__PURE__ */ q("div", {
+						/* @__PURE__ */ G("div", {
 							class: "dialog-actions",
-							children: [/* @__PURE__ */ q("button", {
+							children: [/* @__PURE__ */ G("button", {
 								disabled: !M || !!t.busy || !P,
-								onClick: () => void t.run(async () => se("adopt_scene_row")),
+								onClick: () => void t.run(async () => ce("adopt_scene_row")),
 								children: "Review adoption"
-							}), /* @__PURE__ */ q("button", {
+							}), /* @__PURE__ */ G("button", {
 								disabled: !M || !!t.busy || !P,
-								onClick: () => void t.run(async () => se("repair_scene_row")),
+								onClick: () => void t.run(async () => ce("repair_scene_row")),
 								children: "Review repair"
 							})]
 						})
 					]
 				}),
-				C && /* @__PURE__ */ q(Y, {
+				C && /* @__PURE__ */ G(q, {
 					title: `Scene · ${C.item.name}`,
 					close: () => w(null),
-					children: [/* @__PURE__ */ q("label", {
+					children: [/* @__PURE__ */ G("label", {
 						class: "field",
-						children: ["Description", /* @__PURE__ */ q("textarea", {
+						children: ["Description", /* @__PURE__ */ G("textarea", {
 							"aria-label": "Scene description",
 							value: T,
 							onInput: (e) => E(e.currentTarget.value)
 						})]
-					}), /* @__PURE__ */ q("div", {
+					}), /* @__PURE__ */ G("div", {
 						class: "dialog-actions",
-						children: [/* @__PURE__ */ q("button", {
+						children: [/* @__PURE__ */ G("button", {
 							disabled: !!t.busy,
 							onClick: () => void t.run(async () => {
 								await t.metadata("describe", C.item.target, C.generation, { description: T || null }), w(null);
 							}),
 							children: "Save description"
-						}), /* @__PURE__ */ q("button", {
+						}), /* @__PURE__ */ G("button", {
 							disabled: !!t.busy,
 							onClick: () => {
 								w(null), O(C);
@@ -5130,21 +5318,21 @@ function Vn({ bus: e }) {
 						})]
 					})]
 				}),
-				D && /* @__PURE__ */ q(Y, {
+				D && /* @__PURE__ */ G(q, {
 					title: "Remove scene name",
 					close: () => O(null),
-					children: [/* @__PURE__ */ q("p", { children: [
+					children: [/* @__PURE__ */ G("p", { children: [
 						"Remove ",
 						D.item.name,
 						" and its saved expectations from the bridge. Native fixture contents remain in slot ",
 						D.item.slot,
 						"."
-					] }), /* @__PURE__ */ q("div", {
+					] }), /* @__PURE__ */ G("div", {
 						class: "dialog-actions",
-						children: [/* @__PURE__ */ q("button", {
+						children: [/* @__PURE__ */ G("button", {
 							onClick: () => O(null),
 							children: "Cancel"
-						}), /* @__PURE__ */ q("button", {
+						}), /* @__PURE__ */ G("button", {
 							disabled: !!t.busy,
 							onClick: () => void t.run(async () => {
 								await t.remove(D), O(null);
@@ -5158,18 +5346,18 @@ function Vn({ bus: e }) {
 	] });
 }
 // src/reassignment.ts
-var Hn = class {
+var tr = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.revision = this.initial.inventory.revision, this.spaces = n === "both" ? ["outputs", "inputs"] : [n];
 	}
 	assert() {
 		let e = this.ui, t = e.snapshot, n = t.inventory.buses.find((e) => e.bus === this.bus);
 		if (this.cancelled || e.cancelled || e.signingOut || !e.client.views.ready || e.client.views.epoch !== this.epoch) throw Error("Reassignment stopped. Completed changes remain saved.");
-		if (!K(this.initial, t, this.revision, this.bus) || t.phase !== "ready" || !n || !G(t, n)) throw Error("Configuration or bus connection changed. Completed changes remain saved; review before continuing.");
+		if (!W(this.initial, t, this.revision, this.bus) || t.phase !== "ready" || !n || !U(t, n)) throw Error("Configuration or bus connection changed. Completed changes remain saved; review before continuing.");
 	}
 	async perform(e, t, n) {
 		this.assert();
-		let r = await this.ui.client.job(U(this.initial.inventory.inventory_epoch, this.revision), null, e, {
+		let r = await this.ui.client.job(H(this.initial.inventory.inventory_epoch, this.revision), null, e, {
 			bus: this.bus,
 			...e.startsWith("assign_next_") ? {} : { space: t },
 			...n === void 0 ? {} : { address: n },
@@ -5199,35 +5387,35 @@ var Hn = class {
 			}
 			n && (this.ui.notice = `All 64 ${t} addresses are assigned. Additional unaddressed devices may remain.`);
 			for (let n = 0; n < 64; n++) e(`Refreshing ${t} · address ${n}`), await this.perform("discover_address", t, n);
-			let r = W(this.ui.snapshot).filter((e) => e.bus.bus === this.bus && (t === "outputs" ? e.kind === "output" : e.kind === "instance"));
+			let r = je(this.ui.snapshot).filter((e) => e.bus.bus === this.bus && (t === "outputs" ? e.kind === "output" : e.kind === "instance"));
 			for (let t of r) this.assert(), e(`Reading ${t.item.name}`), await this.ui.read(t), this.assert();
 		}
 		this.assert(), this.ui.notice = this.ui.notice || "Reassignment, discovery and current-value refresh finished. Identify the new default names on this screen.";
 	}
 };
 // src/reassignment-ui.tsx
-function Un({ bus: e, settings: t }) {
-	let n = J(), [r, i] = V(!1), [a, o] = V(!1), [s, c] = V("outputs"), [l, u] = V(null), d = ve(null);
-	H(() => () => {
+function nr({ bus: e, settings: t }) {
+	let n = K(), [r, i] = B(!1), [a, o] = B(!1), [s, c] = B("outputs"), [l, u] = B(null), d = ye(null);
+	V(() => () => {
 		d.current && (d.current.cancelled = !0);
 	}, []);
-	let f = n.client.views.ready && G(n.snapshot, e), p = l ? W(l.initial).filter((e) => e.bus.bus === l.bus && (e.kind === "output" ? l.spaces.includes("outputs") : (e.kind === "input" || e.kind === "instance") && l.spaces.includes("inputs"))) : [];
-	return /* @__PURE__ */ q(y, { children: [
-		/* @__PURE__ */ q("button", {
+	let f = n.client.views.ready && U(n.snapshot, e), p = l ? je(l.initial).filter((e) => e.bus.bus === l.bus && (e.kind === "output" ? l.spaces.includes("outputs") : (e.kind === "input" || e.kind === "instance") && l.spaces.includes("inputs"))) : [];
+	return /* @__PURE__ */ G(y, { children: [
+		/* @__PURE__ */ G("button", {
 			onClick: () => i(!0),
 			children: "Bus actions"
 		}),
-		r && /* @__PURE__ */ q(Y, {
+		r && /* @__PURE__ */ G(q, {
 			title: `${n.snapshot.identity.controller}/${e.name}`,
 			close: () => i(!1),
-			children: /* @__PURE__ */ q("div", {
+			children: /* @__PURE__ */ G("div", {
 				class: "menu-actions",
-				children: [/* @__PURE__ */ q("button", {
+				children: [/* @__PURE__ */ G("button", {
 					onClick: () => {
 						i(!1), t();
 					},
 					children: "Bus settings"
-				}), /* @__PURE__ */ q("button", {
+				}), /* @__PURE__ */ G("button", {
 					class: "danger",
 					disabled: !f || !!n.busy,
 					onClick: () => {
@@ -5237,55 +5425,55 @@ function Un({ bus: e, settings: t }) {
 				})]
 			})
 		}),
-		a && /* @__PURE__ */ q(Y, {
+		a && /* @__PURE__ */ G(q, {
 			title: "Reassign addresses",
 			close: () => o(!1),
 			children: [
-				/* @__PURE__ */ q("label", {
+				/* @__PURE__ */ G("label", {
 					class: "field",
-					children: ["Address space", /* @__PURE__ */ q("select", {
+					children: ["Address space", /* @__PURE__ */ G("select", {
 						"aria-label": "Reassignment address space",
 						value: s,
 						onChange: (e) => c(e.currentTarget.value),
 						children: [
-							/* @__PURE__ */ q("option", {
+							/* @__PURE__ */ G("option", {
 								value: "outputs",
 								children: "Outputs only"
 							}),
-							/* @__PURE__ */ q("option", {
+							/* @__PURE__ */ G("option", {
 								value: "inputs",
 								children: "Inputs only"
 							}),
-							/* @__PURE__ */ q("option", {
+							/* @__PURE__ */ G("option", {
 								value: "both",
 								children: "Outputs and inputs"
 							})
 						]
 					})]
 				}),
-				/* @__PURE__ */ q("p", { children: "Clear the selected short addresses and discover those devices with fresh default names." }),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("p", { children: "Clear the selected short addresses and discover those devices with fresh default names." }),
+				/* @__PURE__ */ G("div", {
 					class: "dialog-actions",
-					children: [/* @__PURE__ */ q("button", {
+					children: [/* @__PURE__ */ G("button", {
 						onClick: () => o(!1),
 						children: "Cancel"
-					}), /* @__PURE__ */ q("button", {
+					}), /* @__PURE__ */ G("button", {
 						class: "primary",
 						disabled: !f || !!n.busy,
 						onClick: () => {
-							u(new Hn(n, e.bus, s)), o(!1);
+							u(new tr(n, e.bus, s)), o(!1);
 						},
 						children: "Review reassignment"
 					})]
 				})
 			]
 		}),
-		l && /* @__PURE__ */ q(Y, {
+		l && /* @__PURE__ */ G(q, {
 			title: "Confirm address reassignment",
 			close: () => u(null),
 			children: [
-				/* @__PURE__ */ q("p", { children: [
-					/* @__PURE__ */ q("strong", { children: [
+				/* @__PURE__ */ G("p", { children: [
+					/* @__PURE__ */ G("strong", { children: [
 						l.initial.identity.controller,
 						"/",
 						l.initial.inventory.buses.find((e) => e.bus === l.bus).name
@@ -5293,37 +5481,37 @@ function Un({ bus: e, settings: t }) {
 					" · ",
 					l.spaces.join(" and ")
 				] }),
-				/* @__PURE__ */ q("p", { children: [
+				/* @__PURE__ */ G("p", { children: [
 					"The saved names below will be removed. ",
 					l.spaces.includes("outputs") && "Saved output group memberships and scene expectations will be removed. ",
 					"New devices receive default names such as ",
 					l.spaces.includes("outputs") ? "Light1" : "Input1",
 					"."
 				] }),
-				/* @__PURE__ */ q("p", { children: "Live light values, native group memberships and native scene memory stay unchanged. Use Verify groups/scenes afterward to review them." }),
-				/* @__PURE__ */ q("details", { children: [/* @__PURE__ */ q("summary", { children: [
+				/* @__PURE__ */ G("p", { children: "Live light values, native group memberships and native scene memory stay unchanged. Use Verify groups/scenes afterward to review them." }),
+				/* @__PURE__ */ G("details", { children: [/* @__PURE__ */ G("summary", { children: [
 					p.filter((e) => e.kind !== "instance").length,
 					" saved devices · ",
 					p.filter((e) => e.kind === "instance").length,
 					" input instances"
-				] }), /* @__PURE__ */ q("ul", { children: p.map((e) => /* @__PURE__ */ q("li", { children: [
+				] }), /* @__PURE__ */ G("ul", { children: p.map((e) => /* @__PURE__ */ G("li", { children: [
 					e.item.name,
 					" ",
-					/* @__PURE__ */ q("span", {
+					/* @__PURE__ */ G("span", {
 						class: "hint",
 						children: e.kind
 					})
 				] }, e.key)) })] }),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("p", {
 					class: "hint",
 					children: "Selected spaces are processed one at a time. Stopping keeps completed changes. An unconfirmed step stops further work."
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "dialog-actions",
-					children: [/* @__PURE__ */ q("button", {
+					children: [/* @__PURE__ */ G("button", {
 						onClick: () => u(null),
 						children: "Cancel"
-					}), /* @__PURE__ */ q("button", {
+					}), /* @__PURE__ */ G("button", {
 						class: "danger",
 						disabled: !!n.busy || !f,
 						onClick: () => {
@@ -5347,46 +5535,46 @@ function Un({ bus: e, settings: t }) {
 	] });
 }
 // src/app.tsx
-function Wn({ number: e, bus: t, close: n }) {
-	let r = J(), [i, a] = V(t?.name ?? `Bus${e + 1}`), [o, s] = V(t?.enabled ?? !0);
-	return /* @__PURE__ */ q(Y, {
+function rr({ number: e, bus: t, close: n }) {
+	let r = K(), [i, a] = B(t?.name ?? `Bus${e + 1}`), [o, s] = B(t?.enabled ?? !0);
+	return /* @__PURE__ */ G(q, {
 		title: `Bus ${e + 1} settings`,
 		close: n,
-		children: /* @__PURE__ */ q("form", {
+		children: /* @__PURE__ */ G("form", {
 			onSubmit: (t) => {
 				t.preventDefault(), r.run(async () => {
 					await r.configureBus(e, i, o), n();
 				});
 			},
 			children: [
-				/* @__PURE__ */ q("label", {
+				/* @__PURE__ */ G("label", {
 					class: "field",
-					children: ["Bus name", /* @__PURE__ */ q("input", {
+					children: ["Bus name", /* @__PURE__ */ G("input", {
 						required: !0,
 						"aria-label": "Bus name",
 						value: i,
 						onInput: (e) => a(e.currentTarget.value)
 					})]
 				}),
-				/* @__PURE__ */ q("label", {
+				/* @__PURE__ */ G("label", {
 					class: "check-field",
-					children: [/* @__PURE__ */ q("input", {
+					children: [/* @__PURE__ */ G("input", {
 						type: "checkbox",
 						checked: o,
 						onChange: (e) => s(e.currentTarget.checked)
 					}), "Enable bus"]
 				}),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("p", {
 					class: "hint",
 					children: "Saved devices keep their identity when the bus is renamed or disabled."
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "dialog-actions",
-					children: [/* @__PURE__ */ q("button", {
+					children: [/* @__PURE__ */ G("button", {
 						type: "button",
 						onClick: n,
 						children: "Cancel"
-					}), /* @__PURE__ */ q("button", {
+					}), /* @__PURE__ */ G("button", {
 						class: "primary",
 						disabled: !!r.busy || !r.client.views.ready,
 						children: "Save bus"
@@ -5396,71 +5584,71 @@ function Wn({ number: e, bus: t, close: n }) {
 		})
 	});
 }
-function Gn() {
-	let e = J(), [t, n] = V(null), r = e.snapshot;
-	return /* @__PURE__ */ q(y, { children: [
-		/* @__PURE__ */ q("header", {
+function ir() {
+	let e = K(), [t, n] = B(null), r = e.snapshot;
+	return /* @__PURE__ */ G(y, { children: [
+		/* @__PURE__ */ G("header", {
 			class: "page-heading",
-			children: /* @__PURE__ */ q("div", { children: [
-				/* @__PURE__ */ q("p", {
+			children: /* @__PURE__ */ G("div", { children: [
+				/* @__PURE__ */ G("p", {
 					class: "eyebrow",
 					children: "CONTROLLER"
 				}),
-				/* @__PURE__ */ q("h1", { children: r.identity.controller }),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("h1", { children: r.identity.controller }),
+				/* @__PURE__ */ G("p", {
 					class: "muted",
 					children: "DALI bus management"
 				})
 			] })
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "summary-grid",
 			children: [
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "card",
-					children: [/* @__PURE__ */ q("span", {
+					children: [/* @__PURE__ */ G("span", {
 						class: "muted",
 						children: "Controller"
-					}), /* @__PURE__ */ q("h2", { children: r.phase })]
+					}), /* @__PURE__ */ G("h2", { children: r.phase })]
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "card",
-					children: [/* @__PURE__ */ q("span", {
+					children: [/* @__PURE__ */ G("span", {
 						class: "muted",
 						children: "UART / HAT"
-					}), /* @__PURE__ */ q("h2", { children: r.hardware.state })]
+					}), /* @__PURE__ */ G("h2", { children: r.hardware.state })]
 				}),
-				/* @__PURE__ */ q("div", {
+				/* @__PURE__ */ G("div", {
 					class: "card",
-					children: [/* @__PURE__ */ q("span", {
+					children: [/* @__PURE__ */ G("span", {
 						class: "muted",
 						children: "Inventory revision"
-					}), /* @__PURE__ */ q("h2", { children: r.inventory.revision })]
+					}), /* @__PURE__ */ G("h2", { children: r.inventory.revision })]
 				})
 			]
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "section-heading",
-			children: [/* @__PURE__ */ q("h2", { children: "Buses" }), /* @__PURE__ */ q("span", {
+			children: [/* @__PURE__ */ G("h2", { children: "Buses" }), /* @__PURE__ */ G("span", {
 				class: "hint",
 				children: "Select a bus to discover and identify its devices."
 			})]
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "bus-grid",
 			children: Array.from({ length: 4 }, (e, t) => {
 				let i = r.inventory.buses.find((e) => e.bus === t);
-				return /* @__PURE__ */ q("article", {
+				return /* @__PURE__ */ G("article", {
 					class: "card bus-card",
 					children: [
-						/* @__PURE__ */ q("div", {
+						/* @__PURE__ */ G("div", {
 							class: "section-heading",
-							children: [/* @__PURE__ */ q("h2", { children: i?.name ?? `Bus${t + 1}` }), /* @__PURE__ */ q("span", {
-								class: `pill ${i && G(r, i) ? "" : "unknown"}`,
+							children: [/* @__PURE__ */ G("h2", { children: i?.name ?? `Bus${t + 1}` }), /* @__PURE__ */ G("span", {
+								class: `pill ${i && U(r, i) ? "" : "unknown"}`,
 								children: i ? i.enabled ? "Enabled" : "Disabled" : "Not configured"
 							})]
 						}),
-						/* @__PURE__ */ q("p", {
+						/* @__PURE__ */ G("p", {
 							class: "muted",
 							children: [
 								i?.outputs.length ?? 0,
@@ -5471,13 +5659,13 @@ function Gn() {
 								" groups"
 							]
 						}),
-						/* @__PURE__ */ q("div", {
+						/* @__PURE__ */ G("div", {
 							class: "toolbar",
-							children: [i && /* @__PURE__ */ q(We, {
+							children: [i && /* @__PURE__ */ G(Ke, {
 								class: "button primary",
 								href: `/buses/${t}`,
 								children: "Open bus"
-							}), /* @__PURE__ */ q("button", {
+							}), /* @__PURE__ */ G("button", {
 								onClick: () => n(t),
 								children: i ? "Bus settings" : "Set up bus"
 							})]
@@ -5486,120 +5674,120 @@ function Gn() {
 				}, t);
 			})
 		}),
-		t !== null && /* @__PURE__ */ q(Wn, {
+		t !== null && /* @__PURE__ */ G(rr, {
 			number: t,
 			bus: r.inventory.buses.find((e) => e.bus === t),
 			close: () => n(null)
 		})
 	] });
 }
-function Kn({ number: e, tab: t }) {
-	let n = J(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = V(!1);
-	return /* @__PURE__ */ q(y, { children: [
-		/* @__PURE__ */ q("header", {
+function ar({ number: e, tab: t }) {
+	let n = K(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = B(!1);
+	return /* @__PURE__ */ G(y, { children: [
+		/* @__PURE__ */ G("header", {
 			class: "page-heading",
-			children: [/* @__PURE__ */ q("div", { children: [
-				/* @__PURE__ */ q("p", {
+			children: [/* @__PURE__ */ G("div", { children: [
+				/* @__PURE__ */ G("p", {
 					class: "eyebrow",
 					children: "BUS MANAGEMENT"
 				}),
-				/* @__PURE__ */ q("h1", { children: [
+				/* @__PURE__ */ G("h1", { children: [
 					n.snapshot.identity.controller,
 					"/",
 					r?.name ?? `Bus${e + 1}`
 				] }),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("p", {
 					class: "muted",
 					children: "Discover, identify and name the devices on this bus."
 				})
-			] }), /* @__PURE__ */ q(y, { children: r ? /* @__PURE__ */ q(Un, {
+			] }), /* @__PURE__ */ G(y, { children: r ? /* @__PURE__ */ G(nr, {
 				bus: r,
 				settings: () => a(!0)
-			}, `${e}-${t}`) : /* @__PURE__ */ q("button", {
+			}, `${e}-${t}`) : /* @__PURE__ */ G("button", {
 				onClick: () => a(!0),
 				children: "Bus settings"
 			}) })]
 		}),
-		r ? /* @__PURE__ */ q(y, { children: [/* @__PURE__ */ q("nav", {
+		r ? /* @__PURE__ */ G(y, { children: [/* @__PURE__ */ G("nav", {
 			class: "tabs",
 			"aria-label": "Bus pages",
 			children: [
 				["", "Devices"],
 				["/groups", "Groups"],
 				["/scenes", "Scenes"]
-			].map(([n, r]) => /* @__PURE__ */ q(We, {
+			].map(([n, r]) => /* @__PURE__ */ G(Ke, {
 				class: t === n ? "selected" : "",
 				href: `/buses/${e}${n}`,
 				children: r
 			}))
-		}), t === "/groups" ? /* @__PURE__ */ q(On, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ q(Vn, { bus: r }, `scenes-${e}`) : /* @__PURE__ */ q(gn, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ q("div", {
+		}), t === "/groups" ? /* @__PURE__ */ G(Vn, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ G(er, { bus: r }, `scenes-${e}`) : /* @__PURE__ */ G(On, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ G("div", {
 			class: "card",
 			children: [
-				/* @__PURE__ */ q("h2", { children: "Set up this bus" }),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("h2", { children: "Set up this bus" }),
+				/* @__PURE__ */ G("p", {
 					class: "muted",
 					children: "Save a bus name and enable it before starting discovery."
 				}),
-				/* @__PURE__ */ q("button", {
+				/* @__PURE__ */ G("button", {
 					class: "primary",
 					onClick: () => a(!0),
 					children: "Set up bus"
 				})
 			]
 		}),
-		i && /* @__PURE__ */ q(Wn, {
+		i && /* @__PURE__ */ G(rr, {
 			number: e,
 			bus: r,
 			close: () => a(!1)
 		})
 	] });
 }
-function qn() {
-	let e = J().snapshot;
+function or() {
+	let e = K().snapshot;
 	function t() {
 		let t = URL.createObjectURL(new Blob([JSON.stringify(e.inventory, null, 2)], { type: "application/json" })), n = document.createElement("a");
 		n.href = t, n.download = "dali-inventory-report.json", n.click(), setTimeout(() => URL.revokeObjectURL(t), 0);
 	}
-	return /* @__PURE__ */ q(y, { children: [
-		/* @__PURE__ */ q("header", {
+	return /* @__PURE__ */ G(y, { children: [
+		/* @__PURE__ */ G("header", {
 			class: "page-heading",
-			children: /* @__PURE__ */ q("div", { children: [/* @__PURE__ */ q("p", {
+			children: /* @__PURE__ */ G("div", { children: [/* @__PURE__ */ G("p", {
 				class: "eyebrow",
 				children: "CONTROLLER"
-			}), /* @__PURE__ */ q("h1", { children: "Settings" })] })
+			}), /* @__PURE__ */ G("h1", { children: "Settings" })] })
 		}),
-		/* @__PURE__ */ q("section", {
+		/* @__PURE__ */ G("section", {
 			class: "card settings-section",
 			children: [
-				/* @__PURE__ */ q("h2", { children: e.identity.controller }),
-				/* @__PURE__ */ q("dl", { children: [
-					/* @__PURE__ */ q("dt", { children: "Version" }),
-					/* @__PURE__ */ q("dd", { children: e.identity.version }),
-					/* @__PURE__ */ q("dt", { children: "Build UTC" }),
-					/* @__PURE__ */ q("dd", { children: e.identity.build_utc }),
-					/* @__PURE__ */ q("dt", { children: "Inventory epoch" }),
-					/* @__PURE__ */ q("dd", {
+				/* @__PURE__ */ G("h2", { children: e.identity.controller }),
+				/* @__PURE__ */ G("dl", { children: [
+					/* @__PURE__ */ G("dt", { children: "Version" }),
+					/* @__PURE__ */ G("dd", { children: e.identity.version }),
+					/* @__PURE__ */ G("dt", { children: "Build UTC" }),
+					/* @__PURE__ */ G("dd", { children: e.identity.build_utc }),
+					/* @__PURE__ */ G("dt", { children: "Inventory epoch" }),
+					/* @__PURE__ */ G("dd", {
 						class: "mono",
 						children: e.inventory.inventory_epoch
 					}),
-					/* @__PURE__ */ q("dt", { children: "Revision" }),
-					/* @__PURE__ */ q("dd", { children: e.inventory.revision })
+					/* @__PURE__ */ G("dt", { children: "Revision" }),
+					/* @__PURE__ */ G("dd", { children: e.inventory.revision })
 				] }),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("p", {
 					class: "hint",
 					children: "Listener, MQTT, UART and password options are supplied when the bridge starts. Bus settings are available on each bus page."
 				})
 			]
 		}),
-		/* @__PURE__ */ q("section", {
+		/* @__PURE__ */ G("section", {
 			class: "card settings-section",
 			children: [
-				/* @__PURE__ */ q("h2", { children: "Inventory report" }),
-				/* @__PURE__ */ q("p", {
+				/* @__PURE__ */ G("h2", { children: "Inventory report" }),
+				/* @__PURE__ */ G("p", {
 					class: "muted",
 					children: "Download the current published inventory and identity history. This report is not a restorable configuration backup."
 				}),
-				/* @__PURE__ */ q("button", {
+				/* @__PURE__ */ G("button", {
 					onClick: t,
 					children: "Download inventory report"
 				})
@@ -5607,25 +5795,25 @@ function qn() {
 		})
 	] });
 }
-function Jn() {
-	let e = J(), t = e.snapshot;
-	return /* @__PURE__ */ q(y, { children: [
-		/* @__PURE__ */ q("header", {
+function sr() {
+	let e = K(), t = e.snapshot;
+	return /* @__PURE__ */ G(y, { children: [
+		/* @__PURE__ */ G("header", {
 			class: "page-heading",
-			children: /* @__PURE__ */ q("div", { children: [/* @__PURE__ */ q("p", {
+			children: /* @__PURE__ */ G("div", { children: [/* @__PURE__ */ G("p", {
 				class: "eyebrow",
 				children: "CONTROLLER"
-			}), /* @__PURE__ */ q("h1", { children: "Diagnostics" })] })
+			}), /* @__PURE__ */ G("h1", { children: "Diagnostics" })] })
 		}),
-		/* @__PURE__ */ q("div", {
+		/* @__PURE__ */ G("div", {
 			class: "summary-grid",
 			children: [
-				/* @__PURE__ */ q("section", {
+				/* @__PURE__ */ G("section", {
 					class: "card",
 					children: [
-						/* @__PURE__ */ q("h2", { children: "UART / HAT" }),
-						/* @__PURE__ */ q("p", { children: t.hardware.state }),
-						t.hardware.buses?.map((e) => /* @__PURE__ */ q("p", {
+						/* @__PURE__ */ G("h2", { children: "UART / HAT" }),
+						/* @__PURE__ */ G("p", { children: t.hardware.state }),
+						t.hardware.buses?.map((e) => /* @__PURE__ */ G("p", {
 							class: "hint",
 							children: [
 								"Bus ",
@@ -5636,37 +5824,37 @@ function Jn() {
 						}))
 					]
 				}),
-				/* @__PURE__ */ q("section", {
+				/* @__PURE__ */ G("section", {
 					class: "card",
 					children: [
-						/* @__PURE__ */ q("h2", { children: "Browser connection" }),
-						/* @__PURE__ */ q("p", { children: e.client.views.ready ? "Live" : "Stale · reconnecting" }),
-						/* @__PURE__ */ q("p", {
+						/* @__PURE__ */ G("h2", { children: "Browser connection" }),
+						/* @__PURE__ */ G("p", { children: e.client.views.ready ? "Live" : "Stale · reconnecting" }),
+						/* @__PURE__ */ G("p", {
 							class: "hint",
 							children: [e.client.lost, " input actions reported lost"]
 						})
 					]
 				}),
-				/* @__PURE__ */ q("section", {
+				/* @__PURE__ */ G("section", {
 					class: "card",
-					children: [/* @__PURE__ */ q("h2", { children: "MQTT" }), /* @__PURE__ */ q("p", {
+					children: [/* @__PURE__ */ G("h2", { children: "MQTT" }), /* @__PURE__ */ G("p", {
 						class: "muted",
 						children: "Connection status is not exposed by this build."
 					})]
 				})
 			]
 		}),
-		/* @__PURE__ */ q("section", {
+		/* @__PURE__ */ G("section", {
 			class: "card settings-section",
-			children: [/* @__PURE__ */ q("h2", { children: "Recent commands" }), e.client.jobs.length ? /* @__PURE__ */ q("div", {
+			children: [/* @__PURE__ */ G("h2", { children: "Recent commands" }), e.client.jobs.length ? /* @__PURE__ */ G("div", {
 				class: "job-list",
-				children: e.client.jobs.map((e) => /* @__PURE__ */ q("article", { children: [
-					/* @__PURE__ */ q("strong", { children: e.command }),
-					/* @__PURE__ */ q("span", {
+				children: e.client.jobs.map((e) => /* @__PURE__ */ G("article", { children: [
+					/* @__PURE__ */ G("strong", { children: e.command }),
+					/* @__PURE__ */ G("span", {
 						class: "pill unknown",
 						children: e.status
 					}),
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", {
 						class: "hint",
 						children: [
 							e.target ?? "Controller",
@@ -5674,31 +5862,31 @@ function Jn() {
 							e.id
 						]
 					}),
-					e.error && /* @__PURE__ */ q("p", {
+					e.error && /* @__PURE__ */ G("p", {
 						class: "error",
 						children: e.error.message ?? e.error.code
 					})
 				] }, e.id))
-			}) : /* @__PURE__ */ q("p", {
+			}) : /* @__PURE__ */ G("p", {
 				class: "muted",
 				children: "No commands recorded in this bridge session."
 			})]
 		}),
-		/* @__PURE__ */ q("section", {
+		/* @__PURE__ */ G("section", {
 			class: "card settings-section",
-			children: [/* @__PURE__ */ q("h2", { children: "Recent input actions" }), e.client.events.length ? /* @__PURE__ */ q("div", {
+			children: [/* @__PURE__ */ G("h2", { children: "Recent input actions" }), e.client.events.length ? /* @__PURE__ */ G("div", {
 				class: "job-list",
-				children: e.client.events.map((e) => /* @__PURE__ */ q("article", { children: [/* @__PURE__ */ q("strong", { children: e.target }), /* @__PURE__ */ q("pre", { children: JSON.stringify(e, null, 2) })] }))
-			}) : /* @__PURE__ */ q("p", {
+				children: e.client.events.map((e) => /* @__PURE__ */ G("article", { children: [/* @__PURE__ */ G("strong", { children: e.target }), /* @__PURE__ */ G("pre", { children: JSON.stringify(e, null, 2) })] }))
+			}) : /* @__PURE__ */ G("p", {
 				class: "muted",
 				children: "Operate an input after discovery to see its actions here."
 			})]
 		})
 	] });
 }
-function Yn() {
-	let [e] = V(() => new ze()), [, t] = V(0), [n, r] = V(location.pathname), [i, a] = V(!1);
-	H(() => {
+function cr() {
+	let [e] = B(() => new Ve()), [, t] = B(0), [n, r] = B(location.pathname), [i, a] = B(!1);
+	V(() => {
 		let n = e.client.subscribe(() => t((e) => e + 1));
 		e.client.start().catch((t) => {
 			e.client.error = t.message, e.touch();
@@ -5711,22 +5899,22 @@ function Yn() {
 		};
 	}, []);
 	let o = e.client.snapshot, s = /^\/buses\/([0-3])(\/groups|\/scenes)?$/.exec(n);
-	return /* @__PURE__ */ q(Ve.Provider, {
+	return /* @__PURE__ */ G(Ue.Provider, {
 		value: e,
-		children: /* @__PURE__ */ q("div", {
+		children: /* @__PURE__ */ G("div", {
 			class: "layout",
-			children: [/* @__PURE__ */ q("aside", {
+			children: [/* @__PURE__ */ G("aside", {
 				class: `sidebar ${i ? "open" : ""}`,
 				children: [
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("div", {
 						class: "brand",
 						children: [
-							/* @__PURE__ */ q("span", {
+							/* @__PURE__ */ G("span", {
 								class: "brand-icon",
 								children: "D"
 							}),
-							/* @__PURE__ */ q("div", { children: [/* @__PURE__ */ q("strong", { children: "DALI Bridge" }), /* @__PURE__ */ q("span", { children: o?.identity.controller ?? "Connecting…" })] }),
-							/* @__PURE__ */ q("button", {
+							/* @__PURE__ */ G("div", { children: [/* @__PURE__ */ G("strong", { children: "DALI Bridge" }), /* @__PURE__ */ G("span", { children: o?.identity.controller ?? "Connecting…" })] }),
+							/* @__PURE__ */ G("button", {
 								class: "nav-close",
 								"aria-label": "Close navigation",
 								onClick: () => a(!1),
@@ -5734,108 +5922,108 @@ function Yn() {
 							})
 						]
 					}),
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", {
 						class: "nav-label",
 						children: "CONTROLLER"
 					}),
-					/* @__PURE__ */ q(We, {
+					/* @__PURE__ */ G(Ke, {
 						class: n === "/" ? "selected" : "",
 						href: "/",
 						children: "Overview"
 					}),
-					/* @__PURE__ */ q("p", {
+					/* @__PURE__ */ G("p", {
 						class: "nav-label",
 						children: "DALI BUSES"
 					}),
-					o?.inventory.buses.map((e) => /* @__PURE__ */ q(We, {
+					o?.inventory.buses.map((e) => /* @__PURE__ */ G(Ke, {
 						class: s && Number(s[1]) === e.bus ? "selected" : "",
 						href: `/buses/${e.bus}`,
-						children: [/* @__PURE__ */ q("span", { children: e.name }), /* @__PURE__ */ q("span", {
+						children: [/* @__PURE__ */ G("span", { children: e.name }), /* @__PURE__ */ G("span", {
 							class: "bus-count",
 							children: e.outputs.length
 						})]
 					})),
-					/* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("div", {
 						class: "sidebar-bottom",
 						children: [
-							/* @__PURE__ */ q(We, {
+							/* @__PURE__ */ G(Ke, {
 								class: n === "/settings" ? "selected" : "",
 								href: "/settings",
 								children: "Settings"
 							}),
-							/* @__PURE__ */ q(We, {
+							/* @__PURE__ */ G(Ke, {
 								class: n === "/diagnostics" ? "selected" : "",
 								href: "/diagnostics",
 								children: "Diagnostics"
 							}),
-							/* @__PURE__ */ q("p", {
+							/* @__PURE__ */ G("p", {
 								class: "hint",
 								children: [
 									o?.identity.version ?? "DALI v2",
-									/* @__PURE__ */ q("br", {}),
+									/* @__PURE__ */ G("br", {}),
 									o?.identity.build_utc
 								]
 							})
 						]
 					})
 				]
-			}), /* @__PURE__ */ q("div", {
+			}), /* @__PURE__ */ G("div", {
 				class: "main-shell",
 				children: [
-					/* @__PURE__ */ q("header", {
+					/* @__PURE__ */ G("header", {
 						class: "topbar",
 						children: [
-							/* @__PURE__ */ q("button", {
+							/* @__PURE__ */ G("button", {
 								class: "nav-toggle",
 								"aria-label": "Open navigation",
 								onClick: () => a(!0),
 								children: "☰"
 							}),
-							/* @__PURE__ */ q("span", {
+							/* @__PURE__ */ G("span", {
 								class: "muted",
 								children: o?.identity.controller ?? "DALI controller"
 							}),
-							/* @__PURE__ */ q("span", { class: "spacer" }),
-							/* @__PURE__ */ q("span", {
+							/* @__PURE__ */ G("span", { class: "spacer" }),
+							/* @__PURE__ */ G("span", {
 								class: `pill ${e.client.views.ready ? "" : "unknown"}`,
 								children: e.client.views.ready ? "Live" : "Connecting"
 							}),
-							/* @__PURE__ */ q("button", {
+							/* @__PURE__ */ G("button", {
 								disabled: e.signingOut,
 								onClick: () => void e.logout(),
 								children: e.signingOut ? "Signing out…" : "Sign out"
 							})
 						]
 					}),
-					/* @__PURE__ */ q("main", { children: [
-						(e.error || e.client.error) && /* @__PURE__ */ q("div", {
+					/* @__PURE__ */ G("main", { children: [
+						(e.error || e.client.error) && /* @__PURE__ */ G("div", {
 							class: "banner error",
 							role: "alert",
 							children: e.error || e.client.error
 						}),
-						e.notice && /* @__PURE__ */ q("div", {
+						e.notice && /* @__PURE__ */ G("div", {
 							class: "banner notice",
 							role: "status",
 							children: e.notice
 						}),
-						o ? s ? /* @__PURE__ */ q(Kn, {
+						o ? s ? /* @__PURE__ */ G(ar, {
 							number: Number(s[1]),
 							tab: s[2] ?? ""
-						}, s[1]) : n === "/settings" ? /* @__PURE__ */ q(qn, {}) : n === "/diagnostics" ? /* @__PURE__ */ q(Jn, {}) : n === "/" ? /* @__PURE__ */ q(Gn, {}) : /* @__PURE__ */ q("div", {
+						}, s[1]) : n === "/settings" ? /* @__PURE__ */ G(or, {}) : n === "/diagnostics" ? /* @__PURE__ */ G(sr, {}) : n === "/" ? /* @__PURE__ */ G(ir, {}) : /* @__PURE__ */ G("div", {
 							class: "card",
-							children: [/* @__PURE__ */ q("h1", { children: "Page not found" }), /* @__PURE__ */ q(We, {
+							children: [/* @__PURE__ */ G("h1", { children: "Page not found" }), /* @__PURE__ */ G(Ke, {
 								href: "/",
 								children: "Return to overview"
 							})]
-						}) : /* @__PURE__ */ q("div", {
+						}) : /* @__PURE__ */ G("div", {
 							class: "card",
-							children: [/* @__PURE__ */ q("h1", { children: "Connecting to the controller…" }), /* @__PURE__ */ q("p", {
+							children: [/* @__PURE__ */ G("h1", { children: "Connecting to the controller…" }), /* @__PURE__ */ G("p", {
 								class: "muted",
 								children: "Waiting for the live inventory."
 							})]
 						})
 					] }),
-					/* @__PURE__ */ q("footer", { children: [
+					/* @__PURE__ */ G("footer", { children: [
 						o?.identity.controller,
 						" · ",
 						o?.identity.version,
@@ -5847,4 +6035,4 @@ function Yn() {
 		})
 	});
 }
-re(/* @__PURE__ */ q(Yn, {}), document.getElementById("app"));
+re(/* @__PURE__ */ G(cr, {}), document.getElementById("app"));

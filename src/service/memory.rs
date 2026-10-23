@@ -5,7 +5,7 @@ use crate::{
         connection::Connection,
         transactions::{TransactionError, Transactions},
     },
-    dali::{energy, memory as codec},
+    dali::{diagnostics, energy, memory as codec},
 };
 use serde::Serialize;
 use std::time::Duration;
@@ -15,6 +15,7 @@ pub(super) enum Action {
     Identity,
     Luminaire,
     Energy(energy::Bank),
+    Diagnostics(diagnostics::Bank),
     Read { bank: u8, window: codec::Window },
 }
 impl Action {
@@ -23,7 +24,15 @@ impl Action {
             Self::Identity => "read_identity",
             Self::Luminaire => "read_luminaire_data",
             Self::Energy(_) => "read_energy_data",
+            Self::Diagnostics(_) => "read_diagnostics",
             Self::Read { .. } => "read_memory",
+        }
+    }
+    pub(super) fn snapshot(self) -> bool {
+        match self {
+            Self::Energy(_) => true,
+            Self::Diagnostics(bank) => bank.snapshot(),
+            _ => false,
         }
     }
 }
@@ -53,6 +62,8 @@ pub struct Report {
     pub luminaire: Option<crate::dali::luminaire::Data>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub energy: Option<EnergyReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostics: Option<DiagnosticReport>,
     pub reason: Option<String>,
     pub configuration_changed: bool,
 }
@@ -60,6 +71,12 @@ pub struct Report {
 pub struct EnergyReport {
     #[serde(flatten)]
     pub data: energy::Data,
+    pub snapshot: Option<SnapshotProof>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DiagnosticReport {
+    #[serde(flatten)]
+    pub data: diagnostics::Data,
     pub snapshot: Option<SnapshotProof>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -139,10 +156,13 @@ pub(super) fn resolve(
             ))
         }
     };
-    if matches!(action, Action::Luminaire | Action::Energy(_)) && space != discovery::Space::Outputs
+    if matches!(
+        action,
+        Action::Luminaire | Action::Energy(_) | Action::Diagnostics(_)
+    ) && space != discovery::Space::Outputs
     {
         return Err(reject(
-            "luminaire/energy data requires an individual output fixture",
+            "luminaire, energy and diagnostic data require an individual output fixture",
         ));
     }
     if !snapshot
@@ -238,7 +258,7 @@ async fn latch_write(
 ) -> Result<scenes::Reading, commissioning::Error> {
     let codec::Target::Output(address) = native else {
         return Err(commissioning::Error::Evidence(
-            "energy latch requires an output",
+            "memory latch requires an output",
         ));
     };
     bus.command(energy::enable_write_memory(address), true)
@@ -247,10 +267,11 @@ async fn latch_write(
     bus.command(latch.frame(), false).await?;
     latch_read(bus, native).await
 }
-async fn capture_energy(
+async fn capture_snapshot(
     report: &mut Report,
     bus: &commissioning::Bus<'_>,
     native: codec::Target,
+    last_location: u8,
     cleanup_recovery: &mut bool,
 ) -> Result<SnapshotProof, commissioning::Error> {
     // A previous interrupted read may have left AA. Prove a fresh FF→AA
@@ -259,7 +280,7 @@ async fn capture_energy(
         let baseline = latch_write(bus, native, energy::Latch::Release).await?;
         if raw(&baseline) != Some(255) {
             return Err(commissioning::Error::Evidence(
-                "energy latch baseline was not confirmed",
+                "memory latch baseline was not confirmed",
             ));
         }
     }
@@ -267,7 +288,7 @@ async fn capture_energy(
         let start = latch_write(bus, native, energy::Latch::Freeze).await?;
         if raw(&start) != Some(170) {
             return Err(commissioning::Error::Evidence(
-                "energy latch was not confirmed",
+                "memory latch was not confirmed",
             ));
         }
         let last = report.readings[0]
@@ -275,12 +296,12 @@ async fn capture_energy(
             .as_ref()
             .and_then(raw)
             .expect("header checked");
-        extend_capture(report, last.min(15));
+        extend_capture(report, last.min(last_location));
         read_pending(report, bus, native).await?;
         let end = latch_read(bus, native).await?;
         if raw(&end) != Some(170) {
             return Err(commissioning::Error::Evidence(
-                "energy latch changed during capture",
+                "memory latch changed during capture",
             ));
         }
         Ok((start, end))
@@ -299,7 +320,7 @@ async fn capture_energy(
     let release = release?;
     if raw(&release) != Some(255) {
         return Err(commissioning::Error::Evidence(
-            "energy latch release was not confirmed",
+            "memory latch release was not confirmed",
         ));
     }
     Ok(SnapshotProof {
@@ -327,6 +348,7 @@ pub(super) async fn execute(
         Action::Identity => (0, codec::Window::new(0, 1).unwrap()),
         Action::Luminaire => (1, codec::Window::new(0, 1).unwrap()),
         Action::Energy(bank) => (bank.number(), codec::Window::new(0, 1).unwrap()),
+        Action::Diagnostics(bank) => (bank.number(), codec::Window::new(0, 1).unwrap()),
     };
     let mut report = Report {
         operation: route.action.name(),
@@ -355,6 +377,13 @@ pub(super) async fn execute(
         energy: match route.action {
             Action::Energy(bank) => Some(EnergyReport {
                 data: energy::decode(bank, &[]),
+                snapshot: None,
+            }),
+            _ => None,
+        },
+        diagnostics: match route.action {
+            Action::Diagnostics(bank) => Some(DiagnosticReport {
+                data: diagnostics::decode(bank, &[]),
                 snapshot: None,
             }),
             _ => None,
@@ -388,7 +417,7 @@ pub(super) async fn execute(
                     codec::Layout::from_version(report.version.as_ref().and_then(raw))
                         .last_location()
                 }
-                Action::Energy(_) => 3,
+                Action::Energy(_) | Action::Diagnostics(_) => 3,
                 _ => 0x12,
             };
             extend_capture(&mut report, last.min(end));
@@ -397,12 +426,47 @@ pub(super) async fn execute(
         if let Action::Energy(bank) = route.action {
             let data = energy::decode(bank, &captured_bytes(&report));
             let snapshot = if data.format_status == energy::FormatStatus::Supported {
-                Some(capture_energy(&mut report, &bus, route.native, &mut cleanup_recovery).await?)
+                Some(
+                    capture_snapshot(&mut report, &bus, route.native, 15, &mut cleanup_recovery)
+                        .await?,
+                )
             } else {
                 None
             };
             report.energy = Some(EnergyReport {
                 data: energy::decode(bank, &captured_bytes(&report)),
+                snapshot,
+            });
+        }
+        if let Action::Diagnostics(bank) = route.action {
+            let data = diagnostics::decode(bank, &captured_bytes(&report));
+            let snapshot = if data.format_status == diagnostics::FormatStatus::Supported {
+                if bank.snapshot() {
+                    Some(
+                        capture_snapshot(
+                            &mut report,
+                            &bus,
+                            route.native,
+                            bank.last(),
+                            &mut cleanup_recovery,
+                        )
+                        .await?,
+                    )
+                } else {
+                    let last = report.readings[0]
+                        .reading
+                        .as_ref()
+                        .and_then(raw)
+                        .expect("header checked");
+                    extend_capture(&mut report, last.min(bank.last()));
+                    read_pending(&mut report, &bus, route.native).await?;
+                    None
+                }
+            } else {
+                None
+            };
+            report.diagnostics = Some(DiagnosticReport {
+                data: diagnostics::decode(bank, &captured_bytes(&report)),
                 snapshot,
             });
         }
@@ -454,6 +518,14 @@ pub(super) async fn execute(
             data.data.format_status != energy::FormatStatus::Supported || report.count < 16
         }) {
             report.quality = "partial";
+        }
+        if let Action::Diagnostics(bank) = route.action {
+            if report.diagnostics.as_ref().is_some_and(|data| {
+                data.data.format_status != diagnostics::FormatStatus::Supported
+                    || report.count <= bank.last()
+            }) {
+                report.quality = "partial";
+            }
         }
         Ok(())
     }
@@ -511,6 +583,17 @@ pub(super) fn finish(request: Request, result: Result<Report, ServiceError>) {
     let _ = request.reply.send(result);
 }
 impl ServiceHandle {
+    /// Capture one standard diagnostic bank; maintenance207 is static.
+    pub async fn read_diagnostics(
+        &self,
+        target: &str,
+        bank: diagnostics::Bank,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.memory(target, Action::Diagnostics(bank), context, deadline, None)
+            .await
+    }
     /// Capture one standard Part252 bank using a verified temporary latch.
     pub async fn read_energy_data(
         &self,

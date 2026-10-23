@@ -73,6 +73,7 @@ impl DeviceDriver for DaliProxy {
                     "read_identity",
                     "read_luminaire_data",
                     "read_energy_data",
+                    "read_diagnostics",
                 ]
                 .into_iter()
                 .map(|name| CommandSpec::new(name, CommandClass::Read)),
@@ -1625,22 +1626,35 @@ fn parse(
 ) -> Result<Operation, OpError> {
     if matches!(
         call.command.as_str(),
-        "read_identity" | "read_memory" | "read_luminaire_data" | "read_energy_data"
+        "read_identity"
+            | "read_memory"
+            | "read_luminaire_data"
+            | "read_energy_data"
+            | "read_diagnostics"
     ) {
         if target.is_none() {
             return Err(OpError::Rejected("memory target required".into()));
         }
-        if call.command == "read_energy_data" {
+        if call.command == "read_energy_data" || call.command == "read_diagnostics" {
             #[derive(serde::Deserialize)]
             #[serde(deny_unknown_fields)]
             struct Parameters {
                 bank: u8,
             }
             let params: Parameters = decode(call)?;
-            let bank = crate::dali::energy::Bank::new(params.bank)
-                .map_err(|reason| OpError::Rejected(reason.into()))?;
+            let action = if call.command == "read_energy_data" {
+                memory::Action::Energy(
+                    crate::dali::energy::Bank::new(params.bank)
+                        .map_err(|reason| OpError::Rejected(reason.into()))?,
+                )
+            } else {
+                memory::Action::Diagnostics(
+                    crate::dali::diagnostics::Bank::new(params.bank)
+                        .map_err(|reason| OpError::Rejected(reason.into()))?,
+                )
+            };
             return Ok(Operation::Memory(
-                memory::Action::Energy(bank),
+                action,
                 snapshot.model.inventory().revision,
             ));
         }

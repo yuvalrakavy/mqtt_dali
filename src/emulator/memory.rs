@@ -30,11 +30,18 @@ impl Profile {
                 !banks.insert(bank.bank)
                     || bank.bytes.is_empty()
                     || bank.bytes.len() > 255
-                    || bank.latch && (!(202..=204).contains(&bank.bank) || bank.bytes.len() > 16)
+                    || bank.latch
+                        && bank.bytes.len()
+                            > match bank.bank {
+                                202..=204 => 16,
+                                205 => 29,
+                                206 => 33,
+                                _ => 0,
+                            }
             })
         {
             return Err(
-                "memory profile needs at most16 unique banks of1..255 nullable bytes; latching requires output banks202..204 with at most16 bytes".into(),
+                "memory profile needs at most16 unique banks of1..255 nullable bytes; output snapshot banks202..204 allow16 bytes,205 allows29 and206 allows33".into(),
             );
         }
         Ok(())

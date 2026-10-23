@@ -72,6 +72,43 @@ async fn browser_functional_phone_and_desktop() {
         .as_array_mut()
         .unwrap()
         .push(truncated);
+    let diagnostic: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../examples/emulator/diagnostics-i4.json"
+    ))
+    .unwrap();
+    for bank in diagnostic["buses"][0]["outputs"][0]["memory"]["banks"]
+        .as_array()
+        .unwrap()
+    {
+        let mut observed = bank.clone();
+        match observed["bank"].as_u64().unwrap() {
+            205 => {
+                observed["bytes"][8] = serde_json::Value::Null;
+                observed["bytes"][11] = json!(255);
+                observed["bytes"][12] = json!(255);
+                observed["bytes"][16] = json!(254);
+                observed["bytes"][28] = json!(101);
+            }
+            207 => observed["bytes"][4] = json!(255),
+            _ => {}
+        }
+        scenario["buses"][0]["outputs"][0]["memory"]["banks"]
+            .as_array_mut()
+            .unwrap()
+            .push(observed);
+        if bank["bank"] == 205 || bank["bank"] == 207 {
+            let mut bounded = bank.clone();
+            if bank["bank"] == 205 {
+                bounded["bytes"][3] = json!(2);
+            } else {
+                bounded["bytes"][0] = json!(5);
+            }
+            scenario["buses"][0]["outputs"][1]["memory"]["banks"]
+                .as_array_mut()
+                .unwrap()
+                .push(bounded);
+        }
+    }
     let scenario = serde_json::from_value(scenario).unwrap();
     let tcp_mode = std::env::var_os("DALI_BROWSER_HAT_TCP").is_some();
     let (emulator, tcp, pty_owner) = if tcp_mode {
