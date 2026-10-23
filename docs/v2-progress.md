@@ -5,6 +5,68 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4b6 — hardware group scalar Desired/State bindings
+
+Frozen production `c27d63a`; fixture/control/documentation correction `2a92da2`.
+The combined design gate and sequential final native/owner and MQTT/contract
+source lenses APPROVE without blockers. Implementation self-review corrected
+the private reply to preserve the original Observation/stamp, instead of matching
+public Reports alone; a bus-cycle/new-identical-report regression covers it.
+All reviews are source-only/read-only and same-family. No physical validation,
+live HAT/Store, shared SDK, deployment, publication or push/merge is claimed.
+
+Saved hardware groups now expose normal BridgeKit PowerState/Brightness Desired,
+target refresh and aggregate State. Complete maps reject null/wrong types,
+unknown/read-only/colour fields, contradictions and retired/missing group tokens
+before mutation. One native group frame follows actual hardware membership,
+including untracked gear; sampled State covers the complete saved bus roster.
+Uniform power and brightness are independent. Complete mixed evidence remains
+Available, with explicit null and a mixed flag for each disagreeing scalar.
+Empty/missing/MASK never becomes Off; stale/unobserved fields explicitly clear
+older merged values. Scalar Set reports actual values before completion and
+rejects incomplete/empty/unconfirmed readback; native Report outcomes stay intact.
+
+The owner caches the same accepted original context/stamp/Arc report before
+waking its caller. Physical output mutations retire group evidence on their bus
+before possible send, including Blink, scene recall, membership Program and
+address operations. Other buses and input measurements/Notices survive; input
+feedback does not invalidate groups. Root revision and physical epoch changes
+retire full-roster evidence. Cached validity shares existing handling of ordinary
+Writing/Awaiting, while final acceptance remains strict. Enabled group All reads
+share the existing fair cursor and15s ceiling; no new worker, transport, task,
+configuration format or poller was added. DT8 group colour remains pending.
+
+All **7 new native cases** and4 old cursor/All neighbors pass. Full final native
+acceptance passes **692/692 tests** across eleven binaries (73.997s execution,
+132.1s command). Strict Clippy passes10.43s; Pi library/four binaries, changed
+formatting, independent wait validation, **77 Node cases**, assets/whitespace and
+all33 affected control-table plans pass. Eight new intentional faults produce
+their named REDs in149s. An existing colour-budget control was retargeted from
+the old bool branch to ReadKind::Output and remeasured RED in20.5s.
+
+The initial full run had690/692 passing: two older strict literal peers rejected
+new membership queries during refresh-all. They now answer only the explicit
+C0/C1 queries for their fixture's actual group0 membership, retaining unknown-
+command failures. Both targeted cases pass, then the complete rerun passes.
+Production code was unchanged by those fixture corrections. Ordinary-read cache
+invalidation was corrected earlier after diagnostics proved identical stamps and
+normal Awaiting, without changing UART recovery. All temporary diagnostics were
+removed. Wait generation and validation remain independent.
+
+Actual final phone/desktop acceptance passes **984 owned commands**,92.42s test
+execution. All four fresh mixed/partial group screenshots were inspected; the
+existing commissioning, inputs, colour, groups, scenes, feedback, addressing,
+authentication and recovery workflows pass with group polling integrated.
+No browser source/asset change was needed for the scalar adapter. Artifacts:
+`/tmp/dali-browser-985c934590f4d658236f412dcaecf5cd`; logs:
+`/tmp/dali-group-scalar-final-{native,browser}.log`,
+`/tmp/dali-group-scalar-final-execution.log`,
+`/tmp/dali-group-scalar-acceptance`, `/tmp/dali-group-scalar-controls.log`,
+`/tmp/dali-group-scalar-peer-delta.log` and
+`/tmp/dali-group-scalar-colour-budget-control.log`.
+Next: common output settings/diagnostics, with remaining specialist families
+still explicitly tracked in the support matrix. No memory/skill changes needed.
+
 ## P4b5 — native group power/dimming with actual full-roster evidence
 
 Frozen source `a40f840`; reviewed HTTP correction `f6685dc`. Design and final
@@ -2536,7 +2598,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, individual base/scalar and native group outputs, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Group scalar/colour bindings, feedback parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
+| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |

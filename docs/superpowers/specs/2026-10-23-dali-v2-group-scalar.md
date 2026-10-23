@@ -194,3 +194,22 @@ ordinary Awaiting invalidation and invented mixed brightness. The runner restore
 all mutations before freezing. Guides/CLAUDE/matrix and the wait registry now
 cover group scalar bindings, exact observations, nullable values and common
 output mutation scope. Independent wait validation remains a separate check.
+
+## Final acceptance
+
+Production c27d63a is approved by the sequential final native/owner source lens;
+the final MQTT/contract/projection lens approves the full cd01356..2a92da2 slice.
+No source blockers. Same-family/source-only and lack of physical validation are
+explicit. The2a92da2 delta adds literal membership replies to two older refresh-All
+peers, retargets the colour All-budget control and corrects one stale matrix
+phrase. Unknown native fixture commands still fail. The original full run had
+690/692 passing because those peers rejected the new queries; targeted2/2 then
+the complete final692/692 rerun pass. No production change addressed the fixtures.
+
+Final native runtime73.997s/command132.1s, strict Clippy10.43s, Pi, formatting,
+independent waits,77 Node cases, assets/whitespace and all33 affected control plans
+pass. Eight new controls remain measured RED149s; the retargeted old colour
+budget control is RED20.5s. Actual browser phone/desktop984commands/92.42s passes
+with four fresh mixed/partial group screenshots inspected at
+`/tmp/dali-browser-985c934590f4d658236f412dcaecf5cd`. There was no browser source
+or asset change. See progress P4b6 for logs, limits and remaining capabilities.
