@@ -175,6 +175,90 @@ async fn literal_frame(link: &Transactions<Serial>, frame: u16) -> BusReply {
 }
 
 #[tokio::test]
+async fn gear_settings_typed_plans_roundtrip_through_standalone_hat() {
+    use mqtt_dali::dali::gear::{settings::*, Destination, Query, ShortAddress};
+    let fixture = Fixture::new();
+    let mut child = fixture.command().spawn().unwrap();
+    let ready = ready(&mut child).await;
+    let (link, mut events) = Transactions::start(
+        Serial::open(ready["pty"].as_str().unwrap()).await.unwrap(),
+        RepeatPolicy::OneTerminal,
+    );
+    tokio::time::timeout(Duration::from_secs(1), events.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    link.initialize(Duration::from_secs(1)).await.unwrap();
+    let address = ShortAddress::new(3).unwrap();
+    for (setting, query, expected) in [
+        (
+            Setting::Maximum(LimitLevel::new(80).unwrap()),
+            Query::MaximumLevel,
+            80,
+        ),
+        (
+            Setting::Minimum(LimitLevel::new(5).unwrap()),
+            Query::MinimumLevel,
+            5,
+        ),
+        (
+            Setting::PowerOn(PowerOnLevel::LastActive),
+            Query::PowerOnLevel,
+            255,
+        ),
+        (
+            Setting::SystemFailure(SystemFailureLevel::Unchanged),
+            Query::SystemFailureLevel,
+            255,
+        ),
+        (
+            Setting::FadeTime(FadeTime::new(15).unwrap()),
+            Query::FadeTimeRate,
+            0xf7,
+        ),
+        (
+            Setting::FadeRate(FadeRate::new(1).unwrap()),
+            Query::FadeTimeRate,
+            0xf1,
+        ),
+    ] {
+        for step in setting.plan(Destination::Short(address)) {
+            assert_eq!(
+                link.execute(
+                    Command::Send {
+                        bus: 0,
+                        frame: DaliFrame::Bits16(step.frame),
+                        repeat: step.repeat
+                    },
+                    Duration::from_secs(1)
+                )
+                .await
+                .unwrap(),
+                Response::Dali(vec![BusReply::NoResponse])
+            );
+        }
+        let raw = literal_frame(&link, address.query(query)).await;
+        assert_eq!(
+            raw,
+            BusReply::Value(expected),
+            "typed settings plan failed actual standalone readback"
+        );
+    }
+    assert_eq!(
+        literal_frame(&link, 0x07a0).await,
+        BusReply::Value(80),
+        "maximum setting did not clamp the lit fixture through PTY"
+    );
+    let snapshot = request(&fixture, serde_json::json!({"op":"snapshot"})).await;
+    let gear = &snapshot["result"]["buses"][0]["outputs"][0];
+    assert_eq!(gear["fade"], 0xf1);
+    assert_eq!(gear["power_on_level"], 255);
+    assert_eq!(gear["failure_level"], 255);
+    link.close().await.unwrap();
+    terminate(&mut child).await;
+}
+
+#[tokio::test]
 async fn standalone_dt8_pty_activates_native_colour_with_input_traffic() {
     use mqtt_dali::atx::{
         monitor::Event,

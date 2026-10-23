@@ -643,6 +643,8 @@ mod colour_tests;
 #[cfg(test)]
 mod feedback_tests;
 #[cfg(test)]
+mod gear_settings_tests;
+#[cfg(test)]
 mod input_settings_tests;
 #[cfg(test)]
 mod scene_tests;

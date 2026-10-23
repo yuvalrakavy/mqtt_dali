@@ -58,7 +58,8 @@ unknown properties and incorrect types before calling this typed API.
 ## Queries and observations
 
 Queries cover Status, ActualLevel, MinimumLevel, MaximumLevel, PhysicalMinimum,
-Version and DeviceType. Their literal opcodes are tested independently of the
+Version, DeviceType/NextDeviceType, PowerOnLevel, SystemFailureLevel and FadeTimeRate.
+Their literal opcodes are tested independently of the
 encoder. `Query::decode` accepts only a `BusReply` already correlated by the ATX
 transaction owner. Do not turn an arbitrary monitored frame into that evidence.
 
@@ -76,8 +77,10 @@ The fade flag is true while running. Status 255 is a bitmap, not a level MASK.
 The service resolves original generations, serializes actual owned jobs, validates
 response counts, rejects stale observations after session loss and publishes
 readback. An ATX N after a write is transport completion, not fixture confirmation.
-This pure module does not implement those service responsibilities or DTR/color/input
-commands. See [capability status](support-matrix.md) and [progress](v2-progress.md).
+This pure module does not implement those service responsibilities. Its
+[`settings` submodule](gear-settings.md) adds checked DTR0/repeated setter plans;
+colour and input protocols have separate modules. See
+[capability status](support-matrix.md) and [progress](v2-progress.md).
 
 The protocol cross-check is
 [python-dali 0.16 Part 102 commands](https://github.com/sde1000/python-dali/blob/4b21c18e79d02d2a97f91d135f0eee450e8c2fb9/dali/gear/general.py),

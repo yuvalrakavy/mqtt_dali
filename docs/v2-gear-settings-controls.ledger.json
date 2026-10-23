@@ -1,0 +1,158 @@
+{
+ "rows": {
+  "settings_destination_is_always_broadcast": {
+   "last_real": {
+    "at": "2026-10-23T05:30:30Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:65d67ddc3255f51b",
+     "row": "9cccaf3040aa99e3",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.7,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  },
+  "settings_failure255_becomes_off": {
+   "last_real": {
+    "at": "2026-10-23T05:31:01Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:864d33d38a123d4d",
+     "row": "25275baa8c8dca2a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.5,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  },
+  "settings_minimum_opcode_is_maximum": {
+   "last_real": {
+    "at": "2026-10-23T05:30:13Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:65d67ddc3255f51b",
+     "row": "6eb35100622c4820",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.3,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  },
+  "settings_model_time_drops_unrequested_rate": {
+   "last_real": {
+    "at": "2026-10-23T05:31:47Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:a16e5117c3d810aa",
+     "row": "cf3efc6e72637703",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.8,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  },
+  "settings_nominal_fade_time_uses_wrong_scale": {
+   "last_real": {
+    "at": "2026-10-23T05:32:04Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:040232802dbc17d3",
+     "row": "e5be6dbcb1c90daa",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.8,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  },
+  "settings_packed_ff_becomes_mask": {
+   "last_real": {
+    "at": "2026-10-23T05:31:17Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:2fa71898daeb88bd",
+     "row": "516ee4173d8f266c",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.6,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  },
+  "settings_setter_repeat_omitted": {
+   "last_real": {
+    "at": "2026-10-23T05:30:02Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:65d67ddc3255f51b",
+     "row": "48c162ca25a98320",
+     "test": null
+    },
+    "path": "command",
+    "secs": 8.2,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  },
+  "settings_startup255_becomes_off": {
+   "last_real": {
+    "at": "2026-10-23T05:30:45Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:6acd7fff6687723a",
+     "row": "b3efb2fcc5ab60f6",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.3,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  },
+  "settings_time_uses_low_nibble": {
+   "last_real": {
+    "at": "2026-10-23T05:31:32Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:66c0f68a6080ca2b",
+     "row": "804f2fb20e41057f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.8,
+    "sha": "8ed964d20a9a607bd823abeaad646cc1a54e6a02",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

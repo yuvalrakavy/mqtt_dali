@@ -119,6 +119,20 @@ spaces are independent; conflicting duplicate replies collide. `input_event`
 changes no query value, and `set_input_value` emits no native event. Tests select
 both explicitly. Value/latch state is independent of the settings below.
 
+## Common output settings model
+
+The existing independent Part 102 model stores minimum/maximum, power-on and
+bus-failure levels and packed fade time/rate. DTR0 plus adjacent repeated setters
+2A..2F update selected gear; read queries A1..A5 return native bytes. Settings
+preserve unselected gear and other buses. Minimum/maximum clamp lit actual levels
+while retaining Off; each fade setter preserves the other nibble. Power-on and
+failure FF remain raw special settings; packed fade FF remains numeric 15/15.
+Literal model and standalone UART/PTY tests verify this existing behavior against
+the [typed settings foundation](gear-settings.md). No register/snapshot shape
+change or new timing simulation is involved. Bus-power control is not fixture
+mains-power simulation; these tests do not prove startup/failure transitions or
+completed physical fades.
+
 ## Input event settings model
 
 Every existing instance has native enable, event priority, addressing scheme,

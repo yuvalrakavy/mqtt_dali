@@ -281,6 +281,15 @@ unmount. Passive effects can allow an awaited Stop reply to resume first. The
 real browser test pauses timers/animation frames while exercising actual Cancel,
 Close and navigation; directly toggling a unit-test scope cannot test that wiring.
 
+`dali::gear::settings` provides pure checked limits, context-specific startup/
+failure255 and basic fade values plus DTR0/repeated setter plans; Query adds
+PowerOnLevel/SystemFailureLevel/FadeTimeRate. See `docs/gear-settings.md` and
+`docs/v2-gear-settings-controls.toml`. Fade FF is numeric15/15; rate0 stays raw
+unknown; basic time0 does not prove instant output. Existing independent model
+behavior is verified, not rewritten. Managed execution/UI remain subsequent work:
+whole-permit DTR ownership, physical/current limit preflight, ordered limit edits,
+actual readback and bus-local output/colour/group cache cuts are required there.
+
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`
 reuse whole-plan DTR/enable ownership, captured deadlines and final acceptance.

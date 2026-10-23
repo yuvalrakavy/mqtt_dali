@@ -4,6 +4,7 @@
 //! Queries accept only short addresses. No response or collision is never a
 //! decoded fixture value; see `docs/dali-output-contract.md` for integration limits.
 use crate::atx::transactions::BusReply;
+pub mod settings;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum Error {
@@ -158,6 +159,9 @@ pub enum Query {
     Version,
     DeviceType,
     NextDeviceType,
+    PowerOnLevel,
+    SystemFailureLevel,
+    FadeTimeRate,
 }
 impl Query {
     fn opcode(self) -> u8 {
@@ -170,6 +174,9 @@ impl Query {
             Self::ActualLevel => 0xa0,
             Self::MaximumLevel => 0xa1,
             Self::MinimumLevel => 0xa2,
+            Self::PowerOnLevel => 0xa3,
+            Self::SystemFailureLevel => 0xa4,
+            Self::FadeTimeRate => 0xa5,
         }
     }
     /// Decode only a reply already correlated by the ATX transaction owner.
@@ -188,6 +195,11 @@ impl Query {
             Self::MaximumLevel => QueryValue::MaximumLevel(LevelValue::decode(raw)),
             Self::PhysicalMinimum => QueryValue::PhysicalMinimum(LevelValue::decode(raw)),
             Self::Version => QueryValue::Version(raw),
+            Self::PowerOnLevel => QueryValue::PowerOnLevel(settings::PowerOnLevel::from_raw(raw)),
+            Self::SystemFailureLevel => {
+                QueryValue::SystemFailureLevel(settings::SystemFailureLevel::from_raw(raw))
+            }
+            Self::FadeTimeRate => QueryValue::FadeTimeRate(settings::FadeSettings::from_raw(raw)),
             Self::DeviceType | Self::NextDeviceType => QueryValue::DeviceType(match raw {
                 254 => DeviceType::None,
                 255 => DeviceType::Multiple,
@@ -213,6 +225,9 @@ pub enum QueryValue {
     PhysicalMinimum(LevelValue),
     Version(u8),
     DeviceType(DeviceType),
+    PowerOnLevel(settings::PowerOnLevel),
+    SystemFailureLevel(settings::SystemFailureLevel),
+    FadeTimeRate(settings::FadeSettings),
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LevelValue {

@@ -1,0 +1,82 @@
+# Intentional faults run serially before frozen source readers. Every mutation is restored.
+
+[[control]]
+name = "settings_setter_repeat_omitted"
+file = "src/dali/gear/settings.rs"
+anchor = "frame: destination.command(opcode),\n                repeat: true,"
+replacement = "frame: destination.command(opcode),\n                repeat: false,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(gear_settings_native_plans)"]
+expect_text = "settings native DTR/setter/repeat vector changed"
+
+[[control]]
+name = "settings_minimum_opcode_is_maximum"
+file = "src/dali/gear/settings.rs"
+anchor = "Self::Minimum(value) => (value.raw(), 0x2b),"
+replacement = "Self::Minimum(value) => (value.raw(), 0x2a),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(gear_settings_native_plans)"]
+expect_text = "settings native DTR/setter/repeat vector changed"
+
+[[control]]
+name = "settings_destination_is_always_broadcast"
+file = "src/dali/gear/settings.rs"
+anchor = "frame: destination.command(opcode),"
+replacement = "frame: { let _ = destination; Destination::Broadcast.command(opcode) },"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(gear_settings_native_plans)"]
+expect_text = "settings native DTR/setter/repeat vector changed"
+
+[[control]]
+name = "settings_startup255_becomes_off"
+file = "src/dali/gear/settings.rs"
+anchor = "Err(_) => Self::LastActive,"
+replacement = "Err(_) => Self::Fixed(Level::new(0).unwrap()),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(gear_settings_checked_limits)"]
+expect_text = "startup255 lost its last-active meaning"
+
+[[control]]
+name = "settings_failure255_becomes_off"
+file = "src/dali/gear/settings.rs"
+anchor = "Err(_) => Self::Unchanged,"
+replacement = "Err(_) => Self::Fixed(Level::new(0).unwrap()),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(gear_settings_checked_limits)"]
+expect_text = "failure255 lost its unchanged meaning"
+
+[[control]]
+name = "settings_packed_ff_becomes_mask"
+file = "src/dali/gear.rs"
+anchor = "Self::FadeTimeRate => QueryValue::FadeTimeRate(settings::FadeSettings::from_raw(raw)),"
+replacement = "Self::FadeTimeRate => if raw == 255 { QueryValue::ActualLevel(LevelValue::UnavailableMask) } else { QueryValue::FadeTimeRate(settings::FadeSettings::from_raw(raw)) },"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(gear_settings_fade_bytes)"]
+expect_text = "fade byte became a MASK or lost query type"
+
+[[control]]
+name = "settings_time_uses_low_nibble"
+file = "src/dali/gear/settings.rs"
+anchor = "FadeTime(self.0 >> 4)"
+replacement = "FadeTime(self.0 & 15)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(gear_settings_fade_bytes)"]
+expect_text = "fade nibbles or FF numeric codes were lost"
+
+[[control]]
+name = "settings_model_time_drops_unrequested_rate"
+file = "src/emulator/model.rs"
+anchor = "gear.fade = (gear.fade & 15) | (gear.dtr[0] << 4);"
+replacement = "gear.fade = gear.dtr[0] << 4;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_gear_settings_all_stores)"]
+expect_text = "literal stored setting/readback or unrequested fade nibble changed"
+
+[[control]]
+name = "settings_nominal_fade_time_uses_wrong_scale"
+file = "src/dali/gear/settings.rs"
+anchor = "0.5 * 2.0_f64.powf(f64::from(self.0) / 2.0)"
+replacement = "1.0 * 2.0_f64.powf(f64::from(self.0) / 2.0)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(gear_settings_timing_conversions)"]
+expect_text = "fade time code did not match native seconds"
