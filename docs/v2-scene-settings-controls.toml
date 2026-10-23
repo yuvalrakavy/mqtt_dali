@@ -100,7 +100,7 @@ expect_text = "repair ignored native drift after probe handoff"
 [[control]]
 name = "scene_capture_fabricates_candidate"
 file = "src/service/scene_settings/execute.rs"
-anchor = "sample.candidate = candidate(&actual.observation);"
+anchor = "sample.candidate = level.and_then(|level| candidate(&actual.observation, level));"
 replacement = "sample.candidate = Some(Setting::ignored());"
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(scene_settings_capture_rgbwaf)"]

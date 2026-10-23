@@ -36,18 +36,18 @@
   },
   "scene_capture_fabricates_candidate": {
    "last_real": {
-    "at": "2026-10-22T14:19:51Z",
+    "at": "2026-10-23T08:29:38Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:42261b33daf40533",
-     "row": "7f908ec6e00b664e",
+     "guard": "item:33bdb3ab22b48e4a",
+     "row": "5438c8a649654ecc",
      "test": null
     },
     "path": "command",
-    "secs": 17.9,
-    "sha": "87719b1ea156f11de34c454baa0923bc5b2c395e",
+    "secs": 21.3,
+    "sha": "b731f96cf346e9cae1088c654cda852df2eaf0f7",
     "verdict": "RED"
    }
   },

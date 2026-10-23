@@ -5,6 +5,61 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4f3 — virtual DT7 scene capture
+
+Frozen implementation `b731f96`. Combined design gate and both sequential final
+native/contract and regression/compatibility source gates APPROVE without blockers.
+Reviews are source-only, same-family; their token usage is unavailable on this host.
+
+Capture now distinguishes relay virtual control from actual contact0/254. It
+conservatively classifies the existing correlated type replies, poisons DTR0 with
+FF, sends addressed repeated STORE ACTUAL and queries DTR0 under the existing
+scene permit/stamp/deadline. Only numeric0..254 can become a reviewed candidate.
+Unknown type, partial base, missing/collided/FF data never become contact fallback.
+Public actual State stays binary. No new command, schema, owner, inventory write,
+polling or SDK/Store coupling. Ordinary dimmer/DT8 capture keeps Unverified-profile
+support; positive DT7 requires the known repeat profile. Only harmless DTR scratch
+poison can precede unsupported-repeat refusal. Capture does not operate the contact
+or program a scene; applying its frozen reviewed candidate stores the virtual level.
+
+Behavioral RED returned254 instead of100 through the real managed MQTT/emulator
+path. Nine focused native cases pass in4.015s, including both repeat profiles,
+exact literal poison/STORE/query, zero/254, malformed multi-type tails, unknown
+colour/base evidence, failed Send and query outcomes, stale final rejection,
+binary cache/inventory preservation and reviewed-candidate programming/recall.
+The existing unverified RGBWAF capture regression remains green. Strict peers
+check worker liveness as well as script completion, so detached task panics cannot
+hide unexpected native traffic behind an expected operation error.
+
+All **11 deliberate faults** produce their named REDs,199.9s latest-row sum.
+Source is restored. Full native acceptance passes **741/741** across eleven
+binaries (79.078s execution,147.1s command; one opt-in browser skipped). Strict
+Clippy16.2s, Pi library/four binaries2.5s, changed Rust formatting, wait validation
+0findings, generated asset byte-check and whitespace pass. Repository control
+plans found one old candidate-construction anchor; it is retargeted to the new
+line, and the unchanged ordinary RGBWAF oracle detects that fault in21.3s.
+The corrected plan passes; restored focused verification passes8/8 in4.036s after
+that mutation.
+No production/test assertion change was needed. Other repository plans passed.
+
+No web source/assets changed: the previous1177-command phone/desktop acceptance
+and Node89 remain applicable, not claimed as fresh browser execution. Scene guides
+explain the current Brightness/Off labels as virtual control for DT7; relay-specific
+presentation remains alongside retained classification. Recall evaluates current
+threshold/direction, so a captured virtual value need not reproduce an earlier
+contact state after other changes. Operator emulator instructions now send socket
+JSON immediately with a pipe, respecting the one-second idle deadline, and explain
+independent snapshots versus bridge-observed state and the absent simulator GUI.
+
+Methodology: sample contactOn/Off independently from virtual level; verify strict
+peer task health when a caller expects errors; refresh changed old fault anchors
+at the same boundary. No live HAT/Store, SDK, memory/skill, release, publication,
+deployment or push/merge changes. Retained relay metadata, presentation, timed
+fades/fault profiles and physical validation remain pending.
+Spec: [DT7 capture](superpowers/specs/2026-10-23-dali-v2-dt7-scene-capture.md).
+Evidence: `/tmp/dali-dt7-capture-{red,focused-final,controls,send-control,acceptance,affected-control,restored,affected-plan}.log`
+and `/tmp/dali-dt7-capture-acceptance/`.
+
 ## P4f2 — managed DT7 thresholds and virtual limits
 
 Frozen implementation `e3db774`. Sequential final native/contract and UI/state
@@ -2845,7 +2900,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, DT7 protocol/independent relay foundation and managed thresholds/virtual limits, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Retained DT7 metadata and virtual scene capture, extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
+| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, DT7 protocol/independent relay foundation, managed thresholds/virtual limits and virtual scene capture, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Retained DT7 metadata/presentation, extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |

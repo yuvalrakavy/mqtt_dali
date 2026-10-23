@@ -103,10 +103,10 @@ change is planned; prior1177-command browser acceptance remains applicable.
 - [x] Two source-grounded design self-reviews and combined design gate.
 - [x] Behavioral RED; pure plan, conservative classifier and owned capture read.
 - [x] Literal/model/MQTT/stale regressions; controls detected and restored.
-- [ ] Full native and scoped build/lint/format/wait/assets/control-plan acceptance.
-- [ ] Update scene/DT7 guides, support matrix, CLAUDE and progress with exact
+- [x] Full native and scoped build/lint/format/wait/assets/control-plan acceptance.
+- [x] Update scene/DT7 guides, support matrix, CLAUDE and progress with exact
   actual/virtual boundary and physical/timed/fault/retained-metadata limitations.
-- [ ] Frozen native/contract and regression/compatibility source reviews.
+- [x] Frozen native/contract and regression/compatibility source reviews.
 
 No PanelScript, Store preset precedence, live Store data, SDK, memory/skills,
 release, deployment, push or merge work. Existing scene UI receives the same
@@ -147,3 +147,10 @@ peer's unexpected-command failure is observed by its liveness assertion, proving
 an expected operation error cannot conceal continued wire traffic. Source was
 restored before freeze and final readers. The serial controls took3m20s rather
 than the~2min estimate, primarily per-mutation lib recompilation.
+
+Frozen `b731f96` is approved by both sequential final source gates. Full741/741
+native tests, strict Clippy, Pi/four binaries, format/wait/assets/whitespace pass.
+One old scene control's moved candidate anchor was caught by the all-table plan
+check, retargeted to the same semantic site and remeasured RED21.3s with the same
+RGBWAF oracle. Production and test assertions remain unchanged. Detailed evidence
+and previous browser applicability are recorded in `docs/v2-progress.md`.

@@ -18,9 +18,17 @@ are private fixture identifiers, not bridge names. Unknown fields/ranges fail.
 Runtime address/group/scene changes are in memory; the scenario is not rewritten.
 
 Controls use one newline-terminated JSON request per private Unix socket
-connection. A reply contains `result` or `error`, then closes. For example, open
-`nc -U /tmp/my-dali-emulator/control.sock`, enter one request, and reconnect for
-the next. Available requests include:
+connection. A reply contains `result` or `error`, then closes. Send the complete
+line immediately: the socket has a one-second idle-read deadline. For example:
+
+```sh
+printf '%s\n' '{"op":"snapshot"}' | nc -U /tmp/my-dali-emulator/control.sock
+printf '%s\n' '{"op":"input_event","bus":0,"frame":32769}' | nc -U /tmp/my-dali-emulator/control.sock
+```
+
+The snapshot shows fixture levels, addresses, groups/scenes and native settings.
+The second example injects Pressed on bus0/input0/instance0;32768 is Released and
+32770 Short press. Reconnect for each request. Available requests include:
 
 ```json
 {"op":"snapshot"}
@@ -119,13 +127,23 @@ spaces are independent; conflicting duplicate replies collide. `input_event`
 changes no query value, and `set_input_value` emits no native event. Tests select
 both explicitly. Value/latch state is independent of the settings below.
 
+Use the bridge's normal authenticated Devices screen to operate simulated
+fixtures after discovery: On/Off, level, colour and Blink use the same virtual
+UART as physical hardware. The emulator snapshot is independent native evidence,
+while that screen shows what the bridge has observed. There is currently no
+graphical emulator control panel; button events and sensor changes use the socket.
+The basic scenario has type-only buttons; add a `values` profile when testing
+queried current values with `set_input_value`. Raw event injection alone does not
+change those queried values or schedule a press/release/short-press sequence.
+
 ## Common output settings model
 
 The existing independent Part 102 model stores minimum/maximum, power-on and
 bus-failure levels and packed fade time/rate. DTR0 plus adjacent repeated setters
 2A..2F update selected gear; read queries A1..A5 return native bytes. Settings
-preserve unselected gear and other buses. Minimum/maximum clamp lit actual levels
-while retaining Off; each fade setter preserves the other nibble. Power-on and
+preserve unselected gear and other buses. For ordinary dimmers, minimum/maximum
+clamp lit actual levels while retaining Off; each fade setter preserves the other
+nibble. DT7 uses virtual limits, which can operate its contact. Power-on and
 failure FF remain raw special settings; packed fade FF remains numeric 15/15.
 Literal model and standalone UART/PTY tests verify this existing behavior against
 the [typed settings foundation and managed API](gear-settings.md). The managed
