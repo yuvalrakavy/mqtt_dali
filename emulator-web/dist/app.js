@@ -679,7 +679,7 @@ function Te() {
 													children: t.device_type === 7 ? "⇄" : "◉"
 												}), /* @__PURE__ */ J("span", {
 													class: "tag",
-													children: t.device_type === 7 ? "DT7 relay" : t.device_type === 8 ? "DT8 colour" : "Dimmer"
+													children: t.device_type === 7 ? "DT7 relay" : t.device_type === 8 ? "DT8 color" : "Dimmer"
 												})]
 											}),
 											/* @__PURE__ */ J("h4", { children: t.id }),
@@ -1169,7 +1169,7 @@ function Oe({ onAdd: e }) {
 				}),
 				/* @__PURE__ */ J("option", {
 					value: "colour",
-					children: "DT8 colour"
+					children: "DT8 color"
 				}),
 				[
 					1,
@@ -1439,10 +1439,10 @@ function Ae({ edit: e, close: t, save: n }) {
 					})] }),
 					r.colour && /* @__PURE__ */ J("details", {
 						open: !0,
-						children: [/* @__PURE__ */ J("summary", { children: "Colour capabilities & initial values" }), /* @__PURE__ */ J($, {
+						children: [/* @__PURE__ */ J("summary", { children: "Color capabilities & initial values" }), /* @__PURE__ */ J($, {
 							value: r.colour,
 							apply: (e) => l("colour", e),
-							label: "Colour profile JSON"
+							label: "Color profile JSON"
 						})]
 					})
 				] }),

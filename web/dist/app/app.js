@@ -43,7 +43,7 @@ function C(t) {
 function w() {
 	var t, r, o, s, c, l, u, d, f;
 	try {
-		for (r = 1; n.length;) n.length > r && n.sort(a), t = n.shift(), r = n.length, 8 & t.__g && (s = void 0, c = void 0, l = (c = (o = t).__v).__e, u = [], d = [], (f = o.__P) && ((s = g({ constructor: void 0 }, c)).__v = c.__v + 1, e.vnode && e.vnode(s), M(f, s, c, o.__n, f.namespaceURI, 32 & c.__u ? [l] : null, u, l || x(c), 32 & c.__u, d), s.__v = c.__v, s.__.__k[s.__i] = s, P(u, s, d), c.__ = c.__e = null, s.__e != l && S(s)));
+		for (r = 1; n.length;) n.length > r && n.sort(a), t = n.shift(), r = n.length, 8 & t.__g && (s = void 0, c = void 0, l = (c = (o = t).__v).__e, u = [], d = [], (f = o.__P) && ((s = g({ constructor: void 0 }, c)).__v = c.__v + 1, e.vnode && e.vnode(s), M(f, s, c, o.__n, f.namespaceURI, 32 & c.__u ? [l] : null, u, l || x(c), 32 & c.__u, d), s.__v = c.__v, s.__.__k[s.__i] = s, N(u, s, d), c.__ = c.__e = null, s.__e != l && S(s)));
 	} finally {
 		n.length = i = 0;
 	}
@@ -117,7 +117,7 @@ function j(t) {
 	};
 }
 function M(t, n, r, i, a, o, s, c, l, u) {
-	var d, p, h, v, S, C, w, E, D, O, k, A, j, M, P, F, L, R, z, B, V = n.type;
+	var d, p, h, v, S, C, w, E, D, O, k, A, j, M, N, F, L, R, z, B, V = n.type;
 	if (n.constructor !== void 0) return null;
 	if (128 & r.__u && (l = 32 & r.__u, d = r.__c.__z)) {
 		if (n.__u |= l, p = o = [], d.nodeType == 8) for (h = 1, v = d.nextSibling; v; v = v.nextSibling) {
@@ -145,10 +145,10 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 					C.componentDidUpdate(w, E, D);
 				});
 			} else k && !V.getDerivedStateFromProps && C.componentWillMount && C.componentWillMount(), k && C.componentDidMount && C.__h.push(C.componentDidMount);
-			if (C.context = j, C.props = O, C.__P = t, C.__g &= -5, M = e.__r, P = 0, k) C.state = C.__s, C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), f.push.apply(C.__h, C.__k), C.__k = [];
+			if (C.context = j, C.props = O, C.__P = t, C.__g &= -5, M = e.__r, N = 0, k) C.state = C.__s, C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), f.push.apply(C.__h, C.__k), C.__k = [];
 			else do
 				C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), C.state = C.__s;
-			while (8 & C.__g && ++P < 25);
+			while (8 & C.__g && ++N < 25);
 			C.state = C.__s, C.getChildContext && (i = g({}, i, C.getChildContext())), k && r.__c && C.getSnapshotBeforeUpdate && (D = C.getSnapshotBeforeUpdate(w, E)), F = d && d.type === y && d.key == null ? d.props.children : d, O.__P && (d = c, a = (t = O.__P).namespaceURI, l = o = null, r.props && r.props.__P != t && (r.__k.some(function(e) {
 				e && I(e, e);
 			}), r.__k = null), c = r.__k ? x(r, 0) : null), c = T(t, m(F) ? F : [F], n, r, i, a, o, s, c, l, u), O.__P && (n.__e = null, c = d), n.__u &= -161, 128 & r.__u && (C.__z = null), p && p.some(_), C.__h.length && s.push(C), 1 & C.__g && (C.__g &= -4);
@@ -174,15 +174,15 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 					n.__c.__z || (n.__c.__z = R), n.__e = c;
 				} else o && o.some(_);
 			} else n.__e = r.__e;
-			n.__k || (n.__k = r.__k || []), t.then || N(n), e.__e(t, n, r);
+			n.__k || (n.__k = r.__k || []), t.then || ee(n), e.__e(t, n, r);
 		}
-	} else c = n.__e = ee(r.__e, n, r, i, a, o, s, l, u, t);
+	} else c = n.__e = P(r.__e, n, r, i, a, o, s, l, u, t);
 	return (d = e.diffed) && d(n), 128 & n.__u ? void 0 : c;
 }
-function N(e) {
-	e && (e.__c && (e.__c.__g |= 4), e.__k && e.__k.some(N));
+function ee(e) {
+	e && (e.__c && (e.__c.__g |= 4), e.__k && e.__k.some(ee));
 }
-function P(t, n, r) {
+function N(t, n, r) {
 	for (var i = 0; i < r.length;) F(r[i++], r[i++], r[i++]);
 	e.__c && e.__c(n, t), t.some(function(n) {
 		try {
@@ -194,7 +194,7 @@ function P(t, n, r) {
 		}
 	});
 }
-function ee(t, n, r, i, a, o, s, c, l, u) {
+function P(t, n, r, i, a, o, s, c, l, u) {
 	var f, g, v, y, b, S, C, w, E, D = r.props || d, O = n.props, k = n.type;
 	if (k == "svg" ? a = "http://www.w3.org/2000/svg" : k == "math" ? a = "http://www.w3.org/1998/Math/MathML" : a || (a = "http://www.w3.org/1999/xhtml"), o) {
 		for (f = 0; f < o.length; f++) if ((b = o[f]) && (k ? b.localName == k : b.nodeType == 3)) {
@@ -239,7 +239,7 @@ function te(e, t, n) {
 }
 function L(t, n) {
 	var r, i, a, o;
-	e.__ && e.__(t, n), n.nodeType == 9 && (n = n.documentElement), i = (r = t && 32 & t.__u) ? null : n.__k, n.__k = v(y, { children: [t] }), a = [], o = [], M(n, n.__k, i || d, d, n.namespaceURI, i ? null : n.firstChild ? h.call(n.childNodes) : null, a, i ? i.__e : n.firstChild, r, o), P(a, n.__k, o), n.__k.props.children = null;
+	e.__ && e.__(t, n), n.nodeType == 9 && (n = n.documentElement), i = (r = t && 32 & t.__u) ? null : n.__k, n.__k = v(y, { children: [t] }), a = [], o = [], M(n, n.__k, i || d, d, n.namespaceURI, i ? null : n.firstChild ? h.call(n.childNodes) : null, a, i ? i.__e : n.firstChild, r, o), N(a, n.__k, o), n.__k.props.children = null;
 }
 function R(e) {
 	function t(e) {
@@ -842,7 +842,7 @@ var Fe = class extends Error {
 	}
 	async representation(e, t) {
 		let n = this.current(e.key);
-		await this.metadata("set_color_representation", n.item.target, n.generation, { color_representation: t || null }), await this.read(this.current(e.key)), this.notice = "Colour representation saved; actual values refreshed.";
+		await this.metadata("set_color_representation", n.item.target, n.generation, { color_representation: t || null }), await this.read(this.current(e.key)), this.notice = "Color representation saved; actual values refreshed.";
 	}
 	hint(e) {
 		let t = e.target;
@@ -2443,16 +2443,16 @@ function zt({ row: e, close: t }) {
 		ColorBlue: "Blue (%)",
 		ColorWhite: "White (%)",
 		ColorAmber: "Amber (%)",
-		ColorFree: "Free colour (%)"
+		ColorFree: "Free color (%)"
 	})[e], p = (e, t) => typeof t == "number" ? (a === "rgbwaf" ? t * 100 : t).toString() : "";
 	return /* @__PURE__ */ Y(Z, {
-		title: `Colour · ${r.item.name}`,
+		title: `Color · ${r.item.name}`,
 		close: t,
 		children: [
 			/* @__PURE__ */ Y("label", {
 				class: "field",
 				children: ["Representation", /* @__PURE__ */ Y("select", {
-					"aria-label": "Colour representation",
+					"aria-label": "Color representation",
 					value: a,
 					disabled: !!n.busy,
 					onChange: (e) => {
@@ -2489,7 +2489,7 @@ function zt({ row: e, close: t }) {
 				class: "hint",
 				children: [
 					"Observed support: ",
-					s ? s.length ? s.join(", ") : "no supported colour representations" : "unknown",
+					s ? s.length ? s.join(", ") : "no supported color representations" : "unknown",
 					o?.rgbwaf_channel_count ? ` · ${o.rgbwaf_channel_count} RGBWAF channels` : "",
 					c?.warmest_kelvin && c.coolest_kelvin ? ` · ${Math.round(c.warmest_kelvin)}–${Math.round(c.coolest_kelvin)} K` : ""
 				]
@@ -2522,7 +2522,7 @@ function zt({ row: e, close: t }) {
 			}),
 			/* @__PURE__ */ Y("p", {
 				class: "hint",
-				children: i.ColorQuality === void 0 ? "Read the fixture to discover colour support." : `Colour status: ${i.ColorQuality}`
+				children: i.ColorQuality === void 0 ? "Read the fixture to discover color support." : `Color status: ${i.ColorQuality}`
 			}),
 			/* @__PURE__ */ Y("div", {
 				class: "dialog-actions",
@@ -2539,14 +2539,14 @@ function zt({ row: e, close: t }) {
 							let n = u[t];
 							if (n !== void 0 && n !== "") {
 								let r = Number(n);
-								if (!Number.isFinite(r)) throw Error("Enter numeric colour values.");
+								if (!Number.isFinite(r)) throw Error("Enter numeric color values.");
 								e[t] = a === "rgbwaf" ? r / 100 : r;
 							}
 						}
-						if (!Object.keys(e).length) throw Error("Change at least one colour value.");
+						if (!Object.keys(e).length) throw Error("Change at least one color value.");
 						await n.apply(r, e), t();
 					}),
-					children: "Apply colour"
+					children: "Apply color"
 				})]
 			})
 		]
@@ -2593,7 +2593,7 @@ function Vt({ row: e, recover: t, select: n }) {
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(D.phase), k = r.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), A = r.hints.get(e.key), j = e.kind === "output" ? A?.length ? A.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Ae(e.item.instance_type), M = je(a), N = typeof a.Brightness == "number" ? Math.round(a.Brightness * 100) : null;
+	].includes(D.phase), k = r.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), A = r.hints.get(e.key), j = e.kind === "output" ? A?.length ? A.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Ae(e.item.instance_type), M = a.ColorCapabilities?.dt8, ee = e.kind === "output" && (M === !0 || M !== !1 && A?.includes(8) === !0), N = je(a), P = typeof a.Brightness == "number" ? Math.round(a.Brightness * 100) : null;
 	return /* @__PURE__ */ Y("div", {
 		class: `device-row ${e.kind === "output" ? "output-grid" : "input-grid"} ${O ? "identifying" : ""} ${k && Date.now() - k.received < 5e3 ? "active-input" : ""}`,
 		"data-device-key": e.key,
@@ -2622,9 +2622,9 @@ function Vt({ row: e, recover: t, select: n }) {
 						type: "range",
 						min: "0",
 						max: "100",
-						value: w ?? N ?? 0,
+						value: w ?? P ?? 0,
 						"aria-label": `Brightness ${e.item.name}`,
-						disabled: !E || !!r.busy || O || N === null,
+						disabled: !E || !!r.busy || O || P === null,
 						onInput: (e) => T(e.currentTarget.value),
 						onChange: (t) => {
 							let n = Number(t.currentTarget.value) / 100;
@@ -2636,14 +2636,17 @@ function Vt({ row: e, recover: t, select: n }) {
 								}
 							});
 						}
-					}), /* @__PURE__ */ Y("output", { children: [w ?? N ?? "—", N === null ? "" : "%"] })]
+					}), /* @__PURE__ */ Y("output", { children: [w ?? P ?? "—", P === null ? "" : "%"] })]
 				}),
-				/* @__PURE__ */ Y("button", {
+				ee ? /* @__PURE__ */ Y("button", {
 					class: "colour-button",
-					"aria-label": `Colour ${e.item.name}`,
+					"aria-label": `Color ${e.item.name}`,
 					disabled: !E || !!r.busy || O,
 					onClick: () => v(!0),
-					children: e.item.color_representation === "temperature" && typeof a.ColorTemperature == "number" ? `${Math.round(a.ColorTemperature)} K` : e.item.color_representation === "xy" ? "xy controls" : e.item.color_representation === "rgbwaf" ? "RGB controls" : "Colour"
+					children: e.item.color_representation === "temperature" && typeof a.ColorTemperature == "number" ? `${Math.round(a.ColorTemperature)} K` : e.item.color_representation === "xy" ? "xy controls" : e.item.color_representation === "rgbwaf" ? "RGB controls" : "Color"
+				}) : /* @__PURE__ */ Y("span", {
+					class: "colour-button",
+					"aria-hidden": "true"
 				}),
 				/* @__PURE__ */ Y("button", {
 					class: O ? "primary blink" : "blink",
@@ -2654,7 +2657,7 @@ function Vt({ row: e, recover: t, select: n }) {
 				})
 			] }) : /* @__PURE__ */ Y(y, { children: [/* @__PURE__ */ Y("span", {
 				class: `input-state ${a.Available === !0 ? "" : "muted"}`,
-				children: e.kind === "input" ? `${e.item.instances?.length ?? 0} instances` : M
+				children: e.kind === "input" ? `${e.item.instances?.length ?? 0} instances` : N
 			}), /* @__PURE__ */ Y("span", {
 				class: "activity",
 				children: k?.action ?? "No recent action"
@@ -2705,11 +2708,11 @@ function Vt({ row: e, recover: t, select: n }) {
 							},
 							children: "Group membership"
 						}),
-						e.kind === "output" && /* @__PURE__ */ Y("button", {
+						ee && /* @__PURE__ */ Y("button", {
 							onClick: () => {
 								g(!1), v(!0);
 							},
-							children: "Colour representation and values"
+							children: "Color representation and values"
 						}),
 						e.kind !== "instance" && /* @__PURE__ */ Y("button", {
 							disabled: !E || !!r.busy,
@@ -2788,7 +2791,7 @@ function Vt({ row: e, recover: t, select: n }) {
 					children: "Use this fixture"
 				})
 			}),
-			_ && /* @__PURE__ */ Y(zt, {
+			_ && ee && /* @__PURE__ */ Y(zt, {
 				row: e,
 				close: () => v(!1)
 			}),
@@ -2918,7 +2921,7 @@ function Ht({ bus: e }) {
 						/* @__PURE__ */ Y("span", { children: "Type" }),
 						/* @__PURE__ */ Y("span", { children: "Power" }),
 						/* @__PURE__ */ Y("span", { children: "Brightness" }),
-						/* @__PURE__ */ Y("span", { children: "Colour" }),
+						/* @__PURE__ */ Y("span", { children: "Color" }),
 						/* @__PURE__ */ Y("span", { children: "Identify" }),
 						/* @__PURE__ */ Y("span", {})
 					]
@@ -3745,8 +3748,8 @@ function sn({ row: e, visible: t, view: n, makeScope: r }) {
 					a.action === "brightness" && T("brightness", "Brightness (%)"),
 					a.action !== "ignore" && /* @__PURE__ */ Y("label", {
 						class: "scene-field",
-						children: ["Colour", /* @__PURE__ */ Y("select", {
-							"aria-label": `Scene colour ${e.item.name}`,
+						children: ["Color", /* @__PURE__ */ Y("select", {
+							"aria-label": `Scene color ${e.item.name}`,
 							value: a.family,
 							disabled: w,
 							onChange: (e) => {
@@ -3754,7 +3757,7 @@ function sn({ row: e, visible: t, view: n, makeScope: r }) {
 							},
 							children: [/* @__PURE__ */ Y("option", {
 								value: "mask",
-								children: "Keep colour"
+								children: "Keep color"
 							}), [
 								["temperature", "White temperature"],
 								["xy", "CIE xy"],
@@ -3837,7 +3840,7 @@ function sn({ row: e, visible: t, view: n, makeScope: r }) {
 					/* @__PURE__ */ Y("p", {
 						class: "hint",
 						children: [
-							"Saved native codes; blank attributes are MASK. Colour support: ",
+							"Saved native codes; blank attributes are MASK. Color support: ",
 							S?.supported_representations?.join(", ") || "unconfirmed",
 							S?.rgbwaf_assignments ? ` · Assigned: ${S.rgbwaf_assignments.join(", ")}` : "",
 							"."
@@ -3858,7 +3861,7 @@ function sn({ row: e, visible: t, view: n, makeScope: r }) {
 	});
 }
 function cn({ bus: e }) {
-	let t = X(), [n, r] = U(0), [i, a] = U(""), [o, s] = U(""), [c, l] = U(null), [u, d] = U(""), [f, p] = U(0), [m, h] = U(null), [g, _] = U(null), [v, b] = U(1), [x, S] = U("bus"), [C, w] = U(null), [T, E] = U(""), [D, O] = U(null), k = ge(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), N = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), P = N.filter((e) => Oe(i, e.item.name)), ee = q(t.snapshot, e) && t.client.views.ready, F = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
+	let t = X(), [n, r] = U(0), [i, a] = U(""), [o, s] = U(""), [c, l] = U(null), [u, d] = U(""), [f, p] = U(0), [m, h] = U(null), [g, _] = U(null), [v, b] = U(1), [x, S] = U("bus"), [C, w] = U(null), [T, E] = U(""), [D, O] = U(null), k = ge(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), ee = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), N = ee.filter((e) => Oe(i, e.item.name)), P = q(t.snapshot, e) && t.client.views.ready, F = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
 	function I() {
 		for (let e of k.current) e.cancelled && k.current.delete(e);
 		let r = new rn(t, e.bus, n);
@@ -3912,7 +3915,7 @@ function cn({ bus: e }) {
 		});
 	}
 	function B() {
-		t.cancelled = !1, z("Clear selected fixtures", I(), P.map((e) => ({
+		t.cancelled = !1, z("Clear selected fixtures", I(), N.map((e) => ({
 			row: e,
 			before: R(e),
 			after: Yt(),
@@ -3923,7 +3926,7 @@ function cn({ bus: e }) {
 		t.cancelled = !1;
 		let e = I(), r = [], i = [], a = !1;
 		try {
-			for (let a of P) {
+			for (let a of N) {
 				e.fixture(a), t.progress = `Capturing current output · ${a.item.name}`, t.touch();
 				let o = await e.inspect(a, n, !0);
 				Zt(o.candidate) ? r.push({
@@ -3946,7 +3949,7 @@ function cn({ bus: e }) {
 		try {
 			if (!i.scene) throw Error("Choose a named source scene.");
 			let e = await i.saved();
-			r.assert(), i.assert(), z(`Copy saved scene ${v} → ${n}`, r, P.filter((t) => e.get(t.key) !== null).map((t) => ({
+			r.assert(), i.assert(), z(`Copy saved scene ${v} → ${n}`, r, N.filter((t) => e.get(t.key) !== null).map((t) => ({
 				row: t,
 				before: R(t),
 				after: e.get(t.key),
@@ -4028,7 +4031,7 @@ function cn({ bus: e }) {
 			e.cancelled = !0;
 		}
 	}
-	let se = !ee || !F || !M || !!t.busy || !P.length;
+	let se = !P || !F || !M || !!t.busy || !N.length;
 	return /* @__PURE__ */ Y(y, { children: [
 		/* @__PURE__ */ Y(Be, {}),
 		/* @__PURE__ */ Y("div", {
@@ -4060,7 +4063,7 @@ function cn({ bus: e }) {
 				/* @__PURE__ */ Y("div", {
 					class: "section-heading",
 					children: [/* @__PURE__ */ Y("h2", { children: ["Scene ", n] }), /* @__PURE__ */ Y("button", {
-						disabled: !ee || !!t.busy,
+						disabled: !P || !!t.busy,
 						onClick: () => void t.run(() => ie(!0)),
 						children: "Verify all 16"
 					})]
@@ -4110,7 +4113,7 @@ function cn({ bus: e }) {
 					children: [
 						/* @__PURE__ */ Y("button", {
 							class: "primary",
-							disabled: !ee || !M || !!t.busy,
+							disabled: !P || !M || !!t.busy,
 							onClick: () => void t.run(H),
 							children: "Recall"
 						}),
@@ -4132,7 +4135,7 @@ function cn({ bus: e }) {
 							}))]
 						}),
 						/* @__PURE__ */ Y("button", {
-							disabled: !ee || !!t.busy,
+							disabled: !P || !!t.busy,
 							onClick: () => void t.run(() => ie(!1)),
 							children: "Verify scene"
 						})
@@ -4149,9 +4152,9 @@ function cn({ bus: e }) {
 					}), /* @__PURE__ */ Y("span", {
 						class: "hint",
 						children: [
-							P.length,
-							" / ",
 							N.length,
+							" / ",
+							ee.length,
 							" fixtures"
 						]
 					})]
@@ -4192,7 +4195,7 @@ function cn({ bus: e }) {
 				}),
 				/* @__PURE__ */ Y("p", {
 					class: "hint scene-explanation",
-					children: "Settings change native scene memory. Recall changes the lights. Blank colour attributes keep that value (MASK)."
+					children: "Settings change native scene memory. Recall changes the lights. Blank color attributes keep that value (MASK)."
 				}),
 				u && /* @__PURE__ */ Y("p", {
 					class: "error",
@@ -4208,14 +4211,14 @@ function cn({ bus: e }) {
 				}),
 				/* @__PURE__ */ Y("div", {
 					class: "scene-fixtures",
-					children: N.map((e) => /* @__PURE__ */ Y(sn, {
+					children: ee.map((e) => /* @__PURE__ */ Y(sn, {
 						row: e,
 						visible: Oe(i, e.item.name),
 						view: c,
 						makeScope: I
 					}, `${n}:${e.key}`))
 				}),
-				!P.length && /* @__PURE__ */ Y("p", {
+				!N.length && /* @__PURE__ */ Y("p", {
 					class: "empty",
 					children: "No matching fixtures."
 				}),

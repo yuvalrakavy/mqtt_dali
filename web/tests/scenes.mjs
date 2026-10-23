@@ -25,7 +25,7 @@ export async function scenesFlow({page,context,origin,artifacts,inventory,contro
   const before=await native();
   await page.getByLabel('Scene action KitchenMain',{exact:true}).selectOption('brightness');
   await page.getByLabel('Brightness (%) KitchenMain',{exact:true}).fill('40');
-  await page.getByLabel('Scene colour KitchenMain',{exact:true}).selectOption('temperature');
+  await page.getByLabel('Scene color KitchenMain',{exact:true}).selectOption('temperature');
   await page.getByLabel('Temperature (K) KitchenMain',{exact:true}).fill('3500');
   await page.getByRole('button',{name:'Save scene settings KitchenMain',exact:true}).click();
   await until(async()=>(await saved(0))?.contents?.some(r=>r.setting.color.kind==='temperature'&&r.setting.color.value===286),'inline scene colour was not saved');await idle();
@@ -36,9 +36,9 @@ export async function scenesFlow({page,context,origin,artifacts,inventory,contro
   assert.equal(await page.getByLabel('Brightness (%) KitchenSide',{exact:true}).inputValue(),'20','failed save lost scene draft');
   await page.getByRole('button',{name:'Save scene settings KitchenSide',exact:true}).click();await until(async()=>(await native())[1].scenes[0]===51,'scene save retry did not program');await idle();
   assert.equal((await native())[1].level,before[1].level,'scene retry activated brightness');
-  await page.getByLabel('Scene action HallNew',{exact:true}).selectOption('keep');await page.getByLabel('Scene colour HallNew',{exact:true}).selectOption('xy');await page.getByLabel('x HallNew',{exact:true}).fill('0.2');
+  await page.getByLabel('Scene action HallNew',{exact:true}).selectOption('keep');await page.getByLabel('Scene color HallNew',{exact:true}).selectOption('xy');await page.getByLabel('x HallNew',{exact:true}).fill('0.2');
   await page.getByRole('button',{name:'Save scene settings HallNew',exact:true}).click();await until(async()=>(await saved(0))?.contents?.some(r=>r.setting.color.kind==='xy'&&r.setting.color.x===13107&&r.setting.color.y===null),'xy attribute MASK did not persist');await idle();
-  await choose(2);await create('Colour');await page.getByLabel('Scene action HallNew',{exact:true}).selectOption('brightness');await page.getByLabel('Brightness (%) HallNew',{exact:true}).fill('70');await page.getByLabel('Scene colour HallNew',{exact:true}).selectOption('rgbwaf');
+  await choose(2);await create('Colour');await page.getByLabel('Scene action HallNew',{exact:true}).selectOption('brightness');await page.getByLabel('Brightness (%) HallNew',{exact:true}).fill('70');await page.getByLabel('Scene color HallNew',{exact:true}).selectOption('rgbwaf');
   await page.getByLabel('Red (%) HallNew',{exact:true}).fill('40');await page.getByLabel('Blue (%) HallNew',{exact:true}).fill('20');await page.getByLabel('White (%) HallNew',{exact:true}).fill('10');await page.getByLabel('RGBWAF control HallNew',{exact:true}).selectOption('143');
   await page.getByRole('button',{name:'Save scene settings HallNew',exact:true}).click();await until(async()=>(await native())[2].scenes[2]===178,'RGBWAF scene did not program');await idle();
   const rgb=(await saved(2)).contents[0].setting.color;assert.deepEqual(rgb,{kind:'rgbwaf',channels:[102,null,51,25,null,null],control:143},'RGBWAF values or attribute MASK changed');assert.deepEqual((await native())[2].colour_state.actual,before[2].colour_state.actual,'stored colour activated live output');

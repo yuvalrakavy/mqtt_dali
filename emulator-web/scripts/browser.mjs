@@ -31,7 +31,7 @@ try {
  await page.goto(origin);await page.getByText('Emulator online',{exact:false}).waitFor();await fit();
  await page.getByRole('button',{name:'Starting scenario',exact:true}).click();await page.getByLabel('Start from example').selectOption('Empty installation');await page.getByLabel('Clock',{exact:true}).selectOption('frozen');
  await add('dimmer','ceiling');await page.getByLabel('Initial actual level').fill('42');await page.getByLabel('Group mask').fill('3');await commit();
- await add('relay','relay',4);await commit();await add('colour','colour',5);await page.getByText('Colour capabilities & initial values',{exact:true}).waitFor();await commit();
+ await add('relay','relay',4);await commit();await add('colour','colour',5);await page.getByText('Color capabilities & initial values',{exact:true}).waitFor();await commit();
  await add('1','panel',1);await page.getByRole('button',{name:'+ Add button instance',exact:true}).click();await page.getByLabel('Instance 1',{exact:true}).selectOption('2');await page.getByRole('button',{name:'+ Add button instance',exact:true}).click();await page.getByLabel('Instance 2',{exact:true}).selectOption('3');await page.getByRole('button',{name:'+ Add button instance',exact:true}).click();await page.getByLabel('Instance 3',{exact:true}).selectOption('4');await commit();await apply();
  assert.equal((await snapshot()).buses[0].outputs.length,3);assert.equal((await snapshot()).buses[0].inputs[0].instances.length,4);
  await page.getByRole('button',{name:'Live installation',exact:true}).click();await fit();await page.screenshot({path:join(artifacts,'phone-live.png'),fullPage:true});

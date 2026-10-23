@@ -47,7 +47,7 @@ export class Controller {
   }
   async configureBus(bus:number,name:string,enabled:boolean){const snapshot=this.snapshot;await this.metadata('configure_bus',null,itemGeneration(snapshot.inventory.inventory_epoch,snapshot.inventory.revision),{bus,name,enabled});this.notice='Bus settings saved.';}
   async remove(row:Row){const current=this.current(row.key);await this.metadata('remove_from_list',current.item.target,current.generation,{});this.notice='Removed from the saved list. Hardware addresses are unchanged.';}
-  async representation(row:Row,value:string){const current=this.current(row.key);await this.metadata('set_color_representation',current.item.target,current.generation,{color_representation:value||null});await this.read(this.current(row.key));this.notice='Colour representation saved; actual values refreshed.';}
+  async representation(row:Row,value:string){const current=this.current(row.key);await this.metadata('set_color_representation',current.item.target,current.generation,{color_representation:value||null});await this.read(this.current(row.key));this.notice='Color representation saved; actual values refreshed.';}
   private hint(report:any){const target=report.target;if(target){const row=this.currentRows.find(r=>r.item.target===target);if(row&&report.probe?.types_complete)this.hints.set(row.key,report.probe.device_types);}this.touch();}
   async scan(bus:Bus,assign:boolean){
     this.cancelled=false;let expected=this.snapshot.inventory.revision;const initial=this.snapshot;
