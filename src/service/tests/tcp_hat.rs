@@ -69,6 +69,7 @@ impl Peer {
                                 b"h0000\n" => { level = 0; b"N\n".to_vec() },
                                 b"h01A0\n" => format!("0L008001\nJ{level:02X}\n").into_bytes(),
                                 b"h0190\n" => b"J04\n".to_vec(),
+                                b"h0199\n" => b"J00\n".to_vec(),
                                 b"h01C0\n" => b"J01\n".to_vec(),
                                 b"h01C1\n" => b"J00\n".to_vec(),
                                 b"l010080\n" | b"l010081\n" => b"J01\n".to_vec(),

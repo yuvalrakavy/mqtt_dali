@@ -7,6 +7,8 @@ fn main() {
         "Cargo.toml",
         "Cargo.lock",
         "src",
+        "web/app.html",
+        "web/login.html",
         "web/dist",
         "emulator-web/dist",
         "examples/emulator",

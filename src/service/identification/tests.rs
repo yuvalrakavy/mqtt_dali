@@ -12,7 +12,7 @@ async fn managed_output_settings_identification_guards_submission_and_owner_race
         emulator::{pty, session::Control},
         service::{
             output::settings::Patch,
-            tests::{start, wait_for, Fixture},
+            tests::{start, wait_for, Fixture, Pause},
         },
     };
     use std::{
@@ -50,8 +50,25 @@ async fn managed_output_settings_identification_guards_submission_and_owner_race
     fixture.add_output(1, "Peer");
     let emulator=pty::spawn(serde_json::from_value(serde_json::json!({"version":1,"buses":[{"number":0,"outputs":[{"id":"lamp","short_address":0,"level":100},{"id":"peer","short_address":1,"level":100}]}]})).unwrap()).await.unwrap();
     let broker = mqtt_test_broker::FakeBroker::start().await;
-    let (service, handle) = fixture.service();
+    let (mut service, handle) = fixture.service();
     let claims = service.identification.clone();
+    // The managed owner runs on a separate thread. Intercept its mailbox so
+    // the claim can change after submission, provably before owner admission.
+    let (forward, receive) = tokio::sync::mpsc::channel(32);
+    let mut incoming = std::mem::replace(&mut service.receive, receive);
+    let admission = Arc::<Pause>::default();
+    let at_admission = admission.clone();
+    let forwarding = tokio::spawn(async move {
+        while let Some(message) = incoming.recv().await {
+            if matches!(&message, Message::OutputSettings(q) if q.action.writing() && q.target == "Bus1.Outputs.Light1")
+            {
+                at_admission.point().await;
+            }
+            if forward.send(message).await.is_err() {
+                break;
+            }
+        }
+    });
     let running = start(
         service.with_uart(&emulator.path, RepeatPolicy::OneTerminal),
         &handle,
@@ -85,6 +102,9 @@ async fn managed_output_settings_identification_guards_submission_and_owner_race
         ..Default::default()
     };
     for after_submission in [false, true] {
+        admission
+            .armed
+            .store(after_submission, std::sync::atomic::Ordering::Release);
         claims.send_replace(if after_submission {
             None
         } else {
@@ -103,11 +123,16 @@ async fn managed_output_settings_identification_guards_submission_and_owner_race
                 Poll::Ready(())
             })
             .await;
+            tokio::time::timeout(Duration::from_secs(1), admission.entered.notified())
+                .await
+                .expect("settings request never reached the owner admission barrier");
             claims.send_replace(Some(claim.clone()));
+            admission.release.notify_one();
         }
+        let result = call.await;
         assert!(
-            matches!(call.await,Err(ServiceError::Rejected(ref e))if e.contains("stop identification")),
-            "settings ignored identification at submission/owner boundary"
+            matches!(result,Err(ServiceError::Rejected(ref e))if e.contains("stop identification")),
+            "settings ignored identification at submission/owner boundary (after_submission={after_submission}): {result:?}"
         );
         assert_eq!(
             handle
@@ -146,6 +171,8 @@ async fn managed_output_settings_identification_guards_submission_and_owner_race
     assert_eq!(physical["buses"][0]["outputs"][1]["min_level"], 5);
     claims.send_replace(None);
     assert!(running.stop().await);
+    forwarding.abort();
+    let _ = forwarding.await;
     emulator.emulator.close().await.unwrap();
 }
 

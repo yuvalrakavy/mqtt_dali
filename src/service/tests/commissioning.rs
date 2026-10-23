@@ -71,6 +71,7 @@ impl Peer {
                     b"d\n" => b"D24\n".to_vec(),
                     b"h01A0\n" => b"J64\n".to_vec(),
                     b"h0190\n" => b"J04\n".to_vec(),
+                    b"h0199\n" => b"J00\n".to_vec(),
                     command if command.len() == 6 && matches!(command[0], b'h' | b't') => {
                         let raw =
                             u16::from_str_radix(std::str::from_utf8(&command[1..5]).unwrap(), 16)
