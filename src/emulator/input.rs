@@ -3,6 +3,7 @@ use super::scenario::Input;
 use serde::Serialize;
 use std::collections::BTreeMap;
 mod button;
+mod feedback;
 mod sensor;
 
 #[derive(Serialize)]
@@ -13,6 +14,9 @@ pub(super) struct State {
     dtr1: u8,
     dtr2: u8,
     settings: Vec<Settings>,
+    // Distinct from flattened scenario `feedback`; omit for legacy profiles.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    feedback_state: Vec<feedback::State>,
     #[serde(skip)]
     latches: BTreeMap<u8, (Vec<u8>, usize)>,
     initialize_until: Option<u64>,
@@ -61,12 +65,18 @@ impl State {
                 sensor_settings: sensor::Profile::new(*kind),
             })
             .collect();
+        let feedback_state = config
+            .feedback
+            .iter()
+            .map(|p| feedback::State::new(p.instance))
+            .collect();
         Self {
             config,
             dtr0: 0,
             dtr1: 0,
             dtr2: 0,
             settings,
+            feedback_state,
             latches: BTreeMap::new(),
             initialize_until: None,
             randomise_ready_at: None,
@@ -133,6 +143,34 @@ impl State {
         None
     }
     pub fn query(&mut self, instance: u8, opcode: u8) -> Option<u8> {
+        // Feature addressing is a separate namespace from ordinary sensor
+        // setters; the same opcode must never fall through to those handlers.
+        if instance == 0xfc || (0x20..=0x3f).contains(&instance) {
+            let scope = if instance == 0xfc {
+                None
+            } else {
+                Some(instance & 31)
+            };
+            return self
+                .feedback_state
+                .iter_mut()
+                .find(|p| p.instance == scope)?
+                .command(opcode);
+        }
+        if opcode == 0x8e
+            && (instance == 0xfe || usize::from(instance) < self.config.instances.len())
+        {
+            let scope = if instance == 0xfe {
+                None
+            } else {
+                Some(instance)
+            };
+            return Some(if self.feedback_state.iter().any(|p| p.instance == scope) {
+                32
+            } else {
+                254
+            });
+        }
         if instance == 0xfe {
             return match opcode {
                 0x14 => {

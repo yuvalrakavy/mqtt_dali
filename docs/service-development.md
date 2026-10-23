@@ -42,6 +42,15 @@ Do not save settings or put them in current input State. Literal peers assert
 wire command counts before unwrapping a refused result, so an unexpected write
 cannot hide behind a later script failure. Controls: `v2-sensor-settings-controls.toml`.
 
+Pure input feature/feedback plans now live in `dali::input::{features,feedback}`
+with an independent explicit visible-on/off emulator profile. They are not yet
+exposed as managed commands or scalar properties. A later owner must capture a
+bounded same-scope feature enumeration, prove feature32/current capability and
+presence separately, and confirm active state after a single Activate/Stop. A
+silent Active query alone cannot distinguish inactive from missing. Preserve the
+same original context/authority/deadline conventions; no raw-address proxy escape.
+See [feature plans](dali-input-contract.md#feature-enumeration-and-basic-feedback-plans).
+
 This guide is for bridge contributors and embedders. The service library owns
 durable configuration, runtime routing, optional UART health, individual-output
 operations, selected-family DT8 MQTT controls and native input observations/actions. The canonical

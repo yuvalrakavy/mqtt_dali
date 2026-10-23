@@ -9,7 +9,7 @@ metadata rename use the [inventory contract](inventory-contract.md).
 Enable, priority, event scheme, filter and instance-group configuration are
 available through the managed service and protected browser controls; see
 [input event settings](input-event-settings.md). The button timing codec/model
-below and the Part302–304 sensor parameter plans have managed controls; feedback and natural
+below and the Part302–304 sensor parameter plans have managed controls; managed feedback and natural
 emulator stimuli remain pending.
 
 Input short addresses are 0..63, independently of output addresses. Instances
@@ -99,7 +99,7 @@ for true and silence for false, so an absent device must be ruled out separately
 This slice supplies pure plans and an [independent emulator model](emulator.md#input-event-settings-model).
 Managed MQTT/HTTP commands and browser controls now use these plans; see
 [event settings](input-event-settings.md). Existing discovery does not configure
-inputs. Feedback remains separate work.
+inputs. Managed feedback remains separate work.
 
 ## Push-button timing plans
 
@@ -162,6 +162,34 @@ wire map separately. The map follows the
 [Phoenix Contact manual, pages149–152](https://s3.eu-central-1.amazonaws.com/plcnext-store-prod/doc/SE_DAL2_Dali2-v2_0_0-20210324153545.pdf),
 cross-checked against the published Beckhoff variable tables and python-dali
 Part303/304 definitions. IEC62386-303 section9.5.4 defines hold0 and unsupportedFF.
+
+## Feature enumeration and basic feedback plans
+
+`features::Scope` selects device or one checked instance. Its Type/Next queries
+use8E/8F at deviceFE or instance00..1F. `FeatureType` preserves valid32..96 values,
+including unfamiliar features;32 is Part332 feedback. The pure `features::decode`
+accepts a captured first byte and its continuation: FE is a complete empty list,
+one feature is a singleton, FF requires at least two ascending feature numbers
+and terminatingFE. Reject duplicate/descending, reserved, missing-end and trailing
+bytes; at most65 features plus a terminator fit. The executing owner must bound
+collection, keep adjacent same-scope queries under one bus permit and prove
+current presence/type/authority. Silence or collision is not a known empty list.
+
+`feedback::Action::{Activate,Stop}` and `Query::{Capability,Active}` build single
+ordinary24-bit frames10/11/4F/4E. Feature selectors are deviceFC or instance20..3F,
+distinct from ordinary input00..1F and deviceFE. For short address0/instance0,
+`l01204F` queries capability and `l012010` activates. No DT8 enable or repeat pair
+is used. `Capabilities` preserves raw/unknown bits and exposes the six base
+IEC2017 flags; unfamiliar bits have no invented semantics or mutation authority.
+An inactive Active query has no backward byte, so separate fresh feature,
+capability and presence evidence is essential before interpreting it as false.
+
+The [independent visible feedback profile](emulator.md#visible-feedback-profile)
+and literal PTY tests exercise these plans. Managed feedback commands, scalar
+bindings and protected web controls remain pending; these pure modules do not
+authorize raw-address writes. Primary references: IEC62386-103 table2/table5 and
+11.9.14–15, IEC62386-332 table1 and11.3/11.5, and the
+[Sunricher switch manual, pages2–3](https://www.sunricher.com/media/resources/manual/SR-2422K8-DA2%20instruction.pdf).
 
 ## Exact full-resolution values
 

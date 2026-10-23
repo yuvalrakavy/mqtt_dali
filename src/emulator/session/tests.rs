@@ -41,6 +41,87 @@ fn send(value: u16) -> Tx {
 }
 
 #[tokio::test]
+async fn literal_feedback_pty_reboot_readdress_and_actual_readback() {
+    let scenario=serde_json::from_value(serde_json::json!({"version":1,"clock":"frozen","buses":[{"number":0,"inputs":[{"id":"panel","short_address":0,"instances":[1,2],"feedback":[{"instance":0},{"instance":null}]}]}]})).unwrap();
+    let pty = super::super::pty::spawn(scenario).await.unwrap();
+    let mut bridge = Serial::open(&pty.path).await.unwrap();
+    assert_eq!(line(&mut bridge).await, b"B000004\n");
+    bridge
+        .write_all(b"l01008E\nl01204F\nl01204E\nl012010\nl01204E\nl01FC4F\n")
+        .await
+        .unwrap();
+    for expected in [
+        b"L01008E\n".as_slice(),
+        b"J20\n",
+        b"L01204F\n",
+        b"J01\n",
+        b"L01204E\n",
+        b"N\n",
+        b"L012010\n",
+        b"N\n",
+        b"L01204E\n",
+        b"JFF\n",
+        b"L01FC4F\n",
+        b"J01\n",
+    ] {
+        assert_eq!(
+            line(&mut bridge).await,
+            expected,
+            "literal feedback UART reply mismatch"
+        );
+    }
+    control(&pty.emulator, Control::Reboot).await;
+    assert_eq!(line(&mut bridge).await, b"B000004\n");
+    control(
+        &pty.emulator,
+        Control::SetAddress {
+            id: "panel".into(),
+            short_address: Some(17),
+        },
+    )
+    .await;
+    bridge
+        .write_all(
+            b"l01204F\nl230080\nl23008E\nl23204F\nl23204E\nl232011\nl23204E\nl230080\nl23204F\n",
+        )
+        .await
+        .unwrap();
+    for expected in [
+        b"L01204F\n".as_slice(),
+        b"N\n",
+        b"L230080\n",
+        b"J01\n",
+        b"L23008E\n",
+        b"J20\n",
+        b"L23204F\n",
+        b"J01\n",
+        b"L23204E\n",
+        b"JFF\n",
+        b"L232011\n",
+        b"N\n",
+        b"L23204E\n",
+        b"N\n",
+        b"L230080\n",
+        b"J01\n",
+        b"L23204F\n",
+        b"J01\n",
+    ] {
+        assert_eq!(
+            line(&mut bridge).await,
+            expected,
+            "feedback reboot/readdress/readback mismatch"
+        );
+    }
+    let snapshot = control(&pty.emulator, Control::Snapshot).await;
+    assert_eq!(
+        snapshot["buses"][0]["inputs"][0]["feedback_state"][0]["active"],
+        false
+    );
+    drop(bridge);
+    pty.emulator.close().await.unwrap();
+}
+
+#[tokio::test]
 async fn literal_uart_transcript_changes_independent_fixture_state() {
     let (stream, mut bridge) = tokio::io::duplex(4096);
     let emulator = Emulator::start(stream, scenario()).unwrap();

@@ -1,0 +1,63 @@
+# Serial intentional faults; restore each before the next row or source review.
+[[control]]
+name = "feedback_codec_aliases_input_selector"
+file = "src/dali/input/feedback.rs"
+anchor = "Scope::Instance(i) => 0x20 | i.raw(),"
+replacement = "Scope::Instance(i) => i.raw(),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(feature_feedback_literal_frames)"]
+expect_text = "feedback frame selector/opcode changed"
+
+[[control]]
+name = "feedback_codec_wrong_capability_query"
+file = "src/dali/input/feedback.rs"
+anchor = "Self::Capability => 0x4f,"
+replacement = "Self::Capability => 0x4e,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(feature_feedback_literal_frames)"]
+expect_text = "feedback frame selector/opcode changed"
+
+[[control]]
+name = "feature_enumeration_missing_end_accepted"
+file = "src/dali/input/features.rs"
+anchor = "if !(3..=MAX_FEATURES + 1).contains(&continuation.len()) || continuation.last() != Some(&254) {"
+replacement = "if !(3..=MAX_FEATURES + 1).contains(&continuation.len()) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(feature_enumeration_distinguishes)"]
+expect_text = "invalid feature enumeration accepted: 255/[32, 33, 96]"
+
+[[control]]
+name = "feature_enumeration_duplicate_accepted"
+file = "src/dali/input/features.rs"
+anchor = "if values.windows(2).any(|v| v[0] >= v[1]) {"
+replacement = "if false && values.windows(2).any(|v| v[0] >= v[1]) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(feature_enumeration_distinguishes)"]
+expect_text = "invalid feature enumeration accepted: 255/[32, 32, 254]"
+
+[[control]]
+name = "feedback_unknown_capability_bits_discarded"
+file = "src/dali/input/feedback.rs"
+anchor = "self.0 & 0xc0"
+replacement = "0"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(feedback_capability_flags)"]
+expect_text = "unknown feedback capability bits were lost"
+
+[[control]]
+name = "feedback_single_activation_does_not_apply"
+file = "src/emulator/input/feedback.rs"
+anchor = "0x10 => self.active = true,"
+replacement = "0x10 => {},"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_feedback_single_commands)"]
+expect_text = "single feedback activate did not apply"
+
+[[control]]
+name = "feedback_wrong_instance_zero_selected"
+file = "src/emulator/input.rs"
+anchor = ".find(|p| p.instance == scope)?"
+replacement = ".find(|p| p.instance == Some(0))?"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_feedback_last_instance)"]
+expect_text = "last feedback instance activated instance zero"

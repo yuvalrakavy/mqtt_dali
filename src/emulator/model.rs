@@ -211,7 +211,7 @@ impl Model {
         if high != 0
             || address & 1 == 0
             || (address > 0x7f && !matches!(address, 0xfd | 0xff))
-            || (instance > 31 && instance != 0xfe)
+            || (instance > 31 && !matches!(instance, 0x20..=0x3f | 0xfc | 0xfe))
         {
             self.unsupported += 1;
             return Reply::None;
@@ -640,6 +640,8 @@ mod addressing_tests;
 mod button_timing_tests;
 #[cfg(test)]
 mod colour_tests;
+#[cfg(test)]
+mod feedback_tests;
 #[cfg(test)]
 mod input_settings_tests;
 #[cfg(test)]

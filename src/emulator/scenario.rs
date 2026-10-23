@@ -134,6 +134,15 @@ pub struct Input {
     pub instances: Vec<u8>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub values: Vec<InputValue>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub feedback: Vec<Feedback>,
+}
+/// Opt-in visible on/off feedback, independent from input event configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Feedback {
+    /// None selects device-level feedback; otherwise an existing instance.
+    pub instance: Option<u8>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -198,6 +207,16 @@ impl Scenario {
             for input in &bus.inputs {
                 if input.random_address.is_some_and(|a| a > 0xffffff) {
                     return Err("input random address exceeds 24 bits".into());
+                }
+                let mut feedback_scopes = HashSet::new();
+                for profile in &input.feedback {
+                    if !feedback_scopes.insert(profile.instance)
+                        || profile
+                            .instance
+                            .is_some_and(|i| usize::from(i) >= input.instances.len())
+                    {
+                        return Err("invalid/duplicate feedback scope: select device or an existing instance".into());
+                    }
                 }
                 let mut instances = HashSet::new();
                 for value in &input.values {

@@ -16,7 +16,7 @@ or fixture behavior has been validated. The v1 maintenance binary is separate.
 | DT7 switching | Pending | P4 model/driver |
 | DT8 Tc/xy/RGBWAF | Typed values/plans, independent physical emulator, owned discovery/execution/actual readback and selected-family scalar MQTT; separate colour quality/capabilities, partial xy/RGB channels, manual/automatic activation, combined power/colour ordering and normalized RGBWAF assignment preflight; durable representation selection; private nonactivating scene rows | Physical validation, Primary-N control, alternate modes/settings |
 | Split-address RGB/RGBW | Pending | P4 representation-specific components and bindings |
-| Input indication/feedback | Pending | P4 capability discovery and supported operations |
+| Input indication/feedback | Pure bounded feature-list decoder and individual device/instance feedback Activate/Stop/Capability/Active frames; opt-in independent visible on/off emulator profile and literal model/PTY tests | Managed capability/feedback operations, scalar bindings/web controls, settings and broader profiles, group selectors and physical validation |
 | Identity/memory reads | Pending | P4 model/driver |
 | Data Parts 251–253 | Pending | P4 luminaire/energy/diagnostics with units/status |
 | DT1 emergency | Pending | P4 status/configuration/test operations |

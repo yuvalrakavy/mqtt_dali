@@ -65,7 +65,7 @@ explicit dispatcher policy. Physical repeat cardinality remains unverified.
 Base coverage includes addressing, DTRs, direct level/MASK, off/steps/max/min,
 groups/scenes and selected queries/configuration. Levels currently change
 immediately. The DT8 colour profile below adds selected colour operations.
-Fade timing, timed UP/DOWN, feedback, emergency and memory/data
+Fade timing, timed UP/DOWN, configurable feedback, emergency and memory/data
 models remain P4 extensions. Unsupported operations never fabricate a
 positive device reply. N proves HAT transmission, not device support.
 
@@ -87,7 +87,7 @@ draws. RANDOMISE replaces participating modules' random addresses. Input and
 output repeat latches are separate, and 24-bit input traffic preserves output DT8
 selection. Identical backward bytes still aggregate to one value; independent
 literal-peer tests supply exact-collision refusal evidence. Physical certification
-and feedback are outside this model. Button and sensor timing profiles are
+and configurable feedback are outside this model. Button and sensor timing profiles are
 described below.
 
 Standard FD broadcast-unaddressed input queries answer only modules without a
@@ -159,7 +159,7 @@ ordinary settings affect only the selected existing instance.
 
 `input_event` remains raw UART test injection and deliberately bypasses enabled
 state, filters and scheme. `set_input_value` does not generate events. Natural
-stimulus/gesture scheduling, feedback and hardware persistence
+stimulus/gesture scheduling, configurable feedback and hardware persistence
 validation are later work. Literal model and UART/reboot tests cover this
 foundation. Managed MQTT/HTTP/browser settings use this independent model;
 literal peers additionally check the executing service's evidence and repeats.
@@ -216,6 +216,56 @@ readdress/HAT reboot retain these settings. No natural stimulus scheduling,
 scenario schema change, disk persistence or physical certification is implied.
 Managed MQTT/HTTP and phone/desktop flows read, edit, reopen and restore all
 three profiles. Fault controls: `v2-sensor-settings-controls.toml` and its ledger.
+
+## Visible feedback profile
+
+An input scenario can explicitly opt into visible on/off feedback at an existing
+instance or at device level:
+
+```json
+{"id":"panel","short_address":0,"instances":[1,2],
+ "feedback":[{"instance":0},{"instance":null}]}
+```
+
+Null selects the device, not every instance. Duplicate and nonexistent scopes
+reject. Existing version1 scenarios remain valid without this optional field;
+empty scenario `feedback` and diagnostic `feedback_state` vectors are omitted.
+The two keys are distinct because the snapshot also includes the scenario.
+
+Each explicit profile has capability01 (visible on/off) and starts inactive.
+Feature Type8E at ordinary deviceFE or instance00..1F returns32 for that exact
+profile, otherwiseFE for an existing scope. Next8F has no backward byte because
+this model supports zero or one feature per scope. The pure decoder separately
+tests complete multiple-feature sequences; this profile does not invent Part333.
+
+For input short address0/instance0, send:
+
+```text
+l01008E
+l01204F
+l012010
+l01204E
+l012011
+```
+
+Replies are respectively J20 (feature32), J01 (visible), N (sent), JFF (active)
+and N (sent). A subsequent Active4E returns no backward byte; callers must prove
+current presence/capability separately before calling that false. HAT N never
+establishes support/application. Device feedback uses selectorFC; feature-on-
+instance uses20..3F. One Activate/Stop applies immediately and idempotently, even
+when input events are disabled. Sensor setters at ordinary instance00..1F still
+require their repeat pairs. Unconfigured feedback scopes and other feedback
+operations remain unsupported; group/type/feature-broadcast selectors are not
+implemented. Existing device FF/FD broadcast selection still scopes by bus and
+addressed/unaddressed state, with the existing reply aggregation policy.
+
+Readdress and HAT reboot preserve profile activity because the simulated fixture
+remains powered. This does not model fixture power-cycle/reset persistence,
+timed patterns, configurable brightness/colour/audio, physical LED output or
+managed MQTT/HTTP/browser feedback. Literal model and actual PTY tests verify
+queries, one-send activation/stop/readback, namespace separation, disabled-input
+independence, latches, address/bus isolation and HAT reboot. Intentional faults:
+`v2-feedback-foundation-controls.toml` and its ledger.
 
 ## Colour fixtures
 
