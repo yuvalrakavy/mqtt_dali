@@ -195,7 +195,7 @@ pub(in crate::service) struct Request {
     pub deadline: Instant,
     pub reply: oneshot::Sender<Result<Report, ServiceError>>,
     pub started: bool,
-    pub report: Report,
+    pub report: Box<Report>,
     pub _completion: Option<mqtt_bridge_kit::CommandCompletion>,
     pub _permit: OwnedSemaphorePermit,
 }
@@ -508,7 +508,7 @@ pub(in crate::service) fn accept(
 pub(in crate::service) fn finish(request: Request, result: Result<Report, ServiceError>) {
     let result = match result {
         Err(error) if request.started => {
-            let mut report = request.report;
+            let mut report = *request.report;
             report.outcome = "unconfirmed";
             report.reason = Some(error.to_string());
             report.settings = None;
@@ -586,7 +586,7 @@ impl ServiceHandle {
                 deadline,
                 reply,
                 started: false,
-                report: report(target, &route),
+                report: Box::new(report(target, &route)),
                 _completion: completion,
                 _permit: permit,
             }))

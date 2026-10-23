@@ -312,7 +312,7 @@ from collisions, bracket it with Type proofs, keep settings outside input value
 State and retain module-wide permanent Notice cuts at admission and settlement.
 Only complete matching readback with the original authority/deadline/current
 stamp reports success. No ConfigStore save or implicit discovery writes.
-Timers and feedback remain subsequent work. Addressed
+Sensor timers and feedback remain subsequent work. Addressed
 discovery is documented in `docs/discovery.md`: one short address per bounded
 operation, captured probe evidence, durable additions only, preserved existing
 lifetimes and original command completion. Output/input address spaces are
