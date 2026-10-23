@@ -18,7 +18,9 @@ async fn browser_functional_phone_and_desktop() {
         {"id":"white","short_address":0,"level":91,"groups":8,"device_type":8,"colour":{"active":"temperature","temperature":{"value":300,"coolest":200,"warmest":500,"physical_coolest":150,"physical_warmest":550}}},
         {"id":"plain","short_address":1,"level":120,"scenes":[255,42,255,255,255,255,255,255,255,255,255,255,255,255,255,255]},
         {"id":"new","short_address":null,"level":0,"groups":4,"device_type":8,"colour":{"active":"rgbwaf","xy":[10000,20000],"rgbwaf":[80,90,100,110]}}
-    ],"inputs":[{"id":"buttons","short_address":0,"instances":[1,1,2,4,3],"feedback":[{"instance":null},{"instance":0},{"instance":2}],"values":[{"instance":0,"resolution":1,"bytes":[0]},{"instance":1,"resolution":1,"bytes":[0]},{"instance":2,"resolution":12,"bytes":[255,255]},{"instance":3,"resolution":64,"bytes":[254,220,186,152,118,84,50,16]},{"instance":4,"resolution":2,"bytes":[170]}]}]}]})).unwrap()).await.unwrap();
+    ],"inputs":[{"id":"buttons","short_address":0,"instances":[1,1,2,4,3],"feedback":[{"instance":null},{"instance":0},{"instance":2}],"values":[{"instance":0,"resolution":1,"bytes":[0]},{"instance":1,"resolution":1,"bytes":[0]},{"instance":2,"resolution":12,"bytes":[255,255]},{"instance":3,"resolution":64,"bytes":[254,220,186,152,118,84,50,16]},{"instance":4,"resolution":2,"bytes":[170]}]}]},
+    {"number":1,"outputs":[{"id":"relay","short_address":0,"device_type":7,"level":254,"switching":{"adjustable_thresholds":true}},{"id":"fixed-relay","short_address":1,"device_type":7,"level":0}]}
+    ]})).unwrap()).await.unwrap();
     let socket = path.join("control.sock");
     let endpoint = Endpoint::bind(socket.clone()).await.unwrap();
     let (stop, receive) = tokio::sync::watch::channel(false);
@@ -44,6 +46,14 @@ async fn browser_functional_phone_and_desktop() {
     let running = Bridge::new("DALI")
         .instance("BrowserController")
         .broker(&broker.address())
+        // This is a sequential operator-workflow oracle. Periodic All polling
+        // can legitimately return Busy to a competing command and has separate
+        // native integration coverage; do not let its wall-clock phase choose
+        // which DOM/native assertions this test reaches.
+        .timing(mqtt_bridge_kit::TimingOverrides {
+            poll: Some(None),
+            ..Default::default()
+        })
         .start_managed(
             service
                 .with_config_test_hooks(hooks)

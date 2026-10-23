@@ -53,7 +53,9 @@ An unavailable relay family does not degrade independent readable common fields.
 Probe ordinary Status/Version/Actual/PhysicalMinimum/limits/startup/failure/fade,
 then fresh DeviceType. For multi-type255, query NextDeviceType at most nine times,
 requiring a strictly ascending prefix below254; stop at7 (positive), a value>7
-or254 (negative), or malformed/missing evidence (unknown). Query each Part208
+or254 after at least two valid prefix types (negative), or malformed/missing
+evidence (unknown). An immediate terminator or one-type tail after255 is unknown.
+Query each Part208
 diagnostic with its checked enable/query plan only after positive Type7. Closing
 ordinary Status brackets the entire read. Include bounded raw type-prefix and
 Part208 readings in the existing readings map. No group/broadcast queries.
@@ -132,3 +134,40 @@ prefix bounds/unknown arms, independent relay/common quality, invalid upward0,
 fixed-profile limits, mixed patches, actual-versus-virtual wording, nested nulls,
 partial evidence and existing control anchors. Native behavior is grounded in the
 foundation's linked public IEC Part208 preview and primary command references.
+
+Combined source design gate requested one contract correction: multi-type
+termination must contain at least two ascending types. Explicit vectors are
+255/[254] and255/[6,254] unknown;255/[0,6,254] false;255/[0,6,7] true without
+further enumeration. Add successive virtual-limit saves and mixed patches with
+the last requested threshold unreadable, plus post-write requested-read loss.
+Methodology: vary zero/one/two entries around a sentinel, rather than treating
+the sentinel byte alone as proof. The other design surfaces passed source review;
+same-family limitation remains. No architectural revision is required.
+
+## Delivery checklist before final source review
+
+- [x] Strict nested patch and explicit relay capability/raw readings through the
+  existing typed/MQTT/HTTP settings path; no new owner/config format/components.
+- [x] Literal type-prefix, requested-family, exact-plan/readback and missing-
+  physical cases; independent model, both repeat profiles, successive virtual
+  limits and generic MQTT capability/strict-parser evidence.
+- [x] Native fail-first on unknown nested settings and physical254 preflight;
+  additional literal RED on missing physical evidence falsely marked complete,
+  fixed without making the physical reading optional for limit edits.
+- [x] Node validation and actual protected phone/desktop workflow with independent
+  snapshots and inspected responsive screenshots. The browser harness disables
+  periodic All polling; it does not certify operator/poll overlap. A real recovery
+  completion barrier fixes the observed stale-enabled-button test race.
+- [x] Serial current fault table and two affected common-limit controls measured
+  RED; source/assets restored. An earlier blur-only browser mutation was GREEN
+  because the checkbox click commits the changed field on blur. It is retained
+  as historical evidence, replaced by a native-draft-loss fault detected by the
+  unchanged independent snapshot assertion, not counted as a passing control.
+- [x] Operator/native/MQTT/browser guides, support matrix and contributor notes
+  state the explicit-reply boundary and pending retained metadata/virtual capture.
+- [ ] Frozen sequential source reviews and complete restored native/Pi/lint/
+  format/wait/assets/Node/control-plan acceptance, recorded in progress afterward.
+
+Methodology: sample missing neighboring diagnostics even when a positive capability
+allows an exception; target the native edit path when an event-handler substitution
+is equivalent on the exercised workflow. No memory or reusable skill changes.

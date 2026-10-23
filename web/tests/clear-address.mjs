@@ -44,7 +44,8 @@ export async function clearAddressFlow({page,origin,artifacts,inventory,control,
     assert.deepEqual(await inventory(),before,'individual clear changed saved names, bindings or reservations');
     const cleared=(await native()).buses[0][space].find(o=>o.id===id);assert.equal(cleared.short_address,null,'individual clear left its short address programmed');
     for(const key of space==='outputs'?['level','groups','scenes','colour_state']:['instances','values'])assert.deepEqual(cleared[key],physical[key],`clear changed native ${key}`);
-    await open(item.name,'Restore lost address');await page.getByRole('button',{name:'Restore sole unaddressed fixture',exact:true}).click();await page.getByRole('button',{name:'Restore saved address',exact:true}).click();await idle();
+    await open(item.name,'Restore lost address');await page.getByRole('button',{name:'Restore sole unaddressed fixture',exact:true}).click();await page.getByRole('button',{name:'Restore saved address',exact:true}).click();
+    await until(async()=>await page.getByRole('region',{name:'Lost address recovery',exact:true}).count()===0,'clear recovery follow-up refresh did not finish');await idle();
     assert.equal((await native()).buses[0][space].find(o=>o.id===id).short_address,0,'preserved reservation could not restore the cleared fixture');assert.deepEqual(await inventory(),before);
   }
   console.log('PASS individual clear: cancelled phone review, confirmed Blink stop, addressed output/input clear, unchanged saved identities/native settings, no automatic rediscovery, explicit recovery');

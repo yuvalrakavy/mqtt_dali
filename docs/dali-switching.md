@@ -2,10 +2,11 @@
 
 DT7 switching gear controls a contact using a virtual DALI level and directional
 thresholds. Its actual level is binary0/254, so a positive virtual level is not
-proof that the load is on. This development slice supplies checked native plans
-and an independent ATX HAT model. Relay-specific managed settings, MQTT component
-metadata and web controls remain pending; existing base power reads/writes use
-the real actual level. No physical fixture validation or certification is claimed.
+proof that the load is on. Checked native plans, the independent ATX HAT model
+and explicit managed settings through MQTT/protected HTTP and the Fixture settings
+dialog are implemented. Settings replies expose freshly proved relay capabilities;
+retained relay-specific component metadata remains pending. Existing base power
+reads/writes use the real actual level. No physical validation or certification.
 
 ## Emulator use
 
@@ -18,10 +19,11 @@ in upward-on/upward-off/downward-on/downward-off order and supplies raw gear typ
 Profiles belong only to device_type7; fixed profiles keep default thresholds.
 
 The adjustable example still starts at native min254. Program virtual minimum
-through native Part102 settings before testing a wider threshold range. For DT7
-that minimum may be below physical minimum254; the current generic managed
-fixture-settings preflight is not yet relay-aware. Native library/model support
-for this distinction does not imply that the generic web form exposes it.
+through Fixture settings before testing a wider threshold range. For adjustable
+DT7 that minimum may be below physical minimum254. The managed preflight and form
+require fresh Type7/adjustable evidence, including on subsequent limit saves.
+Use the four native thresholds and Disabled toggles in the same protected dialog;
+fixed and unreadable thresholds remain read-only. See [fixture settings](gear-settings.md).
 
 Private snapshots retain the initial `switching` profile when provided and expose
 current `switching_state` only for DT7. Ordinary `level` remains actual0/254;
@@ -34,8 +36,8 @@ another threshold. Raw switch status is not a second source of contact truth.
 
 The model changes levels immediately like its existing dimmer model. Timed virtual
 fades/UP/DOWN, electrical faults, power/bus-failure transitions and legacy reference/
-hold-off features remain unimplemented. Relay-aware scene capture and broader
-managed capability workflows require the subsequent DT7 service slice. Stored
+hold-off features remain unimplemented. Relay-aware scene capture and retained
+component classification require subsequent work. Stored
 virtual scene levels and actual binary contact values must remain distinct.
 
 ## Native library for bridge contributors
@@ -64,6 +66,12 @@ restores model defaults without erasing prior raw switch-status evidence.
 Literal codec/model cases and standalone UART/PTY tests cover both HAT repeat
 terminal counts. A managed base-output test checks actual power observations
 and unchanged inventory. Fault controls: `v2-dt7-foundation-controls.toml`.
+Managed settings reuse the existing whole-patch output owner, original authority/
+deadline/revision, physical stamp, Blink guards and bus-local cache invalidation.
+Literal native, independent-model, generic MQTT and real phone/desktop cases
+verify support, thresholds, readback and virtual limits. Managed controls:
+`v2-managed-dt7-controls.toml`. Transport terminals never prove fixture support
+or successful settings. Partial/unconfirmed results require explicit inspection.
 See [capability status](support-matrix.md) for the remaining vertical integration.
 
 References: [Beckhoff behavior](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/10378581387.html),

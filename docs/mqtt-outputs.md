@@ -217,3 +217,9 @@ accessible during that outage.
 These paths are tested with isolated brokers and independent PTY fixtures. Physical
 I4 firmware and fixture validation remain pending; see the
 [support matrix](support-matrix.md).
+
+Explicit `read_output_settings` / `configure_output` replies also provide optional
+DT7 relay capabilities and native thresholds; see [fixture settings](gear-settings.md).
+Unknown support remains null. These capability replies do not change retained
+output components or scalar property names. Actual PowerState/Brightness continue
+to describe contact0/254; virtual limits/thresholds are configuration values.

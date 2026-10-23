@@ -62,3 +62,51 @@ test('output settings failed or inconsistent writes retire actionable values unt
 test('output settings matching identification blocks saves while allowing reads',async()=>{
   const f=fixture();Object.assign(f.ui.snapshot,{identification:{target:f.row.item.target,phase:'blinking'}});await f.scope.read();await assert.rejects(f.scope.save({minimum_level:5}),/Stop Blink/);assert.equal(f.calls.length,1);f.ui.client.close();
 });
+
+const relaySettings={features_raw:136,adjustable_thresholds:true,physical_selection:true,switch_status_raw:255,gear_type_raw:226,extended_version_raw:1,upward_on:50,upward_off:255,downward_on:255,downward_off:0,quality:'complete'};
+const relayValues=()=>({...values,physical_minimum:254,minimum_level:1,switching_support:true,switching:structuredClone(relaySettings)}) as OutputValues&any;
+function relayReport(f:ReturnType<typeof fixture>,command='read_output_settings',v=relayValues()){
+  const r=f.report(command,v) as any;r.readings.device_type={kind:'value',raw:7};
+  for(const [name,field]of Object.entries({switching_features:'features_raw',switching_status:'switch_status_raw',switching_gear_type:'gear_type_raw',switching_version:'extended_version_raw',switching_upward_on:'upward_on',switching_upward_off:'upward_off',switching_downward_on:'downward_on',switching_downward_off:'downward_off'}))r.readings[name]=v.switching?.[field]===null?{kind:'no_response'}:{kind:'value',raw:v.switching?.[field]};
+  return r;
+}
+test('DT7 settings allow successive virtual limits only with proved adjustable support',()=>{
+  const v=relayValues();assert.doesNotThrow(()=>decodeOutputValues(v),'DT7 virtual limits were mistaken for invalid physical limits');assert.deepEqual(decodeOutputValues(v),v);
+  assert.equal(outputWritable('minimum_level',v),true,'DT7 existing virtual limit cannot be edited again');
+  validateOutputPatch({minimum_level:5,maximum_level:200},v);
+  const after=structuredClone(v);after.switching.upward_on=255;after.switching.downward_off=1;
+  assert.deepEqual(changedOutputSettings(v,after),{switching:{upward_on:255,downward_off:1}},'DT7 changed-only patch lost or rewrote a threshold');
+  for(const patch of [{switching:{}},{switching:null},{switching:{upward_on:0}},{switching:{upward_off:null}},{switching:{downward_on:256}},{switching:{downward_off:1.5}},{switching:{surprise:1}}])assert.throws(()=>validateOutputPatch(patch as any,v),undefined,'DT7 malformed nested patch accepted');
+  const fixed={...v,minimum_level:254,switching:{...v.switching,features_raw:128,adjustable_thresholds:false}};
+  assert.throws(()=>validateOutputPatch({minimum_level:1},fixed),/physical minimum/);
+  assert.throws(()=>validateOutputPatch({switching:{upward_on:55}} as any,fixed),undefined,'fixed relay threshold became writable');
+});
+test('DT7 settings require raw type and threshold agreement before accepting capabilities',async()=>{
+  for(const mode of ['wrong_type','empty_tail','one_tail','duplicate','raw_threshold','raw_features','valid_prefix']){
+    const f=fixture(),r=relayReport(f);if(mode==='wrong_type')r.readings.device_type.raw=6;
+    if(['empty_tail','one_tail','duplicate','valid_prefix'].includes(mode)){
+      r.readings.device_type.raw=255;const prefix=mode==='empty_tail'?[254]:mode==='one_tail'?[6,254]:mode==='duplicate'?[6,6]:[0,6,7];prefix.forEach((raw,index)=>r.readings[`device_type_${index}`]={kind:'value',raw});
+    }
+    if(mode==='raw_threshold')r.readings.switching_downward_off.raw=255;
+    if(mode==='raw_features')r.readings.switching_features.raw=128;
+    f.ui.client.job=async()=>r;
+    if(mode==='valid_prefix'){await f.scope.read();assert.equal((f.scope.values as any).switching.downward_off,0);}else await assert.rejects(f.scope.read(),undefined,`DT7 accepted inconsistent capability evidence: ${mode}`);
+    f.ui.client.close();
+  }
+});
+test('DT7 settings unknown malformed tails and known absence remain independent of common quality',async()=>{
+  for(const [prefix,support]of [[[254],null],[[6,254],null],[[0,6,254],false]] as const){
+    const f=fixture(),v={...values,switching_support:support},r=f.report('read_output_settings',v) as any;
+    r.readings.device_type={kind:'value',raw:255};prefix.forEach((raw,index)=>r.readings[`device_type_${index}`]={kind:'value',raw});f.ui.client.job=async()=>r;
+    await f.scope.read();assert.equal(f.scope.values!.quality,'complete');assert.equal((f.scope.values as any).switching_support,support);f.ui.client.close();
+  }
+});
+test('DT7 settings match every requested nested value and retire values after possible writes',async()=>{
+  for(const mismatch of [false,true]){
+    const f=fixture();f.ui.client.job=async()=>relayReport(f);await f.scope.read();
+    f.ui.client.job=async()=>{const v=relayValues();v.switching.upward_on=mismatch?50:55;return relayReport(f,'configure_output',v);};
+    if(mismatch){await assert.rejects(f.scope.save({switching:{upward_on:55}} as any),undefined,'DT7 requested threshold mismatch was accepted');assert.equal(f.scope.values,null);}
+    else{await f.scope.save({switching:{upward_on:55}} as any);assert.equal((f.scope.values as any).switching.upward_on,55);}
+    f.ui.client.close();
+  }
+});

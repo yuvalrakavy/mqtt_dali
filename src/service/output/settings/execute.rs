@@ -41,13 +41,22 @@ async fn probe(bus: &Bus<'_>, r: &Route) -> Result<Probe, Error> {
         ("power_on_level", Query::PowerOnLevel, false),
         ("system_failure_level", Query::SystemFailureLevel, false),
         ("fade_time_rate", Query::FadeTimeRate, false),
-        ("closing_status", Query::Status, false),
     ] {
         let reply = bus
             .query(DaliFrame::Bits16(r.output.address.query(query)))
             .await?;
         readings.insert(name, Reading::byte(reply, masked));
     }
+    let (switching_support, switching) =
+        switching::probe(bus, r.output.address, &mut readings).await?;
+    readings.insert(
+        "closing_status",
+        Reading::byte(
+            bus.query(DaliFrame::Bits16(r.output.address.query(Query::Status)))
+                .await?,
+            false,
+        ),
+    );
     let present =
         byte(&readings["status"]).is_some() && byte(&readings["closing_status"]).is_some();
     let flags = byte(&readings["closing_status"]).map(|raw| {
@@ -77,9 +86,11 @@ async fn probe(bus: &Bus<'_>, r: &Route) -> Result<Probe, Error> {
             fade_raw,
             fade_time: fade_raw.map(|raw| raw >> 4),
             fade_rate: fade_raw.map(|raw| raw & 15).filter(|v| *v != 0),
+            switching_support,
+            switching,
             quality: "partial",
         };
-        if v.physical_minimum
+        if v.limit_floor()
             .zip(v.minimum_level)
             .zip(v.maximum_level)
             .is_some_and(|((physical, min), max)| physical <= min && min <= max)
@@ -127,7 +138,7 @@ pub(in crate::service) async fn run(
         let Action::Configure { settings, .. } = &route.action else {
             return Ok(());
         };
-        let plans = match report
+        let (plans, switching_plans) = match report
             .settings
             .as_ref()
             .ok_or_else(|| reject("fresh fixture presence required"))
@@ -145,6 +156,13 @@ pub(in crate::service) async fn run(
         report.status_flags = None;
         report.outcome = "unconfirmed";
         for setting in plans {
+            for step in setting.plan(Destination::Short(route.output.address)) {
+                attempted = true;
+                bus.command(DaliFrame::Bits16(step.frame), step.repeat)
+                    .await?;
+            }
+        }
+        for setting in switching_plans {
             for step in setting.plan(Destination::Short(route.output.address)) {
                 attempted = true;
                 bus.command(DaliFrame::Bits16(step.frame), step.repeat)

@@ -10,7 +10,9 @@ use tokio::{
     time::{timeout_at, Instant},
 };
 mod execute;
+mod switching;
 pub(in crate::service) use execute::run as execute;
+pub use switching::{Patch as SwitchingPatch, Values as SwitchingValues};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -51,6 +53,12 @@ pub struct Patch {
         skip_serializing_if = "Option::is_none"
     )]
     pub fade_rate: Option<u8>,
+    #[serde(
+        default,
+        deserialize_with = "present",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub switching: Option<SwitchingPatch>,
 }
 fn present<'de, T: Deserialize<'de>, D: serde::Deserializer<'de>>(
     d: D,
@@ -67,6 +75,9 @@ pub struct Values {
     pub fade_raw: Option<u8>,
     pub fade_time: Option<u8>,
     pub fade_rate: Option<u8>,
+    pub switching_support: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub switching: Option<SwitchingValues>,
     pub quality: &'static str,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -101,6 +112,9 @@ impl Patch {
         if self == &Self::default() {
             return Err(reject("change at least one output setting"));
         }
+        if let Some(patch) = &self.switching {
+            patch.validate()?;
+        }
         for raw in [self.minimum_level, self.maximum_level]
             .into_iter()
             .flatten()
@@ -122,7 +136,16 @@ impl Patch {
         }
         Ok(())
     }
-    fn plans(&self, before: &Values) -> Result<Vec<frames::Setting>, ServiceError> {
+    fn plans(
+        &self,
+        before: &Values,
+    ) -> Result<
+        (
+            Vec<frames::Setting>,
+            Vec<crate::dali::gear::switching::Setting>,
+        ),
+        ServiceError,
+    > {
         use frames::{FadeRate, FadeTime, LimitLevel, PowerOnLevel, Setting, SystemFailureLevel};
         self.validate()?;
         let mut plans = Vec::new();
@@ -134,6 +157,7 @@ impl Patch {
             ) else {
                 return Err(reject("fresh physical minimum and current limits required"));
             };
+            let physical = before.limit_floor().unwrap_or(physical);
             let min = self.minimum_level.unwrap_or(old_min);
             let max = self.maximum_level.unwrap_or(old_max);
             if physical > old_min || old_min > old_max || min < physical || min > max {
@@ -179,7 +203,13 @@ impl Patch {
             }
             plans.push(Setting::FadeRate(FadeRate::new(raw).unwrap()));
         }
-        Ok(plans)
+        let switching = self
+            .switching
+            .as_ref()
+            .map(|p| p.plans(before))
+            .transpose()?
+            .unwrap_or_default();
+        Ok((plans, switching))
     }
     fn matches(&self, v: &Values) -> bool {
         self.minimum_level
@@ -195,6 +225,22 @@ impl Patch {
                 .is_none_or(|x| v.system_failure_level == Some(x))
             && self.fade_time.is_none_or(|x| v.fade_time == Some(x))
             && self.fade_rate.is_none_or(|x| v.fade_rate == Some(x))
+            && self.switching.as_ref().is_none_or(|p| p.matches(v))
+    }
+}
+impl Values {
+    fn limit_floor(&self) -> Option<u8> {
+        self.physical_minimum?;
+        if self.switching_support == Some(true)
+            && self
+                .switching
+                .as_ref()
+                .is_some_and(|s| s.adjustable_thresholds == Some(true))
+        {
+            Some(1)
+        } else {
+            self.physical_minimum
+        }
     }
 }
 fn reject(e: impl std::fmt::Display) -> ServiceError {

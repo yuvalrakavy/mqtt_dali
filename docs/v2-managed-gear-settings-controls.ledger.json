@@ -2,18 +2,18 @@
  "rows": {
   "output_settings_crossing_always_writes_minimum_first": {
    "last_real": {
-    "at": "2026-10-23T06:16:27Z",
+    "at": "2026-10-23T07:51:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:b121cc325041e2f1",
+     "guard": "item:d48d13d50a2668b0",
      "row": "a764f78c0fd51342",
      "test": null
     },
     "path": "command",
-    "secs": 13.3,
-    "sha": "9eff5435da0f973c9153dde1e45511e7584910e2",
+    "secs": 10.1,
+    "sha": "699c4a1a3af89890742c3df21659647b1c83dfee",
     "verdict": "RED"
    }
   },
@@ -138,18 +138,18 @@
   },
   "output_settings_physical_minimum_not_checked": {
    "last_real": {
-    "at": "2026-10-23T06:10:59Z",
+    "at": "2026-10-23T07:50:34Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:b121cc325041e2f1",
+     "guard": "item:d48d13d50a2668b0",
      "row": "4f5af8e0487ba82c",
      "test": null
     },
     "path": "command",
-    "secs": 13.5,
-    "sha": "9eff5435da0f973c9153dde1e45511e7584910e2",
+    "secs": 15.8,
+    "sha": "699c4a1a3af89890742c3df21659647b1c83dfee",
     "verdict": "RED"
    }
   },

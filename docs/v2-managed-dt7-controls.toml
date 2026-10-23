@@ -1,0 +1,145 @@
+# Run serially, then restore source/assets before freeze and readers.
+
+[[control]]
+name = "managed_dt7_missing_positive_type_is_unsupported"
+file = "src/service/output/settings/switching.rs"
+anchor = "Some(7) => Some(true),"
+replacement = "Some(7) => Some(false),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_native_thresholds)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "managed DT7 thresholds were not confirmed"
+
+[[control]]
+name = "managed_dt7_other_type_is_advertised_as_relay"
+file = "src/service/output/settings/switching.rs"
+anchor = "Some(_) => Some(false),"
+replacement = "Some(_) => Some(true),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_emulator_all_fields)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "ordinary gear was falsely advertised as DT7"
+
+[[control]]
+name = "managed_dt7_malformed_short_multitype_tail_is_absent"
+file = "src/service/output/settings/switching.rs"
+anchor = "support = (n >= 2).then_some(false);"
+replacement = "support = Some(false);"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_literal_type_prefixes)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 type prefix evidence was misclassified"
+
+[[control]]
+name = "managed_dt7_fixed_thresholds_become_writable"
+file = "src/service/output/settings/switching.rs"
+anchor = "values.switching_support == Some(true) && v.adjustable_thresholds == Some(true)"
+replacement = "values.switching_support == Some(true) && { let _ = v; true }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_literal_whole_mixed)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 whole-patch preflight sent a partial native mutation"
+
+[[control]]
+name = "managed_dt7_missing_requested_threshold_is_ignored"
+file = "src/service/output/settings/switching.rs"
+anchor = "if readable.is_none() {"
+replacement = "if false && readable.is_none() {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_literal_whole_mixed)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 whole-patch preflight sent a partial native mutation"
+
+[[control]]
+name = "managed_dt7_invalid_upward_zero_is_readable"
+file = "src/service/output/settings/switching.rs"
+anchor = "upward_on: byte(&readings[\"switching_upward_on\"]).filter(|v| *v != 0),"
+replacement = "upward_on: byte(&readings[\"switching_upward_on\"]),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_literal_whole_mixed)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 whole-patch preflight sent a partial native mutation"
+
+[[control]]
+name = "managed_dt7_virtual_floor_uses_physical254"
+file = "src/service/output/settings.rs"
+anchor = "let physical = before.limit_floor().unwrap_or(physical);"
+replacement = "let physical = physical;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_virtual_limit_has_real)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "adjustable DT7 virtual minimum was incorrectly constrained by physical254"
+
+[[control]]
+name = "managed_dt7_virtual_floor_hides_missing_physical_reading"
+file = "src/service/output/settings.rs"
+anchor = "self.physical_minimum?;"
+replacement = "let _ = self.physical_minimum;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_literal_missing_physical)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 virtual floor fabricated a complete missing-physical reading"
+
+[[control]]
+name = "managed_dt7_threshold_readback_is_not_compared"
+file = "src/service/output/settings.rs"
+anchor = "&& self.switching.as_ref().is_none_or(|p| p.matches(v))"
+replacement = "&& self.switching.as_ref().is_none_or(|p| { let _ = p.matches(v); true })"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_literal_exact_plans)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 exact native plans or requested readback failed"
+
+[[control]]
+name = "managed_dt7_setter_enable_is_skipped"
+file = "src/service/output/settings/execute.rs"
+anchor = "for setting in switching_plans {\n            for step in setting.plan(Destination::Short(route.output.address)) {"
+replacement = "for setting in switching_plans {\n            for step in setting.plan(Destination::Short(route.output.address)).into_iter().filter(|s| s.frame != 0xc107) {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_native_thresholds)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "managed DT7 thresholds were not confirmed"
+
+[[control]]
+name = "managed_dt7_setter_is_sent_once"
+file = "src/service/output/settings/execute.rs"
+anchor = "for setting in switching_plans {\n            for step in setting.plan(Destination::Short(route.output.address)) {"
+replacement = "for setting in switching_plans {\n            for mut step in setting.plan(Destination::Short(route.output.address)) { step.repeat = false;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_dt7_settings_native_thresholds)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "managed DT7 thresholds were not confirmed"
+
+[[control]]
+name = "managed_dt7_ui_virtual_floor_uses_actual_physical"
+file = "web/src/output-settings.ts"
+anchor = "?1:v.physical_minimum;"
+replacement = "?v.physical_minimum:v.physical_minimum;"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "DT7 virtual limits were mistaken for invalid physical limits"
+
+[[control]]
+name = "managed_dt7_ui_does_not_verify_native_type"
+file = "web/src/output-settings.ts"
+anchor = "if(v.switching_support!==support)return invalid();"
+replacement = "if(false&&v.switching_support!==support)return invalid();"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "DT7 accepted inconsistent capability evidence: wrong_type"
+
+[[control]]
+name = "managed_dt7_ui_fixed_thresholds_are_editable"
+file = "web/src/output-settings.ts"
+anchor = "v.switching?.adjustable_thresholds===true&&v.switching[field]!==null"
+replacement = "true&&v.switching[field]!==null"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "fixed relay threshold became writable"
+
+[[control]]
+name = "managed_dt7_ui_requested_nested_readback_is_ignored"
+file = "web/src/output-settings.ts"
+anchor = "if(frozen.switching?.[field]!==undefined&&result.settings?.switching?.[field]!==frozen.switching[field])"
+replacement = "if(false&&frozen.switching?.[field]!==undefined&&result.settings?.switching?.[field]!==frozen.switching[field])"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "DT7 requested threshold mismatch was accepted"
+
+[[control]]
+name = "managed_dt7_ui_threshold_edit_never_updates_native_draft"
+file = "web/src/output-settings-ui.tsx"
+anchor = "updateThreshold(Number.isInteger(raw)&&raw>=min&&raw<=254?raw:NaN);"
+replacement = "void raw;"
+target = "command"
+argv = ["python3", "-c", "from pathlib import Path\nimport subprocess\nimport sys\nassets={p:p.read_bytes() for p in Path(\"web/dist\").rglob(\"*\") if p.is_file()}\nresult=None\ntry:\n    build=subprocess.run([\"npm\",\"--prefix\",\"web\",\"run\",\"build\"])\n    if build.returncode: sys.exit(build.returncode)\n    result=subprocess.run([\"cargo\",\"test\",\"--offline\",\"--target\",\"aarch64-apple-darwin\",\"--lib\",\"browser_functional_phone_and_desktop\",\"--\",\"--ignored\",\"--nocapture\"])\nfinally:\n    for p,data in assets.items(): p.write_bytes(data)\nsys.exit(result.returncode)\n"]
+expect_text = "relay numeric edits were lost when toggling another threshold"

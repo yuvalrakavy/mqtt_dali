@@ -287,8 +287,13 @@ setter. Preserve disabled255 versus actual MASK and raw unknown diagnostics.
 The independent optional DT7 profile separates virtual control from actual0/254,
 uses per-gear repeated setters and sees addressed interruption before base repeat
 early returns. STORE ACTUAL copies virtual level; RESET preserves raw status.
-Existing dimmer/DT8 scenarios omit new state. Relay-specific managed settings,
-metadata/browser, virtual scene capture and timed/fault behavior remain pending.
+Existing dimmer/DT8 scenarios omit new state. Managed output settings now carries
+optional strict switching patches/fresh explicit capability replies and the same
+protected dialog. Require positive bounded Type7 and adjustable feature evidence;
+only then allow virtual minimum1 below physical254. Bracket with Status, preserve
+malformed multi-type tails as unknown, preflight the entire mixed patch and match
+every requested native value. Retained component metadata, virtual scene capture
+and timed/fault behavior remain pending. Controls: `docs/v2-managed-dt7-controls.toml`.
 Controls: `docs/v2-dt7-foundation-controls.toml`.
 
 `dali::gear::settings` provides pure checked limits, context-specific startup/

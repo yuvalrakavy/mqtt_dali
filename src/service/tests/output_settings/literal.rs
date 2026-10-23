@@ -2,6 +2,7 @@
 use super::*;
 use std::collections::VecDeque;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+mod switching;
 struct Peer {
     path: PathBuf,
     commands: Arc<std::sync::Mutex<Vec<String>>>,
@@ -145,6 +146,7 @@ fn probe(min: u8, max: u8, fade: u8) -> Vec<(String, String)> {
         (0xa3, 255),
         (0xa4, 255),
         (0xa5, fade),
+        (0x99, 6),
         (0x90, 4),
     ]
     .into_iter()
@@ -184,7 +186,7 @@ async fn managed_output_settings_literal_whole_patch_and_physical_preflight_send
             script[6].1 = "N\n".into();
         }
         if mode == "missing_presence" {
-            script[9].1 = "N\n".into();
+            script[10].1 = "N\n".into();
         }
         let peer = Peer::new(script);
         let broker = FakeBroker::start().await;
@@ -312,7 +314,7 @@ async fn managed_output_settings_literal_sends_never_replace_actual_confirmation
         let mut after = probe(5, 254, 0xf1);
         match mode {
             "ignored" => after[4].1 = "J01\n".into(),
-            "missing_after" => after[9].1 = "N\n".into(),
+            "missing_after" => after[10].1 = "N\n".into(),
             "collision_after" => after[4].1 = "Z9\n".into(),
             _ => after[4].1 = "JFF\n".into(),
         };

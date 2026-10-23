@@ -137,6 +137,22 @@ cannot erase a later slot's name draft. Native hardware drift/repair execution
 has separate service/literal tests; the browser repair case uses matching data. Inspect screenshots and
 console errors; a successful compile alone is not UI acceptance. Routine Rust
 suites skip this explicitly ignored browser dependency.
+The sequential browser harness explicitly disables periodic BridgeKit All polls.
+It still starts the real managed service/MQTT session and uses actual protected
+DOM jobs, but does not claim coverage of operator overlap with periodic polling.
+That overlap can legitimately return Busy; aggregate polling/budgets/cursor and
+actual state have separate native integration coverage. Do not retry or loosen
+the browser's native-value assertions to hide Busy. After address restoration,
+wait for the recovery region to close: an already-enabled button can be observed
+before the next render while follow-up reads are still running.
+
+Relay settings run on a separate emulator bus, preserving the original three-
+fixture commissioning cases. Phone/desktop checks assert all native thresholds,
+disabled255/downward0, number-before-toggle retention, successive virtual limits,
+fixed controls, independent restoration and binary actual contacts. An explicitly
+synthetic partial HTTP reply verifies unknown-feature read-only presentation;
+native missing/colliding evidence is tested separately by literal UART peers.
+Screenshots include `phone-relay-settings.png` and `desktop-relay-settings.png`.
 Full reassignment cases exercise cancelled frozen review, outputs/inputs/both,
 fresh names, reference pruning, preservation of native live/group/scene values,
 and leaving the tab during an admitted reset.

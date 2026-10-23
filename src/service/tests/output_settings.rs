@@ -5,6 +5,7 @@ use crate::{
     service::output::settings::Patch,
 };
 mod literal;
+mod switching;
 const TARGET: &str = "Bus1.Outputs.Light1";
 fn limit() -> Instant {
     Instant::now() + Duration::from_secs(5)
@@ -45,6 +46,13 @@ async fn managed_output_settings_mqtt_strict_params_original_trace_and_read_clas
         ("configure_output",json!({"expected_revision":1,"settings":{"fade_time":1.5}}),false),
         ("configure_output",json!({"expected_revision":1,"settings":{"physical_minimum":1}}),false),
         ("configure_output",json!({"expected_revision":1,"settings":{}}),false),
+        ("configure_output",json!({"expected_revision":1,"settings":{"switching":null}}),false),
+        ("configure_output",json!({"expected_revision":1,"settings":{"switching":{}}}),false),
+        ("configure_output",json!({"expected_revision":1,"settings":{"power_on_level":0,"switching":{"upward_on":0}}}),false),
+        ("configure_output",json!({"expected_revision":1,"settings":{"switching":{"upward_off":null}}}),false),
+        ("configure_output",json!({"expected_revision":1,"settings":{"switching":{"downward_on":1.5}}}),false),
+        ("configure_output",json!({"expected_revision":1,"settings":{"switching":{"downward_off":256}}}),false),
+        ("configure_output",json!({"expected_revision":1,"settings":{"switching":{"gear_type_raw":2}}}),false),
         ("configure_output",json!({"expected_revision":0,"settings":{"minimum_level":5}}),false),
         ("configure_output",json!({"expected_revision":1,"settings":{"minimum_level":5},"extra":true}),false),
         ("read_output_settings",json!({"settings":{}}),false),
@@ -197,6 +205,12 @@ async fn managed_output_settings_emulator_all_fields_and_crossed_limits_keep_ide
         );
         let initial = initial.unwrap();
         assert_eq!(initial.outcome, "current");
+        assert_eq!(
+            initial.settings.as_ref().unwrap().switching_support,
+            Some(false),
+            "ordinary gear was falsely advertised as DT7"
+        );
+        assert!(initial.settings.as_ref().unwrap().switching.is_none());
         assert_eq!(initial.settings.as_ref().unwrap().fade_rate, Some(7));
         for (patch, min, max, level, fade) in [
             (
@@ -207,6 +221,7 @@ async fn managed_output_settings_emulator_all_fields_and_crossed_limits_keep_ide
                     system_failure_level: Some(0),
                     fade_time: Some(15),
                     fade_rate: Some(1),
+                    switching: None,
                 },
                 150,
                 200,
@@ -221,6 +236,7 @@ async fn managed_output_settings_emulator_all_fields_and_crossed_limits_keep_ide
                     system_failure_level: Some(255),
                     fade_time: Some(1),
                     fade_rate: Some(15),
+                    switching: None,
                 },
                 220,
                 240,
@@ -235,6 +251,7 @@ async fn managed_output_settings_emulator_all_fields_and_crossed_limits_keep_ide
                     system_failure_level: Some(128),
                     fade_time: Some(0),
                     fade_rate: Some(7),
+                    switching: None,
                 },
                 5,
                 50,

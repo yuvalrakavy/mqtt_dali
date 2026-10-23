@@ -64,6 +64,44 @@ base/colour/group actuals until their normal fresh read; settings reads preserve
 those caches and native input values/Notices. Original authority, physical epoch,
 deadline and the shared permit remain under the existing owner through settlement.
 
+## DT7 relays
+
+A freshly identified DT7 fixture adds **Relay thresholds** to the same dialog.
+Four native virtual-level thresholds have separate Disabled toggles; disabled255
+is not a brightness percentage. Fixed thresholds and unavailable capabilities
+remain read-only. Actual contact On/Off comes from actual0/254, independently of
+raw threshold diagnostics. Relay min/max and startup numeric fields describe a
+virtual control level. Changing virtual limits can operate the contact.
+
+For adjustable DT7, virtual minimum may be1 even when physical minimum is254.
+Both the current and requested range use that exception only after fresh positive
+Type7 and adjustable-support evidence. Other fixtures retain physical-minimum
+preflight. Missing optional relay diagnostics do not block readable common fields.
+
+The existing command accepts an optional nested patch:
+
+```json
+{"command":"configure_output","target":"Bus1.Outputs.Relay",
+ "expected_revision":7,"settings":{"minimum_level":1,
+ "switching":{"upward_on":50,"upward_off":255,"downward_off":0}}}
+```
+
+Upward thresholds accept1..255, downward0..255. Empty/null/unknown nested members
+reject. The entire mixed patch requires fresh support and readable requested
+fields before any DTR/setter frame. Threshold setters do not themselves operate
+the contact; accompanying virtual-limit edits can. Actual requested readback,
+including fresh relay support, is required for confirmation of threshold edits.
+
+Values include nullable `switching_support` (true/false/unknown) and an optional
+`switching` object only after positive Type7. It retains four nullable thresholds,
+`features_raw`, `switch_status_raw`, `gear_type_raw`, `extended_version_raw`,
+decoded nullable `adjustable_thresholds`/`physical_selection` and independent
+`quality`. Raw unknown bits and invalid upward0 remain visible in `readings`;
+invalid/missing values do not become defaults. Multiple-type enumeration is bounded
+and ordered; an immediate or one-entry terminator after a multiple-type reply is
+unknown. These are explicit settings replies, with no retained relay component
+classification or automatic settings polling. See [DT7 switching](dali-switching.md).
+
 ## Checked protocol foundation
 
 `dali::gear::settings` supplies checked values and command plans for minimum and

@@ -1,5 +1,6 @@
 import { inputSettingsFlow } from './input-settings.mjs';
 import { outputSettingsFlow } from './output-settings.mjs';
+import { switchingSettingsFlow } from './switching-settings.mjs';
 import { feedbackFlow } from './feedback.mjs';
 import { groupOutputFlow } from './group-output.mjs';
 import { scenesFlow } from './scenes.mjs';
@@ -85,6 +86,7 @@ try {
   await clearAddressFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await restorationFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
   await reassignmentFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
+  await switchingSettingsFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   let entered;const admitted=new Promise(resolve=>entered=resolve),held=new Promise(resolve=>releaseAdmission=resolve);let hold=true;
   await page.route(`${origin}/api/jobs`,async route=>{if(hold&&route.request().postDataJSON().command==='discover_address'){hold=false;const response=await route.fetch();entered();await held;await route.fulfill({response}).catch(()=>{});}else await route.continue();});
   await page.getByRole('button',{name:'Refresh addressed',exact:true}).click();await admitted;const beforeLogout=commands.length;

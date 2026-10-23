@@ -1496,6 +1496,11 @@ function ft({ row: e, close: t }) {
 }
 // src/output-settings.ts
 var pt = [
+	"upward_on",
+	"upward_off",
+	"downward_on",
+	"downward_off"
+], mt = [
 	"minimum_level",
 	"maximum_level",
 	"power_on_level",
@@ -1504,61 +1509,129 @@ var pt = [
 	"fade_rate"
 ], Q = () => {
 	throw Error("Output settings evidence is incomplete or inconsistent. Refresh to inspect again.");
-}, mt = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
-function ht(e) {
+}, ht = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
+function gt(e) {
 	return (e * 100 / 254).toFixed(1);
 }
-function gt(e) {
+function _t(e) {
 	let t = e.trim() === "" ? NaN : Number(e);
 	return Number.isFinite(t) && t >= 0 && t <= 100 ? Math.round(t * 254 / 100) : NaN;
 }
-var _t = Array.from({ length: 16 }, (e, t) => ({
+var vt = Array.from({ length: 16 }, (e, t) => ({
 	code: t,
 	label: t === 0 ? "Use other fade settings (code 0)" : `${(.5 * 2 ** (t / 2)).toFixed(t < 4 ? 2 : 1)} s`
-})), vt = Array.from({ length: 15 }, (e, t) => ({
+})), yt = Array.from({ length: 15 }, (e, t) => ({
 	code: t + 1,
 	label: `${(506 / 2 ** ((t + 1) / 2)).toFixed(1)} steps/s`
 }));
-function yt(e) {
+function bt(e) {
+	return e.physical_minimum === null ? null : e.switching_support === !0 && e.switching?.adjustable_thresholds === !0 ? 1 : e.physical_minimum;
+}
+function xt(e, t) {
+	return t?.switching_support === !0 && t.switching?.adjustable_thresholds === !0 && t.switching[e] !== null;
+}
+function St(e) {
 	if (!e || typeof e != "object" || Array.isArray(e)) return Q();
 	for (let t of [
 		"physical_minimum",
 		"minimum_level",
 		"maximum_level"
-	]) if (e[t] !== null && !mt(e[t], 1, 254)) return Q();
+	]) if (e[t] !== null && !ht(e[t], 1, 254)) return Q();
 	for (let t of [
 		"power_on_level",
 		"system_failure_level",
 		"fade_raw"
-	]) if (e[t] !== null && !mt(e[t], 0, 255)) return Q();
+	]) if (e[t] !== null && !ht(e[t], 0, 255)) return Q();
 	let t = e.fade_raw === null ? null : e.fade_raw >> 4, n = e.fade_raw === null || !(e.fade_raw & 15) ? null : e.fade_raw & 15;
-	if (e.fade_time !== t || e.fade_rate !== n) return Q();
-	let r = e.physical_minimum !== null && e.minimum_level !== null && e.maximum_level !== null && e.physical_minimum <= e.minimum_level && e.minimum_level <= e.maximum_level && e.power_on_level !== null && e.system_failure_level !== null && e.fade_raw !== null && n !== null;
-	return e.quality === (r ? "complete" : "partial") ? structuredClone(e) : Q();
+	if (e.fade_time !== t || e.fade_rate !== n || e.switching_support !== void 0 && e.switching_support !== null && typeof e.switching_support != "boolean") return Q();
+	if (e.switching_support === !0) {
+		let t = e.switching;
+		if (!t || typeof t != "object" || Array.isArray(t)) return Q();
+		for (let e of [
+			"features_raw",
+			"switch_status_raw",
+			"gear_type_raw",
+			"extended_version_raw",
+			...pt
+		]) if (t[e] !== null && !ht(t[e], +!!e.startsWith("upward_"), 255)) return Q();
+		if (t.adjustable_thresholds !== (t.features_raw === null ? null : !!(t.features_raw & 8)) || t.physical_selection !== (t.features_raw === null ? null : !!(t.features_raw & 128))) return Q();
+		let n = [
+			"features_raw",
+			"switch_status_raw",
+			"gear_type_raw",
+			"extended_version_raw",
+			...pt
+		].every((e) => t[e] !== null);
+		if (t.quality !== (n ? "complete" : "partial")) return Q();
+	} else if (e.switching !== void 0) return Q();
+	let r = bt(e), i = e.physical_minimum !== null && r !== null && e.minimum_level !== null && e.maximum_level !== null && r <= e.minimum_level && e.minimum_level <= e.maximum_level && e.power_on_level !== null && e.system_failure_level !== null && e.fade_raw !== null && n !== null;
+	return e.quality === (i ? "complete" : "partial") ? structuredClone(e) : Q();
 }
-function bt(e, t) {
-	return t ? e === "minimum_level" || e === "maximum_level" ? t.physical_minimum !== null && t.minimum_level !== null && t.maximum_level !== null && t.physical_minimum <= t.minimum_level && t.minimum_level <= t.maximum_level : e === "fade_time" || e === "fade_rate" ? t.fade_raw !== null : t[e] !== null : !1;
+function Ct(e, t) {
+	return t ? e === "minimum_level" || e === "maximum_level" ? t.physical_minimum !== null && bt(t) !== null && t.minimum_level !== null && t.maximum_level !== null && bt(t) <= t.minimum_level && t.minimum_level <= t.maximum_level : e === "fade_time" || e === "fade_rate" ? t.fade_raw !== null : t[e] !== null : !1;
 }
-function xt(e, t) {
+function wt(e, t) {
 	if (!e || typeof e != "object" || Array.isArray(e) || !Object.keys(e).length) throw Error("Change at least one output setting.");
-	for (let [n, r] of Object.entries(e)) {
-		if (!pt.includes(n) || !bt(n, t)) throw Error("Fresh supported setting evidence is required. Refresh first.");
-		if (!mt(r, +(n === "minimum_level" || n === "maximum_level" || n === "fade_rate"), n === "minimum_level" || n === "maximum_level" ? 254 : n === "fade_time" || n === "fade_rate" ? 15 : 255)) throw Error("Enter valid brightness levels and native fade choices.");
+	for (let [n, r] of Object.entries(e)) if (n === "switching") {
+		if (!r || typeof r != "object" || Array.isArray(r) || !Object.keys(r).length) throw Error("Change at least one relay threshold.");
+		for (let [e, n] of Object.entries(r)) if (!pt.includes(e) || !xt(e, t) || !ht(n, +!!e.startsWith("upward_"), 255)) throw Error("Fresh adjustable relay evidence and valid thresholds are required.");
+	} else {
+		if (!mt.includes(n) || !Ct(n, t)) throw Error("Fresh supported setting evidence is required. Refresh first.");
+		if (!ht(r, +(n === "minimum_level" || n === "maximum_level" || n === "fade_rate"), n === "minimum_level" || n === "maximum_level" ? 254 : n === "fade_time" || n === "fade_rate" ? 15 : 255)) throw Error("Enter valid brightness levels and native fade choices.");
 	}
 	if (e.minimum_level !== void 0 || e.maximum_level !== void 0) {
 		let n = e.minimum_level ?? t.minimum_level, r = e.maximum_level ?? t.maximum_level;
-		if (n < t.physical_minimum || n > r) throw Error("Minimum must meet the physical minimum and not exceed maximum.");
+		if (n < bt(t) || n > r) throw Error("Minimum must meet the physical minimum or supported virtual minimum and not exceed maximum.");
 	}
 }
-function St(e, t) {
+function Tt(e, t) {
 	let n = {};
-	for (let r of pt) e[r] !== t[r] && Object.assign(n, { [r]: t[r] });
+	for (let r of mt) e[r] !== t[r] && Object.assign(n, { [r]: t[r] });
+	if (e.switching && t.switching) {
+		let r = {};
+		for (let n of pt) e.switching[n] !== t.switching[n] && Object.assign(r, { [n]: t.switching[n] });
+		Object.keys(r).length && (n.switching = r);
+	}
 	return n;
 }
-function Ct(e, t = !1) {
-	return !e || typeof e != "object" || Array.isArray(e) ? Q() : e.kind === "value" ? !mt(e.raw, 0, 255) || t && e.raw === 255 ? Q() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? Q() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || mt(e.code, 0, 255)) ? null : Q();
+function Et(e, t = !1) {
+	return !e || typeof e != "object" || Array.isArray(e) ? Q() : e.kind === "value" ? !ht(e.raw, 0, 255) || t && e.raw === 255 ? Q() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? Q() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || ht(e.code, 0, 255)) ? null : Q();
 }
-var wt = class {
+function Dt(e, t) {
+	if (t.switching_support === void 0 && e.device_type === void 0) return;
+	let n = Et(e.device_type), r = n === null || n === 255 ? null : n === 7;
+	if (n === 255) {
+		let t = -1;
+		for (let n = 0; n < 9; n++) {
+			let i = Et(e[`device_type_${n}`]);
+			if (i === 254) {
+				r = n >= 2 ? !1 : null;
+				break;
+			}
+			if (i === null || i === 255 || i <= t) break;
+			if (i >= 7) {
+				r = i === 7;
+				break;
+			}
+			t = i;
+		}
+	}
+	if (t.switching_support !== r) return Q();
+	if (t.switching) for (let [n, r] of Object.entries({
+		features_raw: "switching_features",
+		switch_status_raw: "switching_status",
+		gear_type_raw: "switching_gear_type",
+		extended_version_raw: "switching_version",
+		upward_on: "switching_upward_on",
+		upward_off: "switching_upward_off",
+		downward_on: "switching_downward_on",
+		downward_off: "switching_downward_off"
+	})) {
+		let i = Et(e[r]);
+		if (n.startsWith("upward_") && i === 0 && (i = null), t.switching[n] !== i) return Q();
+	}
+}
+var Ot = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.values = null, this.result = null, t.kind !== "output") throw Error("Select an individual output.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -1592,13 +1665,13 @@ var wt = class {
 			"system_failure_level",
 			"fade_time_rate",
 			"closing_status"
-		]) i[t] = Ct(e.readings[t], [
+		]) i[t] = Et(e.readings[t], [
 			"actual_level",
 			"physical_minimum",
 			"minimum_level",
 			"maximum_level"
 		].includes(t));
-		let a = i.status !== null && i.closing_status !== null, o = e.settings === null ? null : yt(e.settings);
+		let a = i.status !== null && i.closing_status !== null, o = e.settings === null ? null : St(e.settings);
 		if (o !== null !== a) return Q();
 		if (o) {
 			for (let e of [
@@ -1608,10 +1681,11 @@ var wt = class {
 				"power_on_level",
 				"system_failure_level"
 			]) {
-				let t = e === "power_on_level" || e === "system_failure_level" || mt(i[e], 1, 254) ? i[e] : null;
+				let t = e === "power_on_level" || e === "system_failure_level" || ht(i[e], 1, 254) ? i[e] : null;
 				if (o[e] !== t) return Q();
 			}
 			if (o.fade_raw !== i.fade_time_rate) return Q();
+			Dt(e.readings, o);
 		}
 		if (t === "configure_output") {
 			if (e.outcome !== "configured" || o === null) throw Error("Output settings were not confirmed. Refresh to inspect again.");
@@ -1631,25 +1705,26 @@ var wt = class {
 	async save(e) {
 		if (this.assert(), this.identifying()) throw Error("Stop Blink before changing fixture settings.");
 		let t = structuredClone(e);
-		xt(t, this.values), this.values = null, this.result = null;
+		wt(t, this.values), this.values = null, this.result = null;
 		let n = await this.ui.client.job(this.row.generation, this.row.item.target, "configure_output", {
 			expected_revision: this.initial.inventory.revision,
 			settings: t
 		}), r = this.accepted(n, "configure_output");
-		for (let e of pt) if (t[e] !== void 0 && r.settings?.[e] !== t[e]) throw Error("Output settings do not match requested values. Refresh to inspect again.");
+		for (let e of mt) if (t[e] !== void 0 && r.settings?.[e] !== t[e]) throw Error("Output settings do not match requested values. Refresh to inspect again.");
+		for (let e of pt) if (t.switching?.[e] !== void 0 && r.settings?.switching?.[e] !== t.switching[e]) throw Error("Relay thresholds do not match requested values. Refresh to inspect again.");
 		return this.values = r.settings, this.result = r, this.ui.notice = "Fixture settings verified in hardware.", structuredClone(r);
 	}
 };
 // src/output-settings-ui.tsx
-function Tt({ row: e, close: t }) {
-	let n = X(), [r] = U(() => new wt(n, e)), [i, a] = U(null), [o, s] = U(null), [c, l] = U(""), [u, d] = U({}), [f, p] = U({});
+function kt({ row: e, close: t }) {
+	let n = X(), [r] = U(() => new Ot(n, e)), [i, a] = U(null), [o, s] = U(null), [c, l] = U(""), [u, d] = U({}), [f, p] = U({}), [m, h] = U({});
 	he(() => () => {
 		r.cancelled = !0;
 	}, [r]);
-	let m = () => {
+	let g = () => {
 		r.cancelled = !0, t();
-	}, h = () => void n.run(async () => {
-		l(""), a(null), s(null), d({}), p({});
+	}, _ = () => void n.run(async () => {
+		l(""), a(null), s(null), d({}), p({}), h({});
 		try {
 			let e = await r.read();
 			s(e), a(e.settings), e.settings || l("Fixture settings are unavailable. Refresh to inspect again.");
@@ -1658,16 +1733,16 @@ function Tt({ row: e, close: t }) {
 		}
 	});
 	W(() => {
-		h();
+		_();
 	}, []);
-	let g = (e, t) => a((n) => n ? {
+	let v = (e, t) => a((n) => n ? {
 		...n,
 		[e]: t
-	} : null), _ = () => {
+	} : null), b = () => {
 		if (!i || !r.values) return;
-		let e = St(r.values, i);
+		let e = Tt(r.values, i);
 		try {
-			xt(e, r.values);
+			wt(e, r.values);
 		} catch (e) {
 			l(e.message);
 			return;
@@ -1675,32 +1750,32 @@ function Tt({ row: e, close: t }) {
 		n.run(async () => {
 			l("");
 			try {
-				await r.save(e), m();
+				await r.save(e), g();
 			} catch (e) {
 				throw r.cancelled || (a(null), s(null), l(e.message)), e;
 			}
 		});
-	}, v = (e, t) => /* @__PURE__ */ Y("label", { children: [t, /* @__PURE__ */ Y("input", {
+	}, x = (e, t) => /* @__PURE__ */ Y("label", { children: [t, /* @__PURE__ */ Y("input", {
 		type: "number",
 		inputMode: "decimal",
 		min: "0",
 		max: "100",
 		step: "0.1",
 		"aria-label": t,
-		value: u[e] ?? (i?.[e] !== null && Number.isFinite(i?.[e]) ? ht(i[e]) : ""),
+		value: u[e] ?? (i?.[e] !== null && Number.isFinite(i?.[e]) ? gt(i[e]) : ""),
 		placeholder: "Unknown",
-		disabled: !bt(e, r.values),
+		disabled: !Ct(e, r.values),
 		onInput: (t) => {
 			let n = t.currentTarget.value;
 			d((t) => ({
 				...t,
 				[e]: n
-			})), g(e, gt(n)), (e === "power_on_level" || e === "system_failure_level") && p((t) => ({
+			})), v(e, _t(n)), (e === "power_on_level" || e === "system_failure_level") && p((t) => ({
 				...t,
 				[e]: "level"
 			}));
 		}
-	})] }), y = (e, t, n) => {
+	})] }), S = (e, t, n) => {
 		let a = i?.[e], o = f[e] ?? (a === null ? "unknown" : a === 0 ? "off" : a === 255 ? "special" : "level");
 		return /* @__PURE__ */ Y("fieldset", { children: [
 			/* @__PURE__ */ Y("legend", { children: t }),
@@ -1710,7 +1785,7 @@ function Tt({ row: e, close: t }) {
 				/* @__PURE__ */ Y("select", {
 					"aria-label": `${t} mode`,
 					value: o,
-					disabled: !bt(e, r.values),
+					disabled: !Ct(e, r.values),
 					onChange: (t) => {
 						let n = t.currentTarget.value;
 						p((t) => ({
@@ -1719,7 +1794,7 @@ function Tt({ row: e, close: t }) {
 						})), d((t) => {
 							let n = { ...t };
 							return delete n[e], n;
-						}), g(e, n === "off" ? 0 : n === "special" ? 255 : 254);
+						}), v(e, n === "off" ? 0 : n === "special" ? 255 : 254);
 					},
 					children: [
 						a === null && /* @__PURE__ */ Y("option", {
@@ -1728,7 +1803,7 @@ function Tt({ row: e, close: t }) {
 						}),
 						/* @__PURE__ */ Y("option", {
 							value: "off",
-							children: "Off"
+							children: i?.switching_support === !0 ? "Virtual level 0" : "Off"
 						}),
 						/* @__PURE__ */ Y("option", {
 							value: "special",
@@ -1736,17 +1811,31 @@ function Tt({ row: e, close: t }) {
 						}),
 						/* @__PURE__ */ Y("option", {
 							value: "level",
-							children: "Set level"
+							children: i?.switching_support === !0 ? "Set virtual level" : "Set level"
 						})
 					]
 				})
 			] }),
-			o === "level" && v(e, `${t} brightness (%)`)
+			o === "level" && x(e, `${t} ${i?.switching_support === !0 ? "virtual level" : "brightness"} (%)`)
 		] });
+	}, C = [
+		"Fixture failure",
+		"Lamp failure",
+		"Lamp on",
+		"Limit error",
+		"Fade running",
+		"Reset state",
+		"Missing short address",
+		"Power failure"
+	], w = i?.switching_support === !0, T = {
+		upward_on: "Upward on threshold",
+		upward_off: "Upward off threshold",
+		downward_on: "Downward on threshold",
+		downward_off: "Downward off threshold"
 	};
 	return /* @__PURE__ */ Y(Z, {
 		title: `Settings · ${e.item.name}`,
-		close: m,
+		close: g,
 		children: [
 			/* @__PURE__ */ Y("p", {
 				class: "hint",
@@ -1774,44 +1863,45 @@ function Tt({ row: e, close: t }) {
 				children: [
 					/* @__PURE__ */ Y("div", {
 						class: "input-timer-grid",
-						children: [v("minimum_level", "Minimum brightness (%)"), v("maximum_level", "Maximum brightness (%)")]
+						children: [x("minimum_level", w ? "Minimum virtual level (%)" : "Minimum brightness (%)"), x("maximum_level", w ? "Maximum virtual level (%)" : "Maximum brightness (%)")]
 					}),
 					/* @__PURE__ */ Y("p", {
 						class: "hint",
 						children: [
 							"Physical minimum: ",
-							i.physical_minimum === null ? "unknown" : `${ht(i.physical_minimum)}%`,
-							". Limits can change a light that is already on. An off light stays off."
+							i.physical_minimum === null ? "unknown" : `${gt(i.physical_minimum)}%`,
+							". ",
+							w ? "These limits control a virtual level. Changing limits can operate the relay contact." : "Limits can change a light that is already on. An off light stays off."
 						]
 					}),
 					/* @__PURE__ */ Y("div", {
 						class: "input-timer-grid",
-						children: [y("power_on_level", "Power on", "Last active level"), y("system_failure_level", "Bus failure", "Keep current level")]
+						children: [S("power_on_level", "Power on", "Last active level"), S("system_failure_level", "Bus failure", "Keep current level")]
 					}),
 					/* @__PURE__ */ Y("div", {
 						class: "input-timer-grid",
 						children: [/* @__PURE__ */ Y("label", { children: ["Fade time", /* @__PURE__ */ Y("select", {
 							"aria-label": "Fade time",
 							value: i.fade_time ?? "",
-							disabled: !bt("fade_time", r.values),
-							onChange: (e) => g("fade_time", Number(e.currentTarget.value)),
+							disabled: !Ct("fade_time", r.values),
+							onChange: (e) => v("fade_time", Number(e.currentTarget.value)),
 							children: [i.fade_time === null && /* @__PURE__ */ Y("option", {
 								value: "",
 								children: "Unknown"
-							}), _t.map((e) => /* @__PURE__ */ Y("option", {
+							}), vt.map((e) => /* @__PURE__ */ Y("option", {
 								value: e.code,
 								children: e.label
 							}))]
 						})] }), /* @__PURE__ */ Y("label", { children: ["Dimming rate", /* @__PURE__ */ Y("select", {
 							"aria-label": "Dimming rate",
 							value: i.fade_rate ?? "",
-							disabled: !bt("fade_rate", r.values),
-							onChange: (e) => g("fade_rate", Number(e.currentTarget.value)),
+							disabled: !Ct("fade_rate", r.values),
+							onChange: (e) => v("fade_rate", Number(e.currentTarget.value)),
 							children: [i.fade_rate === null && /* @__PURE__ */ Y("option", {
 								value: "",
 								disabled: !0,
 								children: i.fade_raw === null ? "Unknown" : "Unknown (reserved code 0)"
-							}), vt.map((e) => /* @__PURE__ */ Y("option", {
+							}), yt.map((e) => /* @__PURE__ */ Y("option", {
 								value: e.code,
 								children: e.label
 							}))]
@@ -1821,6 +1911,65 @@ function Tt({ row: e, close: t }) {
 						class: "hint",
 						children: "Fade durations are nominal. Code 0 uses other supported fade settings and does not guarantee an instant transition. Dimming rate is used by up/down commands."
 					}),
+					w && i.switching && /* @__PURE__ */ Y("fieldset", { children: [
+						/* @__PURE__ */ Y("legend", { children: "Relay thresholds" }),
+						/* @__PURE__ */ Y("p", {
+							class: "hint",
+							children: [i.switching.adjustable_thresholds === !0 ? "Adjustable thresholds" : i.switching.adjustable_thresholds === !1 ? "Fixed thresholds" : "Threshold support unknown", ". Native virtual levels control when the contact turns on or off. Disabled thresholds do not act."]
+						}),
+						/* @__PURE__ */ Y("div", {
+							class: "input-timer-grid switching-threshold-grid",
+							children: pt.map((e) => {
+								let t = i?.switching?.[e], n = t === 255, o = +!!e.startsWith("upward_"), s = T[e], c = (t) => a((n) => n?.switching ? {
+									...n,
+									switching: {
+										...n.switching,
+										[e]: t
+									}
+								} : n);
+								return /* @__PURE__ */ Y("fieldset", { children: [
+									/* @__PURE__ */ Y("legend", { children: s }),
+									/* @__PURE__ */ Y("label", { children: ["Native level", /* @__PURE__ */ Y("input", {
+										type: "number",
+										inputMode: "numeric",
+										min: o,
+										max: "254",
+										step: "1",
+										"aria-label": s,
+										value: m[e] ?? (t !== null && !n && Number.isFinite(t) ? String(t) : ""),
+										placeholder: n ? "Disabled" : "Unknown",
+										disabled: n || !xt(e, r.values),
+										onInput: (t) => {
+											let n = t.currentTarget.value;
+											h((t) => ({
+												...t,
+												[e]: n
+											}));
+											let r = n.trim() === "" ? NaN : Number(n);
+											c(Number.isInteger(r) && r >= o && r <= 254 ? r : NaN);
+										}
+									})] }),
+									/* @__PURE__ */ Y("label", {
+										class: "check-field",
+										children: [/* @__PURE__ */ Y("input", {
+											type: "checkbox",
+											"aria-label": `Disable ${s.toLowerCase()}`,
+											checked: n,
+											disabled: !xt(e, r.values),
+											onChange: (t) => {
+												let n = t.currentTarget.checked, r = m[e], i = r === void 0 || r.trim() === "" ? o : Number(r);
+												c(n ? 255 : Number.isInteger(i) && i >= o && i <= 254 ? i : o);
+											}
+										}), " Disabled"]
+									})
+								] });
+							})
+						}),
+						i.switching.quality === "partial" && /* @__PURE__ */ Y("p", {
+							class: "hint",
+							children: "Some relay readings are unavailable. Readable supported thresholds remain editable."
+						})
+					] }),
 					i.quality === "partial" && /* @__PURE__ */ Y("p", {
 						class: "hint",
 						children: "Some readings are unavailable. Settings with readable support remain available."
@@ -1829,18 +1978,21 @@ function Tt({ row: e, close: t }) {
 			}),
 			o && /* @__PURE__ */ Y("details", { children: [
 				/* @__PURE__ */ Y("summary", { children: "Fixture diagnostics" }),
-				/* @__PURE__ */ Y("p", { children: ["Actual brightness: ", o.actual_level === null ? "unknown" : `${ht(o.actual_level)}%`] }),
+				/* @__PURE__ */ Y("p", { children: w ? `Actual contact: ${o.actual_level === 254 ? "On" : o.actual_level === 0 ? "Off" : "unknown"}` : `Actual brightness: ${o.actual_level === null ? "unknown" : `${gt(o.actual_level)}%`}` }),
 				/* @__PURE__ */ Y("p", { children: ["Reported version byte: ", o.version === null ? "unknown" : `0x${o.version.toString(16).toUpperCase().padStart(2, "0")}`] }),
-				/* @__PURE__ */ Y("p", { children: ["Active status flags: ", o.status === null ? "unknown" : [
-					"Fixture failure",
-					"Lamp failure",
-					"Lamp on",
-					"Limit error",
-					"Fade running",
-					"Reset state",
-					"Missing short address",
-					"Power failure"
-				].filter((e, t) => o.status & 1 << t).join(", ") || "none"] })
+				/* @__PURE__ */ Y("p", { children: ["Active status flags: ", o.status === null ? "unknown" : C.filter((e, t) => o.status & 1 << t).join(", ") || "none"] }),
+				w && i?.switching && /* @__PURE__ */ Y(y, { children: [/* @__PURE__ */ Y("p", { children: [
+					"Relay feature byte: ",
+					i.switching.features_raw ?? "unknown",
+					" · type byte: ",
+					i.switching.gear_type_raw ?? "unknown",
+					" · extended version: ",
+					i.switching.extended_version_raw ?? "unknown"
+				] }), /* @__PURE__ */ Y("p", { children: [
+					"Raw switching status: ",
+					i.switching.switch_status_raw ?? "unknown",
+					" (threshold diagnostics; not contact position)"
+				] })] })
 			] }),
 			r.identifying() && /* @__PURE__ */ Y("p", {
 				class: "hint",
@@ -1850,18 +2002,18 @@ function Tt({ row: e, close: t }) {
 				class: "dialog-actions",
 				children: [
 					/* @__PURE__ */ Y("button", {
-						onClick: m,
+						onClick: g,
 						children: "Cancel"
 					}),
 					/* @__PURE__ */ Y("button", {
 						disabled: !!n.busy,
-						onClick: h,
+						onClick: _,
 						children: "Refresh settings"
 					}),
 					/* @__PURE__ */ Y("button", {
 						class: "primary",
 						disabled: !!n.busy || !i || r.identifying(),
-						onClick: _,
+						onClick: b,
 						children: "Save settings"
 					})
 				]
@@ -1870,14 +2022,14 @@ function Tt({ row: e, close: t }) {
 	});
 }
 // src/feedback.ts
-var Et = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function Dt(e) {
+var At = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function jt(e) {
 	let t = () => {
 		throw Error("Feedback evidence is incomplete or invalid. Refresh to inspect again.");
 	};
 	if (!e || typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality)) return t();
 	let { features: n, capability: r, supported: i, active: a } = e;
-	if (n !== null && (!Array.isArray(n) || n.length > 65 || n.some((e, t) => !Number.isInteger(e) || typeof e != "number" || e < 32 || e > 96 || t > 0 && n[t - 1] >= e)) || r !== null && !Et(r) || i !== null && typeof i != "boolean" || a !== null && typeof a != "boolean") return t();
+	if (n !== null && (!Array.isArray(n) || n.length > 65 || n.some((e, t) => !Number.isInteger(e) || typeof e != "number" || e < 32 || e > 96 || t > 0 && n[t - 1] >= e)) || r !== null && !At(r) || i !== null && typeof i != "boolean" || a !== null && typeof a != "boolean") return t();
 	let o = null, s = "partial";
 	if (n === null) {
 		if (r !== null || a !== null) return t();
@@ -1891,10 +2043,10 @@ function Dt(e) {
 	else if (a !== null) return t();
 	return i !== o || e.quality !== s ? t() : structuredClone(e);
 }
-function Ot(e) {
+function Mt(e) {
 	return !!e && e.quality === "complete" && e.supported === !0 && e.features?.includes(32) && typeof e.capability == "number" && !!(e.capability & 9) && typeof e.active == "boolean";
 }
-var kt = class {
+var Nt = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.values = null, t.kind !== "input" && t.kind !== "instance") throw Error("Select an input module or instance.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -1908,11 +2060,11 @@ var kt = class {
 		this.assert();
 		let n = this.row, r = n.kind === "input" ? n.item.short_address : n.parent?.short_address, i = n.kind === "instance" ? n.item.number : null;
 		if (e.operation !== t || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== this.initial.inventory.revision || e.bus !== n.bus.bus || e.address !== r || e.instance !== i || e.configuration_changed !== !1 || n.kind === "input" && e.reported_type !== null || n.kind === "instance" && e.feedback !== null && e.reported_type !== n.item.instance_type) throw Error("Feedback result changed. Refresh to inspect again.");
-		let a = e.feedback === null ? null : Dt(e.feedback);
+		let a = e.feedback === null ? null : jt(e.feedback);
 		if (t === "set_input_feedback") {
-			if (e.outcome !== "set" || !Ot(a)) throw Error("Feedback was not confirmed. Refresh to inspect again.");
+			if (e.outcome !== "set" || !Mt(a)) throw Error("Feedback was not confirmed. Refresh to inspect again.");
 		} else if (e.outcome === "current") {
-			if (!Ot(a)) throw Error("Current feedback evidence is incomplete.");
+			if (!Mt(a)) throw Error("Current feedback evidence is incomplete.");
 		} else if (e.outcome === "unsupported") {
 			if (!a || a.quality !== "complete" || a.supported !== !1) throw Error("Unsupported feedback evidence is incomplete.");
 		} else if (e.outcome === "unavailable") {
@@ -1926,7 +2078,7 @@ var kt = class {
 		return this.values = t, structuredClone(t);
 	}
 	async set(e) {
-		if (this.assert(), typeof e != "boolean" || !Ot(this.values)) throw Error("Complete supported feedback evidence is required. Refresh first.");
+		if (this.assert(), typeof e != "boolean" || !Mt(this.values)) throw Error("Complete supported feedback evidence is required. Refresh first.");
 		this.values = null;
 		let t = await this.ui.client.job(this.row.generation, this.row.item.target, "set_input_feedback", {
 			expected_revision: this.initial.inventory.revision,
@@ -1937,8 +2089,8 @@ var kt = class {
 	}
 };
 // src/feedback-ui.tsx
-function At({ row: e, close: t }) {
-	let n = X(), [r] = U(() => new kt(n, e)), [i, a] = U(null), [o, s] = U(!1), [c, l] = U("");
+function Pt({ row: e, close: t }) {
+	let n = X(), [r] = U(() => new Nt(n, e)), [i, a] = U(null), [o, s] = U(!1), [c, l] = U("");
 	he(() => () => {
 		r.cancelled = !0;
 	}, [r]);
@@ -1989,7 +2141,7 @@ function At({ row: e, close: t }) {
 				role: "status",
 				children: "Reading feedback…"
 			}),
-			o && (Ot(i) ? /* @__PURE__ */ Y("div", {
+			o && (Mt(i) ? /* @__PURE__ */ Y("div", {
 				class: "toolbar",
 				children: [
 					/* @__PURE__ */ Y("span", { children: [
@@ -2023,7 +2175,7 @@ function At({ row: e, close: t }) {
 	});
 }
 // src/restoration.ts
-var jt = class {
+var Ft = class {
 	constructor(e, t) {
 		if (this.candidates = /* @__PURE__ */ new Set(), this.cancelled = !1, t.kind !== "output" && t.kind !== "input") throw Error("Select a saved fixture or input module.");
 		this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.original = structuredClone(t), this.space = t.kind === "output" ? "outputs" : "inputs", this.revision = this.initial.inventory.revision, this.address = t.item.short_address, this.generation = t.generation;
@@ -2075,7 +2227,7 @@ var jt = class {
 			let t = this.ui.currentRows.find((t) => t.key === e.key);
 			if (!this.candidates.has(e.key) || !t || t.kind !== this.original.kind || t.bus.bus !== this.original.bus.bus || t.item.target !== e.item.target || t.generation !== e.generation) throw Error("Identified candidate changed. Review it again.");
 		}
-		return new Mt(this, e);
+		return new It(this, e);
 	}
 	async refresh() {
 		try {
@@ -2089,7 +2241,7 @@ var jt = class {
 			this.ui.notice = `Address restored at ${this.address}. Current-value refresh did not finish; use Refresh addressed or Read current values.`;
 		}
 	}
-}, Mt = class {
+}, It = class {
 	constructor(e, t) {
 		this.scope = e, this.revision = e.revision, this.candidate = t ? structuredClone(t) : void 0;
 	}
@@ -2127,9 +2279,9 @@ var jt = class {
 		if (r && t.currentRows.some((e) => e.key === r.key)) throw Error("Address restored but candidate retirement is not visible. Inspect saved configuration.");
 		await e.refresh();
 	}
-}, Nt = class {
+}, Lt = class {
 	constructor(e, t) {
-		this.scope = new jt(e, t);
+		this.scope = new Ft(e, t);
 	}
 	async run() {
 		let e = this.scope, t = e.ui, n = e.original;
@@ -2151,7 +2303,7 @@ var jt = class {
 	}
 };
 // src/restoration-ui.tsx
-function Pt({ scope: e, review: t, choose: n, close: r }) {
+function Rt({ scope: e, review: t, choose: n, close: r }) {
 	let i = X(), a = e.original, o = i.snapshot.identification, s = !!t?.candidate && o?.target === t.candidate.item.target && [
 		"starting",
 		"blinking",
@@ -2274,7 +2426,7 @@ function Pt({ scope: e, review: t, choose: n, close: r }) {
 	})] });
 }
 // src/devices.tsx
-function Ft({ row: e, close: t }) {
+function zt({ row: e, close: t }) {
 	let n = X(), r = n.physical(e.key), i = ke(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
 		"ColorRed",
 		"ColorGreen",
@@ -2400,7 +2552,7 @@ function Ft({ row: e, close: t }) {
 		]
 	});
 }
-function It({ row: e, close: t }) {
+function Bt({ row: e, close: t }) {
 	let n = X(), r = n.physical(e.key);
 	return /* @__PURE__ */ Y(Z, {
 		title: `Groups · ${r.item.name}`,
@@ -2430,7 +2582,7 @@ function It({ row: e, close: t }) {
 		})]
 	});
 }
-function Lt({ row: e, recover: t, select: n }) {
+function Vt({ row: e, recover: t, select: n }) {
 	let r = X(), i = r.snapshot, a = ke(i, e), [o, s] = U(null);
 	he(() => () => {
 		o && (o.scope.cancelled = !0);
@@ -2570,7 +2722,7 @@ function Lt({ row: e, recover: t, select: n }) {
 							class: "danger",
 							disabled: !E || !!r.busy,
 							onClick: () => {
-								r.cancelled = !1, g(!1), s(new Nt(r, e));
+								r.cancelled = !1, g(!1), s(new Lt(r, e));
 							},
 							children: "Clear short address"
 						}),
@@ -2588,11 +2740,11 @@ function Lt({ row: e, recover: t, select: n }) {
 				row: e,
 				close: () => u(!1)
 			}),
-			d && /* @__PURE__ */ Y(Tt, {
+			d && /* @__PURE__ */ Y(kt, {
 				row: e,
 				close: () => f(!1)
 			}),
-			p && /* @__PURE__ */ Y(At, {
+			p && /* @__PURE__ */ Y(Pt, {
 				row: e,
 				close: () => m(!1)
 			}),
@@ -2636,11 +2788,11 @@ function Lt({ row: e, recover: t, select: n }) {
 					children: "Use this fixture"
 				})
 			}),
-			_ && /* @__PURE__ */ Y(Ft, {
+			_ && /* @__PURE__ */ Y(zt, {
 				row: e,
 				close: () => v(!1)
 			}),
-			b && /* @__PURE__ */ Y(It, {
+			b && /* @__PURE__ */ Y(Bt, {
 				row: e,
 				close: () => x(!1)
 			}),
@@ -2673,13 +2825,13 @@ function Lt({ row: e, recover: t, select: n }) {
 		]
 	});
 }
-function Rt({ bus: e }) {
+function Ht({ bus: e }) {
 	let t = X(), [n, r] = U(""), [i, a] = U(null), [o, s] = U(null);
 	W(() => () => {
 		i && (i.cancelled = !0);
 	}, [i]);
 	let c = (e) => {
-		t.cancelled = !1, s(null), r(""), a(new jt(t, e));
+		t.cancelled = !1, s(null), r(""), a(new Ft(t, e));
 	}, l = (e) => i?.candidates.has(e.key) ? () => {
 		try {
 			s(i.review(e));
@@ -2709,7 +2861,7 @@ function Rt({ bus: e }) {
 			]
 		}),
 		/* @__PURE__ */ Y(Be, {}),
-		i && /* @__PURE__ */ Y(Pt, {
+		i && /* @__PURE__ */ Y(Rt, {
 			scope: i,
 			review: o,
 			choose: s,
@@ -2771,7 +2923,7 @@ function Rt({ bus: e }) {
 						/* @__PURE__ */ Y("span", {})
 					]
 				}),
-				f.map((e) => /* @__PURE__ */ Y(Lt, {
+				f.map((e) => /* @__PURE__ */ Y(Vt, {
 					row: e,
 					recover: c,
 					select: l(e)
@@ -2803,7 +2955,7 @@ function Rt({ bus: e }) {
 						/* @__PURE__ */ Y("span", {})
 					]
 				}),
-				p.map((e) => /* @__PURE__ */ Y(Lt, {
+				p.map((e) => /* @__PURE__ */ Y(Vt, {
 					row: e,
 					recover: c,
 					select: l(e)
@@ -2839,17 +2991,17 @@ function Rt({ bus: e }) {
 // src/group-output.ts
 var $ = () => {
 	throw Error("Group evidence is incomplete or inconsistent. Refresh to inspect again.");
-}, zt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function Bt(e, t = !1) {
-	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? $() : e.kind === "value" ? !zt(e.raw) || t && e.raw === 255 ? $() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? $() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || zt(e.code)) ? null : $();
+}, Ut = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function Wt(e, t = !1) {
+	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? $() : e.kind === "value" ? !Ut(e.raw) || t && e.raw === 255 ? $() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? $() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || Ut(e.code)) ? null : $();
 }
-function Vt(e) {
+function Gt(e) {
 	if (!e || typeof e != "object" || Array.isArray(e) || Object.keys(e).some((e) => e !== "power" && e !== "brightness") || !Object.keys(e).length) throw Error("Specify group power or a level.");
 	if ("power" in e && typeof e.power != "boolean" || "brightness" in e && (typeof e.brightness != "number" || !Number.isFinite(e.brightness) || e.brightness < 0 || e.brightness > 1)) throw Error("Group power must be boolean and level must be between 0 and 1.");
 	if (e.power === !1 && typeof e.brightness == "number" && e.brightness > 0 || e.power === !0 && e.brightness === 0) throw Error("Group power and level contradict each other.");
 	return structuredClone(e);
 }
-var Ht = class {
+var Kt = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.result = null, t.kind !== "group") throw Error("Select a saved hardware group.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -2877,7 +3029,7 @@ var Ht = class {
 			let e = i.find((e) => e.short_address === t.address);
 			if (!e || a.has(t.address) || t.target !== e.target || t.target_generation !== `${r.inventory.inventory_epoch}.${e.binding_revision}` || t.expected_member !== (n.item.members?.includes(t.address) ?? !1)) return $();
 			a.add(t.address);
-			let f = Bt(t.membership_low), p = Bt(t.membership_high), m = Bt(t.actual_level, !0), h = Bt(t.status);
+			let f = Wt(t.membership_low), p = Wt(t.membership_high), m = Wt(t.actual_level, !0), h = Wt(t.status);
 			c || (c = f !== null || p !== null || m !== null || h !== null || t.actual_level?.kind === "mask");
 			let g = f === null || p === null ? null : !!((f | p << 8) & 1 << n.item.group_address);
 			if (t.member !== g) return $();
@@ -2906,7 +3058,7 @@ var Ht = class {
 	}
 	async set(e) {
 		this.assert();
-		let t = Vt(e);
+		let t = Gt(e);
 		this.result = null;
 		let n = await this.ui.client.job(this.row.generation, this.row.item.target, "set_group_output", {
 			expected_revision: this.initial.inventory.revision,
@@ -2916,14 +3068,14 @@ var Ht = class {
 	}
 };
 // src/group-output-ui.tsx
-function Ut({ row: e }) {
+function qt({ row: e }) {
 	let t = X(), n = ge(null), [r, i] = U(null), [a, o] = U(50);
 	he(() => () => {
 		n.current && (n.current.cancelled = !0);
 	}, []);
 	let s = (r) => void t.run(async () => {
 		n.current && (n.current.cancelled = !0), t.cancelled = !1;
-		let a = new Ht(t, e);
+		let a = new Kt(t, e);
 		n.current = a, i(null);
 		let o = r ? await a.set(r) : await a.read();
 		i(o);
@@ -3006,7 +3158,7 @@ function Ut({ row: e }) {
 	});
 }
 // src/groups.tsx
-function Wt({ bus: e }) {
+function Jt({ bus: e }) {
 	let t = X(), [n, r] = U(0), [i, a] = U(""), [o, s] = U("add"), [c, l] = U(null), [u, d] = U(null), [f, p] = U(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = q(t.snapshot, e) && t.client.views.ready;
 	function v() {
 		let e = h.map((e) => ({
@@ -3110,7 +3262,7 @@ function Wt({ bus: e }) {
 						]
 					})]
 				}),
-				/* @__PURE__ */ Y(Ut, { row: g }, g.key + ":" + g.generation),
+				/* @__PURE__ */ Y(qt, { row: g }, g.key + ":" + g.generation),
 				/* @__PURE__ */ Y("div", {
 					class: "toolbar pattern",
 					children: [
@@ -3262,24 +3414,24 @@ function Wt({ bus: e }) {
 	})] });
 }
 // src/scene-settings.ts
-var Gt = () => ({
+var Yt = () => ({
 	level: { kind: "mask" },
 	color: { kind: "mask" }
-}), Kt = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
-function qt(e) {
-	if (!e || !e.level || !e.color || e.level.kind !== "mask" && !(e.level.kind === "value" && Kt(e.level.value, 0, 254))) return !1;
-	let t = e.color, n = (e, t, n) => e === null || Kt(e, t, n);
+}), Xt = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
+function Zt(e) {
+	if (!e || !e.level || !e.color || e.level.kind !== "mask" && !(e.level.kind === "value" && Xt(e.level.value, 0, 254))) return !1;
+	let t = e.color, n = (e, t, n) => e === null || Xt(e, t, n);
 	return t.kind === "mask" || t.kind === "temperature" && n(t.value, 1, 65534) || t.kind === "xy" && n(t.x, 0, 65534) && n(t.y, 0, 65534) || t.kind === "rgbwaf" && Array.isArray(t.channels) && t.channels.length === 6 && t.channels.every((e) => n(e, 0, 254)) && n(t.control, 0, 191);
 }
-function Jt(e) {
+function Qt(e) {
 	if (!e) return "Unmanaged";
 	let t = e.level.kind === "mask" ? "Keep brightness" : e.level.value === 0 ? "Off" : `${+(e.level.value * 100 / 254).toFixed(1)}%`, n = e.color;
 	return n.kind === "mask" ? e.level.kind === "mask" ? "Leave unchanged" : t : `${t} · ${n.kind === "temperature" ? n.value === null ? "Tc MASK" : `${Math.round(1e6 / n.value)} K` : n.kind === "xy" ? "CIE xy" : "RGBWAF"}`;
 }
-var Yt = class {
+var $t = class {
 	constructor(e) {
 		this.fields = {}, this.dirty = !1, this.error = "", this.original = structuredClone(e);
-		let t = e ?? Gt();
+		let t = e ?? Yt();
 		this.action = t.level.kind === "mask" ? t.color.kind === "mask" ? "ignore" : "keep" : t.level.value === 0 ? "off" : "brightness", this.family = t.color.kind;
 	}
 	chooseAction(e) {
@@ -3293,16 +3445,16 @@ var Yt = class {
 	}
 	text(e) {
 		if (e in this.fields) return this.fields[e];
-		let t = this.original ?? Gt(), n = t.color;
+		let t = this.original ?? Yt(), n = t.color;
 		if (e === "brightness") return t.level.kind === "value" ? String(+(t.level.value * 100 / 254).toFixed(3)) : "100";
 		if (e === "temperature") return n.kind === "temperature" && n.value !== null ? String(+(1e6 / n.value).toFixed(3)) : "";
 		if (e === "x" || e === "y") return n.kind === "xy" && n[e] !== null ? String(n[e] / 65536) : "";
 		if (e === "control") return n.kind === "rgbwaf" && n.control !== null ? String(n.control) : "";
-		let r = Xt.indexOf(e);
+		let r = en.indexOf(e);
 		return r >= 0 && n.kind === "rgbwaf" && n.channels[r] !== null ? String(+(n.channels[r] * 100 / 254).toFixed(3)) : "";
 	}
 	setting() {
-		let e = this.original ?? Gt(), t = (e, t, n, r, i) => {
+		let e = this.original ?? Yt(), t = (e, t, n, r, i) => {
 			if (!(e in this.fields)) return i;
 			let a = this.fields[e].trim();
 			if (a === "") return null;
@@ -3310,7 +3462,7 @@ var Yt = class {
 			if (!Number.isFinite(o) || o < t || o > n) throw Error(`Enter ${e} between ${t} and ${n}, or leave it blank for MASK.`);
 			return r(o);
 		};
-		if (this.action === "ignore") return Gt();
+		if (this.action === "ignore") return Yt();
 		let n = { kind: "mask" };
 		if (this.action === "off" && (n = {
 			kind: "value",
@@ -3333,7 +3485,7 @@ var Yt = class {
 			y: t("y", 0, 65534 / 65536, (e) => Math.round(e * 65536), i.kind === "xy" ? i.y : null)
 		}), this.family === "rgbwaf" && (r = {
 			kind: "rgbwaf",
-			channels: Xt.map((e, n) => t(e, 0, 100, (e) => Math.round(e * 254 / 100), i.kind === "rgbwaf" ? i.channels[n] : null)),
+			channels: en.map((e, n) => t(e, 0, 100, (e) => Math.round(e * 254 / 100), i.kind === "rgbwaf" ? i.channels[n] : null)),
 			control: t("control", 128, 191, (e) => {
 				if (!Number.isInteger(e)) throw Error("Control must be a whole native byte.");
 				return e;
@@ -3343,7 +3495,7 @@ var Yt = class {
 			level: n,
 			color: r
 		};
-		if (!qt(a)) throw Error("Scene values are invalid.");
+		if (!Zt(a)) throw Error("Scene values are invalid.");
 		return a;
 	}
 	commit(e) {
@@ -3355,7 +3507,7 @@ var Yt = class {
 			this.pending = void 0;
 		}), this.pending) : Promise.resolve();
 	}
-}, Xt = [
+}, en = [
 	"red",
 	"green",
 	"blue",
@@ -3363,12 +3515,12 @@ var Yt = class {
 	"amber",
 	"free"
 ];
-function Zt(e) {
+function tn(e) {
 	if (!e || e.quality !== "complete" || e.stale) return null;
 	try {
 		let t = (e, t) => {
 			if (e?.kind === "mask" && e.raw === t) return null;
-			if (e?.kind === "value" && Kt(e.raw, 0, t - 1)) return e.raw;
+			if (e?.kind === "value" && Xt(e.raw, 0, t - 1)) return e.raw;
 			throw Error("Unresolved");
 		}, n = t(e.level, 255), r = n === null ? { kind: "mask" } : {
 			kind: "value",
@@ -3391,7 +3543,7 @@ function Zt(e) {
 			else if (n === 128) {
 				if (i = {
 					kind: "rgbwaf",
-					channels: Xt.map((e) => t(o[e], 255)),
+					channels: en.map((e) => t(o[e], 255)),
 					control: t(o.control, 255)
 				}, a = 7, i.control !== null && i.control < 128) return null;
 			} else if (n !== null) return null;
@@ -3400,24 +3552,24 @@ function Zt(e) {
 			level: r,
 			color: i
 		};
-		return Object.keys(o).length === a && qt(s) ? s : null;
+		return Object.keys(o).length === a && Zt(s) ? s : null;
 	} catch {
 		return null;
 	}
 }
 // src/scene-controller.ts
-function Qt(e, t, n) {
+function nn(e, t, n) {
 	if (!e || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== t.inventory.revision || e.bus !== n.bus.bus || e.slot !== n.item.slot || !Array.isArray(e.fixtures)) throw Error("Saved scene view changed. Refresh it.");
 	let r = K(t).filter((e) => e.kind === "output" && e.bus.bus === n.bus.bus), i = /* @__PURE__ */ new Map();
 	for (let t of e.fixtures) {
 		let e = r.find((e) => e.item.target === t.fixture);
-		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !qt(t.saved)) throw Error("Saved scene view is incomplete or changed.");
+		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !Zt(t.saved)) throw Error("Saved scene view is incomplete or changed.");
 		i.set(e.key, structuredClone(t.saved));
 	}
 	if (i.size !== r.length) throw Error("Saved scene view is incomplete.");
 	return i;
 }
-var $t = class {
+var rn = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.slot = n, this.revision = this.initial.inventory.revision;
 		let r = K(this.initial);
@@ -3440,7 +3592,7 @@ var $t = class {
 	async saved() {
 		if (this.assert(!1), !this.scene) return new Map(this.outputs.map((e) => [e.key, null]));
 		let e = await this.ui.client.job(this.scene.generation, this.scene.item.target, "read_scene_settings");
-		return this.assert(!1), Qt(e, this.initial, this.scene);
+		return this.assert(!1), nn(e, this.initial, this.scene);
 	}
 	async inspect(e, t = this.slot, n = !1) {
 		this.fixture(e);
@@ -3476,19 +3628,19 @@ var $t = class {
 		return n;
 	}
 };
-function en(e) {
+function an(e) {
 	return structuredClone(e);
 }
-async function tn(e, t, n) {
+async function on(e, t, n) {
 	for (let r of t) e.fixture(r.row), n(`Saving scene ${e.slot} · ${r.row.item.name}`), await e.mutate(r.row, r.command, r.command === "set_scene_row" ? { setting: r.after } : { reviewed: r.reviewed });
 }
 // src/scenes.tsx
-function nn({ row: e, visible: t, view: n, makeScope: r }) {
+function sn({ row: e, visible: t, view: n, makeScope: r }) {
 	let i = X(), [a, o] = U(null), [s, c] = U(null), [l, u] = U(-1), [d, f] = U(!1), p = n && n.revision === i.snapshot.inventory.revision && n.epoch === i.client.views.epoch && n.rows.has(e.key), m = p && n ? n.rows.get(e.key) : a?.original ?? null, h = a?.error.startsWith("Saved settings are not confirmed");
 	W(() => () => {
 		s && (s.cancelled = !0);
 	}, [s]), W(() => {
-		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new Yt(n.rows.get(e.key))), c(null), u(n.revision));
+		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new $t(n.rows.get(e.key))), c(null), u(n.revision));
 	}, [
 		n,
 		a?.dirty,
@@ -3616,7 +3768,7 @@ function nn({ row: e, visible: t, view: n, makeScope: r }) {
 					}),
 					a.action !== "ignore" && a.family === "temperature" && T("temperature", "Temperature (K)"),
 					a.action !== "ignore" && a.family === "xy" && /* @__PURE__ */ Y(y, { children: [T("x", "x"), T("y", "y")] }),
-					a.action !== "ignore" && a.family === "rgbwaf" && /* @__PURE__ */ Y(y, { children: [Xt.map((e) => T(e, `${e[0].toUpperCase() + e.slice(1)} (%)`)), /* @__PURE__ */ Y("label", {
+					a.action !== "ignore" && a.family === "rgbwaf" && /* @__PURE__ */ Y(y, { children: [en.map((e) => T(e, `${e[0].toUpperCase() + e.slice(1)} (%)`)), /* @__PURE__ */ Y("label", {
 						class: "scene-field",
 						children: ["RGBWAF control", /* @__PURE__ */ Y("select", {
 							"aria-label": `RGBWAF control ${e.item.name}`,
@@ -3672,7 +3824,7 @@ function nn({ row: e, visible: t, view: n, makeScope: r }) {
 				class: "scene-row-foot",
 				children: [/* @__PURE__ */ Y("span", {
 					class: "hint",
-					children: [Jt(m), a.dirty ? " · Unsaved draft" : ""]
+					children: [Qt(m), a.dirty ? " · Unsaved draft" : ""]
 				}), /* @__PURE__ */ Y("button", {
 					class: "text-button",
 					onClick: () => f(!d),
@@ -3705,11 +3857,11 @@ function nn({ row: e, visible: t, view: n, makeScope: r }) {
 		})]
 	});
 }
-function rn({ bus: e }) {
+function cn({ bus: e }) {
 	let t = X(), [n, r] = U(0), [i, a] = U(""), [o, s] = U(""), [c, l] = U(null), [u, d] = U(""), [f, p] = U(0), [m, h] = U(null), [g, _] = U(null), [v, b] = U(1), [x, S] = U("bus"), [C, w] = U(null), [T, E] = U(""), [D, O] = U(null), k = ge(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), N = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), P = N.filter((e) => Oe(i, e.item.name)), ee = q(t.snapshot, e) && t.client.views.ready, F = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
 	function I() {
 		for (let e of k.current) e.cancelled && k.current.delete(e);
-		let r = new $t(t, e.bus, n);
+		let r = new rn(t, e.bus, n);
 		return k.current.add(r), r;
 	}
 	W(() => () => {
@@ -3755,7 +3907,7 @@ function rn({ bus: e }) {
 		t.assert(), h({
 			title: e,
 			scope: t,
-			changes: en(n),
+			changes: an(n),
 			unresolved: [...r]
 		});
 	}
@@ -3763,7 +3915,7 @@ function rn({ bus: e }) {
 		t.cancelled = !1, z("Clear selected fixtures", I(), P.map((e) => ({
 			row: e,
 			before: R(e),
-			after: Gt(),
+			after: Yt(),
 			command: "set_scene_row"
 		})));
 	}
@@ -3774,7 +3926,7 @@ function rn({ bus: e }) {
 			for (let a of P) {
 				e.fixture(a), t.progress = `Capturing current output · ${a.item.name}`, t.touch();
 				let o = await e.inspect(a, n, !0);
-				qt(o.candidate) ? r.push({
+				Zt(o.candidate) ? r.push({
 					row: a,
 					before: R(a),
 					after: o.candidate,
@@ -3788,7 +3940,7 @@ function rn({ bus: e }) {
 	}
 	async function ne() {
 		t.cancelled = !1;
-		let r = I(), i = new $t(t, e.bus, v);
+		let r = I(), i = new rn(t, e.bus, v);
 		k.current.add(i);
 		let a = !1;
 		try {
@@ -3809,7 +3961,7 @@ function rn({ bus: e }) {
 		if (e) {
 			h(null), t.cancelled = !1;
 			try {
-				await tn(e.scope, e.changes, (e) => {
+				await on(e.scope, e.changes, (e) => {
 					t.progress = e, t.touch();
 				}), t.notice = "Reviewed scene settings saved and verified.";
 			} finally {
@@ -3829,7 +3981,7 @@ function rn({ bus: e }) {
 					row: e,
 					slot: a,
 					report: n,
-					candidate: Zt(n.stored)
+					candidate: tn(n.stored)
 				});
 			}
 			t.notice = "Native scene reads complete. Review differences and unresolved fixtures.";
@@ -4056,7 +4208,7 @@ function rn({ bus: e }) {
 				}),
 				/* @__PURE__ */ Y("div", {
 					class: "scene-fixtures",
-					children: N.map((e) => /* @__PURE__ */ Y(nn, {
+					children: N.map((e) => /* @__PURE__ */ Y(sn, {
 						row: e,
 						visible: Oe(i, e.item.name),
 						view: c,
@@ -4085,9 +4237,9 @@ function rn({ bus: e }) {
 							children: [
 								/* @__PURE__ */ Y("h3", { children: e.row.item.name }),
 								/* @__PURE__ */ Y("p", { children: [
-									Jt(e.before),
+									Qt(e.before),
 									" → ",
-									Jt(e.after)
+									Qt(e.after)
 								] }),
 								/* @__PURE__ */ Y("details", { children: [/* @__PURE__ */ Y("summary", { children: "Native before / after" }), /* @__PURE__ */ Y("pre", { children: JSON.stringify({
 									before: e.before,
@@ -4147,7 +4299,7 @@ function rn({ bus: e }) {
 								}[e.report.comparison] ?? "Unresolved" : "Unresolved", e.candidate ? "" : " · native data cannot be adopted"] }),
 								/* @__PURE__ */ Y("p", {
 									class: "hint",
-									children: ["Saved: ", Jt(e.report.saved)]
+									children: ["Saved: ", Qt(e.report.saved)]
 								}),
 								/* @__PURE__ */ Y("details", { children: [/* @__PURE__ */ Y("summary", { children: "Native evidence" }), /* @__PURE__ */ Y("pre", { children: JSON.stringify(e.report.stored, null, 2) })] })
 							]
@@ -4221,7 +4373,7 @@ function rn({ bus: e }) {
 	] });
 }
 // src/reassignment.ts
-var an = class {
+var ln = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.revision = this.initial.inventory.revision, this.spaces = n === "both" ? ["outputs", "inputs"] : [n];
 	}
@@ -4269,7 +4421,7 @@ var an = class {
 	}
 };
 // src/reassignment-ui.tsx
-function on({ bus: e, settings: t }) {
+function un({ bus: e, settings: t }) {
 	let n = X(), [r, i] = U(!1), [a, o] = U(!1), [s, c] = U("outputs"), [l, u] = U(null), d = ge(null);
 	W(() => () => {
 		d.current && (d.current.cancelled = !0);
@@ -4336,7 +4488,7 @@ function on({ bus: e, settings: t }) {
 						class: "primary",
 						disabled: !f || !!n.busy,
 						onClick: () => {
-							u(new an(n, e.bus, s)), o(!1);
+							u(new ln(n, e.bus, s)), o(!1);
 						},
 						children: "Review reassignment"
 					})]
@@ -4410,7 +4562,7 @@ function on({ bus: e, settings: t }) {
 	] });
 }
 // src/app.tsx
-function sn({ number: e, bus: t, close: n }) {
+function dn({ number: e, bus: t, close: n }) {
 	let r = X(), [i, a] = U(t?.name ?? `Bus${e + 1}`), [o, s] = U(t?.enabled ?? !0);
 	return /* @__PURE__ */ Y(Z, {
 		title: `Bus ${e + 1} settings`,
@@ -4459,7 +4611,7 @@ function sn({ number: e, bus: t, close: n }) {
 		})
 	});
 }
-function cn() {
+function fn() {
 	let e = X(), [t, n] = U(null), r = e.snapshot;
 	return /* @__PURE__ */ Y(y, { children: [
 		/* @__PURE__ */ Y("header", {
@@ -4549,14 +4701,14 @@ function cn() {
 				}, t);
 			})
 		}),
-		t !== null && /* @__PURE__ */ Y(sn, {
+		t !== null && /* @__PURE__ */ Y(dn, {
 			number: t,
 			bus: r.inventory.buses.find((e) => e.bus === t),
 			close: () => n(null)
 		})
 	] });
 }
-function ln({ number: e, tab: t }) {
+function pn({ number: e, tab: t }) {
 	let n = X(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = U(!1);
 	return /* @__PURE__ */ Y(y, { children: [
 		/* @__PURE__ */ Y("header", {
@@ -4575,7 +4727,7 @@ function ln({ number: e, tab: t }) {
 					class: "muted",
 					children: "Discover, identify and name the devices on this bus."
 				})
-			] }), /* @__PURE__ */ Y(y, { children: r ? /* @__PURE__ */ Y(on, {
+			] }), /* @__PURE__ */ Y(y, { children: r ? /* @__PURE__ */ Y(un, {
 				bus: r,
 				settings: () => a(!0)
 			}, `${e}-${t}`) : /* @__PURE__ */ Y("button", {
@@ -4595,7 +4747,7 @@ function ln({ number: e, tab: t }) {
 				href: `/buses/${e}${n}`,
 				children: r
 			}))
-		}), t === "/groups" ? /* @__PURE__ */ Y(Wt, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ Y(rn, { bus: r }, `scenes-${e}`) : /* @__PURE__ */ Y(Rt, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ Y("div", {
+		}), t === "/groups" ? /* @__PURE__ */ Y(Jt, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ Y(cn, { bus: r }, `scenes-${e}`) : /* @__PURE__ */ Y(Ht, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ Y("div", {
 			class: "card",
 			children: [
 				/* @__PURE__ */ Y("h2", { children: "Set up this bus" }),
@@ -4610,14 +4762,14 @@ function ln({ number: e, tab: t }) {
 				})
 			]
 		}),
-		i && /* @__PURE__ */ Y(sn, {
+		i && /* @__PURE__ */ Y(dn, {
 			number: e,
 			bus: r,
 			close: () => a(!1)
 		})
 	] });
 }
-function un() {
+function mn() {
 	let e = X().snapshot;
 	function t() {
 		let t = URL.createObjectURL(new Blob([JSON.stringify(e.inventory, null, 2)], { type: "application/json" })), n = document.createElement("a");
@@ -4670,7 +4822,7 @@ function un() {
 		})
 	] });
 }
-function dn() {
+function hn() {
 	let e = X(), t = e.snapshot;
 	return /* @__PURE__ */ Y(y, { children: [
 		/* @__PURE__ */ Y("header", {
@@ -4759,7 +4911,7 @@ function dn() {
 		})
 	] });
 }
-function fn() {
+function gn() {
 	let [e] = U(() => new Le()), [, t] = U(0), [n, r] = U(location.pathname), [i, a] = U(!1);
 	W(() => {
 		let n = e.client.subscribe(() => t((e) => e + 1));
@@ -4881,10 +5033,10 @@ function fn() {
 							role: "status",
 							children: e.notice
 						}),
-						o ? s ? /* @__PURE__ */ Y(ln, {
+						o ? s ? /* @__PURE__ */ Y(pn, {
 							number: Number(s[1]),
 							tab: s[2] ?? ""
-						}, s[1]) : n === "/settings" ? /* @__PURE__ */ Y(un, {}) : n === "/diagnostics" ? /* @__PURE__ */ Y(dn, {}) : n === "/" ? /* @__PURE__ */ Y(cn, {}) : /* @__PURE__ */ Y("div", {
+						}, s[1]) : n === "/settings" ? /* @__PURE__ */ Y(mn, {}) : n === "/diagnostics" ? /* @__PURE__ */ Y(hn, {}) : n === "/" ? /* @__PURE__ */ Y(fn, {}) : /* @__PURE__ */ Y("div", {
 							class: "card",
 							children: [/* @__PURE__ */ Y("h1", { children: "Page not found" }), /* @__PURE__ */ Y(He, {
 								href: "/",
@@ -4910,4 +5062,4 @@ function fn() {
 		})
 	});
 }
-L(/* @__PURE__ */ Y(fn, {}), document.getElementById("app"));
+L(/* @__PURE__ */ Y(gn, {}), document.getElementById("app"));
