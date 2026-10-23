@@ -110,8 +110,8 @@ including one whose caller disappeared. Ordinary individual readbacks repopulate
 that cache. Accepted group commands also update the group State cache, preserving
 the original observation and physical stamp. The richer report is distinct from
 the aggregate scalar State stream. Other buses, input measurements, queued button activity and configuration
-remain intact. Base commands can activate already staged DT8 colour; no explicit
-colour/scene/settings programming is part of this slice.
+remain intact. Base commands can activate already staged DT8 color. Explicit
+color programming uses the [group color commands](group-color.md).
 
 Local checks use independent literal peers, PTY/model, MQTT, authenticated jobs,
 client guards and actual phone/desktop browsers. Physical HAT/fixture validation

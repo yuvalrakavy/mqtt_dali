@@ -557,7 +557,6 @@ fn group_color_consumer_preserves_identity_and_retires_old_contract_values() {
         .unwrap()
         .remove("color_representation");
     let from = to.clone();
-    let mut to = to;
     to["binding_revision"] = json!(3);
     to.as_object_mut().unwrap().remove("color_representation");
     inventory["identity_ledger"]["batches"]

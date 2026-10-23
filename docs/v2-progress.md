@@ -5,15 +5,67 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
-Current work: DT8 hardware group color. Implementation and focused checks pass:
-82 affected native/consumer tests, 93 frontend tests and real phone/desktop
-Chrome against the TCP HAT emulator. Final mutation/source review and broad
-acceptance remain. The slice reuses native group operations and individual DT8
-readback, adds optional group representation selection and mixed color State,
-and extends the protected Groups screen. Split-address RGB/RGBW composition
+Most recent completed capability: DT8 hardware group color, accepted locally.
+The slice reuses native group operations and individual DT8 readback, adds optional
+group representation selection and mixed color State, and extends the protected
+Groups screen. Remaining bridge capabilities are listed below and in the support
+matrix. Split-address RGB/RGBW composition
 belongs to Home equipment/Store integration under the approved architecture §9;
 the bridge already supplies its individual and group brightness bindings.
 Implementation spec: `superpowers/specs/2026-10-23-dali-v2-group-color.md`.
+
+## P4 — DT8 hardware group color
+
+Implementation `b84f68c` and confirmation fix `80f30df` add optional saved-group
+temperature/xy/RGBWAF selection with independent consumer/identity continuity,
+strict selected-family Desired and read/set commands, all-actual-known-member
+preflight, native group staging/ACTIVATE and fresh individual readback. Base and
+color availability are independent. Uniform, mixed and unknown scalars have
+explicit values/mixed flags; common capabilities and differing temperature limits
+come from hardware evidence. Group command reports remain membership/base
+envelopes; State and typed native samples carry color. Existing owner, deadline,
+stamp, generation and revision acceptance remain. No worker, poller or retry added.
+
+Groups now has a compact Color card, common-format selector and value dialog.
+Explicit inspection works before selection. Drafts survive same-generation SSE
+refresh; generation changes retire them. Partial edits preserve untouched values,
+unsupported members disable editing and Blink blocks same-bus color changes.
+Guides: [group color](group-color.md), [group operations](group-output.md) and
+[MQTT](mqtt-outputs.md#hardware-groups).
+
+Final acceptance: **801/801 native tests** across eleven binaries, with the opt-in
+browser run separately; **93/93 frontend tests**; complete linked real Chrome
+phone/desktop workflow144.055s and scoped group-color workflow18.223s. Scoped
+native cases cover both HAT terminal policies, mixed/stale/null values, actual-vs-
+saved membership, missing/unsupported members, xy/RGBWAF masks, outsiders, preserved
+brightness and independently clamped temperatures. Six deliberate defects
+returned named REDs in an isolated checkout, including the shared RGBWAF mode
+confirmation predicate. That bounded probe found and fixed a mismatch between
+typed confirmation and unsupported-mode State, covering both individual and group
+writes. The new regression and 85 affected color/Blink tests pass.
+
+Strict scoped Clippy, Pi library/four binaries, normal wait lint, formatting,
+both embedded asset reproductions, affected control plans and whitespace pass.
+Clippy's only finding was a redundant test-local binding; its one-line cleanup
+was self-reviewed and all five affected independent-consumer tests passed again.
+Production source at80f30df received fresh GPT-6 Astra/high APPROVE after mutation
+verification. Same-family/source-only review limits remain; root ran runtime checks.
+
+The private demo was rebuilt/restarted at its existing endpoints. Phone/desktop
+inspection of the new Color card preserves all five user fixtures, exact saved
+bridge bytes, levels, active colors/modes, addresses, groups, scenes, settings and
+fault flags. Both demo processes and the read-only progress dashboard remain live.
+No home broker, physical HAT, Store data, main branch, remote publication or release
+was changed. Physical validation and the remaining P4/P8/P9 families remain open.
+
+Evidence: `/tmp/dali-group-color-final-{native,browser,clippy,pi,waits}.log`,
+`/tmp/dali-group-color-final-{execution,remaining}.log`,
+`/tmp/dali-group-color-mutation-{color,output,scalar,probe}.log`,
+`/tmp/dali-group-color-confirmation-control.log`,
+`/tmp/dali-group-color-clippy-test-fix.log`,
+`/tmp/dali-group-color-plans-final.log`, `/tmp/dali-group-color-web-test.log`,
+`/tmp/dali-browser-9cdcfd1468365a0941dde4f93f1a784b` (group color) and
+`/tmp/dali-browser-0d34ff6e15183a4bb0864e6831b35f63` (complete workflows).
 
 ## P4 — fixture status and simulated lamp failures
 
@@ -3081,7 +3133,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Core, persistent TCP connector/listener, configurable web UI and linked browser tabs implemented and verified locally | P4 extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual DT8 control and durable representation selection implemented; DT8 group color in final acceptance | Retained DT7 metadata/presentation, specialist settings/diagnostics, feedback parameters/source routing, remaining color modes/settings, identity/memory, data Parts 251–253 and DT1 emergency |
+| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual and group DT8 control with durable representation selection implemented | Retained DT7 metadata/presentation, specialist settings/diagnostics, feedback parameters/source routing, remaining color modes/settings, identity/memory, data Parts 251–253 and DT1 emergency |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
