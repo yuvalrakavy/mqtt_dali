@@ -1,4 +1,5 @@
 import { fixtureStatusFlow } from './fixture-status.mjs';
+import { deviceInfoFlow } from './device-info.mjs';
 import { inputSettingsFlow } from './input-settings.mjs';
 import { outputSettingsFlow } from './output-settings.mjs';
 import { switchingSettingsFlow } from './switching-settings.mjs';
@@ -40,7 +41,10 @@ try {
   assert.equal((await context.request.get(`${origin}/assets/app.js`,{maxRedirects:0})).status(),303);
   await page.getByLabel('Password',{exact:true}).fill('incorrect');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.getByRole('alert').filter({hasText:'invalid password'}).waitFor();
   await page.getByLabel('Password',{exact:true}).fill('browser-secret');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.getByRole('heading',{name:'BrowserController',exact:true}).waitFor();
-  if(process.env.DALI_BROWSER_FLOW==='group-color'){
+  if(process.env.DALI_BROWSER_FLOW==='memory'){
+    await deviceInfoFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,setup:true});
+    assert.deepEqual(errors,[],'browser reported runtime or CSP errors');console.log(`PASS scoped memory: ${commands.length} real owned commands; screenshots ${artifacts}`);
+  }else if(process.env.DALI_BROWSER_FLOW==='group-color'){
     await groupColorFlow({page,context,origin,artifacts,inventory,control,until,noOverflow,dialogVisible});
     assert.deepEqual(errors,[],'browser reported runtime or CSP errors');console.log(`PASS scoped group color: ${commands.length} real owned commands; screenshots ${artifacts}`);
   }else if(process.env.DALI_BROWSER_FLOW==='switching'){
@@ -85,6 +89,7 @@ try {
   await fixtureStatusFlow({page,context,origin,artifacts,inventory,control,until,noOverflow,dialogVisible,emulatorPage,emulatorCard});
   await inputSettingsFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await outputSettingsFlow({page,context,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
+  await deviceInfoFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await page.getByRole('link',{name:'Groups',exact:true}).click();await page.getByLabel('New group name',{exact:true}).fill('Kitchen');await page.getByRole('button',{name:'Create group',exact:true}).click();await page.getByLabel('Group name pattern',{exact:true}).fill('Kitchen*');await page.getByRole('button',{name:'Preview pattern',exact:true}).click();await dialogVisible();await page.getByRole('button',{name:'Apply reviewed changes',exact:true}).click();await until(async()=>(await control({op:'snapshot'})).buses[0].outputs.filter(o=>(o.groups&1)!==0).length===2,'pattern group assignment did not reach fixtures');
   await page.getByRole('button',{name:'Verify all groups',exact:true}).click();await page.getByRole('heading',{name:'Verify group assignments',exact:true}).waitFor();await dialogVisible();assert.ok((await page.locator('dialog').innerText()).includes('Assignments match'),'group verification did not read hardware');
   const review=name=>page.locator('.verify-row').filter({has:page.getByRole('heading',{name,exact:true})});

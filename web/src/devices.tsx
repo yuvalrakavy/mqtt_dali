@@ -1,4 +1,5 @@
 import { FixtureStatus } from './fixture-status-ui.tsx';
+import { DeviceInfo } from './device-info-ui.tsx';
 import { InputSettings } from './input-settings-ui.tsx';
 import { OutputSettings } from './output-settings-ui.tsx';
 import { Feedback } from './feedback-ui.tsx';
@@ -36,6 +37,7 @@ function DeviceRow({row,recover,select}:{row:Row;recover:(row:Row)=>void;select?
   const closeClear=()=>{if(clear)clear.scope.cancelled=true;setClear(null);};
   const [inputSettings,setInputSettings]=useState(false);
   const [outputSettings,setOutputSettings]=useState(false);
+  const [deviceInfo,setDeviceInfo]=useState(false);
   const [feedback,setFeedback]=useState(false);
   const [menu,setMenu]=useState(false),[colour,setColour]=useState(false),[groups,setGroups]=useState(false),[remove,setRemove]=useState(false),[level,setLevel]=useState<string|null>(null);
   const ready=busReady(snapshot,row.bus)&&ui.client.views.ready;
@@ -55,6 +57,7 @@ function DeviceRow({row,recover,select}:{row:Row;recover:(row:Row)=>void;select?
       <button class={blinking?'primary blink':'blink'} aria-label={`${blinking?'Stop blink':'Blink'} ${row.item.name}`} disabled={!ready||!!ui.busy||identified?.phase==='restoring'} onClick={()=>void ui.run(()=>ui.blink(row))}>{identified?.phase==='restoring'?'Restoring…':blinking?'Stop blink':'Blink'}</button></>:<><span class={`input-state ${state.Available===true?'':'muted'}`}>{row.kind==='input'?`${row.item.instances?.length??0} instances`:inputState}</span><span class="activity">{activity?.action??'No recent action'}</span></>}
     <button class="menu-button" aria-label={`Actions ${row.item.name}`} onClick={()=>setMenu(true)}>⋮</button>
     {menu&&<Modal title={row.item.name} close={()=>setMenu(false)}><div class="menu-actions">
+      {(row.kind==='output'||row.kind==='input')&&<button disabled={!ready||!!ui.busy} onClick={()=>{ui.cancelled=false;setMenu(false);setDeviceInfo(true);}}>Device information</button>}
       {row.kind==='output'&&<button disabled={!ready||!!ui.busy} onClick={()=>{ui.cancelled=false;setMenu(false);setOutputSettings(true);}}>Fixture settings</button>}
       {row.kind==='instance'&&<button disabled={!ready||!!ui.busy} onClick={()=>{ui.cancelled=false;setMenu(false);setInputSettings(true);}}>Event settings</button>}
       {row.kind!=='output'&&<button disabled={!ready||!!ui.busy} onClick={()=>{ui.cancelled=false;setMenu(false);setFeedback(true);}}>Feedback</button>}
@@ -67,6 +70,7 @@ function DeviceRow({row,recover,select}:{row:Row;recover:(row:Row)=>void;select?
     </div></Modal>}
     {inputSettings&&<InputSettings row={row} close={()=>setInputSettings(false)}/>}
     {outputSettings&&<OutputSettings row={row} close={()=>setOutputSettings(false)}/>}
+    {deviceInfo&&<DeviceInfo row={row} close={()=>setDeviceInfo(false)}/>}
     {feedback&&<Feedback row={row} close={()=>setFeedback(false)}/>}
     {clear&&<Modal title="Clear short address?" close={closeClear}><p>Clear address <strong>{clear.scope.original.item.short_address}</strong> from <strong>{clear.scope.original.item.name}</strong> on {clear.scope.initial.inventory.name}/{clear.scope.original.bus.name}.</p><p>The saved name, bindings and address reservation stay. The fixture will be unaddressed. Use Add unaddressed, then Restore lost address to identify it again.</p><div class="dialog-actions"><button onClick={closeClear}>Cancel</button><button class="danger" disabled={!!ui.busy} onClick={()=>void ui.run(async()=>{await clear.run();setClear(null);})}>{blinking?'Stop blink and clear address':'Clear address'}</button></div></Modal>}
     {select&&<div class="row-error"><button disabled={!ready||!!ui.busy} onClick={select}>Use this fixture</button></div>}

@@ -710,6 +710,12 @@ impl ProcessService for DaliService {
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion { match completion {
+                      physical::Completion::Memory(mut completed)=>{
+                        #[cfg(test)]
+                        if let Some(hook)=&self.output_acceptance_hook { hook(&mut hat); }
+                        let result=memory::accept(&self.handle.snapshot().expect("service started"),&mut completed,&hat);
+                        memory::finish(completed.request,result);
+                      }
                       physical::Completion::OutputSettings(completed)=>output::settings::finish(completed.request,output_settings_result.expect("output settings accepted before publication")),
                       physical::Completion::GroupOutput(completed)=>group_output::finish(completed.request,group_output_result.expect("group output accepted before publication")),
                       physical::Completion::InputFeedback(completion)=>input::feedback::finish(completion.request,feedback_result.expect("feedback accepted before publication")),
@@ -989,6 +995,29 @@ impl ProcessService for DaliService {
                         Err(error) => input::settings::finish(request, Err(error)),
                     }
                 }
+                Message::Memory(request) => {
+                    let result = (|| {
+                        if request.reply.is_closed() || Instant::now() >= request.deadline {
+                            return Err(ServiceError::Expired);
+                        }
+                        let route = memory::resolve(
+                            &self.handle.snapshot().expect("service started"),
+                            &request.target,
+                            request.action,
+                            &request.context,
+                        )?;
+                        if route.revision != request.revision {
+                            return Err(ServiceError::Rejected(
+                                "original memory revision changed before admission".into(),
+                            ));
+                        }
+                        Ok(route)
+                    })();
+                    match result {
+                        Ok(route) => hat.enqueue_memory(request, route),
+                        Err(error) => memory::finish(request, Err(error)),
+                    }
+                }
                 Message::OutputSettings(request) => {
                     let result = (|| {
                         if request.reply.is_closed() || Instant::now() >= request.deadline {
@@ -1136,6 +1165,7 @@ impl ProcessService for DaliService {
                 Message::OutputSettings(request) => {
                     output::settings::finish(request, Err(ServiceError::Closed))
                 }
+                Message::Memory(request) => memory::finish(request, Err(ServiceError::Closed)),
                 Message::InputFeedback(request) => {
                     input::feedback::finish(request, Err(ServiceError::Closed))
                 }

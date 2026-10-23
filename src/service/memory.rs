@@ -1,0 +1,414 @@
+//! Explicit read-only memory operations under the existing physical HAT owner.
+use super::*;
+use crate::{
+    atx::{
+        connection::Connection,
+        transactions::{TransactionError, Transactions},
+    },
+    dali::memory as codec,
+};
+use serde::Serialize;
+use std::time::Duration;
+
+#[derive(Debug, Clone, Copy)]
+pub(super) enum Action {
+    Identity,
+    Read { bank: u8, window: codec::Window },
+}
+impl Action {
+    pub(super) fn name(self) -> &'static str {
+        match self {
+            Self::Identity => "read_identity",
+            Self::Read { .. } => "read_memory",
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct LocationReading {
+    pub address: u8,
+    pub reading: Option<scenes::Reading>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Report {
+    pub operation: &'static str,
+    pub outcome: &'static str,
+    pub target: String,
+    pub target_generation: String,
+    pub revision: u64,
+    pub bus: u8,
+    pub address: u8,
+    pub space: discovery::Space,
+    pub bank: u8,
+    pub start: u8,
+    pub count: u8,
+    pub quality: &'static str,
+    pub version: Option<scenes::Reading>,
+    pub readings: Vec<LocationReading>,
+    pub identity: Option<codec::Identity>,
+    pub reason: Option<String>,
+    pub configuration_changed: bool,
+}
+#[derive(Clone)]
+pub(super) struct Route {
+    pub controller: String,
+    pub bus: u8,
+    pub context: RequestContext,
+    pub revision: u64,
+    pub action: Action,
+    pub space: discovery::Space,
+    native: codec::Target,
+}
+pub(super) struct Request {
+    pub target: String,
+    pub action: Action,
+    pub context: RequestContext,
+    pub deadline: Instant,
+    pub revision: u64,
+    pub reply: oneshot::Sender<Result<Report, ServiceError>>,
+    pub _permit: OwnedSemaphorePermit,
+}
+pub(super) struct Observation {
+    pub report: Report,
+    pub stamp: output::Stamp,
+    pub stale: bool,
+}
+pub(super) struct Outcome {
+    pub observation: Observation,
+    pub error: Option<ServiceError>,
+    pub recovery: bool,
+}
+pub(super) struct Completion {
+    pub request: Request,
+    pub observation: Option<Observation>,
+    pub error: Option<ServiceError>,
+}
+fn reject(reason: impl ToString) -> ServiceError {
+    ServiceError::Rejected(reason.to_string())
+}
+pub(super) fn resolve(
+    snapshot: &Snapshot,
+    target: &str,
+    action: Action,
+    cause: &RequestContext,
+) -> Result<Route, ServiceError> {
+    if snapshot.phase != Phase::Ready {
+        return Err(reject("routing is not ready"));
+    }
+    let projection = snapshot
+        .model
+        .projections()
+        .into_iter()
+        .find(|projection| projection.target == target)
+        .ok_or_else(|| reject("unknown memory target"))?;
+    let (bus, native, space) = match projection.location {
+        crate::inventory::Location::Output { bus, short_address } => (
+            bus,
+            codec::Target::Output(
+                crate::dali::gear::ShortAddress::new(short_address).map_err(reject)?,
+            ),
+            discovery::Space::Outputs,
+        ),
+        crate::inventory::Location::Input { bus, short_address } => (
+            bus,
+            codec::Target::Input(crate::dali::input::Address::new(short_address).map_err(reject)?),
+            discovery::Space::Inputs,
+        ),
+        _ => {
+            return Err(reject(
+                "memory requires an individual output or input module",
+            ))
+        }
+    };
+    if !snapshot
+        .model
+        .inventory()
+        .buses
+        .iter()
+        .any(|saved| saved.bus == bus && saved.enabled)
+    {
+        return Err(reject("bus is disabled"));
+    }
+    let generations = routing::generations(&snapshot.model);
+    let token = &generations.targets[target];
+    if cause
+        .generation()
+        .is_some_and(|generation| generation != token)
+    {
+        return Err(reject("retired memory target generation"));
+    }
+    Ok(Route {
+        controller: snapshot.model.inventory().name.clone(),
+        bus,
+        native,
+        space,
+        revision: snapshot.model.inventory().revision,
+        action,
+        context: RequestContext::new(token.clone())
+            .map_err(reject)?
+            .with_traceparent(cause.traceparent()),
+    })
+}
+fn raw(reading: &scenes::Reading) -> Option<u8> {
+    match reading {
+        scenes::Reading::Value { raw } => u8::try_from(*raw).ok(),
+        _ => None,
+    }
+}
+async fn location(
+    bus: &commissioning::Bus<'_>,
+    native: codec::Target,
+    address: u8,
+) -> Result<LocationReading, commissioning::Error> {
+    bus.command(native.offset(address), false).await?;
+    Ok(LocationReading {
+        address,
+        reading: Some(scenes::Reading::byte(
+            bus.query(native.read()).await?,
+            false,
+        )),
+    })
+}
+pub(super) async fn execute(
+    link: Transactions<Connection>,
+    route: Route,
+    stamp: output::Stamp,
+    deadline: Instant,
+    target: String,
+) -> Outcome {
+    let bus = commissioning::Bus {
+        link: &link,
+        bus: route.bus,
+        space: route.space,
+        stamp,
+        deadline,
+    };
+    let (bank, window) = match route.action {
+        Action::Read { bank, window } => (bank, window),
+        Action::Identity => (0, codec::Window::new(0, 1).unwrap()),
+    };
+    let mut report = Report {
+        operation: route.action.name(),
+        outcome: "observed",
+        target,
+        target_generation: route.context.generation().unwrap().into(),
+        revision: route.revision,
+        bus: route.bus,
+        address: route.native.address(),
+        space: route.space,
+        bank,
+        start: window.start(),
+        count: window.count(),
+        quality: "unavailable",
+        version: None,
+        readings: window
+            .addresses()
+            .map(|address| LocationReading {
+                address,
+                reading: None,
+            })
+            .collect(),
+        identity: None,
+        reason: None,
+        configuration_changed: false,
+    };
+    let result: Result<(), commissioning::Error> = async {
+        if matches!(route.action, Action::Identity) {
+            report.version = Some(scenes::Reading::byte(
+                bus.query(route.native.version()).await?,
+                false,
+            ));
+        }
+        bus.command(route.native.bank(bank), false).await?;
+        if matches!(route.action, Action::Identity) {
+            report.readings[0] = location(&bus, route.native, 0).await?;
+            let Some(last) = report.readings[0].reading.as_ref().and_then(raw) else {
+                return Ok(());
+            };
+            if last == 255 {
+                report.quality = "partial";
+                report.reason = Some("bank0 last accessible location is reserved FF".into());
+                return Ok(());
+            }
+            let layout = codec::Layout::from_version(report.version.as_ref().and_then(raw));
+            let end = last.min(layout.last_location());
+            report.count = end + 1;
+            report
+                .readings
+                .extend((1..=end).map(|address| LocationReading {
+                    address,
+                    reading: None,
+                }));
+        }
+        for item in &mut report.readings {
+            if item.reading.is_none() {
+                *item = location(&bus, route.native, item.address).await?;
+            }
+        }
+        let complete = report
+            .readings
+            .iter()
+            .all(|item| item.reading.as_ref().and_then(raw).is_some());
+        report.quality = if complete {
+            "complete"
+        } else if report
+            .readings
+            .iter()
+            .any(|item| item.reading.as_ref().and_then(raw).is_some())
+        {
+            "partial"
+        } else {
+            "unavailable"
+        };
+        if matches!(route.action, Action::Identity) {
+            let version = report.version.as_ref().and_then(raw);
+            let identity = codec::identity(
+                version,
+                &report
+                    .readings
+                    .iter()
+                    .map(|item| item.reading.as_ref().and_then(raw))
+                    .collect::<Vec<_>>(),
+            );
+            if identity.layout == codec::Layout::Unknown
+                || report.count <= identity.layout.last_location()
+            {
+                report.quality = "partial";
+            }
+            report.identity = Some(identity);
+        }
+        Ok(())
+    }
+    .await;
+    let recovery = matches!(
+        &result,
+        Err(commissioning::Error::Transaction(
+            TransactionError::StreamLoss
+        ))
+    );
+    let error = result.err().map(|error| {
+        reject(match error {
+            commissioning::Error::Transaction(error) => error.to_string(),
+            commissioning::Error::Evidence(reason) => reason.into(),
+        })
+    });
+    Outcome {
+        observation: Observation {
+            report,
+            stamp,
+            stale: false,
+        },
+        error,
+        recovery,
+    }
+}
+pub(super) fn accept(
+    snapshot: &Snapshot,
+    completed: &mut Completion,
+    hat: &hat::Hat,
+) -> Result<Report, ServiceError> {
+    if let Some(error) = completed.error.take() {
+        return Err(error);
+    }
+    let observation = completed
+        .observation
+        .take()
+        .ok_or_else(|| reject("memory read produced no final evidence"))?;
+    let request = &completed.request;
+    let route = resolve(snapshot, &request.target, request.action, &request.context)?;
+    if Instant::now() >= request.deadline
+        || observation.stale
+        || !hat.evidence_current(route.bus, observation.stamp)
+        || route.revision != request.revision
+        || route.revision != observation.report.revision
+        || route.context.generation() != Some(observation.report.target_generation.as_str())
+    {
+        return Err(reject("memory evidence changed before acceptance"));
+    }
+    Ok(observation.report)
+}
+pub(super) fn finish(request: Request, result: Result<Report, ServiceError>) {
+    drop(request._permit);
+    let _ = request.reply.send(result);
+}
+impl ServiceHandle {
+    /// Read a bounded bank range. No memory write or persistent setting is sent.
+    pub async fn read_memory(
+        &self,
+        target: &str,
+        bank: u8,
+        window: codec::Window,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.memory(target, Action::Read { bank, window }, context, deadline)
+            .await
+    }
+    /// Read bank0 identity using the observed standard version's layout.
+    pub async fn read_identity(
+        &self,
+        target: &str,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.memory(target, Action::Identity, context, deadline)
+            .await
+    }
+    pub(super) async fn memory(
+        &self,
+        target: &str,
+        action: Action,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        let deadline = deadline.min(Instant::now() + Duration::from_secs(15));
+        if Instant::now() >= deadline {
+            return Err(ServiceError::Expired);
+        }
+        if self.permit.is_closed() {
+            return Err(ServiceError::Closed);
+        }
+        let permit = self
+            .permit
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| ServiceError::Busy)?;
+        let route = resolve(
+            &self.snapshot().ok_or(ServiceError::Closed)?,
+            target,
+            action,
+            &context,
+        )?;
+        let revision = route.revision;
+        let original = route.context;
+        let (reply, receive) = oneshot::channel();
+        self.send
+            .try_send(Message::Memory(Request {
+                target: target.into(),
+                action,
+                context: original.clone(),
+                deadline,
+                revision,
+                reply,
+                _permit: permit,
+            }))
+            .map_err(|_| ServiceError::Closed)?;
+        // WAIT: v2-service-request
+        let result = timeout_at(deadline, receive)
+            .await
+            .map_err(|_| ServiceError::Expired)?
+            .map_err(|_| ServiceError::Closed)??;
+        if Instant::now() >= deadline {
+            return Err(ServiceError::Expired);
+        }
+        let route = resolve(
+            &self.snapshot().ok_or(ServiceError::Closed)?,
+            target,
+            action,
+            &original,
+        )?;
+        if route.revision != revision {
+            return Err(reject("memory mapping changed before reply"));
+        }
+        Ok(result)
+    }
+}

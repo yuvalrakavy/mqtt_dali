@@ -219,6 +219,12 @@ impl State {
                     None
                 }
                 0x30 => Some(0),
+                0x34 => self.config.memory.as_ref().map(|profile| profile.version),
+                0x3c => self
+                    .config
+                    .memory
+                    .as_ref()
+                    .and_then(|profile| profile.read(self.dtr1, &mut self.dtr0)),
                 0x35 => Some(self.config.instances.len() as u8),
                 _ => None,
             };

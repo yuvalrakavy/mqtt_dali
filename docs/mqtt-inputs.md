@@ -80,6 +80,11 @@ remain separate work.
 
 ## Query current values
 
+Product identity belongs to the input module. Use `read_identity` or bounded
+`read_memory` on `Bus1.Inputs.Panel`, rather than an instance target. These
+explicit reports do not change current input values or generate actions. See
+[device information](device-information.md).
+
 An instance `refresh` queries physical type, resolution and the complete input
 value, followed by its independent indicator feedback. It works before the first
 event and when event delivery is disabled.

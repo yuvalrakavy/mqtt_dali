@@ -1,0 +1,54 @@
+# Each intentional defect must fail the named behavioral assertion.
+[[control]]
+name = "memory_output_bank_uses_search_address"
+file = "src/dali/memory.rs"
+anchor = 'DaliFrame::Bits16(0xc300 | u16::from(bank))'
+replacement = 'DaliFrame::Bits16(0xb100 | u16::from(bank))'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(memory_codec_literals)"]
+expect_text = "assertion `left == right` failed"
+
+[[control]]
+name = "memory_modern_serial_truncates_to_32_bits"
+file = "src/dali/memory.rs"
+anchor = 'Layout::Modern => Some(64),'
+replacement = 'Layout::Modern => Some(32),'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(memory_identity_decoding)"]
+expect_text = "64-bit serial lost precision or leading zeros"
+
+[[control]]
+name = "memory_window_allows_location_ff"
+file = "src/dali/memory.rs"
+anchor = 'u16::from(start) + u16::from(count) > 255'
+replacement = 'u16::from(start) + u16::from(count) > 256'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(memory_codec_literals)"]
+expect_text = "assertion failed: Window::new(start, count).is_err()"
+
+[[control]]
+name = "memory_model_hole_stops_pointer"
+file = "src/emulator/memory.rs"
+anchor = '*offset = offset.saturating_add(1);'
+replacement = 'if byte.is_some() { *offset = offset.saturating_add(1); }'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(memory_native_model)"]
+expect_text = "unreadable memory location did not advance"
+
+[[control]]
+name = "memory_reply_renews_configuration_revision"
+file = "src/service/memory.rs"
+anchor = 'if route.revision != revision {'
+replacement = 'if false && route.revision != revision {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(memory_ready_reply)"]
+expect_text = "memory accepted retired revision evidence"
+
+[[control]]
+name = "memory_ui_accepts_retired_scope"
+file = "web/src/device-info.ts"
+anchor = 'if(this.cancelled||ui.cancelled||ui.signingOut||!ui.client.views.ready||ui.client.views.epoch!==this.epoch)'
+replacement = 'if(false&&(this.cancelled||ui.cancelled||ui.signingOut||!ui.client.views.ready||ui.client.views.epoch!==this.epoch))'
+target = "command"
+argv = ["node","--test","web/src/device-info.test.ts"]
+expect_text = "late cancel read populated information"

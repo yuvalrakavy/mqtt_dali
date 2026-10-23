@@ -497,6 +497,15 @@ and inactive families are not restored; only captured RGBWAF control is restored
 controls require confirmed DT8 support. Parent drop owns teardown; no crash/shutdown restoration
 guarantee or journal. Controls: `docs/v2-identification-controls.toml`.
 
+Managed v2 identity/memory reads use `service::memory` / `physical::Work::Memory`
+and pure `dali::memory`, with original generation/revision/deadline/stamp checks.
+Never change saved name/Origin from physical serials. Use exact-width hex for
+32/64-bit serials, unknown layouts for unrecognized versions and explicit raw
+FF/no-response/collision evidence. Reads reload DTR0 per byte and preserve other
+observations; no worker/cache/write path. The independent emulator has optional
+bounded raw-bank profiles. See `docs/device-information.md`,
+`docs/v2-memory-controls.toml` and the frozen protected DeviceInfoScope/dialog.
+
 ## Architecture (legacy)
 
 ### Module Dependency Flow

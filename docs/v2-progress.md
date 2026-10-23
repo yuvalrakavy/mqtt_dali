@@ -5,6 +5,12 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+Current work: device identity and bounded read-only memory-bank access for output
+fixtures and input modules. Native encoding, independent emulator profiles and
+owner/command plumbing are in progress; the protected device-information dialog
+and acceptance checks follow. Spec:
+`superpowers/specs/2026-10-23-dali-v2-identity-memory.md`.
+
 Most recent completed capability: DT8 hardware group color, accepted locally.
 The slice reuses native group operations and individual DT8 readback, adds optional
 group representation selection and mixed color State, and extends the protected

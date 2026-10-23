@@ -17,6 +17,7 @@ pub mod groups;
 mod hat;
 pub mod identification;
 pub mod input;
+pub mod memory;
 pub mod output;
 mod owner;
 mod physical;
@@ -293,6 +294,7 @@ type ActivationHook = Arc<dyn Fn(&mqtt_bridge_kit::Reporter, &TargetGenerations)
 #[cfg(test)]
 type OutputAcceptanceHook = Arc<dyn Fn(&mut hat::Hat) + Send + Sync>;
 enum Message {
+    Memory(memory::Request),
     Restore(Box<restoration::Request>),
     Reassignment(reassignment::Request),
     SceneSetting(Box<scene_settings::Request>),

@@ -64,6 +64,8 @@ pub struct Output {
     #[serde(default)]
     pub device_type: u8,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory: Option<super::memory::Profile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub colour: Option<Colour>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub switching: Option<Switching>,
@@ -187,6 +189,8 @@ pub struct Input {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub random_address: Option<u32>,
     pub instances: Vec<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory: Option<super::memory::Profile>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub values: Vec<InputValue>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -252,6 +256,9 @@ impl Scenario {
                 }
             }
             for output in &bus.outputs {
+                if let Some(memory) = &output.memory {
+                    memory.validate()?;
+                }
                 if let Some(s) = &output.settings {
                     if s.min_level == 0
                         || s.min_level > s.max_level
@@ -299,6 +306,9 @@ impl Scenario {
                 return Err("input requires at most 32 valid instance types".into());
             }
             for input in &bus.inputs {
+                if let Some(memory) = &input.memory {
+                    memory.validate()?;
+                }
                 if let Some(states) = &input.initial_physical {
                     if states.len() != input.instances.len()
                         || states.iter().any(|s| s.raw_10 > 1023)

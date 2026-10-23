@@ -2,6 +2,7 @@
 mod colour;
 pub mod control;
 mod input;
+pub mod memory;
 pub mod model;
 pub mod pty;
 pub mod scenario;

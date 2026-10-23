@@ -5,4 +5,5 @@ pub mod commissioning;
 pub mod gear;
 pub mod groups;
 pub mod input;
+pub mod memory;
 pub mod scenes;

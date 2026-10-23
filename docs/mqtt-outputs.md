@@ -34,6 +34,12 @@ an Error count alone does not establish completion of a publication.
 
 ## Fixture settings
 
+Explicit `read_identity` and bounded `read_memory` commands return captured
+read-only reports for individual fixtures and input modules. Exact serials,
+version-gated bank0 layouts and raw bytes remain separate from scalar State.
+See [device information](device-information.md) for strict parameters, quality
+and examples.
+
 Common individual fixture settings use explicit `read_output_settings` and
 `configure_output` commands, with original target-generation and expected revision
 for writes. They return readback reports, separate from scalar Desired/State and

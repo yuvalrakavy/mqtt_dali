@@ -1,6 +1,9 @@
 use super::scenario::{Output, Scenario};
 use serde::Serialize;
 #[cfg(test)]
+#[path = "model/memory_tests.rs"]
+mod memory_tests;
+#[cfg(test)]
 #[path = "model/ui_tests.rs"]
 mod ui_tests;
 
@@ -905,7 +908,17 @@ impl Model {
                         | if gear.config.lamp_failure { 2 } else { 0 },
                 ),
                 0x91 => Some(255),
-                0x97 => Some(8),
+                0x97 => Some(
+                    gear.config
+                        .memory
+                        .as_ref()
+                        .map_or(8, |profile| profile.version),
+                ),
+                0xc5 => gear
+                    .config
+                    .memory
+                    .as_ref()
+                    .and_then(|profile| profile.read(gear.dtr[1], &mut gear.dtr[0])),
                 0x98 => Some(gear.dtr[0]),
                 0x99 => Some(gear.config.device_type),
                 0x9a => Some(if gear.switching_state.is_some() {

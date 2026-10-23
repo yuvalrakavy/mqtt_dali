@@ -1,5 +1,16 @@
 # Managed inventory service (v2 development)
 
+Explicit [identity/memory reads](device-information.md) use `dali::memory` and
+concrete `Work::Memory`, the same owner/permit and one15s absolute ceiling.
+Preserve original target context/revision across queue, native run, acceptance
+and caller reply. Final stamp/deadline checks apply; reads never cut other actual
+observations or modify ConfigStore. DTR1 selects the bank and DTR0 is reloaded
+per location; FF is raw data. `read_identity` version-gates bank0 layouts before
+decoding exact-width serials. No retained cache, worker, retry or memory write.
+Shared Read-class MQTT dispatch precedes mutation completion requirements;
+typed service and protected strict jobs use this same path. Controls:
+`v2-memory-controls.toml`. Independent emulator profiles remain optional.
+
 Common output settings use `output::settings` and concrete `Work::OutputSettings`
 with [checked native plans](gear-settings.md). Shared strict MQTT/HTTP and typed
 read/configure keep original context/revision/deadline/permit through settlement.

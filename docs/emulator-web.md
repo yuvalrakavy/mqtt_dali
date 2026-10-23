@@ -68,6 +68,12 @@ does not undo an applied mutation.
 
 ## Scenario and API additions
 
+Optional per-output/input-module `memory` profiles configure raw banks and a
+version byte in the existing scenario JSON editor. See
+[device information and a working profile](device-information.md#emulator-configuration).
+Numeric255 and nullable silent locations remain distinct; capture/export and
+reboot/reset preserve profiles. Existing scenarios without profiles still load.
+
 Existing strict version-1 files remain valid. Optional capture fields:
 
 - Output `settings`: min/max, power-on/failure levels, packed fade and virtual

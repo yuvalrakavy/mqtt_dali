@@ -14,13 +14,21 @@ async fn browser_functional_phone_and_desktop() {
     let path = PathBuf::from("/tmp").join(format!("dali-browser-{:032x}", rand::random::<u128>()));
     fs::create_dir(&path).unwrap();
     fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
-    let scenario=serde_json::from_value(json!({"version":1,"buses":[{"number":0,"outputs":[
+    let mut scenario = json!({"version":1,"buses":[{"number":0,"outputs":[
         {"id":"white","short_address":0,"level":91,"groups":8,"device_type":8,"colour":{"active":"temperature","temperature":{"value":300,"coolest":200,"warmest":500,"physical_coolest":150,"physical_warmest":550}}},
         {"id":"plain","short_address":1,"level":120,"scenes":[255,42,255,255,255,255,255,255,255,255,255,255,255,255,255,255]},
         {"id":"new","short_address":null,"level":0,"groups":4,"device_type":8,"colour":{"active":"rgbwaf","xy":[10000,20000],"rgbwaf":[80,90,100,110]}}
     ],"inputs":[{"id":"buttons","short_address":0,"instances":[1,1,2,4,3],"feedback":[{"instance":null},{"instance":0},{"instance":2}],"values":[{"instance":0,"resolution":1,"bytes":[0]},{"instance":1,"resolution":1,"bytes":[0]},{"instance":2,"resolution":12,"bytes":[255,255]},{"instance":3,"resolution":64,"bytes":[254,220,186,152,118,84,50,16]},{"instance":4,"resolution":2,"bytes":[170]}]}]},
     {"number":1,"outputs":[{"id":"relay","short_address":0,"device_type":7,"level":254,"switching":{"adjustable_thresholds":true}},{"id":"fixed-relay","short_address":1,"device_type":7,"level":0}]}
-    ]})).unwrap();
+    ]});
+    scenario["buses"][0]["outputs"][0]["memory"] = json!({"version":8,"banks":[
+        {"bank":0,"bytes":[26,0,255,0,1,2,3,4,5,6,7,254,220,186,152,118,84,50,16,2,3,0,0,0,0,0,0]},
+        {"bank":255,"bytes":[255,null,0,127]}]});
+    scenario["buses"][0]["outputs"][1]["memory"] = json!({"version":1,"banks":[
+        {"bank":0,"bytes":[14,255,0,0,1,2,3,4,5,6,7,137,171,205,239]}]});
+    scenario["buses"][0]["inputs"][0]["memory"] = json!({"version":7,"banks":[
+        {"bank":0,"bytes":[26,0,0,0,1,2,3,4,5,6,7]}]});
+    let scenario = serde_json::from_value(scenario).unwrap();
     let tcp_mode = std::env::var_os("DALI_BROWSER_HAT_TCP").is_some();
     let (emulator, tcp, pty_owner) = if tcp_mode {
         let (emulator, address) = crate::emulator::session::Emulator::listen_tcp(

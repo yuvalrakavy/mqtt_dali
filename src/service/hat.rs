@@ -911,6 +911,13 @@ impl Hat {
         }
         self.enqueue_physical(physical::Work::OutputSettings(request, route));
     }
+    pub(super) fn enqueue_memory(
+        &mut self,
+        request: super::memory::Request,
+        route: super::memory::Route,
+    ) {
+        self.enqueue_physical(physical::Work::Memory(request, route));
+    }
     fn enqueue_physical(&mut self, work: physical::Work) {
         let error = if self.physical.is_some() || self.completed.is_some() {
             Some(ServiceError::Busy)
