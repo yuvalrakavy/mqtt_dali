@@ -78,6 +78,7 @@ async fn unchanged_clamped_readback_precedes_ack_and_remains_the_reconnect_basis
                 b"d\n" => b"D24\n",
                 b"h01A0\n" => b"J7F\n",
                 b"h0190\n" => b"J04\n",
+                b"h0199\n" => b"J00\n",
                 b"h00FE\n" => {
                     counted.fetch_add(1, Ordering::SeqCst);
                     b"N\n"
@@ -504,6 +505,7 @@ fn answered_mask_is_not_current_mqtt_availability_or_invented_power() {
     };
     let observation = output::Observation {
         colour: None,
+        device_types: vec![],
         context: context(1),
         actual_level: Some(Query::ActualLevel.decode(BusReply::Value(255))),
         status: Some(Query::Status.decode(BusReply::Value(4))),

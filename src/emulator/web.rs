@@ -169,7 +169,7 @@ async fn control(State(c): State<Arc<Context>>, Json(control): Json<Control>) ->
 }
 async fn examples() -> Json<serde_json::Value> {
     Json(
-        serde_json::json!({"Basic I4":serde_json::from_str::<serde_json::Value>(include_str!("../../examples/emulator/basic-i4.json")).unwrap(),"Color I4":serde_json::from_str::<serde_json::Value>(include_str!("../../examples/emulator/colour-i4.json")).unwrap(),"Empty installation":{"version":1,"buses":[{"number":0}]}}),
+        serde_json::json!({"Basic I4":serde_json::from_str::<serde_json::Value>(include_str!("../../examples/emulator/basic-i4.json")).unwrap(),"Color I4":serde_json::from_str::<serde_json::Value>(include_str!("../../examples/emulator/colour-i4.json")).unwrap(),"Emergency I4":serde_json::from_str::<serde_json::Value>(include_str!("../../examples/emulator/emergency-i4.json")).unwrap(),"Empty installation":{"version":1,"buses":[{"number":0}]}}),
     )
 }
 async fn index() -> impl IntoResponse {

@@ -1,0 +1,85 @@
+[[control]]
+name = "emergency_saturated_total_counter_is_lost"
+file = "src/dali/emergency.rs"
+anchor = 'Self::TotalHours => Value::Known(value * 4),'
+replacement = 'Self::TotalHours if raw == 255 => Value::Unknown, Self::TotalHours => Value::Known(value * 4),'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emergency_ff_is_query_specific_and_counters_saturate)"]
+expect_text = "emergency_ff_is_query_specific_and_counters_saturate"
+
+[[control]]
+name = "emergency_query_enables_the_wrong_type"
+file = "src/dali/emergency.rs"
+anchor = '''plan.extend([
+            Step {
+                frame: 0xc101,'''
+replacement = '''plan.extend([
+            Step {
+                frame: 0xc107,'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emergency_queries_use_dt1_and_atomic_timing_selector)"]
+expect_text = "emergency_queries_use_dt1_and_atomic_timing_selector"
+
+[[control]]
+name = "emergency_shared_initial_delay_is_reversed"
+file = "src/dali/emergency.rs"
+anchor = 'let [high, low] = self.raw.to_be_bytes();'
+replacement = 'let [low, high] = self.raw.to_be_bytes();'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emergency_setting_plans_repeat_one_enable_and_stage_delay)"]
+expect_text = "emergency_setting_plans_repeat_one_enable_and_stage_delay"
+
+[[control]]
+name = "emergency_timeout_cancels_pending_test"
+file = "src/emulator/emergency.rs"
+anchor = 'self.profile.failures |= 1 << (4 + index);'
+replacement = 'self.profile.failures |= 1 << (4 + index); self.pending_since[index] = None;'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_emergency_pending_timeout_flags_failure_without_cancelling)"]
+expect_text = "timeout cancelled pending native tests"
+
+[[control]]
+name = "emergency_unverified_profile_reaches_native_prefix"
+file = "src/service/hat.rs"
+anchor = '''pub(super) fn enqueue_emergency(
+        &mut self,
+        request: super::emergency::Request,
+        route: super::emergency::Route,
+    ) {
+        if request.action.writing()'''
+replacement = '''pub(super) fn enqueue_emergency(
+        &mut self,
+        request: super::emergency::Request,
+        route: super::emergency::Route,
+    ) {
+        if false && request.action.writing()'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emergency_unverified_writes_refuse_before_any_native_prefix_and_reads_remain_usable)"]
+expect_text = "emergency_unverified_writes_refuse_before_any_native_prefix_and_reads_remain_usable"
+
+[[control]]
+name = "emergency_timing_reads_a_live_low_byte"
+file = "src/service/emergency.rs"
+anchor = 'Destination::Short(r.output.address).command(0x9c)'
+replacement = 'Destination::Short(r.output.address).command(0xf2)'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(emergency_literal_uart_enable_repeat_atomic_timing_saturation_partial_and_type_refusal)"]
+expect_text = "DT1 literal enable/repeat/atomic sequence changed"
+
+[[control]]
+name = "ordinary_read_discards_native_type_evidence"
+file = "src/service/output.rs"
+anchor = 'observation.device_types.push(raw(first));'
+replacement = 'observation.device_types.push(None);'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(normal_output_read_retains_relay_and_emergency_support_without_selecting_color)"]
+expect_text = "normal Read did not populate native type capabilities"
+
+[[control]]
+name = "emergency_browser_trusts_invented_observations"
+file = "web/src/emergency.ts"
+anchor = 'if(report.support!==expected.support||!equal(report.observed,expected.observed))return invalid();'
+replacement = 'if(report.support!==expected.support)return invalid();'
+target = "command"
+argv = ["node","--test","--test-name-pattern=refuses invented support","web/src/emergency.test.ts"]
+expect_text = "inconsistent emergency native evidence accepted"

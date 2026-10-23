@@ -34,6 +34,13 @@ an Error count alone does not establish completion of a publication.
 
 ## Fixture settings
 
+DT1 fixtures have explicit `read_emergency`, `configure_emergency`,
+`start_emergency_test` and `stop_emergency_test` commands. Test requests return
+promptly; native progress/results are read explicitly. Normal output State also
+includes nullable read-only `SwitchingSupported` and `EmergencySupported` facts.
+See [emergency lighting](emergency-lighting.md) for checked units, paired schedules,
+before/after evidence, generation/revision fencing and unconfirmed results.
+
 Explicit `read_identity` and bounded `read_memory` commands return captured
 read-only reports for individual fixtures and input modules. Exact serials,
 version-gated bank0 layouts and raw bytes remain separate from scalar State.

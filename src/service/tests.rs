@@ -5,6 +5,8 @@ mod buses;
 mod commissioning;
 mod diagnostics;
 mod discovery;
+mod emergency;
+mod emergency_uart;
 mod emulator_tcp;
 mod energy;
 mod group_output;

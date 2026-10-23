@@ -7,7 +7,16 @@ The approved architecture and phase acceptance criteria are in
 
 Current work: one combined milestone for common DT1 emergency status,
 configuration and explicit tests, plus retained relay/emergency type capability
-reporting. The fresh T2 design review approves the corrected bounded type-read
+reporting. Native protocol/model/owner/strict command paths and both UIs are
+implemented. All67 affected native checks, the final21-case storage/authority
+check, all124 frontend tests and real linked phone/desktop Chrome13.112s pass.
+Literal UART, unverified policy, original prepared revision, pending timeouts,
+lost/retired replies and native/configuration preservation are covered. Strict
+production Clippy and all affected control plans pass. Final mutation/source/full
+regression checks remain; this milestone is not yet accepted.
+An actual build-trigger fix also avoids relinking native tests after docs/browser
+script edits: the subsequent browser-script rerun reused its build in0.14s.
+The fresh T2 design review approves the corrected bounded type-read
 and pending-timeout behavior. Implement the whole family with focused checks
 between steps and one final regression/review cycle, rather than separate
 acceptance gates for each layer. Spec:

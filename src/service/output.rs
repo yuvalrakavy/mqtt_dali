@@ -47,6 +47,8 @@ pub struct Observation {
     pub actual_level: Option<QueryReply>,
     pub status: Option<QueryReply>,
     pub colour: Option<colour::Observation>,
+    /// Current native type evidence; None retains an unanswered/collided byte.
+    pub device_types: Vec<Option<u8>>,
     pub quality: Quality,
     pub reason: Option<String>,
     pub(super) stamp: Stamp,
@@ -192,6 +194,7 @@ pub(super) async fn execute(
         actual_level: None,
         status: None,
         colour: None,
+        device_types: Vec::new(),
         quality: Quality::Unavailable,
         reason: None,
         stamp,
@@ -211,6 +214,14 @@ pub(super) async fn execute(
         if include_colour {
             let sample = observation.colour.insert(colour::Observation::default());
             colour::discover(sample, &link, &route, stamp, deadline).await?;
+            observation.device_types = sample
+                .device_types
+                .iter()
+                .map(|reply| match reply {
+                    crate::dali::colour::Reply::Value(raw) => Some(*raw),
+                    _ => None,
+                })
+                .collect();
             if let Some(intent) = colour_intent {
                 if let Err(reason) = sample.preflight(intent) {
                     rejection = Some(reason);
@@ -245,6 +256,43 @@ pub(super) async fn execute(
                     deadline,
                 )
                 .await?;
+            }
+        } else {
+            let first = frame(
+                &link,
+                route.bus,
+                route.address.query(Query::DeviceType),
+                deadline,
+                stamp,
+            )
+            .await?;
+            let raw = |reply| match reply {
+                BusReply::Value(raw) => Some(raw),
+                _ => None,
+            };
+            observation.device_types.push(raw(first));
+            if observation.device_types[0] == Some(255) {
+                let mut previous = None;
+                for _ in 0..9 {
+                    let next = raw(frame(
+                        &link,
+                        route.bus,
+                        route.address.query(Query::NextDeviceType),
+                        deadline,
+                        stamp,
+                    )
+                    .await?);
+                    observation.device_types.push(next);
+                    match next {
+                        Some(value) if value < 254 && previous.is_none_or(|old| value > old) => {
+                            if value > 8 {
+                                break;
+                            }
+                            previous = Some(value);
+                        }
+                        _ => break,
+                    }
+                }
             }
         }
         Ok(())

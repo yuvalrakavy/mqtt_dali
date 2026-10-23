@@ -3,6 +3,7 @@ import { deviceInfoFlow } from './device-info.mjs';
 import { inputSettingsFlow } from './input-settings.mjs';
 import { outputSettingsFlow } from './output-settings.mjs';
 import { switchingSettingsFlow } from './switching-settings.mjs';
+import { emergencyFlow } from './emergency.mjs';
 import { feedbackFlow } from './feedback.mjs';
 import { groupOutputFlow } from './group-output.mjs';
 import { groupColorFlow } from './group-color.mjs';
@@ -41,7 +42,10 @@ try {
   assert.equal((await context.request.get(`${origin}/assets/app.js`,{maxRedirects:0})).status(),303);
   await page.getByLabel('Password',{exact:true}).fill('incorrect');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.getByRole('alert').filter({hasText:'invalid password'}).waitFor();
   await page.getByLabel('Password',{exact:true}).fill('browser-secret');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.getByRole('heading',{name:'BrowserController',exact:true}).waitFor();
-  if(process.env.DALI_BROWSER_FLOW==='memory'){
+  if(process.env.DALI_BROWSER_FLOW==='emergency'){
+    await emergencyFlow({page,context,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,emulatorPage,emulatorCard});
+    assert.deepEqual(errors,[],'browser reported runtime or CSP errors');console.log(`PASS scoped emergency: ${commands.length} real owned commands; screenshots ${artifacts}`);
+  }else if(process.env.DALI_BROWSER_FLOW==='memory'){
     await deviceInfoFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,setup:true});
     assert.deepEqual(errors,[],'browser reported runtime or CSP errors');console.log(`PASS scoped memory: ${commands.length} real owned commands; screenshots ${artifacts}`);
   }else if(process.env.DALI_BROWSER_FLOW==='group-color'){
@@ -108,6 +112,7 @@ try {
   await restorationFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
   await reassignmentFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
   await switchingSettingsFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
+  await emergencyFlow({page,context,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,emulatorPage,emulatorCard});
   let entered;const admitted=new Promise(resolve=>entered=resolve),held=new Promise(resolve=>releaseAdmission=resolve);let hold=true;
   await page.route(`${origin}/api/jobs`,async route=>{if(hold&&route.request().postDataJSON().command==='discover_address'){hold=false;const response=await route.fetch();entered();await held;await route.fulfill({response}).catch(()=>{});}else await route.continue();});
   await page.getByRole('button',{name:'Refresh addressed',exact:true}).click();await admitted;const beforeLogout=commands.length;

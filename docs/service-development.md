@@ -41,6 +41,14 @@ report omission, original authority, caches and public raw limit remain intact.
 Controls: `v2-diagnostics-controls.toml`; shared energy controls still exercise
 fresh latch/release and admission after the helper generalization.
 
+`service::emergency` adds distinct typed DT1 work through the same physical owner,
+permit, original prepared revision/generation and 15-second deadline. Writes use
+fresh presence/type/features/settings, known repeat policy and actual readback.
+Start/Stop are prompt requests with explicit subsequent reads; no background
+test worker, journal or poller exists. Ordinary output readback retains bounded
+type-only evidence separately from color selection/samples and projects current
+nullable relay/emergency support. See [emergency lighting](emergency-lighting.md).
+
 Common output settings use `output::settings` and concrete `Work::OutputSettings`
 with [checked native plans](gear-settings.md). Shared strict MQTT/HTTP and typed
 read/configure keep original context/revision/deadline/permit through settlement.

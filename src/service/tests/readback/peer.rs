@@ -38,6 +38,7 @@ impl Peer {
                     b"d\n" => b"D24\n".to_vec(),
                     b"h01A0\n" => b"J64\n".to_vec(),
                     b"h0190\n" => b"J04\n".to_vec(),
+                    b"h0199\n" => b"J00\n".to_vec(),
                     command if command.first() == Some(&b'l') && command.len() == 8 => {
                         let opcode =
                             u8::from_str_radix(std::str::from_utf8(&command[5..7]).unwrap(), 16)

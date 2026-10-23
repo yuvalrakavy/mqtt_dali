@@ -42,6 +42,7 @@ async fn group_scalar_literal_ignored_write_unknowns_and_pre_send_cut_are_truthf
                 b"h01A0\n" => b"J7F\n",
                 b"h0190\n" if mode == 3 => b"N\n",
                 b"h0190\n" => b"JFF\n",
+                b"h0199\n" => b"J00\n",
                 b"h8100\n" => b"N\n", // Ignored native group OFF: actual remains127.
                 b"h00FE\n" => {
                     let stale = native_owner

@@ -704,6 +704,10 @@ impl ProcessService for DaliService {
                         if completed.request.started {group_output::invalidate_actual(&mut snapshot,completed.request.report.bus);}
                         Some(output::settings::accept(&snapshot,completed,&hat))
                     }else{None};
+                    let emergency_result=if let Some(physical::Completion::Emergency(completed))=&mut completion {
+                        if completed.request.started {group_output::invalidate_actual(&mut snapshot,completed.request.report.bus);}
+                        Some(emergency::accept(&snapshot,completed,&hat))
+                    }else{None};
                     let input_actions_allowed=snapshot.phase==Phase::Ready;
                     self.state.send_replace(Some(snapshot.clone()));
                     let _=self.handle.updates.send(snapshot);
@@ -717,6 +721,7 @@ impl ProcessService for DaliService {
                         memory::finish(completed.request,result);
                       }
                       physical::Completion::OutputSettings(completed)=>output::settings::finish(completed.request,output_settings_result.expect("output settings accepted before publication")),
+                      physical::Completion::Emergency(completed)=>emergency::finish(completed.request,emergency_result.expect("emergency accepted before publication")),
                       physical::Completion::GroupOutput(completed)=>group_output::finish(completed.request,group_output_result.expect("group output accepted before publication")),
                       physical::Completion::InputFeedback(completion)=>input::feedback::finish(completion.request,feedback_result.expect("feedback accepted before publication")),
                       physical::Completion::InputSettings(mut completion)=>{
@@ -1056,6 +1061,44 @@ impl ProcessService for DaliService {
                         Err(error) => output::settings::finish(request, Err(error)),
                     }
                 }
+                Message::Emergency(request) => {
+                    let result = (|| {
+                        if request.reply.is_closed() || Instant::now() >= request.deadline {
+                            return Err(ServiceError::Expired);
+                        }
+                        if request.action.writing()
+                            && identification::blocks(&self.handle, &request.target)
+                        {
+                            return Err(ServiceError::Rejected(
+                                "stop identification before configuring this fixture".into(),
+                            ));
+                        }
+                        let route = emergency::resolve(
+                            &self.handle.snapshot().expect("service started"),
+                            &request.target,
+                            &request.action,
+                            &request.context,
+                        )?;
+                        if route.revision != request.report.revision {
+                            return Err(ServiceError::Rejected(
+                                "original emergency revision changed before admission".into(),
+                            ));
+                        }
+                        Ok(route)
+                    })();
+                    match result {
+                        Ok(route) => {
+                            if request.action.writing() {
+                                let mut snapshot = self.handle.snapshot().expect("service started");
+                                group_output::invalidate_actual(&mut snapshot, route.output.bus);
+                                self.state.send_replace(Some(snapshot.clone()));
+                                let _ = self.handle.updates.send(snapshot);
+                            }
+                            hat.enqueue_emergency(request, route);
+                        }
+                        Err(error) => emergency::finish(request, Err(error)),
+                    }
+                }
                 Message::Input(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
                         let _ = request.reply.send(Err(ServiceError::Expired));
@@ -1164,6 +1207,9 @@ impl ProcessService for DaliService {
                 }
                 Message::OutputSettings(request) => {
                     output::settings::finish(request, Err(ServiceError::Closed))
+                }
+                Message::Emergency(request) => {
+                    emergency::finish(request, Err(ServiceError::Closed))
                 }
                 Message::Memory(request) => memory::finish(request, Err(ServiceError::Closed)),
                 Message::InputFeedback(request) => {

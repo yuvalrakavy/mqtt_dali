@@ -37,6 +37,7 @@ impl SettingsPeer {
                     "d\n" => "D24\n".to_string(),
                     "h01A0\n" => "J64\n".to_string(),
                     "h0190\n" => "J00\n".to_string(),
+                    "h0199\n" => "J00\n".to_string(),
                     _ => {
                         let (expected, reply) = script
                             .pop_front()

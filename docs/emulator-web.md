@@ -1,5 +1,10 @@
 # DALI Emulator browser and TCP HAT
 
+DT1 emergency fixtures have a profile editor, live battery/failure/readiness/
+outcome controls and clock-advance actions in their own cards. **Emergency I4**
+is a ready-to-use example. See [emergency lighting](emergency-lighting.md) for
+configuration, pending timeout and test/result semantics.
+
 Run an independent simulated installation:
 
 ```sh

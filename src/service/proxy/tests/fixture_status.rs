@@ -33,6 +33,7 @@ fn snapshot(status: Option<BusReply>, level: u8) -> Snapshot {
             actual_level: Some(Query::ActualLevel.decode(BusReply::Value(level))),
             status: status.map(|r| Query::Status.decode(r)),
             colour: None,
+            device_types: vec![],
             quality: if level == 255 {
                 output::Quality::Partial
             } else {
@@ -149,15 +150,49 @@ fn fixture_status_missing_stale_and_retired_observations_explicitly_clear_all_fi
 }
 #[test]
 fn fixture_status_properties_are_read_only_desired_values() {
-    for property in FLAGS
-        .into_iter()
-        .chain(["FixtureStatusRaw", "FixtureStatusQuality"])
-    {
+    for property in FLAGS.into_iter().chain([
+        "FixtureStatusRaw",
+        "FixtureStatusQuality",
+        "SwitchingSupported",
+        "EmergencySupported",
+    ]) {
         let values = PropertyMap::from_iter([(property.into(), json!(false))]);
         assert!(
             matches!(state::intent(&values, None), Err(OpError::Unsupported(_))),
             "status property became writable: {property}"
         );
+    }
+}
+
+#[test]
+fn output_type_capabilities_are_independent_and_clear_when_evidence_is_retired() {
+    for (kind, switching, emergency) in [(7, true, false), (1, false, true), (0, false, false)] {
+        let mut current = snapshot(Some(BusReply::Value(4)), 255);
+        current.outputs.get_mut(TARGET).unwrap().device_types = vec![Some(kind)];
+        let values = projected(&current);
+        assert_eq!(values["SwitchingSupported"], switching);
+        assert_eq!(values["EmergencySupported"], emergency);
+        assert_eq!(
+            values["Available"], false,
+            "type evidence fabricated usable brightness"
+        );
+        for retired in ["stale", "disconnected", "generation", "missing"] {
+            let mut old = current.clone();
+            match retired {
+                "stale" => old.outputs.get_mut(TARGET).unwrap().quality = output::Quality::Stale,
+                "disconnected" => old.hardware = Hardware::Closed,
+                "generation" => old.outputs.get_mut(TARGET).unwrap().context = context(2),
+                _ => old.outputs.clear(),
+            }
+            let values = projected(&old);
+            for key in ["SwitchingSupported", "EmergencySupported"] {
+                assert_eq!(
+                    values[key],
+                    Value::Null,
+                    "retired native type remained actionable:{retired}/{key}"
+                );
+            }
+        }
     }
 }
 #[tokio::test]

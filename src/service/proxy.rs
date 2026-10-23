@@ -41,6 +41,9 @@ impl DeviceDriver for DaliProxy {
                 "assign_group",
                 "configure_input",
                 "configure_output",
+                "configure_emergency",
+                "start_emergency_test",
+                "stop_emergency_test",
                 "set_input_feedback",
                 "set_group_output",
                 "set_group_color",
@@ -74,6 +77,7 @@ impl DeviceDriver for DaliProxy {
                     "read_luminaire_data",
                     "read_energy_data",
                     "read_diagnostics",
+                    "read_emergency",
                 ]
                 .into_iter()
                 .map(|name| CommandSpec::new(name, CommandClass::Read)),
@@ -286,6 +290,27 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::Emergency(action, revision) = &change {
+            if !action.writing() {
+                let report = self
+                    .handle
+                    .emergency(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("individual output target required".into())
+                        })?,
+                        action.clone(),
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(15),
+                        Some(*revision),
+                        None,
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(report)
+                    .map(Some)
+                    .map_err(|error| OpError::Unusable(error.to_string()));
+            }
+        }
         if let Operation::Memory(action, revision) = &change {
             let report = self
                 .handle
@@ -463,6 +488,25 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::Emergency(action, revision) => {
+                let report = self
+                    .handle
+                    .emergency(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("individual output target required".into())
+                        })?,
+                        action,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(15),
+                        Some(revision),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(report)
+                    .map(Some)
+                    .map_err(|error| OpError::Unusable(error.to_string()));
+            }
             Operation::Memory(..) => {
                 unreachable!("memory reads dispatched before metadata completion")
             }
@@ -996,6 +1040,7 @@ enum Operation {
     InputFeedback(input::feedback::Action),
     InputSettings(input::settings::Action),
     OutputSettings(output::settings::Action),
+    Emergency(emergency::Action, u64),
     Restore(restoration::Action),
     Reassignment(Assignment, discovery::Space),
     SavedScene,
@@ -1015,6 +1060,22 @@ impl Operation {
         context: &RequestContext,
     ) -> Result<(), ServiceError> {
         match self {
+            Self::Emergency(action, revision) => {
+                let route = emergency::resolve(
+                    snapshot,
+                    target.ok_or_else(|| {
+                        ServiceError::Rejected("individual output target required".into())
+                    })?,
+                    action,
+                    context,
+                )?;
+                if route.revision != *revision {
+                    return Err(ServiceError::Rejected(
+                        "original emergency revision changed before admission".into(),
+                    ));
+                }
+                Ok(())
+            }
             Self::GroupOutput(action) => group_output::resolve(
                 snapshot,
                 target.ok_or_else(|| ServiceError::Rejected("group target required".into()))?,
@@ -1132,6 +1193,7 @@ impl Operation {
     }
     fn budget(&self) -> Duration {
         Duration::from_secs(match self {
+            Self::Emergency(..) => 15,
             Self::Memory(..) => 15,
             Self::GroupOutput(_) => 15,
             Self::InputFeedback(_) => 8,
@@ -1384,6 +1446,20 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::Emergency(action, revision) => value(
+                handle
+                    .emergency(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("individual output target required".into())
+                        })?,
+                        action,
+                        context,
+                        deadline,
+                        Some(revision),
+                        None,
+                    )
+                    .await?,
+            ),
             Operation::Memory(action, revision) => value(
                 handle
                     .memory(
@@ -1624,6 +1700,68 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if matches!(
+        call.command.as_str(),
+        "read_emergency" | "configure_emergency" | "start_emergency_test" | "stop_emergency_test"
+    ) {
+        if target.is_none() {
+            return Err(OpError::Rejected(
+                "individual output target required".into(),
+            ));
+        }
+        let action = match call.command.as_str() {
+            "read_emergency" => {
+                if !call.params.is_empty() {
+                    return Err(OpError::Rejected(
+                        "read_emergency accepts no parameters".into(),
+                    ));
+                }
+                emergency::Action::Read
+            }
+            "configure_emergency" => {
+                #[derive(serde::Deserialize)]
+                #[serde(deny_unknown_fields)]
+                struct Params {
+                    expected_revision: u64,
+                    settings: emergency::Patch,
+                }
+                let p: Params = decode(call)?;
+                p.settings.validate().map_err(op_error)?;
+                emergency::Action::Configure {
+                    expected: p.expected_revision,
+                    settings: p.settings,
+                }
+            }
+            "start_emergency_test" => {
+                #[derive(serde::Deserialize)]
+                #[serde(deny_unknown_fields)]
+                struct Params {
+                    expected_revision: u64,
+                    test: crate::dali::emergency::Test,
+                }
+                let p: Params = decode(call)?;
+                emergency::Action::Start {
+                    expected: p.expected_revision,
+                    test: p.test,
+                }
+            }
+            _ => {
+                #[derive(serde::Deserialize)]
+                #[serde(deny_unknown_fields)]
+                struct Params {
+                    expected_revision: u64,
+                }
+                let p: Params = decode(call)?;
+                emergency::Action::Stop {
+                    expected: p.expected_revision,
+                }
+            }
+        };
+        return Ok(Operation::Emergency(
+            action,
+            snapshot.model.inventory().revision,
+        ));
+    }
     if matches!(
         call.command.as_str(),
         "read_identity"

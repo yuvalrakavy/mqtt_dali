@@ -4,6 +4,9 @@ use serde::Serialize;
 #[path = "model/diagnostics_tests.rs"]
 mod diagnostics_tests;
 #[cfg(test)]
+#[path = "model/emergency_tests.rs"]
+mod emergency_tests;
+#[cfg(test)]
 #[path = "model/energy_tests.rs"]
 mod energy_tests;
 #[cfg(test)]
@@ -38,6 +41,8 @@ struct Gear {
     colour_state: Option<super::colour::State>,
     #[serde(skip_serializing_if = "Option::is_none")]
     switching_state: Option<super::switching::State>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    emergency_state: Option<super::emergency::State>,
 }
 impl Gear {
     fn selected(&self, address: u8) -> bool {
@@ -135,6 +140,7 @@ impl Model {
                             config.colour = gear.colour_state.as_ref().map(|s| s.actual());
                             config.colour_memory = gear.colour_state.as_ref().map(|s| s.memory());
                             config.switching = gear.switching_state.as_ref().map(|s| s.profile());
+                            config.emergency = gear.emergency_state.as_ref().map(|s| s.profile());
                             config.settings = Some(super::scenario::GearSettings {
                                 min_level: gear.min_level,
                                 max_level: gear.max_level,
@@ -174,6 +180,11 @@ impl Model {
         // Existing random addresses in the validated candidate are explicit;
         // generate new fixtures from the live RNG instead of replaying seed0.
         for (gear, generate) in added.outputs.iter_mut().zip(output_random) {
+            gear.emergency_state = gear
+                .config
+                .emergency
+                .clone()
+                .map(|profile| super::emergency::State::new(profile, self.now_ms));
             if generate {
                 gear.config.random_address = Some(self.new_random(false)?);
             }
@@ -225,6 +236,11 @@ impl Model {
         if generate {
             source.config.random_address = Some(self.new_random(false)?);
         }
+        source.emergency_state = source
+            .config
+            .emergency
+            .clone()
+            .map(|profile| super::emergency::State::new(profile, self.now_ms));
         self.buses
             .iter_mut()
             .find(|b| b.number == number)
@@ -267,6 +283,23 @@ impl Model {
             .inputs
             .push(source);
         Ok(())
+    }
+    pub fn set_emergency(
+        &mut self,
+        id: &str,
+        patch: super::emergency::LivePatch,
+    ) -> Result<(), String> {
+        for bus in &mut self.buses {
+            if let Some(gear) = bus.outputs.iter_mut().find(|gear| gear.config.id == id) {
+                let state = gear
+                    .emergency_state
+                    .as_mut()
+                    .ok_or("fixture has no emergency profile")?;
+                state.patch(patch, self.now_ms);
+                return Ok(());
+            }
+        }
+        Err("output ID does not exist".into())
     }
     pub fn remove_fixture(&mut self, id: &str) -> Result<(), String> {
         for bus in &mut self.buses {
@@ -342,6 +375,10 @@ impl Model {
                                     virtual_level: config.level,
                                 });
                         Gear {
+                            emergency_state: config
+                                .emergency
+                                .clone()
+                                .map(|profile| super::emergency::State::new(profile, 0)),
                             colour_state,
                             switching_state,
                             config,
@@ -384,6 +421,9 @@ impl Model {
                 }
             }
             for gear in &mut bus.outputs {
+                if let Some(emergency) = &mut gear.emergency_state {
+                    emergency.advance_to(self.now_ms);
+                }
                 if gear
                     .initialize_until
                     .is_some_and(|until| self.now_ms >= until)
@@ -589,6 +629,9 @@ impl Model {
                 if let Some(switching) = &mut gear.switching_state {
                     switching.observe(frame);
                 }
+                if let Some(emergency) = &mut gear.emergency_state {
+                    emergency.observe(frame);
+                }
             }
         }
         // One shared broadcast latch suffices: all gear on a modeled bus hears
@@ -726,6 +769,20 @@ impl Model {
                 continue;
             }
             if address & 1 == 1 && opcode >= 0xe0 {
+                if let Some(emergency) = &mut gear.emergency_state {
+                    if let Some(reply) = emergency.command(
+                        frame,
+                        &mut gear.dtr,
+                        self.now_ms,
+                        enabled_type == Some(1),
+                    ) {
+                        known = true;
+                        if let Some(value) = reply {
+                            replies.push(value);
+                        }
+                        continue;
+                    }
+                }
                 if let Some(switching) = &mut gear.switching_state {
                     if let Some(reply) =
                         switching.command(frame, gear.dtr[0], self.now_ms, enabled_type == Some(7))

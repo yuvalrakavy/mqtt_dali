@@ -76,9 +76,16 @@ explicit dispatcher policy. Physical repeat cardinality remains unverified.
 Base coverage includes addressing, DTRs, direct level/MASK, off/steps/max/min,
 groups/scenes and selected queries/configuration. Levels currently change
 immediately. The DT8 colour profile below adds selected colour operations.
-Fade timing, timed UP/DOWN, configurable feedback, emergency and memory/data
-models remain P4 extensions. Unsupported operations never fabricate a
+Fade timing and timed UP/DOWN remain extensions. Opt-in feedback, DT1 emergency
+and memory/data profiles are documented below and in their capability guides.
+Unsupported operations never fabricate a
 positive device reply. N proves HAT transmission, not device support.
+
+DT1 fixtures can opt into an `emergency` profile. Literal native enable/repeat
+handling, settings, pending/running/completed tests and bounded schedules use
+the existing model clock. The separate UI configures profiles and simulates
+battery/fault/readiness/outcomes. See [emergency lighting](emergency-lighting.md)
+and `examples/emulator/emergency-i4.json` for native units and modeling limits.
 
 ## Input current-value profiles
 

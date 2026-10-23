@@ -1,6 +1,7 @@
 //! Independent ATX wire and physical-fixture emulator with optional local UI.
 mod colour;
 pub mod control;
+pub mod emergency;
 mod input;
 pub mod memory;
 pub mod model;

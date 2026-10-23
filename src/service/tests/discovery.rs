@@ -631,11 +631,10 @@ async fn discovery_retired_authority_and_invalid_bounds_send_no_uart_probe() {
         );
     }
     assert!(
-        peer.commands
-            .lock()
-            .unwrap()
-            .iter()
-            .all(|c| matches!(c.as_slice(), b"v\n" | b"d\n" | b"h01A0\n" | b"h0190\n")),
+        peer.commands.lock().unwrap().iter().all(|c| matches!(
+            c.as_slice(),
+            b"v\n" | b"d\n" | b"h01A0\n" | b"h0190\n" | b"h0199\n"
+        )),
         "invalid discovery reached UART"
     );
     assert!(running.stop().await);

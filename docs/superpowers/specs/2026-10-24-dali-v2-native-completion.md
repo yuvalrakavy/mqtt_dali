@@ -143,7 +143,8 @@ on FE or a valid type greater than eight. Reuse the existing discovery evidence
 when color sampling already occurs; do not probe twice. Retain it in the existing
 output observation, separately from color selection/samples so a type-only read
 does not enable full color sampling on subsequent reads. Base writes need no
-new capability preflight; their next normal read refreshes evidence. No separate
+new capability preflight; their ordinary post-write readback refreshes evidence
+too, keeping relay presentation stable after a power toggle. No separate
 capability cache, configuration field, worker or persistent device-kind inference.
 The same original request deadline applies. Type evidence cannot make missing
 base readings available or change independently successful base-state quality.

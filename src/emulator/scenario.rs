@@ -70,6 +70,8 @@ pub struct Output {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub switching: Option<Switching>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub emergency: Option<Box<super::emergency::Profile>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub settings: Option<GearSettings>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub colour_memory: Option<super::colour::Memory>,
@@ -256,6 +258,12 @@ impl Scenario {
                 }
             }
             for output in &bus.outputs {
+                if let Some(emergency) = &output.emergency {
+                    if output.device_type != 1 {
+                        return Err("emergency profile requires device type1".into());
+                    }
+                    emergency.validate()?;
+                }
                 if let Some(memory) = &output.memory {
                     memory.validate()?;
                 }

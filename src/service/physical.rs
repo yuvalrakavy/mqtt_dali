@@ -1,7 +1,7 @@
 //! One concrete owner for input reads, output operations and commissioning on the HAT.
 use super::{
-    commissioning, discovery, group_output, groups, input::readback, memory, output, reassignment,
-    restoration, scene_settings, scenes, ServiceError,
+    commissioning, discovery, emergency, group_output, groups, input::readback, memory, output,
+    reassignment, restoration, scene_settings, scenes, ServiceError,
 };
 use crate::atx::{connection::Connection, transactions::Transactions};
 use tokio::time::Instant;
@@ -9,6 +9,7 @@ use tokio::time::Instant;
 pub(super) enum Work {
     Memory(memory::Request, memory::Route),
     OutputSettings(output::settings::Request, output::settings::Route),
+    Emergency(emergency::Request, emergency::Route),
     GroupOutput(group_output::Request, group_output::Route),
     InputFeedback(
         super::input::feedback::Request,
@@ -34,6 +35,7 @@ impl Work {
     pub fn changes_group_values(&self) -> bool {
         match self {
             Self::OutputSettings(q, _) => q.action.writing(),
+            Self::Emergency(q, _) => q.action.writing(),
             Self::GroupOutput(q, _) => q.action.writing(),
             Self::Output(q, _) => q.intent.is_some(),
             Self::Scenes(q, _) => q.action.writing(),
@@ -59,6 +61,7 @@ impl Work {
         match self {
             Self::Memory(_, r) => r.bus,
             Self::OutputSettings(_, r) => r.output.bus,
+            Self::Emergency(_, r) => r.output.bus,
             Self::GroupOutput(_, r) => r.bus,
             Self::InputFeedback(_, r) => r.bus,
             Self::Restore(_, r) => r.bus,
@@ -106,6 +109,7 @@ impl Work {
         match self {
             Self::Memory(q, _) => q.deadline,
             Self::OutputSettings(q, _) => q.deadline,
+            Self::Emergency(q, _) => q.deadline,
             Self::GroupOutput(q, _) => q.deadline,
             Self::InputFeedback(q, _) => q.deadline,
             Self::Restore(q, _) => q.deadline,
@@ -124,6 +128,7 @@ impl Work {
         match self {
             Self::Memory(q, _) => q.reply.is_closed(),
             Self::OutputSettings(q, _) => q.reply.is_closed(),
+            Self::Emergency(q, _) => q.reply.is_closed(),
             Self::GroupOutput(q, _) => q.reply.is_closed(),
             Self::InputFeedback(q, _) => q.reply.is_closed(),
             Self::Restore(q, _) => q.reply.is_closed(),
@@ -140,6 +145,9 @@ impl Work {
     }
     pub fn mutating(&self) -> bool {
         if matches!(self,Self::OutputSettings(q,_)if q.action.writing()) {
+            return true;
+        }
+        if matches!(self,Self::Emergency(q,_)if q.action.writing()) {
             return true;
         }
         if matches!(self,Self::GroupOutput(q,_)if q.action.writing()) {
@@ -180,6 +188,10 @@ impl Work {
                 .output
                 .context
                 .operation_span(&r.output.controller, q.action.name()),
+            Self::Emergency(q, r) => r
+                .output
+                .context
+                .operation_span(&r.output.controller, q.action.name()),
             Self::GroupOutput(q, r) => r.context.operation_span(&r.controller, q.action.name()),
             Self::InputFeedback(q, r) => r.context.operation_span(&r.controller, q.action.name()),
             Self::Restore(q, r) => r.context.operation_span(&r.controller, q.action.name()),
@@ -212,6 +224,10 @@ impl Work {
                 q.reply.closed().await
             }
             Self::OutputSettings(q, _) => {
+                // WAIT: v2-hat-loop
+                q.reply.closed().await
+            }
+            Self::Emergency(q, _) => {
                 // WAIT: v2-hat-loop
                 q.reply.closed().await
             }
@@ -276,6 +292,7 @@ impl Work {
             Self::OutputSettings(q, r) => {
                 Run::OutputSettings(r.clone(), q.deadline, q.target.clone())
             }
+            Self::Emergency(q, r) => Run::Emergency(r.clone(), q.deadline, q.target.clone()),
             Self::GroupOutput(q, r) => Run::GroupOutput(r.clone(), q.deadline, q.target.clone()),
             Self::InputFeedback(q, r) => {
                 Run::InputFeedback(r.clone(), q.deadline, q.target.clone())
@@ -336,6 +353,14 @@ impl Work {
                         output::settings::execute(link, route, stamp, deadline, target).await;
                     Outcome {
                         sample: Sample::OutputSettings(value.observation),
+                        error: value.error,
+                        recovery: value.recovery,
+                    }
+                }
+                Run::Emergency(route, deadline, target) => {
+                    let value = emergency::execute(link, route, stamp, deadline, target).await;
+                    Outcome {
+                        sample: Sample::Emergency(value.observation),
                         error: value.error,
                         recovery: value.recovery,
                     }
@@ -462,6 +487,14 @@ impl Work {
                     error,
                 })
             }
+            (Self::Emergency(request, _), sample) => Completion::Emergency(emergency::Completion {
+                request,
+                observation: sample.map(|s| match s {
+                    Sample::Emergency(o) => o,
+                    _ => unreachable!("physical result kind"),
+                }),
+                error,
+            }),
             (Self::Restore(request, _), sample) => Completion::Restore(restoration::Completion {
                 request,
                 observation: sample.map(|s| match s {
@@ -579,6 +612,7 @@ impl Work {
 enum Run {
     Memory(memory::Route, Instant, String),
     OutputSettings(output::settings::Route, Instant, String),
+    Emergency(emergency::Route, Instant, String),
     GroupOutput(group_output::Route, Instant, String),
     InputFeedback(super::input::feedback::Route, Instant, String),
     InputSettings(super::input::settings::Route, Instant, String),
@@ -595,6 +629,7 @@ enum Run {
 pub(super) enum Sample {
     Memory(Box<memory::Observation>),
     OutputSettings(output::settings::Observation),
+    Emergency(emergency::Observation),
     GroupOutput(group_output::Observation),
     InputFeedback(super::input::feedback::Observation),
     InputSettings(super::input::settings::Observation),
@@ -613,6 +648,7 @@ impl Sample {
         match self {
             Self::Memory(value) => value.stale = true,
             Self::OutputSettings(value) => value.stale = true,
+            Self::Emergency(value) => value.stale = true,
             Self::GroupOutput(value) => value.stale = true,
             Self::InputFeedback(value) => value.stale = true,
             Self::InputSettings(value) => value.stale = true,
@@ -640,6 +676,7 @@ pub(super) struct Outcome {
 pub(super) enum Completion {
     Memory(memory::Completion),
     OutputSettings(output::settings::Completion),
+    Emergency(emergency::Completion),
     GroupOutput(group_output::Completion),
     InputFeedback(super::input::feedback::Completion),
     InputSettings(super::input::settings::Completion),
@@ -661,6 +698,9 @@ impl Completion {
             }
             Self::OutputSettings(q) => {
                 output::settings::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
+            }
+            Self::Emergency(q) => {
+                emergency::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
             }
             Self::GroupOutput(q) => {
                 group_output::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))

@@ -16,6 +16,11 @@ problem, attempted approaches and alternatives promptly so the owner can steer.
 
 The `feat/dali-v2` worktree is developing the approved migration in phases. Current
 scope, verification and remaining work are recorded in `docs/v2-progress.md`.
+Common DT1 emergency read/settings/test operations use the existing physical
+owner and explicit status refresh. Nullable retained relay/emergency type facts
+come from bounded normal readback, independently of color selection. See
+`docs/emergency-lighting.md` and the combined native-completion specification;
+emulator clock/profile behavior is independent from the production codec.
 The default `mqtt_dali` now runs the managed v2 service through BridgeKit;
 `mqtt_dali_v2` is an alias. Both accept explicit `--check-config` to import v1
 into separate `dali.v2.json` if absent, or validate existing v2 without MQTT/HAT

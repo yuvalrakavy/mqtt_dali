@@ -194,6 +194,7 @@ async fn next(service: &mut DaliService) -> output::Request {
 }
 fn respond(service: Option<&DaliService>, request: output::Request, level: u8) {
     let sample = output::Observation {
+        device_types: vec![],
         context: request.context.clone(),
         actual_level: Some(Query::ActualLevel.decode(BusReply::Value(level))),
         status: Some(Query::Status.decode(BusReply::Value(4))),

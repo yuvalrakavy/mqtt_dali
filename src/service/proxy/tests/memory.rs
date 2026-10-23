@@ -5,6 +5,7 @@ use crate::{emulator::session::Emulator, service::tests::deadline};
 async fn memory_prepared_job_keeps_admission_revision_before_service_dispatch() {
     for (command, params) in [
         ("read_identity", PropertyMap::new()),
+        ("read_emergency", PropertyMap::new()),
         ("read_luminaire_data", PropertyMap::new()),
         (
             "read_energy_data",

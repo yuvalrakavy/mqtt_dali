@@ -97,6 +97,16 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
                 values.insert("Brightness".into(), Value::from(brightness));
             }
             project_fixture_status(&mut values, observation, lifecycle(snapshot, bus));
+            for (name, kind) in [("SwitchingSupported", 7), ("EmergencySupported", 1)] {
+                let support = observation
+                    .filter(|sample| {
+                        lifecycle(snapshot, bus) && sample.quality != output::Quality::Stale
+                    })
+                    .and_then(|sample| {
+                        crate::dali::emergency::supports(&sample.device_types, kind)
+                    });
+                values.insert(name.into(), support.map_or(Value::Null, Value::Bool));
+            }
             super::colour::project(
                 &mut values,
                 projection.color_representation,

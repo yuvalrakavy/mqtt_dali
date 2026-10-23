@@ -47,6 +47,7 @@ impl Peer {
                             b"d\n"=>Some(b"D24\n".to_vec()),
                             b"h01A0\n"=>Some(format!("J{level:02X}\n").into_bytes()),
                             b"h0190\n"=>Some(b"J04\n".to_vec()),
+                            b"h0199\n"=>Some(b"J00\n".to_vec()),
                             // Actual group0 membership of this fixture's sole output.
                             b"h01C0\n"=>Some(b"J01\n".to_vec()),
                             b"h01C1\n"=>Some(b"J00\n".to_vec()),

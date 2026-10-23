@@ -64,6 +64,7 @@ async fn managed_output_settings_cut_actual_and_groups_before_native_preflight()
     let mut script = vec![
         ("h01A0\n".into(), "J64\n".into()),
         ("h0190\n".into(), "J04\n".into()),
+        ("h0199\n".into(), "J00\n".into()),
         ("h01C0\n".into(), "J01\n".into()),
         ("h01C1\n".into(), "J00\n".into()),
         ("h01A0\n".into(), "J64\n".into()),

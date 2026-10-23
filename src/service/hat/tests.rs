@@ -513,6 +513,8 @@ async fn write_completion_uses_observed_level_instead_of_echoing_requested_brigh
     pty.peer.write_all(b"J7F\n").await.unwrap();
     assert_eq!(line(&mut pty.peer).await, b"h0190\n");
     pty.peer.write_all(b"J04\n").await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h0199\n");
+    pty.peer.write_all(b"J00\n").await.unwrap();
     output_complete(&mut hat).await;
     let completed = hat.take_completed_output().unwrap();
     assert!(completed.error.is_none());
@@ -567,6 +569,8 @@ async fn output_samples_distinguish_mask_missing_collision_and_partial_answers()
             pty.peer.write_all(level).await.unwrap();
             assert_eq!(line(&mut pty.peer).await, b"h0190\n");
             pty.peer.write_all(status).await.unwrap();
+            assert_eq!(line(&mut pty.peer).await, b"h0199\n");
+            pty.peer.write_all(b"J00\n").await.unwrap();
             pty
         });
         output_complete(&mut hat).await;
@@ -819,6 +823,8 @@ async fn completed_readback_before_a_power_cycle_is_partial_evidence_not_current
     pty.peer.write_all(b"J7F\n").await.unwrap();
     assert_eq!(line(&mut pty.peer).await, b"h0190\n");
     pty.peer.write_all(b"J04\n").await.unwrap();
+    assert_eq!(line(&mut pty.peer).await, b"h0199\n");
+    pty.peer.write_all(b"J00\n").await.unwrap();
     tokio::time::timeout(Duration::from_secs(1), async {
         while !hat.job.as_ref().unwrap().0.is_finished() {
             tokio::task::yield_now().await;

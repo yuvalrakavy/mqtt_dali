@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "clock": "frozen",
+  "repeat": "one_terminal",
+  "buses": [{
+    "number": 0,
+    "outputs": [
+      {"id": "maintained-emergency", "short_address": 0, "device_type": 1, "level": 91,
+       "emergency": {"function_test_seconds": 10, "duration_test_seconds": 240}},
+      {"id": "relay", "short_address": 1, "device_type": 7, "level": 0},
+      {"id": "dimmer", "short_address": 2, "level": 100}
+    ],
+    "inputs": [{"id": "wall-panel", "short_address": 0, "instances": [1]}]
+  }]
+}

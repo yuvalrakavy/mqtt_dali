@@ -78,6 +78,10 @@ pub enum Control {
         id: String,
         failed: bool,
     },
+    SetEmergency {
+        id: String,
+        settings: super::emergency::LivePatch,
+    },
     BusPower {
         bus: u8,
         powered: bool,
@@ -470,6 +474,7 @@ impl State {
                 self.model.set_input_value(&id, instance, bytes)?;
             }
             Control::SetLampFailure { id, failed } => self.model.set_lamp_failure(&id, failed)?,
+            Control::SetEmergency { id, settings } => self.model.set_emergency(&id, settings)?,
             Control::BusPower { bus, powered } => {
                 self.model.set_power(bus, powered)?;
                 self.enqueue(record(bus, if powered { "D24" } else { "D04" }))?;

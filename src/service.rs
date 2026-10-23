@@ -12,6 +12,7 @@ use tokio::{
 
 pub mod commissioning;
 pub mod discovery;
+pub mod emergency;
 pub mod group_output;
 pub mod groups;
 mod hat;
@@ -305,6 +306,7 @@ enum Message {
     Discovery(discovery::Request),
     Output(output::Request),
     OutputSettings(output::settings::Request),
+    Emergency(emergency::Request),
     Input(input::readback::Request),
     InputSettings(input::settings::Request),
     InputFeedback(input::feedback::Request),

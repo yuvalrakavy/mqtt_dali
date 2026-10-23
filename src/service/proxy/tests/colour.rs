@@ -215,6 +215,7 @@ fn mqtt_colour_projection_never_normalizes_inactive_stale_or_unknown_evidence() 
         actual_level: None,
         status: None,
         colour: Some(sample),
+        device_types: vec![],
         quality: output::Quality::Current,
         reason: None,
         stamp: output::Stamp {

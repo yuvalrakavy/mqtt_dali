@@ -75,7 +75,7 @@ enum Done {
     Boundary(Result<u64, TransactionError>),
     Recover(Result<(), TransactionError>),
     Close(Result<(), TransactionError>, bool),
-    Physical(physical::Outcome),
+    Physical(Box<physical::Outcome>),
     InputBoundary(Vec<input::Cut>, Result<u64, TransactionError>),
     Settled(Result<(), TransactionError>),
 }
@@ -594,6 +594,7 @@ impl Hat {
                 }
             }
             Done::Physical(outcome) => {
+                let outcome = *outcome;
                 let physical = self.physical.as_mut().expect("owned physical result");
                 physical.outcome = Some(outcome);
                 physical.stage = physical::Stage::Settling;
@@ -911,6 +912,22 @@ impl Hat {
         }
         self.enqueue_physical(physical::Work::OutputSettings(request, route));
     }
+    pub(super) fn enqueue_emergency(
+        &mut self,
+        request: super::emergency::Request,
+        route: super::emergency::Route,
+    ) {
+        if request.action.writing()
+            && self
+                .settings
+                .as_ref()
+                .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
+        {
+            super::emergency::finish(request,Err(ServiceError::Rejected("emergency writes require --uart-repeat-terminals 1 or 2 for a known HAT profile".into())));
+            return;
+        }
+        self.enqueue_physical(physical::Work::Emergency(request, route));
+    }
     pub(super) fn enqueue_memory(
         &mut self,
         request: super::memory::Request,
@@ -1006,6 +1023,9 @@ impl Hat {
                 if let physical::Work::OutputSettings(request, _) = &mut physical.work {
                     request.started = request.action.writing();
                 }
+                if let physical::Work::Emergency(request, _) = &mut physical.work {
+                    request.started = request.action.writing();
+                }
                 if let physical::Work::GroupOutput(request, _) = &mut physical.work {
                     request.started = request.action.writing();
                 }
@@ -1030,7 +1050,7 @@ impl Hat {
                     JobKind::Physical,
                     async move {
                         // WAIT: v2-physical-operation
-                        Done::Physical(execution.await)
+                        Done::Physical(Box::new(execution.await))
                     }
                     .instrument(span),
                 );

@@ -13,7 +13,12 @@ export async function switchingSettingsFlow({page,origin,artifacts,inventory,con
   const save=async()=>{await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'relay settings did not confirm and close');await idle();};
   const fill=async(label,raw)=>page.getByLabel(label,{exact:true}).fill(String(raw));
   for(const viewport of [{width:390,height:844},{width:1440,height:1024}]){
-    await page.setViewportSize(viewport);await page.goto(`${origin}/buses/1`);await idle();await open();
+    await page.setViewportSize(viewport);await page.goto(`${origin}/buses/1`);await idle();
+    const relayRow=page.locator('.device-row').filter({has:page.getByRole('textbox',{name:`Name ${item(0).name}`,exact:true})});
+    await relayRow.getByRole('button',{name:`Actions ${item(0).name}`,exact:true}).click();await page.getByRole('button',{name:'Read current values',exact:true}).click();
+    await until(()=>relayRow.locator('.device-type').textContent().then(text=>text==='DT7 relay'),'normal Read did not retain relay support');assert.equal(await relayRow.getByRole('slider').count(),0,'proved relay still offers continuous dimming');
+    for(const on of [false,true]){await relayRow.getByRole('button',{name:`Power ${item(0).name}`,exact:true}).click();await until(async()=>(await selected()).level===(on?254:0),'relay power toggle did not reach native contact');await until(async()=>await relayRow.getByRole('button',{name:`Power ${item(0).name}`,exact:true}).isEnabled(),'relay power readback did not settle');assert.equal(await relayRow.getByRole('slider').count(),0,'power toggle discarded retained relay support');}
+    await open();
     // Number then checkbox changes must retain the unblurred native edit.
     await fill('Upward on threshold',50);await page.getByLabel('Disable upward off threshold',{exact:true}).uncheck();await fill('Upward off threshold',100);
     await page.getByLabel('Disable downward on threshold',{exact:true}).uncheck();await fill('Downward on threshold',150);await fill('Downward off threshold',200);await save();
