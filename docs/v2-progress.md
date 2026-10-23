@@ -5,6 +5,45 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4b7 — common fixture settings protocol foundation
+
+Frozen source `192c7b7`. Combined design and sequential final codec/contract and
+independent-model/compatibility source gates APPROVE, with no blockers. Reviews
+are source-only/read-only and same-family. No live hardware, Store, shared SDK,
+deployment, publication, push/merge or memory/skill changes are included.
+
+Checked `dali::gear::settings` values/plans cover minimum/maximum, power-on and
+bus-failure levels and basic fade time/rate; existing correlated Query gains
+PowerOnLevel/SystemFailureLevel/FadeTimeRate. Special255 meanings remain distinct:
+startup LastActive, failure Unchanged, packed fade numeric15/15, actual MASK.
+Rate0 remains raw unknown; basic time0 does not promise instantaneous output.
+DTR0 is followed by exactly one addressed repeated setter plan. This is a pure
+foundation, with no managed settings command/UI or runtime ownership change.
+
+Two focused runtime oracles first failed on inert timing/plan implementations;
+three initial value/query cases already passed. All22 focused codec/model/PTY
+cases now pass (0.722s execution), including all six typed settings through the
+standalone HAT process and actual correlated readback. Three new literal model
+tests verify already-existing behavior: adjacent repeat/100ms boundary, scopes,
+clamping with Off preserved, independent255 values and retained fade nibbles.
+Production model logic and scenario/snapshot shapes are unchanged.
+
+All nine intentional faults produce their named REDs,130s total; source restored
+before freeze/readers. Full final native passes **701/701 tests** across eleven
+binaries (72.434s execution,129.5s command; one opt-in browser test skipped).
+Strict Clippy18.6s, Pi library/four binaries4.1s, changed formatting, independent
+wait validation, whitespace and all10 affected control-table plans pass.
+No frontend/assets changed, so the latest actual984-command phone/desktop
+acceptance remains applicable; no redundant browser run was claimed.
+
+Guide: [common fixture settings](gear-settings.md). Evidence:
+`/tmp/dali-gear-settings-{red,green,targeted,controls}.log`,
+`/tmp/dali-gear-settings-acceptance.log` and
+`/tmp/dali-gear-settings-acceptance/`. Next: the managed individual settings
+service/strict MQTT/protected HTTP/browser slice, including fresh physical-limit
+preflight, crossed-limit ordering, actual readback and existing cache cuts.
+Other comprehensive capability rows remain explicitly pending.
+
 ## P4b6 — hardware group scalar Desired/State bindings
 
 Frozen production `c27d63a`; fixture/control/documentation correction `2a92da2`.
