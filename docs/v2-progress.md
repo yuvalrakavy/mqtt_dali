@@ -7,7 +7,8 @@ The approved architecture and phase acceptance criteria are in
 
 ## P4i8 — input feedback scalar bindings
 
-Implementation is under verification. Existing module/instance targets accept
+Accepted implementation `1cb2055` with compatibility correction `1cb11ea`.
+Existing module/instance targets accept
 boolean FeedbackActive Desired values and publish independent feedback evidence
 alongside measurements. Native/typed/web command report shapes and configuration
 files stay compatible. The owner caches the exact accepted feedback Arc, retires
@@ -24,7 +25,25 @@ maps/authority, module/instance isolation, unique HTTP rows, unknown/unsupported
 Off distinction, exact capture/deadline, native clear/revision invalidation,
 unchanged/coalesced trace ordering, sampled-only All and ignored native writes.
 The original behavioral test failed because no feedback State was published.
-Full regression, deliberate-fault controls and source gates remain in progress.
+Final full native acceptance passes **765/765** across eleven binaries (one
+opt-in browser skipped). Six new deliberate faults and both reanchored existing
+faults return their named REDs. Final strict Clippy, Pi library/four binaries,
+changed formatting, affected control plans, wait validation0findings, embedded
+asset reproduction and whitespace pass. Both sequential fresh source reviews
+APPROVE; the confirming correction review also APPROVES. Same-family/source-only
+review limits remain; root ran all runtime checks. No bridge UI/assets changed,
+so this phase claims no fresh browser run.
+
+The first full run caught an unintended sorted projection order and old tests
+expecting measurement-only HTTP fields/query counts. The fix preserves existing
+output/input/group order and adds module rows, explicit unsupported feature
+responses and exact updated HTTP/count assertions. Its targeted17 cases and
+corrected count case pass; the final full run includes all of them.
+Logs: `/tmp/dali-feedback-binding-{native-final,clippy-final,pi-final}.log`,
+`/tmp/dali-feedback-binding-controls.log`, `-wide-control.log`, `-group-control.log`,
+`-plans-final.log`, `-waits-final.log`, `-assets.log` and `-delta.log`.
+Native parameter settings, broader feedback profiles and physical certification
+remain separate work.
 Spec: [feedback bindings](superpowers/specs/2026-10-23-dali-v2-feedback-bindings.md).
 
 The parallel emulator agent completed its configurable standalone TCP HAT and

@@ -138,5 +138,32 @@ Actual SDK Reports::merge confirms unchanged reports also replace aggregate
 context. The first gate caught asymmetric replay in the proposed feedback-only
 suppression. The revised whole-State/owner-cause shape is approved; a fresh Arc
 protects same-value captures without an operation-sequence framework.
-Design gate surely yes: buildability, original authority/trace publication,
+Design gate APPROVE: buildability, original authority/trace publication,
 stale-evidence scope, refresh fairness and requirement/alternative audit.
+
+## As built and acceptance
+
+Production `1cb2055`, corrected at `1cb11ea`, implements both phases. Native
+feedback Report shapes remain unchanged through an internal Reply wrapper.
+Owner-accepted Arc captures, scope retirement, whole-target State and aggregate
+cause handling follow the approved mechanism. The merge preserves the existing
+output/input/group projection order and appends new module rows.
+
+Twelve new native tests cover commands, scalar/atomic writes, malformed maps and
+original authority, actual ignored writes, exact-capture/deadline refusal,
+unknown/unsupported/Off, revisions/native address clearing, same-value/replayed/
+coalesced contexts, sampled-only All refresh and one HTTP row per target.
+Fail-first evidence was absent feedback MQTT State. Six named guard-removal
+controls are RED, including the strict independent ignored-write peer; old wide
+input-budget and group pre-send cuts were reanchored and return their named REDs.
+
+The initial full native run had760pass/5fail: an unintended sorted projection
+order and existing tests expecting old query counts/measurement-only fields.
+The corrected stable merge and explicit new contract assertions pass targeted
+verification. Final full native **765/765** passes across eleven binaries with
+the opt-in browser skipped. Strict Clippy, Pi library/four binaries, changed
+formatting, all affected control plans, normal wait validation0, asset-byte
+reproduction and whitespace pass. Both sequential source reviews and one
+confirming correction reader APPROVE; same-family/source-only limits disclosed.
+No source suppression cache, operation counter, SDK/config/native-protocol/UI
+change or physical/live system operation was introduced.
