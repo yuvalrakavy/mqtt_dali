@@ -5,6 +5,59 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4i2 — managed input event settings and browser controls
+
+Implemented at frozen source `7bab05b`; `c899f02` corrects wait-registry metadata
+and two misplaced annotations without changing runtime behavior. The design,
+native/owner and UI/contract review lenses APPROVE; the native review also
+approved the metadata correction. Reviews were source-only/read-only and
+same-family. No live HAT, Store, deployment or publication changes occurred.
+
+Strict MQTT/HTTP and typed `read_input_settings` / `configure_input` share the
+existing physical owner. They read and patch enable, priority, all five event
+schemes, common event filters and three instance groups, then return actual
+readback. Writes retain the original target token, root revision and deadline;
+type/presence proofs distinguish disabled inputs from missing devices. Missing
+bytes remain unknown, FF remains data, and uncertain writes cannot claim success.
+Admission and settlement permanently retire old input Notices. Settings results
+do not replace native values or change saved configuration/identity.
+
+The protected input-instance row menu now opens Event settings. Its compact form
+supports changed-field saves, current hardware reads and refresh. Frozen authority,
+synchronous dismissal and layout cleanup prevent late replies from reviving a
+closed dialog. Schemes 0/3/4 are explicitly diagnostic-only in this bridge;
+scheme 1 requires a unique saved device/type and scheme 2 identifies the instance.
+Unknown-type filters remain raw and read-only. Operator/API details are in
+[input event settings](input-event-settings.md).
+
+Eight focused native cases and all **49 frontend tests** pass. All eleven
+intentional-fault controls produce intended REDs. One initial UI outcome control
+was masked by its fixture's requested-value mismatch; separating those conditions
+made the outcome, mismatch and lifetime controls each fail for their own guard.
+See `v2-managed-input-settings-controls.toml` and its ledger.
+
+The full native run passed **637 functional tests**; its sole additional failure
+was the wait registry. Two misplaced wrapper annotations and one undeclared local
+method were corrected, then both the registry test and standalone wait validation
+passed (zero findings). All 638 checks therefore passed across the full and
+targeted runs. The full run took 66.751 s execution / 125.1 s including compilation.
+Strict scoped Clippy, Pi library/four binaries, affected control plans, changed-file
+formatting, committed-asset byte checks and whitespace pass. Clippy's initial
+large-enum finding was fixed by boxing only the new internal diagnostic report.
+
+The real phone/desktop browser workflow passes through **894 owned commands in
+70.74 s**, including read/save/reopen and cancellation/navigation during a held
+entry read, plus the existing scene/address workflows. Both settings screenshots
+were inspected. Artifacts: `/tmp/dali-browser-708b3ee307975609fc7b3517b2a0b2d5`;
+logs: `/tmp/dali-managed-input-settings-browser2.log`,
+`/tmp/dali-managed-input-settings-acceptance`,
+`/tmp/dali-managed-input-settings-registry-final.log` and
+`/tmp/dali-managed-input-settings-wait-final.log`.
+
+Timers, supported indication/feedback, semantic emulator stimuli and group/source
+routing remain pending. No reusable skill change is needed: the existing independent
+guard/control requirement covers the fixture correction.
+
 ## P4i1 — native input event-setting foundation
 
 Implemented at frozen source `f71719c`; design and both source review lenses

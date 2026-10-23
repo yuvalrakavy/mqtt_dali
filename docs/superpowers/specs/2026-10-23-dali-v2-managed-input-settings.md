@@ -129,3 +129,20 @@ saved identity changes. Independent literal tests initially exposed a test-peer
 PTY lifetime error: disjoint field capture dropped its slave keeper. Capturing
 the whole PTY inside the task fixed the test infrastructure, without a transport
 change. Final focused native and browser acceptance cover the actual entry points.
+
+## As-built acceptance
+
+Implemented at `7bab05b`; metadata-only correction `c899f02`. All build/verify
+steps above are complete. The design and both final source lenses approve
+(same-family/source-only); the native lens also approves the metadata correction.
+Eight focused native cases, 49 frontend cases and eleven intended RED controls
+pass. Real phone/desktop browser acceptance passes 894 owned commands in 70.74 s,
+including actual row-menu settings and late-read dismissal/navigation.
+
+The full suite passed 637 functional cases and initially failed its separate wait
+registry test. Correcting two annotations and registering the local wrapper made
+that test and standalone validation pass; no runtime change followed the full run.
+Scoped strict Clippy, Pi library/four binaries, affected control plans, formatting,
+assets and whitespace pass. See the P4i2 entry in `../../v2-progress.md` for logs,
+control-fixture correction and remaining scope. Physical hardware, Store and
+deployment remain unverified and unchanged.

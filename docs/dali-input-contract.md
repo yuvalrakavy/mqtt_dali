@@ -4,10 +4,12 @@ This contributor guide describes `dali::input`, the pure codec used by input
 integration. It constructs query and configuration plans and interprets native
 event data. It performs no UART I/O. The managed service now connects
 resolved input frames to [live MQTT State/events](mqtt-inputs.md), separately from
-this pure codec. Hardware discovery, configuration and browser controls remain
-in progress. Saved named modules/instances and durable
-metadata rename are implemented separately in the
-[inventory contract](inventory-contract.md).
+this pure codec. Managed discovery, saved named modules/instances and durable
+metadata rename use the [inventory contract](inventory-contract.md).
+Enable, priority, event scheme, filter and instance-group configuration are
+available through the managed service and protected browser controls; see
+[input event settings](input-event-settings.md). Timers, feedback and natural
+emulator stimuli remain pending.
 
 Input short addresses are 0..63, independently of output addresses. Instances
 and input groups are 0..31. Use the validated `Address`, `Instance` and `Group`
