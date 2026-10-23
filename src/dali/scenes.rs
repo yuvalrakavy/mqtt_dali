@@ -77,6 +77,19 @@ pub enum Step {
     Query(u16),
 }
 
+/// Copy the current control level into DTR0 and read it. DT7 copies its virtual
+/// level, while QUERY ACTUAL LEVEL reports the binary contact. FF poisons stale
+/// DTR data before STORE; it cannot be a numeric capture result. Own the whole
+/// plan and require the configured transport repeat policy for STORE.
+pub fn capture_level(address: ShortAddress) -> [Step; 3] {
+    let target = Destination::Short(address);
+    [
+        Step::Send(colour::special(0xa3, 255)),
+        Step::Repeat(target.command(0x21)),
+        Step::Query(target.command(0x98)),
+    ]
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReportType {
     Known(ColourType),

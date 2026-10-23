@@ -2,8 +2,8 @@
 
 This contributor guide covers the native scene codec and physical emulator.
 Named-slot metadata, stored-scene reads, native recall and private per-fixture
-settings use shared MQTT/HTTP jobs. The Scenes screen and its reviewed multi-row
-capture/copy/clear workflows remain pending.
+settings use shared MQTT/HTTP jobs and the Scenes screen's reviewed multi-row
+capture/copy/clear workflows.
 No scene operation here has been validated on a physical HAT.
 
 ## Named-slot metadata
@@ -161,6 +161,17 @@ including only assigned RGBWAF channels, independently of the public component
 selection. A null candidate and reason preserve unknown/unsupported actual data.
 Actual and stored reads are sequential samples; no coherent instant is promised.
 
+For DT7 relays, Capture reads the **virtual control level**, not the binary
+actual contact0/254. Fresh bounded type evidence selects this path. Under the
+same owner it poisons DTR0 with FF, sends repeated addressed STORE ACTUAL LEVEL
+IN DTR0, then queries DTR0. Only a correlated0..254 result can become a candidate;
+missing/collided/FF or unknown type evidence remains unresolved. This read changes
+scratch DTR0, never the contact or stored scene. It requires a known HAT repeat
+profile; ordinary dimmer and DT8 capture still work without one. Actual MQTT
+output State remains binary for the relay. Applying the reviewed candidate stores
+its virtual value; recall evaluates the relay thresholds, so captured virtual
+level does not promise the same future contact state after other level changes.
+
 Replies identify scope, targets/tokens and revision, with `configuration_changed`,
 `saved`, native `stored`, `comparison`, optional `candidate` and `reason`. A
 confirmed save can survive a failed, partial or cancelled physical operation:
@@ -186,7 +197,8 @@ external edits. No backend multi-minute bus queue exists.
 
 Contributors use `service::scene_settings` and concrete
 `physical::Work::SceneSettings`, beside the accepted read/recall work kind.
-Fault controls: `v2-scene-settings-controls.toml`. UI validation belongs to P5h3;
+Fault controls: `v2-scene-settings-controls.toml` and `v2-dt7-capture-controls.toml`.
+The protected Scenes screen composes the same bounded operations;
 local PTY evidence does not certify a physical fixture.
 
 ## Storage and participation
@@ -197,8 +209,8 @@ recalls address those same slots; they do not create another set of scenes.
 
 | Stored data | Recall behavior |
 |---|---|
-| Level 0 | Switch off |
-| Level 1–254 | Recall that DALI code, subject to fixture limits |
+| Level 0 | Recall control level0: Off for dimmers; DT7 evaluates its downward thresholds |
+| Level 1–254 | Recall that DALI control code, subject to fixture limits; virtual for DT7 |
 | Level MASK (255), known colour type | Change colour; preserve brightness |
 | Known level, colour type MASK | Change brightness; preserve colour |
 | Both level and colour type MASK | Ignore this fixture; preserve pending colour too |

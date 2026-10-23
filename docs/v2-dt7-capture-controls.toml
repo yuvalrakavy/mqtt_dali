@@ -1,0 +1,100 @@
+# Run serially; restore source before verification/review.
+
+[[control]]
+name = "dt7_capture_stale_dtr_poison_removed"
+file = "src/dali/scenes.rs"
+anchor = "Step::Send(colour::special(0xa3, 255)),"
+replacement = "Step::Send(colour::special(0xa3, 0)),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_plan)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 virtual capture plan lost poison, repeat or individual address"
+
+[[control]]
+name = "dt7_capture_store_sent_once"
+file = "src/dali/scenes.rs"
+anchor = "Step::Repeat(target.command(0x21)),"
+replacement = "Step::Send(target.command(0x21)),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_plan)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 virtual capture plan lost poison, repeat or individual address"
+
+[[control]]
+name = "dt7_capture_reads_contact_instead_of_dtr"
+file = "src/dali/scenes.rs"
+anchor = "Step::Query(target.command(0x98)),"
+replacement = "Step::Query(target.command(0xa0)),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_plan)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 virtual capture plan lost poison, repeat or individual address"
+
+[[control]]
+name = "dt7_capture_ignores_individual_address"
+file = "src/dali/scenes.rs"
+anchor = "pub fn capture_level(address: ShortAddress) -> [Step; 3] {\n    let target = Destination::Short(address);"
+replacement = "pub fn capture_level(address: ShortAddress) -> [Step; 3] {\n    let _ = address; let target = Destination::Short(ShortAddress::new(0).unwrap());"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_plan)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 virtual capture plan lost poison, repeat or individual address"
+
+[[control]]
+name = "dt7_capture_relay_uses_contact_fallback"
+file = "src/service/scene_settings/capture.rs"
+anchor = "Some(true) => {\n            for step in codec::capture_level(route.address) {"
+replacement = "Some(true) => {\n            return Ok(match actual.level() { Some(LevelValue::Known(level)) => Some(level), _ => None });\n            #[allow(unreachable_code)]\n            for step in codec::capture_level(route.address) {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_mqtt)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 capture copied binary contact instead of virtual level"
+
+[[control]]
+name = "dt7_capture_mask_query_becomes_numeric"
+file = "src/service/scene_settings/capture.rs"
+anchor = "BusReply::Value(raw) => gear::Level::new(raw).ok(),"
+replacement = "BusReply::Value(raw) => Some(gear::Level::new(raw.min(254)).unwrap()),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_exact_plan)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 virtual capture fabricated or lost correlated DTR0 level"
+
+[[control]]
+name = "dt7_capture_unknown_type_uses_contact"
+file = "src/service/scene_settings/capture.rs"
+anchor = "None => Ok(None),"
+replacement = "None => Ok(match actual.level() { Some(LevelValue::Known(level)) => Some(level), _ => None }),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_type_proofs)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 capture type proof misclassified unknown or ordinary fixture"
+
+[[control]]
+name = "dt7_capture_short_multitype_tail_is_negative"
+file = "src/service/scene_settings/capture.rs"
+anchor = "return (n >= 2).then_some(false)"
+replacement = "return Some(false)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_type_proofs)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 capture type proof misclassified unknown or ordinary fixture"
+
+[[control]]
+name = "dt7_capture_partial_base_sends_scratch_plan"
+file = "src/service/scene_settings/capture.rs"
+anchor = "if actual.quality != output::Quality::Current {"
+replacement = "if false && actual.quality != output::Quality::Current {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_partial_base)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 capture peer saw unexpected native traffic"
+
+[[control]]
+name = "dt7_capture_stale_candidate_accepted"
+file = "src/service/owner/scene_changes.rs"
+anchor = "observed.stale |= !hat.evidence_current(route.bus, observed.stamp);"
+replacement = "observed.stale |= false;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_final_stamp)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 capture accepted candidate with retired physical stamp"
+
+[[control]]
+name = "dt7_capture_failed_send_is_ignored"
+file = "src/service/scene_settings/execute.rs"
+anchor = "if !replies.is_empty() && replies.iter().all(|r| matches!(r, BusReply::NoResponse)) =>"
+replacement = "if !replies.is_empty() =>"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_scene_capture_literal_send_failures)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 capture peer saw unexpected native traffic"

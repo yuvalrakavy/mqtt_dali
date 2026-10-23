@@ -1,0 +1,192 @@
+{
+ "rows": {
+  "dt7_capture_failed_send_is_ignored": {
+   "last_real": {
+    "at": "2026-10-23T08:24:20Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5b66a2adb0f5e837",
+     "row": "784283ee6a13bd66",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.0,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_ignores_individual_address": {
+   "last_real": {
+    "at": "2026-10-23T08:21:24Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3f139922ce521910",
+     "row": "c56e3d5f1ff00103",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.6,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_mask_query_becomes_numeric": {
+   "last_real": {
+    "at": "2026-10-23T08:22:11Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7a3dec7d37168e71",
+     "row": "bd75ccb5047e2ca4",
+     "test": null
+    },
+    "path": "command",
+    "secs": 23.9,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_partial_base_sends_scratch_plan": {
+   "last_real": {
+    "at": "2026-10-23T08:23:12Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7a3dec7d37168e71",
+     "row": "49e63f3bdabe624c",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.5,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_reads_contact_instead_of_dtr": {
+   "last_real": {
+    "at": "2026-10-23T08:21:07Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3f139922ce521910",
+     "row": "8cdabd12fc180a02",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.5,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_relay_uses_contact_fallback": {
+   "last_real": {
+    "at": "2026-10-23T08:21:47Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7a3dec7d37168e71",
+     "row": "63564bc1b9eac9e5",
+     "test": null
+    },
+    "path": "command",
+    "secs": 23.2,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_short_multitype_tail_is_negative": {
+   "last_real": {
+    "at": "2026-10-23T08:22:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:fd016e55abc3fab0",
+     "row": "99ffc4a92202c05a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 21.8,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_stale_candidate_accepted": {
+   "last_real": {
+    "at": "2026-10-23T08:23:32Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:52b1eac155e33085",
+     "row": "572fd714b574c9a9",
+     "test": null
+    },
+    "path": "command",
+    "secs": 19.5,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_stale_dtr_poison_removed": {
+   "last_real": {
+    "at": "2026-10-23T08:20:39Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3f139922ce521910",
+     "row": "c3cf3d7631245ba7",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.8,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_store_sent_once": {
+   "last_real": {
+    "at": "2026-10-23T08:20:52Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3f139922ce521910",
+     "row": "1365d4227a3a64f3",
+     "test": null
+    },
+    "path": "command",
+    "secs": 13.1,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  },
+  "dt7_capture_unknown_type_uses_contact": {
+   "last_real": {
+    "at": "2026-10-23T08:22:32Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7a3dec7d37168e71",
+     "row": "6ce158ead54ffacc",
+     "test": null
+    },
+    "path": "command",
+    "secs": 21.0,
+    "sha": "f25a009c6863c64304cbc9a699d77892ee513370",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

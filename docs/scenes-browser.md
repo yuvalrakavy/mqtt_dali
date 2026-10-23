@@ -32,6 +32,15 @@ Choose the fixture's action:
 An explicitly saved **Leave unchanged** row is a different state: the bridge
 expects that fixture to ignore this scene, and can verify or repair that setting.
 
+For DT7 relays, scene levels are virtual DALI control values. The existing
+Brightness percentage field represents that virtual level; it is separate from
+the contact On/Off shown on Devices. The Off scene choice recalls level0, whose
+contact result follows the relay's configured thresholds. Capture current reads
+the virtual level, preserving it in the reviewed candidate. It needs a known HAT
+repeat profile for these relays. Missing virtual evidence excludes that candidate;
+it never substitutes the current contact's0/254. Later recall evaluates thresholds
+from the then-current virtual level, so it need not reproduce the captured contact.
+
 Colour is independent of brightness: keep colour, white temperature in Kelvin,
 CIE x/y, or RGBWAF channel percentages. Blank colour attributes mean **MASK**:
 keep that attribute on recall. Selecting a colour representation with every

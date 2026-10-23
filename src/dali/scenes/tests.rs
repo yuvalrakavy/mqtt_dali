@@ -5,6 +5,17 @@ fn address(raw: u8) -> ShortAddress {
 }
 
 #[test]
+fn dt7_scene_capture_literal_plan_preserves_address_and_repeat() {
+    for (raw, store, query) in [(0, 0x0121, 0x0198), (63, 0x7f21, 0x7f98)] {
+        assert_eq!(
+            capture_level(address(raw)),
+            [Step::Send(0xa3ff), Step::Repeat(store), Step::Query(query)],
+            "DT7 virtual capture plan lost poison, repeat or individual address"
+        );
+    }
+}
+
+#[test]
 fn scene_literal_slot_level_and_repeat_contract() {
     let first = Slot::new(0).unwrap();
     let last = Slot::new(15).unwrap();

@@ -36,9 +36,14 @@ another threshold. Raw switch status is not a second source of contact truth.
 
 The model changes levels immediately like its existing dimmer model. Timed virtual
 fades/UP/DOWN, electrical faults, power/bus-failure transitions and legacy reference/
-hold-off features remain unimplemented. Relay-aware scene capture and retained
-component classification require subsequent work. Stored
+hold-off features remain unimplemented. Retained component classification requires
+subsequent work. Managed Capture reads the relay's virtual level through repeated
+STORE ACTUAL/DTR0 query under the existing scene owner. Missing/collided/FF data
+or unknown type evidence yields no candidate; unverified repeat policy is refused.
+It never substitutes binary contact State or saves/programs before review. Stored
 virtual scene levels and actual binary contact values must remain distinct.
+See [scene capture](dali-scenes-contract.md#private-per-fixture-settings) for the
+command contract and `v2-dt7-capture-controls.toml` for behavioral controls.
 
 ## Native library for bridge contributors
 

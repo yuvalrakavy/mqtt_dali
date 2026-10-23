@@ -15,6 +15,7 @@ use crate::{
     inventory::{Location, Origin},
 };
 use serde::Serialize;
+mod capture;
 pub(super) mod execute;
 pub(super) mod view;
 use scenes::settings_value::{self, Comparison};

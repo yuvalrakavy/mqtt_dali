@@ -33,10 +33,11 @@ pub(in crate::service) async fn run(
                 refusal = Some(error);
                 return Ok(());
             }
-            sample.candidate = candidate(&actual.observation);
+            let level = capture::level(&link, &route, stamp, deadline, &actual.observation).await?;
+            sample.candidate = level.and_then(|level| candidate(&actual.observation, level));
             if sample.candidate.is_none() {
                 sample.reason =
-                    Some("actual output is incomplete or unsupported; no capture candidate".into());
+                    Some("capture level or active colour is incomplete or unsupported; no capture candidate".into());
             }
             capabilities = actual.observation.colour.unwrap_or_default();
         } else {
@@ -165,13 +166,10 @@ pub(in crate::service) fn preflight(
         _ => Err("requested scene colour is unsupported".into()),
     }
 }
-fn candidate(actual: &output::Observation) -> Option<Setting> {
+fn candidate(actual: &output::Observation, level: crate::dali::gear::Level) -> Option<Setting> {
     if actual.quality != output::Quality::Current {
         return None;
     }
-    let crate::dali::gear::LevelValue::Known(level) = actual.level()? else {
-        return None;
-    };
     let caps = actual.colour.as_ref()?;
     let color = if caps.dt8 == Some(false) {
         Color::Mask {}
@@ -274,7 +272,7 @@ async fn program(
     }
     Ok(())
 }
-async fn step(
+pub(super) async fn step(
     link: &Transactions<Serial>,
     route: &Route,
     stamp: output::Stamp,

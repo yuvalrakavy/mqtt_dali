@@ -292,8 +292,13 @@ optional strict switching patches/fresh explicit capability replies and the same
 protected dialog. Require positive bounded Type7 and adjustable feature evidence;
 only then allow virtual minimum1 below physical254. Bracket with Status, preserve
 malformed multi-type tails as unknown, preflight the entire mixed patch and match
-every requested native value. Retained component metadata, virtual scene capture
-and timed/fault behavior remain pending. Controls: `docs/v2-managed-dt7-controls.toml`.
+every requested native value. `scene_settings::capture` independently classifies
+the already captured type replies, poisons DTR0 and uses repeated STORE ACTUAL/
+query0x98 for a virtual candidate. Never overwrite public actual observations or
+fallback to contact0/254 on missing/invalid evidence. Unknown type stays unresolved;
+ordinary/DT8 capture keeps unverified-profile support. Retained component metadata
+and timed/fault behavior remain pending. Controls: `docs/v2-dt7-capture-controls.toml`
+and `docs/v2-managed-dt7-controls.toml`.
 Controls: `docs/v2-dt7-foundation-controls.toml`.
 
 `dali::gear::settings` provides pure checked limits, context-specific startup/

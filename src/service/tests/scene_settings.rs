@@ -10,6 +10,7 @@ const SCENE: &str = "Bus1.Scenes.Evening";
 mod cases;
 mod literal;
 mod peer;
+mod switching;
 fn save_scene(fixture: &Fixture) {
     let mut value = serde_json::to_value(fixture.disk()).unwrap();
     value["buses"][0]["scenes"] = json!([{"slot":0,"name":"Evening"}]);

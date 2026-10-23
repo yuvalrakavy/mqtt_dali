@@ -344,7 +344,7 @@ async fn read_base(
     observation.update_quality();
     Ok(())
 }
-async fn frame(
+pub(in crate::service) async fn frame(
     link: &Transactions<Serial>,
     bus: u8,
     value: u16,
