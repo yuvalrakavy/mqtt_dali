@@ -5,6 +5,47 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P7 follow-up — input settings retain numeric edits
+
+Frozen source `0b2061a`. Both sequential final source-only UI/state and browser/
+regression reviews APPROVE, with no code findings. Same-family limitation remains.
+The regression reader identified a documentation precision issue: independent
+whole-profile snapshots verify edited states; restoration uses the existing
+confirmed save/readback path. The browser guide now distinguishes those stages.
+
+A real browser repro entered1000ms before changing Event priority, then saved;
+the independent model retained500ms (raw25 instead of50). A blur-first variation
+passed. The form now retains timer/sensor strings on input and separately parses
+the native draft; functional nested updates preserve neighboring settings. An
+invalid intermediate occupancy hold remains editable but cannot submit a mixed
+hardware patch. Refresh clears both text and native draft. Backend, protocol,
+scope/cancellation, availability and save/readback behavior are unchanged.
+
+The strengthened phone/desktop workflow passes **1013 actual owned commands**,
+91.10s, including all button timers/all three sensor families, number-then-select
+edits, invalid hold/no-job/no-native-change, reopening, restoration and unchanged
+saved inventory. Fresh button/occupancy screenshots were inspected; dialogs remain
+scrollable and readable. All **85 Node cases**, TypeScript/build, restored asset
+byte-check, native protected-assets test1/1 (11.02s command), Pi library/four
+binaries1.76s, whitespace and the affected control plan pass. No Rust backend
+source changed, so the previous broad native/Clippy acceptance remains applicable.
+
+Both deliberate browser faults produce their named REDs: blur-only timer24.5s,
+normalized intermediate sensor text27.6s. Source and generated assets were restored
+before freeze/review. One initial expanded test failed because the existing UI
+displays the same validation error in two dialog locations; the test now checks
+all displayed messages and independently proves no command/native change, without
+changing production error handling. A separate pre-repro run stopped at an existing
+scene Busy and is not counted as input-regression evidence.
+
+Methodology: vary control order before blur and distinguish which stages have
+independent native snapshots from stages verified through service readback.
+No live HAT/Store, SDK, memory/skill, release, deployment or push/merge changes.
+Spec: [input draft retention](superpowers/specs/2026-10-23-dali-v2-input-draft-retention.md).
+Logs: `/tmp/dali-input-edit-{early-red,green2,node,build,dist,controls}.log` and
+`/tmp/dali-input-edit-acceptance/`; browser artifacts:
+`/tmp/dali-browser-87c27f8a0278df1fd9688426eeb4517f`.
+
 ## P4b8 — managed common fixture settings and protected controls
 
 Frozen implementation `51e4613`; local wait-method declaration `906a380`.

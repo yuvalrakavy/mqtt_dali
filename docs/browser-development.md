@@ -28,7 +28,8 @@ intermediate hold value. Merge nested timers, sensors, filters and groups from
 current state, capturing DOM values before deferred setters. Actual browser cases
 edit numbers before dropdowns, retain invalid intermediate hold text and prove
 that an invalid mixed patch sends no job or physical change. Save/reopen/restore
-checks compare complete native profiles. Controls: `v2-input-draft-controls.toml`.
+checks compare complete edited native profiles; restoration uses the existing
+confirmed save/readback path. Controls: `v2-input-draft-controls.toml`.
 
 The input-settings rejection test varies one failure at a time: keep actual
 settings equal to the requested patch except in the explicit mismatch case.
