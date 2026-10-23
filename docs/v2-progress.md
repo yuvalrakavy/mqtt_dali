@@ -5,6 +5,49 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4f1 — DT7 switching protocol and independent relay foundation
+
+Frozen source `f3b2e30`. Combined design and both sequential final codec/native
+and model/compatibility source gates APPROVE without findings. Reviews are
+source-only, same-family; this host does not expose their token usage.
+
+Checked Part208 plans preserve threshold255 as disabled, raw unknown diagnostics,
+and one enable followed by both copies of a repeated setter. The independent
+optional DT7 profile separates virtual control from actual binary0/254. Directional
+threshold comparisons, reversal, equal-threshold On priority, fixed/adjustable
+limits, virtual STORE ACTUAL, nonactivating programming and RESET retaining raw
+status evidence have literal coverage. Addressed interruption reaches per-gear
+repeat authority before existing base-repeat early returns. Non-DT7 serialized
+shapes and dimmer/colour/input behavior remain unchanged.
+
+Behavioral RED initially returned actual100 rather than254. Fifteen focused
+codec/model/scenario/managed/standalone-PTY cases now pass (0.602s), including both
+HAT repeat profiles. One early test sent STORE ACTUAL only once; pinned primary
+source confirms it requires repetition. Correcting that test required no production
+workaround. All **16 deliberate faults** now produce their named REDs (261.5s
+latest-row sum). The first batch had one GREEN because it altered private contact
+state without the canonical actual-level path; the corrected fault drives that
+path and the unchanged native-readback assertion detects it. Source was restored
+before freezing and review.
+
+Full native acceptance passes **727/727** across eleven binaries (74.424s execution,
+134.1s command; one opt-in browser test skipped). Strict Clippy10.96s, Pi
+library/four binaries4.0s, changed Rust formatting, independent wait validation,
+generated asset byte-check, whitespace and all eleven affected control-table
+plans pass. No browser source/assets changed; the prior1013-command phone/desktop
+acceptance remains applicable, rather than being claimed as a new browser run.
+
+This is a protocol/model foundation. Managed relay settings, truthful MQTT
+capability metadata/browser controls, virtual scene capture, timed fades, fault
+profiles and physical validation remain pending. No live HAT/Store, SDK,
+memory/skill, release, publication, deployment or push/merge changes.
+Methodology: enumerate actual/virtual consumers and vary direction independently
+of threshold crossing, and RESET independently of default settings.
+Guide: [DT7 switching](dali-switching.md). Spec:
+[DT7 foundation](superpowers/specs/2026-10-23-dali-v2-dt7-foundation.md).
+Evidence: `/tmp/dali-dt7-{red,integration,clippy,controls,nonactivation-control}.log`,
+`/tmp/dali-dt7-acceptance.log` and `/tmp/dali-dt7-acceptance/`.
+
 ## P7 follow-up — input settings retain numeric edits
 
 Frozen source `0b2061a`. Both sequential final source-only UI/state and browser/
@@ -2743,7 +2786,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
+| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, DT7 protocol/independent relay foundation, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Managed DT7 settings/metadata and virtual scene capture, extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
