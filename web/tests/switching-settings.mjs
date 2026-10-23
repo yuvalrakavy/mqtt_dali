@@ -32,6 +32,16 @@ export async function switchingSettingsFlow({page,origin,artifacts,inventory,con
     await open();await page.getByLabel('Downward off threshold',{exact:true}).fill('');const count=commands.length;await page.getByRole('button',{name:'Save settings',exact:true}).click();
     assert.equal(commands.length,count,'invalid intermediate relay threshold submitted a job');assert.deepEqual((await selected()).switching_state.thresholds,[50,100,150,200]);
     await page.getByRole('button',{name:'Cancel',exact:true}).click();
+    for(const [text,corrected]of [['',55],['300',56]]){
+      await open();const prior=(await selected()).switching_state.thresholds;
+      await fill('Upward on threshold',text);await page.getByLabel('Disable upward on threshold',{exact:true}).check();await page.getByLabel('Disable upward on threshold',{exact:true}).uncheck();
+      assert.equal(await page.getByLabel('Upward on threshold',{exact:true}).inputValue(),text,'relay toggle erased the visible numeric draft');
+      const start=commands.length;await page.getByRole('button',{name:'Save settings',exact:true}).click();
+      await until(async()=>await page.locator('dialog').count()===0||(await page.getByRole('alert').allTextContents()).some(t=>t.includes('valid thresholds')),'invalid toggled threshold did not produce validation');
+      assert.equal(commands.length,start,'invalid toggled relay threshold submitted a job');
+      assert.deepEqual((await selected()).switching_state.thresholds,prior,'invalid toggled relay threshold changed native values');
+      await fill('Upward on threshold',corrected);await save();assert.equal((await selected()).switching_state.thresholds[0],corrected,'corrected relay threshold did not reach native gear');
+    }
     // Restore through the real form. Matching actual snapshots verify all
     // thresholds/limits and contact, without asserting private last-status reset.
     await open();await fill('Upward on threshold',1);await page.getByLabel('Disable upward off threshold',{exact:true}).check();await page.getByLabel('Disable downward on threshold',{exact:true}).check();await fill('Downward off threshold',0);await save();
@@ -50,6 +60,6 @@ export async function switchingSettingsFlow({page,origin,artifacts,inventory,con
   try{await open();await page.getByText('Threshold support unknown.',{exact:false}).waitFor();assert.equal(await page.getByLabel('Upward on threshold',{exact:true}).isDisabled(),true,'unknown relay support became writable');await page.getByRole('button',{name:'Cancel',exact:true}).click();}
   finally{await page.unroute(`${origin}/api/jobs/*`,intercept);}
   const after=await native();for(const old of before){const gear=after.find(o=>o.id===old.id);for(const field of ['short_address','groups','scenes','min_level','max_level','power_on_level','failure_level','fade','level'])assert.deepEqual(gear[field],old[field],`relay workflow altered native field ${old.id}/${field}`);assert.deepEqual(gear.switching_state.thresholds,old.switching_state.thresholds);}
-  assert.deepEqual(await inventory(),saved);await page.goto(`${origin}/buses/0`);await idle();
+  assert.deepEqual(await inventory(),saved);await page.goto(`${origin}/buses/${saved.buses.some(b=>b.bus===0)?0:1}`);await idle();
   console.log('PASS DT7 settings: phone/desktop thresholds, native0/255, number-before-toggle retention, two virtual-limit saves, fixed/unknown read-only controls, independent native restoration and binary actual contact, unchanged saved inventory');
 }

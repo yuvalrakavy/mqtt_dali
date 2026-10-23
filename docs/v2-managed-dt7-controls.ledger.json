@@ -187,6 +187,23 @@
     "verdict": "RED"
    }
   },
+  "managed_dt7_ui_reenable_replaces_invalid_text_with_hidden_minimum": {
+   "last_real": {
+    "at": "2026-10-23T08:05:13Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:fac6e49c3526ca8b",
+     "row": "26d7ea95fcd92fa3",
+     "test": null
+    },
+    "path": "command",
+    "secs": 22.9,
+    "sha": "df6fbc4db8b6f2be4217e963d590660df5d8d341",
+    "verdict": "RED"
+   }
+  },
   "managed_dt7_ui_requested_nested_readback_is_ignored": {
    "last_real": {
     "at": "2026-10-23T07:43:38Z",
@@ -206,18 +223,18 @@
   },
   "managed_dt7_ui_threshold_edit_never_updates_native_draft": {
    "last_real": {
-    "at": "2026-10-23T07:48:39Z",
+    "at": "2026-10-23T08:04:50Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "file:f44a1e659b2d54c3",
-     "row": "c58a4a8342b572ec",
+     "guard": "file:fac6e49c3526ca8b",
+     "row": "d3df3f9e880280de",
      "test": null
     },
     "path": "command",
-    "secs": 112.9,
-    "sha": "699c4a1a3af89890742c3df21659647b1c83dfee",
+    "secs": 21.6,
+    "sha": "df6fbc4db8b6f2be4217e963d590660df5d8d341",
     "verdict": "RED"
    }
   },

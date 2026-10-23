@@ -171,3 +171,18 @@ same-family limitation remains. No architectural revision is required.
 Methodology: sample missing neighboring diagnostics even when a positive capability
 allows an exception; target the native edit path when an event-handler substitution
 is equivalent on the exercised workflow. No memory or reusable skill changes.
+
+Final native/contract review approved the code and found two old generic guide
+claims that Off always remains Off. Both now explicitly apply to ordinary dimmers.
+The UI review found one real state-transition defect: Disable on/off replaced an
+explicit blank/out-of-range text draft with a hidden valid minimum. A real browser
+RED submitted upward_on1 while the field was blank. Re-enable now preserves the
+explicit invalid draft; the same DOM oracle verifies no job/native change for
+blank and300, then confirms corrected values on both viewport sizes. The shared
+four-field renderer covers upward/downward fields; neighboring startup-mode
+controls deliberately clear displayed text when selecting a visible replacement.
+Absent text still gives an initial visible native default when re-enabling.
+The focused browser mode runs this same flow/login/service in16s; final acceptance
+still runs the full workflow. Both affected native-draft and hidden-minimum browser
+faults are RED with the unchanged snapshot/no-job assertions. Methodology: test
+invalid → disabled → enabled, and distinguish absent drafts from explicit blanks.

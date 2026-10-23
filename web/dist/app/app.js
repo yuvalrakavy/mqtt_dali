@@ -1957,8 +1957,8 @@ function kt({ row: e, close: t }) {
 											checked: n,
 											disabled: !xt(e, r.values),
 											onChange: (t) => {
-												let n = t.currentTarget.checked, r = m[e], i = r === void 0 || r.trim() === "" ? o : Number(r);
-												c(n ? 255 : Number.isInteger(i) && i >= o && i <= 254 ? i : o);
+												let n = t.currentTarget.checked, r = m[e], i = r === void 0 ? o : r.trim() === "" ? NaN : Number(r);
+												c(n ? 255 : Number.isInteger(i) && i >= o && i <= 254 ? i : NaN);
 											}
 										}), " Disabled"]
 									})

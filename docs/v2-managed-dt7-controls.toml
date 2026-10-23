@@ -141,5 +141,14 @@ file = "web/src/output-settings-ui.tsx"
 anchor = "updateThreshold(Number.isInteger(raw)&&raw>=min&&raw<=254?raw:NaN);"
 replacement = "void raw;"
 target = "command"
-argv = ["python3", "-c", "from pathlib import Path\nimport subprocess\nimport sys\nassets={p:p.read_bytes() for p in Path(\"web/dist\").rglob(\"*\") if p.is_file()}\nresult=None\ntry:\n    build=subprocess.run([\"npm\",\"--prefix\",\"web\",\"run\",\"build\"])\n    if build.returncode: sys.exit(build.returncode)\n    result=subprocess.run([\"cargo\",\"test\",\"--offline\",\"--target\",\"aarch64-apple-darwin\",\"--lib\",\"browser_functional_phone_and_desktop\",\"--\",\"--ignored\",\"--nocapture\"])\nfinally:\n    for p,data in assets.items(): p.write_bytes(data)\nsys.exit(result.returncode)\n"]
+argv = ["python3", "-c", "from pathlib import Path\nimport os\nimport subprocess\nimport sys\nassets={p:p.read_bytes() for p in Path(\"web/dist\").rglob(\"*\") if p.is_file()}\nresult=None\ntry:\n    build=subprocess.run([\"npm\",\"--prefix\",\"web\",\"run\",\"build\"])\n    if build.returncode: sys.exit(build.returncode)\n    result=subprocess.run([\"cargo\",\"test\",\"--offline\",\"--target\",\"aarch64-apple-darwin\",\"--lib\",\"browser_functional_phone_and_desktop\",\"--\",\"--ignored\",\"--nocapture\"],env=dict(os.environ,DALI_BROWSER_FLOW=\"switching\"))\nfinally:\n    for p,data in assets.items(): p.write_bytes(data)\nsys.exit(result.returncode)\n"]
 expect_text = "relay numeric edits were lost when toggling another threshold"
+
+[[control]]
+name = "managed_dt7_ui_reenable_replaces_invalid_text_with_hidden_minimum"
+file = "web/src/output-settings-ui.tsx"
+anchor = "raw=text===undefined?min:text.trim()===''?NaN:Number(text);updateThreshold(checked?255:Number.isInteger(raw)&&raw>=min&&raw<=254?raw:NaN);"
+replacement = "raw=text===undefined||text.trim()===''?min:Number(text);updateThreshold(checked?255:Number.isInteger(raw)&&raw>=min&&raw<=254?raw:min);"
+target = "command"
+argv = ["python3", "-c", "from pathlib import Path\nimport os\nimport subprocess\nimport sys\nassets={p:p.read_bytes() for p in Path(\"web/dist\").rglob(\"*\") if p.is_file()}\nresult=None\ntry:\n    build=subprocess.run([\"npm\",\"--prefix\",\"web\",\"run\",\"build\"])\n    if build.returncode: sys.exit(build.returncode)\n    result=subprocess.run([\"cargo\",\"test\",\"--offline\",\"--target\",\"aarch64-apple-darwin\",\"--lib\",\"browser_functional_phone_and_desktop\",\"--\",\"--ignored\",\"--nocapture\"],env=dict(os.environ,DALI_BROWSER_FLOW=\"switching\"))\nfinally:\n    for p,data in assets.items(): p.write_bytes(data)\nsys.exit(result.returncode)\n"]
+expect_text = "invalid toggled relay threshold submitted a job"

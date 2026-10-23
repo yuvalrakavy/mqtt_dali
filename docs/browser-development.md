@@ -153,6 +153,11 @@ fixed controls, independent restoration and binary actual contacts. An explicitl
 synthetic partial HTTP reply verifies unknown-feature read-only presentation;
 native missing/colliding evidence is tested separately by literal UART peers.
 Screenshots include `phone-relay-settings.png` and `desktop-relay-settings.png`.
+For a focused relay regression or deliberate fault, prefix the browser command
+with `DALI_BROWSER_FLOW=switching`. It runs the same phone/desktop relay flow,
+DOM controls, protected jobs and native assertions on a fresh service, without
+repeating unrelated commissioning/scene flows. Omit it for final full-workflow
+acceptance. The focused mode still uses real login and the private MQTT/HAT stack.
 Full reassignment cases exercise cancelled frozen review, outputs/inputs/both,
 fresh names, reference pruning, preservation of native live/group/scene values,
 and leaving the tab during an admitted reset.
