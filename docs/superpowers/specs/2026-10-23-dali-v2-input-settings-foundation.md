@@ -21,7 +21,7 @@ that latch to instance setting opcodes rather than adding another repeat owner.
 These claims were checked in code before design.
 
 Protocol references: [python-dali Part 103 commands](https://github.com/sde1000/python-dali/blob/master/dali/device/general.py),
-[Siemens common-instance filter/priority tables](https://cache.industry.siemens.com/dl/files/151/109771151/att_1120833/v3/109771151_ConfigDaliModule_DOC_v11_en.pdf),
+[Beckhoff absolute-input filter variables](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/8021122955.html),
 [Beckhoff event priorities](https://infosys.beckhoff.com/content/1033/kl6821/9837733003.html).
 Part 103 setting opcodes 61..68 send twice; DTR0/1/2 are C130/31/32.
 Event schemes 0..4, priorities 2..5, groups 0..31 or FF (unassigned).

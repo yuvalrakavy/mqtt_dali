@@ -5,6 +5,45 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4i1 — native input event-setting foundation
+
+Implemented at frozen source `f71719c`; design and both source review lenses
+APPROVE. Reviews were source-only/read-only and same-family; no physical HAT or
+Store changes occurred. This is a protocol/emulator milestone. Managed setting
+commands and browser controls are the next slice, not completed by this one.
+
+`dali::input::settings` supplies checked enable/disable, priority, all five event
+schemes, 24-bit filters and three instance-group plans. Only the addressed setting
+is repeated, as two ordinary 24-bit sends; the ATX `t` flag is 16-bit only. Raw
+filters preserve FF/high bytes; common-type validation is separate. The independent
+emulator reads/programs per-instance settings with its existing 100 ms repeat
+owner, preserves value latches and fixture state across readdress/HAT reboot,
+and limits changes to the selected instance. Discovery remains passive.
+
+Four initial literal cases failed against missing settings support. The final
+focused suite passes 11 cases, including every setting's repeat requirement,
+100/101 ms boundaries, input/output interruption, FD/FF selection, invalid DTRs,
+last-address/instance boundaries, sibling isolation and literal UART/reboot/raw
+injection. All five intentional-fault controls produced intended REDs in 63 s.
+See `v2-input-settings-controls.toml` and its ledger.
+
+Full acceptance passes **630/630 native tests** across eleven binaries (65.028 s
+execution, 121.1 s command including compilation), with the separately owned
+browser test skipped. Scoped strict Clippy, Pi library/four binaries, changed-file
+formatting, standalone wait validation (zero findings) and whitespace pass.
+The first plan invocation incorrectly passed multiple tables to a single-table
+tool; a corrected per-table run passes all affected control plans. No production
+change was required. No browser source changed, so no browser/Node rerun was
+needed. Logs: `/tmp/dali-input-settings-acceptance`,
+`/tmp/dali-input-settings-controls.log`,
+`/tmp/dali-input-settings-plans-final.log`; fail-first evidence is
+`/tmp/dali-input-settings-red.log`.
+
+Contributor/operator emulator coverage is in [input codec](dali-input-contract.md)
+and [emulator](emulator.md#input-event-settings-model). Raw `input_event` injection
+deliberately bypasses settings; natural stimulus generation, timers, feedback and
+hardware persistence validation remain pending. No reusable skill change is needed.
+
 ## P5i3 — clear one short address while retaining its saved identity
 
 Accepted locally at frozen source `8dc03fc` (initial implementation `aeac073`).
