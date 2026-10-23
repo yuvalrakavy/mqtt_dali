@@ -5,6 +5,60 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4i4 — managed push-button timing and exact-unit browser fields
+
+Implemented/frozen at `334b264`; internal allocation/documentation follow-up
+`2dea106`. Design and final native/owner and UI/contract lenses APPROVE. The native
+lens also approves the follow-up. Reviews are source-only/read-only and
+same-family. No live HAT, Store, deployment, publication or dependency change.
+
+Existing `read_input_settings` / `configure_input` now expose an optional strict
+`button_timers` patch and separate raw timing evidence. Fresh short/double minima
+preflight the whole mixed patch before any common/timer write; double0 still
+requires valid minimum evidence. Optional partial timer quality does not block
+common-only settings. Actual requested timers must match complete readback.
+The original owner, authority/deadline, repeat bound and permanent Notice cuts
+are retained. Saved configuration, names/bindings and current input values remain
+independent of these hardware settings.
+
+The existing protected dialog adds compact short/double/repeat millisecond fields
+and stuck seconds, with exact native steps, reported minima and no rounding.
+It sends only changed timers and rejects invalid or forged complete evidence.
+The original frozen row/root/epoch and synchronous/layout dismissal guards remain.
+Operator/API details: [input event settings](input-event-settings.md).
+
+Two native tests first failed on the unsupported nested patch; two frontend tests
+failed on the missing matching/minimum guards. All **12 focused native cases**
+(four new plus eight existing) and **54 frontend cases** pass. Literal peers record
+actual input traffic, proving missing/invalid minima and a later invalid timer
+cannot allow earlier common/timer writes; ignored hardware writes stay unconfirmed.
+All **seven intentional-fault controls** produce intended REDs in52.3s. The
+no-submit assertion checks command count before error text so later validation
+cannot mask a missing preflight. No reusable skill change is needed.
+
+The full suite at `334b264` passes **649/649 native tests** across eleven binaries
+(66.695s execution / 125.9s command), with the separately owned browser skipped.
+Its sole acceptance failure was strict Clippy: added diagnostic data enlarged
+the queued physical request. `2dea106` boxes only the stored fallback report;
+wire data and control behavior are unchanged. All12 affected native cases, strict
+Clippy, Pi library/four binaries, formatting and whitespace pass afterward.
+Standalone wait validation, frontend, asset byte checks and affected control
+plans pass; no new waits or owner were introduced. One stale CLAUDE scope sentence
+was corrected from Timers to Sensor timers.
+
+Actual phone/desktop acceptance passes **894 owned commands in71.65s**, including
+four timer edits, native raw values, reopen/restore, scrollable actions and retained
+inventory. Both screenshots were inspected. Artifacts:
+`/tmp/dali-browser-449efbb12d15a3cb0bec8763fc9f3374`; logs:
+`/tmp/dali-managed-button-timing-browser.log`,
+`/tmp/dali-managed-button-timing-acceptance`,
+`/tmp/dali-managed-button-timing-native-final.log`,
+`/tmp/dali-managed-button-timing-clippy-final.log` and
+`/tmp/dali-managed-button-timing-pi-final.log`.
+
+Remaining inputs: sensor timers/hysteresis, supported feedback/indication, natural
+emulator stimuli, group/source routing, calibrated units and physical validation.
+
 ## P4i3 — push-button timing protocol and independent model
 
 Frozen source `2011e6a`, browser-test compatibility follow-up `2eec299`.

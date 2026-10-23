@@ -116,3 +116,14 @@ were inspected; scrollable dialog actions remain exercised by actual Save/Cancel
 All seven serial intentional-fault controls produce intended REDs in52.3s. The
 browser no-submit test checks command count before error text, isolating preflight
 from later value matching. Each production mutation was restored before freeze.
+
+## As-built acceptance
+
+Implemented at `334b264`; design and both final source lenses APPROVE. The full
+649-case native suite passes, as do frontend54, Pi, formatting, wait validation,
+assets and affected control plans. Strict Clippy exposed a larger physical Work
+variant due to expanded diagnostic data. `2dea106` boxes only Request's stored
+fallback report and corrects stale scope prose; the native lens approves this
+follow-up. All12 affected native cases, strict Clippy and Pi pass after it, with
+no wire/control/UI behavior change. Real browser894/71.65s preceded that internal
+allocation-only fix. See P4i4 in `../../v2-progress.md` for logs and remaining scope.
