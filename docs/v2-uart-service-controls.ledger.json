@@ -121,18 +121,18 @@
   },
   "timed_out_serial_open_is_retried": {
    "last_real": {
-    "at": "2026-10-21T22:36:49Z",
+    "at": "2026-10-23T08:55:38Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:21aab7a47a52303b",
-     "row": "28a4ecd84a0fcac8",
+     "guard": "item:7702e858ccb6ffd6",
+     "row": "a351fd92b420e770",
      "test": null
     },
     "path": "command",
-    "secs": 15.7,
-    "sha": "43343ed3964410f6c7216d66ba6798d662bc6052",
+    "secs": 27.1,
+    "sha": "771d113236a6eb91659a3da955f1dfbae6de00cc",
     "verdict": "RED"
    }
   }

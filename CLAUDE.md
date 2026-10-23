@@ -64,6 +64,17 @@ and `examples/emulator/basic-i4.json`. `docs/support-matrix.md` distinguishes ba
 local coverage from P4 extensions and unverified physical behavior. Emulator
 safety controls are in `docs/v2-emulator-controls.toml`.
 
+The bridge also supports `--hat-tcp IP:port` instead of an explicit `--uart`.
+`DaliService::with_hat_tcp` selects the same owned HAT path through
+`atx::connection::{Endpoint, Connection}`; no second transaction driver. TCP
+DrainRead uses kernel recv, not readiness-cache Pending, as proof of Empty.
+Async connect is bounded/retryable; UART's blocking-open timeout stays terminal.
+A new TCP connection requires a fresh remote HAT parser/output session and clears
+old parser-poison flags; a UART reopen does not. See `docs/running-v2.md`,
+`docs/v2-tcp-hat-controls.toml` and the spec. The emulator UI/listener is assigned
+to a separate session via `docs/handoffs/2026-10-23-emulator-ui.md`; this session
+must avoid editing emulator files while that work is active.
+
 The default build target is `armv7-unknown-linux-musleabihf` (set in `.cargo/config.toml`). To cross-compile for Pi:
 
 ```bash

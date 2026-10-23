@@ -1,7 +1,7 @@
 //! Captured group evidence and save-before-program operations for one fixture.
 use super::*;
 use crate::atx::{
-    serial::Serial,
+    connection::Connection,
     transactions::{BusReply, Response, TransactionError, Transactions},
     wire::{Command, DaliFrame},
 };
@@ -286,7 +286,7 @@ pub(super) fn finish(request: Request, result: Result<Report, ServiceError>) {
 }
 
 pub(super) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     route: Route,
     stamp: output::Stamp,
     deadline: Instant,
@@ -359,7 +359,7 @@ pub(super) async fn execute(
     }
 }
 async fn exchange(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,
@@ -383,7 +383,7 @@ async fn exchange(
     }
 }
 async fn read_probe(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,

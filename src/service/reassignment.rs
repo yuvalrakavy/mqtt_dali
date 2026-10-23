@@ -2,7 +2,7 @@
 pub use super::discovery::Space;
 use super::*;
 use crate::atx::{
-    serial::Serial,
+    connection::Connection,
     transactions::{BusReply, Response, TransactionError, Transactions},
     wire::{Command, DaliFrame},
 };
@@ -77,7 +77,7 @@ pub(super) fn finish(request: Request, result: Result<Report, ServiceError>) {
 }
 
 struct Bus<'a> {
-    link: &'a Transactions<Serial>,
+    link: &'a Transactions<Connection>,
     route: &'a Route,
     deadline: Instant,
 }
@@ -169,7 +169,7 @@ impl Bus<'_> {
     }
 }
 pub(super) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     route: Route,
     stamp: output::Stamp,
     deadline: Instant,

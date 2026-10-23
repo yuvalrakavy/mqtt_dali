@@ -24,6 +24,45 @@ pub trait DrainRead: AsyncRead {
     ) -> Poll<io::Result<Drain>>;
 }
 
+impl DrainRead for tokio::net::TcpStream {
+    fn poll_drain(
+        self: Pin<&mut Self>,
+        context: &mut Context<'_>,
+        buffer: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<Drain>> {
+        use std::os::fd::AsRawFd;
+        if buffer.remaining() == 0 {
+            return Poll::Ready(Ok(Drain::Data));
+        }
+        let output = buffer.initialize_unfilled();
+        // A readiness cache may say WouldBlock before checking the kernel.
+        // Only this nonblocking syscall establishes the receive fence's Empty.
+        // The initialized writable slice and socket stay live through recv.
+        let count = unsafe {
+            libc::recv(
+                self.as_raw_fd(),
+                output.as_mut_ptr().cast(),
+                output.len(),
+                libc::MSG_DONTWAIT,
+            )
+        };
+        if count >= 0 {
+            buffer.advance(count as usize);
+            // recv=0 is EOF, represented as Data with no bytes, like AsyncRead.
+            return Poll::Ready(Ok(Drain::Data));
+        }
+        let error = io::Error::last_os_error();
+        match error.kind() {
+            io::ErrorKind::WouldBlock => Poll::Ready(Ok(Drain::Empty)),
+            io::ErrorKind::Interrupted => {
+                context.waker().wake_by_ref();
+                Poll::Pending
+            }
+            _ => Poll::Ready(Err(error)),
+        }
+    }
+}
+
 impl DrainRead for tokio::io::DuplexStream {
     fn poll_drain(
         mut self: Pin<&mut Self>,

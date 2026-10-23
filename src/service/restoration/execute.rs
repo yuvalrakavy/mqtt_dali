@@ -2,7 +2,7 @@
 use super::*;
 use crate::{
     atx::{
-        serial::Serial,
+        connection::Connection,
         transactions::{BusReply, SessionState, TransactionError, Transactions},
         wire::DaliFrame,
     },
@@ -129,7 +129,7 @@ async fn run(bus: &Bus<'_>, route: &Route, entered: &mut bool) -> Result<Step, E
     }
 }
 pub(in crate::service) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     route: Route,
     stamp: output::Stamp,
     deadline: Instant,

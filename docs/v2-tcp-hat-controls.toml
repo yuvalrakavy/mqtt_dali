@@ -1,0 +1,74 @@
+# Run serially before frozen source readers; the runner restores each fault.
+[[control]]
+name = "tcp_hat_builder_ignores_selected_repeat_profile"
+file = "src/service.rs"
+anchor = 'self.uart = Some(hat::Settings::tcp(address, repeat));'
+replacement = 'let _ = repeat; self.uart = Some(hat::Settings::tcp(address, crate::atx::transactions::RepeatPolicy::TwoTerminals));'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(tcp_hat_uses_independent_emulator_core)"]
+expect_text = "TCP repeated settings did not honor the selected terminal profile"
+
+[[control]]
+name = "tcp_hat_ambiguous_uart_is_accepted"
+file = "src/daemon.rs"
+anchor = 'if settings.options.contains_key("uart") {'
+replacement = 'if false && settings.options.contains_key("uart") {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(hat_tcp_selection_rejects_conflicting)"]
+expect_text = "ambiguous UART/TCP selection was accepted"
+
+[[control]]
+name = "tcp_hat_queued_data_is_reported_empty"
+file = "src/atx/stream.rs"
+anchor = 'if count >= 0 {'
+replacement = '''if count >= 0 { return Poll::Ready(Ok(Drain::Empty)); }
+        if count >= 0 {'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(tcp_drain_checks_kernel)"]
+expect_text = "queued TCP bytes were reported as empty"
+
+[[control]]
+name = "tcp_hat_eof_is_treated_as_idle"
+file = "src/atx/stream.rs"
+anchor = 'if count >= 0 {'
+replacement = '''if count == 0 { return Poll::Ready(Ok(Drain::Empty)); }
+        if count >= 0 {'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(tcp_drain_checks_kernel)"]
+expect_text = "TCP EOF was reported as empty forever"
+
+[[control]]
+name = "tcp_hat_connect_budget_is_extended"
+file = "src/atx/connection.rs"
+anchor = 'tokio::time::timeout(Duration::from_secs(2), connecting)'
+replacement = 'tokio::time::timeout(Duration::from_secs(20), connecting)'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(tcp_connect_deadline_and_cancellation)"]
+expect_text = "TCP connect deadline extended beyond its original two-second budget"
+
+[[control]]
+name = "tcp_hat_connect_timeout_becomes_terminal"
+file = "src/service/hat.rs"
+anchor = '&& !self.settings.as_ref().unwrap().endpoint.is_tcp()'
+replacement = ''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(tcp_open_timeout_retries)"]
+expect_text = "TCP async timeout inherited the UART blocking-worker terminal policy"
+
+[[control]]
+name = "tcp_hat_new_session_keeps_old_parser_poison"
+file = "src/service/hat.rs"
+anchor = 'if self.settings.as_ref().unwrap().endpoint.is_tcp() {'
+replacement = 'if false && self.settings.as_ref().unwrap().endpoint.is_tcp() {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(tcp_new_connection_clears_old_parser)"]
+expect_text = "new TCP parser lifetime retained old partial-write poison"
+
+[[control]]
+name = "tcp_hat_cli_opens_default_uart_instead"
+file = "src/daemon.rs"
+anchor = 'return Ok(Some(Endpoint::Tcp(address)));'
+replacement = 'let _ = address; return Ok(Some(Endpoint::Uart("/dev/serial0".into())));'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","v2_process","-E","test(hat_tcp_option_connects)"]
+expect_text = "--hat-tcp did not connect to the emulator endpoint"

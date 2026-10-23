@@ -3,7 +3,7 @@ use super::*;
 /// Capability probes finish before any stored report is selected. Their actual
 /// colour quality is independent from completeness of this stored configuration.
 pub(in crate::service) async fn stored(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,
@@ -21,7 +21,7 @@ pub(in crate::service) async fn stored(
 }
 
 pub(in crate::service) async fn with_capabilities(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,
@@ -106,7 +106,7 @@ pub(in crate::service) async fn with_capabilities(
 }
 
 pub(in crate::service) async fn value(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,

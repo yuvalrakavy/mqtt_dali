@@ -1,7 +1,7 @@
 //! Fresh input feedback evidence under the existing physical owner. Indicators
 //! do not configure events, replace input values or revoke received notices.
 use crate::atx::{
-    serial::Serial,
+    connection::Connection,
     transactions::{BusReply, TransactionError, Transactions},
     wire::DaliFrame,
 };
@@ -323,7 +323,7 @@ async fn probe(bus: &Bus<'_>, r: &Route) -> Result<Probe, Error> {
     })
 }
 pub(in crate::service) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     r: Route,
     stamp: Stamp,
     deadline: Instant,

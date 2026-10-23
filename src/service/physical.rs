@@ -3,7 +3,7 @@ use super::{
     commissioning, discovery, group_output, groups, input::readback, output, reassignment,
     restoration, scene_settings, scenes, ServiceError,
 };
-use crate::atx::{serial::Serial, transactions::Transactions};
+use crate::atx::{connection::Connection, transactions::Transactions};
 use tokio::time::Instant;
 
 pub(super) enum Work {
@@ -257,7 +257,7 @@ impl Work {
     }
     pub fn execution(
         &self,
-        link: Transactions<Serial>,
+        link: Transactions<Connection>,
         stamp: output::Stamp,
     ) -> impl std::future::Future<Output = Outcome> + Send + 'static {
         // Capture values only: the owner retains requests, replies and permits.

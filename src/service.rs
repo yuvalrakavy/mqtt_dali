@@ -332,7 +332,18 @@ impl DaliService {
         self.uart = Some(hat::Settings::new(path.into(), repeat));
         self
     }
-    /// Select measured quiet recovery after enabling UART. Does not open it.
+    /// Select a raw TCP HAT instead of UART. Each connection must start a fresh
+    /// remote HAT parser/output session. Construction performs no IO; the
+    /// original repeat policy and quiet/setup handling still apply.
+    pub fn with_hat_tcp(
+        mut self,
+        address: std::net::SocketAddr,
+        repeat: crate::atx::transactions::RepeatPolicy,
+    ) -> Self {
+        self.uart = Some(hat::Settings::tcp(address, repeat));
+        self
+    }
+    /// Select measured quiet recovery after enabling a UART or TCP HAT. Does not open it.
     pub fn with_uart_quiet_period(mut self, quiet: std::time::Duration) -> Result<Self, String> {
         if quiet < std::time::Duration::from_millis(1) || quiet > std::time::Duration::from_secs(5)
         {
@@ -340,7 +351,7 @@ impl DaliService {
         }
         self.uart
             .as_mut()
-            .ok_or("enable UART before configuring its quiet period")?
+            .ok_or("enable a HAT endpoint before configuring its quiet period")?
             .quiet = quiet;
         Ok(self)
     }

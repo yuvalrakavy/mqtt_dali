@@ -2,7 +2,7 @@
 use super::{frame, Route, Stamp};
 use crate::{
     atx::{
-        serial::Serial,
+        connection::Connection,
         transactions::{BusReply, TransactionError, Transactions},
     },
     dali::{
@@ -198,7 +198,7 @@ impl Observation {
 
 /// All steps run inside the existing owned output helper and its deadline.
 async fn send(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,
@@ -210,7 +210,7 @@ async fn send(
     }
 }
 async fn plan(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,
@@ -232,7 +232,7 @@ async fn plan(
     Ok(replies)
 }
 async fn query(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,
@@ -246,7 +246,7 @@ async fn query(
 }
 pub(in crate::service) async fn discover(
     sample: &mut Observation,
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,
@@ -341,7 +341,7 @@ pub(in crate::service) async fn discover(
 }
 pub(super) async fn read_values(
     sample: &mut Observation,
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,
@@ -387,7 +387,7 @@ pub(super) async fn read_values(
     Ok(())
 }
 pub(super) async fn apply(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,

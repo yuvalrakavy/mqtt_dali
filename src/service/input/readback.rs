@@ -2,7 +2,7 @@
 use super::super::{Message, ServiceError, ServiceHandle};
 use super::*;
 use crate::atx::{
-    serial::Serial,
+    connection::Connection,
     transactions::{BusReply, Response, TransactionError, Transactions},
     wire::{Command, DaliFrame},
 };
@@ -118,7 +118,7 @@ pub(in crate::service) fn resolve(
 }
 
 pub(in crate::service) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     route: Route,
     stamp: Stamp,
     deadline: Instant,
@@ -185,7 +185,7 @@ pub(in crate::service) async fn execute(
     }
 }
 async fn query(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,

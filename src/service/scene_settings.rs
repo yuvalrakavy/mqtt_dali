@@ -2,7 +2,7 @@
 use super::*;
 use crate::{
     atx::{
-        serial::Serial,
+        connection::Connection,
         transactions::{BusReply, Response, TransactionError, Transactions},
         wire::{Command, DaliFrame},
     },

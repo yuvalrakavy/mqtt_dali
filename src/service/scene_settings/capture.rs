@@ -30,7 +30,7 @@ fn switching(types: &[Reply<u8>]) -> Option<bool> {
 }
 
 pub(super) async fn level(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,

@@ -15,6 +15,8 @@ const NAME: &str = "Controller";
 const LEGACY:&[u8]=br#"{"name":"Controller","buses":[{"bus":0,"description":"Bus1","status":"Active","channels":[{"short_address":0,"description":"Light1"}]}]}"#;
 #[path = "support/otel_collector.rs"]
 mod otel;
+#[path = "v2_process/tcp.rs"]
+mod tcp;
 #[path = "v2_process/web.rs"]
 mod web;
 struct Fixture(PathBuf);
@@ -31,6 +33,9 @@ impl Fixture {
         Self(directory)
     }
     fn command(&self, broker: &FakeBroker) -> Command {
+        self.command_with_transport(broker, ["--uart", "none"])
+    }
+    fn command_with_transport(&self, broker: &FakeBroker, transport: [&str; 2]) -> Command {
         let mut command = Command::new(env!("CARGO_BIN_EXE_mqtt_dali"));
         for (name, _) in std::env::vars_os() {
             let key = name.to_string_lossy();
@@ -49,8 +54,6 @@ impl Fixture {
                 NAME,
                 "--broker",
                 &broker.address(),
-                "--uart",
-                "none",
                 "--log-config",
             ])
             .arg(self.0.join("logging.toml"))
@@ -64,7 +67,8 @@ impl Fixture {
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .kill_on_drop(true);
+            .kill_on_drop(true)
+            .args(transport);
         command
     }
     fn config(&self) -> Value {

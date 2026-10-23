@@ -1,7 +1,7 @@
 //! Single-output observations retain their original mapping and UART evidence.
 use super::*;
 use crate::atx::{
-    serial::Serial,
+    connection::Connection,
     transactions::{BusReply, Response, TransactionError, Transactions},
     wire::{Command, DaliFrame},
 };
@@ -180,7 +180,7 @@ pub(super) fn resolve(
 }
 
 pub(super) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     route: Route,
     stamp: Stamp,
     intent: Option<WriteIntent>,
@@ -286,7 +286,7 @@ pub(super) async fn execute(
 }
 async fn write_base(
     observation: &mut Observation,
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,
@@ -311,7 +311,7 @@ async fn write_base(
 }
 async fn read_base(
     observation: &mut Observation,
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: Stamp,
     deadline: Instant,
@@ -345,7 +345,7 @@ async fn read_base(
     Ok(())
 }
 pub(in crate::service) async fn frame(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     bus: u8,
     value: u16,
     deadline: Instant,

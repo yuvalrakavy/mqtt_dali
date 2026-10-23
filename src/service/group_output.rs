@@ -2,7 +2,7 @@
 use super::*;
 use crate::{
     atx::{
-        serial::Serial,
+        connection::Connection,
         transactions::{TransactionError, Transactions},
         wire::DaliFrame,
     },
@@ -327,7 +327,7 @@ fn capture(report: &mut Report, r: &Route, samples: &[Sample]) {
     report.membership_matches = complete.then_some(matches);
 }
 pub(super) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     r: Route,
     stamp: output::Stamp,
     deadline: Instant,

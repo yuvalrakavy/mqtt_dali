@@ -1,7 +1,7 @@
 use super::*;
 
 pub(in crate::service) async fn run(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     route: Route,
     stamp: output::Stamp,
     deadline: Instant,
@@ -227,7 +227,7 @@ fn candidate(actual: &output::Observation, level: crate::dali::gear::Level) -> O
     Some(candidate)
 }
 async fn program(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,
@@ -273,7 +273,7 @@ async fn program(
     Ok(())
 }
 pub(super) async fn step(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,

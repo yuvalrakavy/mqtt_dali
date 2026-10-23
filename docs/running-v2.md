@@ -24,7 +24,33 @@ mqtt_dali --instance Controller --broker 127.0.0.1:1883 \
 ```
 
 The saved controller name must match `--instance`. To develop without hardware,
-use `--uart none`, or supply the private PTY from `dali_hat_emulator`. The broker
+use `--uart none`, supply the private PTY from `dali_hat_emulator`, or select a
+raw TCP HAT endpoint instead:
+
+```sh
+mqtt_dali --instance Controller --broker 127.0.0.1:1883 \
+  --config ./dali.v2.json --legacy-config ./dali.json \
+  --hat-tcp 127.0.0.1:5580 --uart-repeat-terminals 1
+```
+
+`--hat-tcp` accepts numeric IPv4 or bracketed IPv6 and a nonzero port. Do not
+also pass `--uart`, including `--uart none`. TCP carries the same raw ATX bytes
+as UART, including asynchronous input events; it is not HTTP/WebSocket.
+The bridge's optional web UI remains separate, with the existing web options.
+Match the emulator's one/two-terminal profile explicitly; TCP does not infer it.
+The endpoint must start a fresh HAT parser/output session per connection while
+retaining native fixtures. Disconnect retires old observed evidence; the bridge
+reconnects and initializes without replaying a failed command. The quiet interval
+applies to both transports. Numeric endpoints avoid DNS workers. Plain TCP is
+for a local or explicitly trusted emulator; web authentication does not protect
+the raw HAT endpoint.
+
+This slice supplies the bridge connector. The standalone emulator TCP listener
+and its own configuration UI are assigned to a parallel implementation; its
+current entry point still provides the PTY/control socket. See the
+[handoff](handoffs/2026-10-23-emulator-ui.md) for that shared boundary.
+
+The broker
 can have any MQTT consumer. Retained `DALI/State/<controller>/__inventory`
 contains the saved inventory; `DALI/Version/<controller>` reports version and UTC
 build time. See [metadata commands](service-development.md#mqtt-metadata-commands)

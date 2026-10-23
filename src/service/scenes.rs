@@ -2,7 +2,7 @@
 use super::*;
 use crate::{
     atx::{
-        serial::Serial,
+        connection::Connection,
         transactions::{BusReply, Response, TransactionError, Transactions},
         wire::{Command, DaliFrame},
     },
@@ -289,7 +289,7 @@ pub(super) fn accept(
     })
 }
 pub(super) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     route: Route,
     stamp: output::Stamp,
     deadline: Instant,
@@ -340,7 +340,7 @@ pub(super) async fn execute(
     }
 }
 pub(super) async fn frame(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     route: &Route,
     stamp: output::Stamp,
     deadline: Instant,

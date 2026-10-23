@@ -120,17 +120,32 @@ The first proxy connection attaches the runtime Reporter independently of UART
 setup and MQTT availability. Inventory and metadata editing therefore
 remain available through retained frontend handles during a broker outage.
 Snapshot fields distinguish routing phase and hardware facts; `NotStarted`
-means no UART was enabled. Version and UTC build time accompany the saved
+means no HAT endpoint was enabled. Version and UTC build time accompany the saved
 controller identity. Resource shutdown remains the managed runtime's ownership
 responsibility even if a filesystem worker is blocked.
 
-## Optional UART health
+## Optional HAT transport and health
 
-Call `service.with_uart(path, RepeatPolicy::Unverified)` before managed startup.
-Optionally follow it with
+Call `service.with_uart(path, RepeatPolicy::Unverified)` before managed startup,
+or `service.with_hat_tcp(socket_address, repeat_policy)` for a raw TCP emulator.
+These builders select one endpoint (the last builder wins), perform no IO and
+leave the existing physical owner in charge. The CLI rejects simultaneous
+`--uart` and `--hat-tcp`. Numeric TCP endpoints require a nonzero port.
+`atx::connection::{Endpoint, Connection}` delegates serial/TCP IO without a
+second protocol driver; Tokio TcpStream implements the existing DrainRead
+contract using an actual nonblocking recv, including distinct EOF handling.
+An async TCP connect has a two-second bound and is retryable; a UART open timeout
+retains the terminal policy for its possibly outstanding blocking worker.
+New TCP connections must own fresh remote parser/output sessions, so their
+adoption clears inherited parser-poison flags; UART reopen retains its Boot
+requirement. Current-connection receive recovery and all command/evidence checks
+remain owned by the existing monitor/transactions path. The emulator TCP listener
+is a separate implementation; see the [handoff](handoffs/2026-10-23-emulator-ui.md).
+
+For either endpoint, optionally follow the builder with
 `with_uart_quiet_period(Duration::from_millis(250))?`; the builder validates a
-1 ms..5 s interval and requires UART to be enabled first. The builders open
-nothing. The managed service owns one Serial/Transactions
+1 ms..5 s interval and requires a HAT endpoint to be enabled first. The builders
+open nothing. The managed service owns one Connection/Transactions
 session. Background health uses HAT Version and enabled-bus Status queries;
 explicit library output operations share that same owner. Hardware
 snapshots distinguish Connecting, Resynchronizing, Initializing, Ready (raw version strings and

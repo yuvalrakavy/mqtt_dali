@@ -86,7 +86,9 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `atx-write` | bounded | nonblocking UART write, cancellation/EOF/close, and caller deadline | The write is raced with stop and the caller's total deadline. On expiry, I/O failure or cancellation after possible byte acceptance, a drop guard poisons admission and emits WriteIndeterminate. A Pending write that accepted no bytes stays usable. Stop cancels a potentially partial write. The stop helper waits only for the independent reader/closer and is raced against the write deadline. |
 | `atx-close` | bounded | writer release and actual reader JoinHandle completion | Public force-close supplies 500 ms; managed force-close uses the original owner deadline. Close stops write admission, cancels active writers, drops the writer and aborts the reader. A lifecycle supervisor publishes completion only after the actual reader joins. On expiry return Deadline without claiming resource release. |
 | `atx-serial-open` | bounded | runtime-owned blocking task opening/configuring a serial path | At most 2 s. On expiry a late owned fd is dropped; the managed HAT owner never retries that timeout. Actual runtime teardown includes the blocked worker and cannot report a clean stop while it remains alive. |
-| `v2-hat-loop` | acyclic | owned UART helper, independent monitor/status stream or paced retry/poll timer | The parent actor selects managed cancellation independently. No branch waits on the parent; canceled selects retain the stored join handle and session. Complete-write/receive uncertainty schedules bounded measured quiet recovery; known partial-write poison waits for Boot and survives actual close/reopen. |
+| `atx-tcp-connect` | bounded | one async connection to a numeric TCP HAT endpoint | At most 2 s; on expiry return TimedOut and drop the pending connect future/socket. Parent cancellation drops the same owned future. No DNS or blocking worker is started; the HAT owner may retry after its normal paced delay. |
+| `v2-hat-open` | bounded | the configured UART or TCP opener | Each backend supplies a two-second bound; on expiry the owner keeps a UART blocking-open timeout terminal, while an async TCP timeout is eligible for paced retry. The existing owned open job is canceled and joined on parent stop. |
+| `v2-hat-loop` | acyclic | owned HAT helper, independent monitor/status stream or paced retry/poll timer | The parent actor selects managed cancellation independently. No branch waits on the parent; canceled selects retain the stored join handle and session. Complete-write/receive uncertainty schedules bounded measured quiet recovery. Known partial-write poison waits for Boot on the current connection and survives UART reopen; a new TCP connection owns a fresh remote parser/output session. |
 | `v2-hat-setup` | bounded | version and enabled-bus status sequence on the existing transaction owner | One original 5 s setup deadline spans the sequence. On expiry retain the session's Late/reset state; metadata stays available and no new probe bypasses that state. |
 | `v2-physical-operation` | bounded | owned discovery/input/output/group/scene execution future | Every transaction receives the same original caller deadline; no per-query renewal. MQTT selects 4 s for input values, 8 s for input event settings read/patch/readback, the existing 2/6/8 s output budgets, 8 s scene inspection/capture, 3 s recall and 18 s scene settings through save/program; addressed discovery clips hardware to 8 s within its original 10 s MQTT save/reply budget. On expiry reject a read or report mutation uncertainty, retaining admission through the existing fixed settlement/teardown ceiling after the execution joins. Caller cancellation cannot release active physical ownership. |
 | `v2-hat-health` | bounded | a local HAT bus-status snapshot query | Uses the remaining original setup deadline. On expiry retain the same transaction owner and poison state. The proactive D snapshot is not a causal acknowledgement or fixture capability claim. |
@@ -148,6 +150,7 @@ atx-reset-guard src/atx/monitor.rs <ReadMode as AsyncRead>::poll_read
 atx-reset-guard src/atx/monitor.rs read_loop
 atx-reset-guard src/atx/monitor.rs receive_fence
 atx-serial-open src/atx/serial.rs Serial::open_using
+atx-tcp-connect src/atx/connection.rs connect
 atx-transaction-close src/atx/transactions/engine.rs Transactions::close_until
 atx-transaction-dispatch src/atx/transactions/engine.rs Actor::drive
 atx-transaction-response src/atx/transactions/engine.rs Actor::await_response
@@ -215,6 +218,7 @@ v2-hat-health src/service/hat.rs query_health
 v2-hat-loop src/service/hat.rs Hat::changed
 v2-hat-loop src/service/hat.rs dormant
 v2-hat-loop src/service/physical.rs Work::wait_for_receiver_close
+v2-hat-open src/service/hat.rs Hat::advance
 v2-hat-setup src/service/hat.rs Hat::advance
 v2-identification-dwell src/service/identification.rs run
 v2-identification-owner src/service/identification.rs Manager::changed

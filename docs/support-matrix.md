@@ -1,11 +1,12 @@
 # v2 capability status
 
 This is development status during P4/P5, not a release or certification statement.
-The canonical v2 executable runs BridgeKit with metadata and UART health. No v2 physical HAT
+The canonical v2 executable runs BridgeKit with metadata and UART/TCP HAT health. No v2 physical HAT
 or fixture behavior has been validated. The v1 maintenance binary is separate.
 
 | Capability | Local implementation/evidence | Remaining work |
 |---|---|---|
+| TCP HAT connector | Numeric `--hat-tcp` endpoint through the shared ATX owner; actual loopback process, literal peer and independent emulator-core tests, repeated settings with both terminal profiles, input events and reconnect/stop checks | Standalone emulator listener and its own configurable web UI are assigned to a parallel implementation; raw TCP requires a fresh remote HAT session per connection |
 | Output identification | Managed Blink/Stop, fresh prior-level capture, actual restoration, continuing rename and original physical-epoch guards; PTY/MQTT/HTTP, paused-time and real phone/desktop browser tests | Physical firmware/fixture timing |
 | v1 configuration import | Library and canonical process tests; v1 bytes preserved; v2 precedence and reimport | Persisted Store-object migration in P8 |
 | ATX I4 UART | Typed frames, continuous monitoring, measured quiet recovery, bounded request/helper progress under input traffic, managed health and real PTY/process crash-restart tests; known partial-write poison survives in-process reopen | Physical timing/firmware transcripts; j/t completion policies; no persistent inference of partial writes across process death |

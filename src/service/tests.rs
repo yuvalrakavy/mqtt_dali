@@ -19,6 +19,7 @@ mod scene_operations;
 mod scene_saved_view;
 mod scene_settings;
 mod scenes;
+mod tcp_hat;
 
 #[derive(Default)]
 pub(super) struct Pause {

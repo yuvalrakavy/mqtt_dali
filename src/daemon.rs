@@ -28,6 +28,10 @@ pub fn run() -> ExitCode {
             "UART/PTY path (default /dev/serial0; none disables hardware)",
         ),
         (
+            "hat-tcp",
+            "raw TCP HAT endpoint at numeric IP:port, instead of UART",
+        ),
+        (
             "uart-repeat-terminals",
             "known repeated-command completion profile: unverified, 1 or 2 (default unverified)",
         ),
@@ -71,6 +75,7 @@ pub fn run() -> ExitCode {
                 return Err(Problem::Usage(format!("--{option} must not be empty")));
             }
         }
+        hat_endpoint(&settings)?;
         uart_quiet(settings.options.get("uart-quiet-ms").map(String::as_str))?;
         web = web_options(&mut settings)?;
         uart_repeat(
@@ -119,12 +124,14 @@ pub fn run() -> ExitCode {
     if let Some(web) = web {
         service = service.with_web(web);
     }
-    let uart = bridge.value("uart").unwrap_or("/dev/serial0");
-    if uart != "none" {
-        service = service.with_uart(
-            uart,
-            uart_repeat(bridge.value("uart-repeat-terminals")).expect("validated repeat profile"),
-        );
+    let endpoint = hat_endpoint(bridge.settings()).expect("validated HAT endpoint");
+    if let Some(endpoint) = endpoint {
+        let repeat =
+            uart_repeat(bridge.value("uart-repeat-terminals")).expect("validated repeat profile");
+        service = match endpoint {
+            crate::atx::connection::Endpoint::Uart(path) => service.with_uart(path, repeat),
+            crate::atx::connection::Endpoint::Tcp(address) => service.with_hat_tcp(address, repeat),
+        };
         service = service
             .with_uart_quiet_period(
                 uart_quiet(bridge.value("uart-quiet-ms")).expect("validated quiet interval"),
@@ -133,6 +140,36 @@ pub fn run() -> ExitCode {
     }
     // WAIT: v2-daemon-run
     bridge.run_managed(service)
+}
+
+fn hat_endpoint(settings: &Settings) -> Result<Option<crate::atx::connection::Endpoint>, Problem> {
+    use crate::atx::connection::Endpoint;
+    if let Some(value) = settings.options.get("hat-tcp") {
+        if settings.options.contains_key("uart") {
+            return Err(Problem::Usage(
+                "--hat-tcp and --uart are mutually exclusive".into(),
+            ));
+        }
+        let address = value
+            .parse::<std::net::SocketAddr>()
+            .ok()
+            .filter(|a| a.port() != 0)
+            .ok_or_else(|| {
+                Problem::Usage("--hat-tcp must be a numeric IP:port with a nonzero port".into())
+            })?;
+        return Ok(Some(Endpoint::Tcp(address)));
+    }
+    Ok(
+        match settings
+            .options
+            .get("uart")
+            .map(String::as_str)
+            .unwrap_or("/dev/serial0")
+        {
+            "none" => None,
+            path => Some(Endpoint::Uart(path.into())),
+        },
+    )
 }
 
 fn web_options(settings: &mut Settings) -> Result<Option<crate::web::Settings>, Problem> {
@@ -231,6 +268,43 @@ fn offline_check(arguments: &[std::ffi::OsString]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn hat_endpoint_selection_preserves_uart_defaults_and_accepts_numeric_ipv6() {
+        use crate::atx::connection::Endpoint;
+        let mut settings = Settings::new("DALI");
+        assert!(
+            matches!(hat_endpoint(&settings).unwrap(), Some(Endpoint::Uart(p)) if p == std::path::Path::new("/dev/serial0"))
+        );
+        settings.options.insert("uart".into(), "none".into());
+        assert!(hat_endpoint(&settings).unwrap().is_none());
+        settings
+            .options
+            .insert("uart".into(), "/tmp/test-pty".into());
+        assert!(
+            matches!(hat_endpoint(&settings).unwrap(), Some(Endpoint::Uart(p)) if p == std::path::Path::new("/tmp/test-pty"))
+        );
+        settings.options.remove("uart");
+        for endpoint in ["127.0.0.1:5580", "[::1]:5580"] {
+            settings.options.insert("hat-tcp".into(), endpoint.into());
+            assert!(
+                matches!(hat_endpoint(&settings).unwrap(), Some(Endpoint::Tcp(a)) if a.to_string() == endpoint)
+            );
+        }
+    }
+    #[test]
+    fn hat_tcp_selection_rejects_conflicting_uart_even_when_disabled() {
+        for uart in ["none", "/dev/serial0"] {
+            let mut settings = Settings::new("DALI");
+            settings
+                .options
+                .insert("hat-tcp".into(), "127.0.0.1:5580".into());
+            settings.options.insert("uart".into(), uart.into());
+            assert!(
+                matches!(hat_endpoint(&settings), Err(Problem::Usage(s)) if s == "--hat-tcp and --uart are mutually exclusive"),
+                "ambiguous UART/TCP selection was accepted"
+            );
+        }
+    }
     #[test]
     fn web_password_is_consumed_before_runtime_settings_and_literal_values_survive() {
         let secret = "unique-web-secret-9e8c169f91";

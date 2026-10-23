@@ -21,7 +21,8 @@ expect_text = "runtime forgot a still-running serial opener"
 [[control]]
 name = "timed_out_serial_open_is_retried"
 file = "src/service/hat.rs"
-anchor = "self.terminal = error.kind() == io::ErrorKind::TimedOut;"
+anchor = '''self.terminal = error.kind() == io::ErrorKind::TimedOut
+                    && !self.settings.as_ref().unwrap().endpoint.is_tcp();'''
 replacement = "self.terminal = false;"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(blocked_open_is_terminal_and_prevents_a_false_clean_managed_stop)"]

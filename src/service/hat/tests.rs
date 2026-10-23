@@ -1,9 +1,11 @@
 use super::*;
+use crate::atx::serial::Serial;
 use crate::service::tests::{context, deadline, start, wait_for, Fixture};
 use crate::service::{MetadataEdit, Phase};
 use std::ffi::CStr;
 use std::os::fd::{FromRawFd, OwnedFd};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+mod tcp;
 
 #[tokio::test]
 async fn bus_setup_sync_discards_owned_old_health_result_and_distinguishes_fallback_from_enabled() {
@@ -909,7 +911,7 @@ async fn renewed_input_cannot_starve_completed_helper_or_hide_its_panic() {
     for panic in [false, true] {
         let pty = Pty::new();
         let serial = Serial::open(&pty.path).await.unwrap();
-        let (link, _) = Transactions::start(serial, RepeatPolicy::Unverified);
+        let (link, _) = Transactions::start(Connection::from(serial), RepeatPolicy::Unverified);
         let (flood, events) = broadcast::channel(128);
         let status = link.observe_status();
         let mut hat = Hat::new(Some(settings(pty.path)), vec![0]);
@@ -989,7 +991,8 @@ async fn renewed_input_cannot_starve_completed_helper_or_hide_its_panic() {
 async fn closed_query_before_public_eof_joins_transport_before_retry() {
     let mut pty = Pty::new();
     let serial = Serial::open(&pty.path).await.unwrap();
-    let (link, _real_events) = Transactions::start(serial, RepeatPolicy::Unverified);
+    let (link, _real_events) =
+        Transactions::start(Connection::from(serial), RepeatPolicy::Unverified);
     // Hold the public EOF until the actor's real result has reached the owner.
     let (forward, events) = broadcast::channel(128);
     let status = link.observe_status();
@@ -1064,7 +1067,7 @@ async fn closed_query_before_public_eof_joins_transport_before_retry() {
 async fn closed_status_before_public_eof_starts_owned_teardown() {
     let pty = Pty::new();
     let serial = Serial::open(&pty.path).await.unwrap();
-    let (link, _) = Transactions::start(serial, RepeatPolicy::Unverified);
+    let (link, _) = Transactions::start(Connection::from(serial), RepeatPolicy::Unverified);
     let (_forward, events) = broadcast::channel(128);
     let status = link.observe_status();
     let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
@@ -1108,7 +1111,7 @@ async fn closed_status_before_public_eof_starts_owned_teardown() {
 async fn failed_actor_join_remains_fatal_when_public_evidence_is_delayed() {
     let mut pty = Pty::new();
     let serial = Serial::open(&pty.path).await.unwrap();
-    let (link, _) = Transactions::start(serial, RepeatPolicy::Unverified);
+    let (link, _) = Transactions::start(Connection::from(serial), RepeatPolicy::Unverified);
     let (_forward, events) = broadcast::channel(128);
     let status = link.observe_status();
     let mut hat = Hat::new(Some(settings(pty.path.clone())), vec![0]);
@@ -1479,7 +1482,7 @@ async fn eof_during_partial_write_retains_poison_discovered_during_teardown() {
     let mut serial = Serial::open(&first.path).await.unwrap();
     let (blocked, waiting) = tokio::sync::oneshot::channel();
     serial.limit_writes(1, blocked);
-    let (link, events) = Transactions::start(serial, RepeatPolicy::Unverified);
+    let (link, events) = Transactions::start(Connection::from(serial), RepeatPolicy::Unverified);
     let original = link.clone();
     let status = link.observe_status();
     let mut config = settings(path.clone());
@@ -1609,7 +1612,8 @@ async fn boot_and_transport_loss_cannot_hide_an_already_panicked_helper() {
     for transport in [false, true] {
         let pty = Pty::new();
         let serial = Serial::open(&pty.path).await.unwrap();
-        let (link, events) = Transactions::start(serial, RepeatPolicy::Unverified);
+        let (link, events) =
+            Transactions::start(Connection::from(serial), RepeatPolicy::Unverified);
         let status = link.observe_status();
         let mut hat = Hat::new(Some(settings(pty.path)), vec![0]);
         hat.session = Some(Session {
@@ -1740,7 +1744,7 @@ async fn metadata_and_actual_close_remain_available_during_unanswered_initializa
 async fn fresh_boot_keeps_a_completed_receive_boundary_instead_of_requiring_another_reboot() {
     let mut pty = Pty::new();
     let serial = Serial::open(&pty.path).await.unwrap();
-    let (link, events) = Transactions::start(serial, RepeatPolicy::Unverified);
+    let (link, events) = Transactions::start(Connection::from(serial), RepeatPolicy::Unverified);
     let status = link.observe_status();
     let mut hat = Hat::new(Some(settings(pty.path)), vec![0]);
     hat.session = Some(Session {

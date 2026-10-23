@@ -1,9 +1,9 @@
-//! UART lifecycle only. Fixture operations must join the service admission path.
+//! HAT transport lifecycle. Fixture operations join the service admission path.
 use super::{group_output, input, output, physical, ServiceError};
 use super::{BusHealth, Hardware};
 use crate::atx::{
+    connection::{Connection, Endpoint},
     monitor::{CloseReason, Event},
-    serial::Serial,
     transactions::{RepeatPolicy, Response, SessionState, TransactionError, Transactions},
     wire::{Command, Kind, Version},
 };
@@ -16,7 +16,7 @@ use tokio::{
 use tracing::Instrument;
 
 pub(super) struct Settings {
-    path: PathBuf,
+    endpoint: Endpoint,
     repeat: RepeatPolicy,
     pub(super) quiet: Duration,
     pub(super) timing: Timing,
@@ -32,7 +32,7 @@ pub(super) struct Timing {
 impl Settings {
     pub(super) fn new(path: PathBuf, repeat: RepeatPolicy) -> Self {
         Self {
-            path,
+            endpoint: Endpoint::Uart(path),
             repeat,
             quiet: Duration::from_millis(250),
             timing: Timing {
@@ -43,6 +43,11 @@ impl Settings {
             #[cfg(test)]
             open_hook: None,
         }
+    }
+    pub(super) fn tcp(address: std::net::SocketAddr, repeat: RepeatPolicy) -> Self {
+        let mut settings = Self::new(PathBuf::new(), repeat);
+        settings.endpoint = Endpoint::Tcp(address);
+        settings
     }
 }
 /// An owned join result survives cancellation of the containing select future.
@@ -64,7 +69,7 @@ impl Drop for Job {
     }
 }
 enum Done {
-    Open(io::Result<Serial>),
+    Open(io::Result<Connection>),
     Setup(Result<(Version, Vec<BusHealth>), TransactionError>),
     Poll(Result<Vec<BusHealth>, TransactionError>),
     Boundary(Result<u64, TransactionError>),
@@ -75,7 +80,7 @@ enum Done {
     Settled(Result<(), TransactionError>),
 }
 struct Session {
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     events: broadcast::Receiver<Event>,
     status: watch::Receiver<SessionState>,
 }
@@ -375,15 +380,20 @@ impl Hat {
                 return Ok(());
             }
             let settings = self.settings.as_ref().unwrap();
-            let path = settings.path.clone();
+            let endpoint = settings.endpoint.clone();
             #[cfg(test)]
             let hook = settings.open_hook.clone();
             self.spawn(JobKind::Open, async move {
                 #[cfg(test)]
-                if let Some(hook) = hook {
-                    return Done::Open(Serial::open_with_hook(path, hook).await);
+                if let (Endpoint::Uart(path), Some(hook)) = (&endpoint, hook) {
+                    return Done::Open(
+                        crate::atx::serial::Serial::open_with_hook(path.clone(), hook)
+                            .await
+                            .map(Connection::from),
+                    );
                 }
-                Done::Open(Serial::open(path).await)
+                // WAIT: v2-hat-open
+                Done::Open(endpoint.open().await)
             });
             return Ok(());
         }
@@ -499,6 +509,12 @@ impl Hat {
         let retry = self.settings.as_ref().unwrap().timing.retry;
         match done {
             Done::Open(Ok(serial)) => {
+                if self.settings.as_ref().unwrap().endpoint.is_tcp() {
+                    // A new TCP peer owns a fresh remote parser/output session.
+                    // UART reopen alone cannot provide this reset guarantee.
+                    self.requires_boot = false;
+                    self.reset = false;
+                }
                 self.session_generation = self.session_generation.saturating_add(1);
                 let (link, events) =
                     Transactions::start(serial, self.settings.as_ref().unwrap().repeat);
@@ -515,7 +531,8 @@ impl Hat {
                 self.next = Instant::now();
             }
             Done::Open(Err(error)) => {
-                self.terminal = error.kind() == io::ErrorKind::TimedOut;
+                self.terminal = error.kind() == io::ErrorKind::TimedOut
+                    && !self.settings.as_ref().unwrap().endpoint.is_tcp();
                 self.error = error.to_string();
                 self.next = Instant::now() + retry;
             }
@@ -1279,7 +1296,7 @@ fn remaining(deadline: Instant) -> Result<Duration, TransactionError> {
     }
 }
 async fn query_health(
-    link: &Transactions<Serial>,
+    link: &Transactions<Connection>,
     buses: &[u8],
     deadline: Instant,
 ) -> Result<Vec<BusHealth>, TransactionError> {

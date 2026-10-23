@@ -1,6 +1,6 @@
 //! Explicit hardware-owned event configuration, separate from current values.
 use crate::atx::{
-    serial::Serial,
+    connection::Connection,
     transactions::{BusReply, TransactionError, Transactions},
     wire::DaliFrame,
 };
@@ -411,7 +411,7 @@ async fn probe(bus: &Bus<'_>, route: &Route) -> Result<Probe, Error> {
 }
 
 pub(in crate::service) async fn execute(
-    link: Transactions<Serial>,
+    link: Transactions<Connection>,
     route: Route,
     stamp: Stamp,
     deadline: Instant,
