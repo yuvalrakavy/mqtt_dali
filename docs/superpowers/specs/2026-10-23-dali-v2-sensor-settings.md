@@ -165,3 +165,16 @@ including wrong opcode, hold conversion, repeat omission, unsupported/missing
 preflight evidence, FF preservation, ignored-write outcome, exact UI units and
 preflight/actual-match submission guards. Source was restored after every row.
 The measured ledger is `docs/v2-sensor-settings-controls.ledger.json`.
+
+## Final acceptance
+
+Frozen source `b776346` received APPROVE from both final native/model and UI/API
+source-only lenses, without findings. Same-family review limitation applies.
+The complete native suite passes659/659 (67.500s execution /132.9s command).
+Strict Clippy, Pi library/four binaries, formatting, standalone wait validation,
+61 frontend tests, dist byte check, whitespace and all12 affected control-table
+plans pass. The actual browser and11 measured controls are recorded above;
+there was no subsequent production/UI mechanism change. Acceptance logs:
+`/tmp/dali-sensor-settings-acceptance`. Operator/reference/contributor guides,
+CLAUDE, support matrix and progress are updated. No reusable skill change is
+needed. Physical validation and the listed later input capabilities remain open.

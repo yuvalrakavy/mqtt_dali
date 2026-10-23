@@ -5,6 +5,52 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4i5 — absolute, occupancy and light sensor event parameters
+
+Frozen source `b776346`. Design and final native/model and UI/API source lenses
+APPROVE without findings. Reviews were read-only and same-family. No live HAT,
+Store, deployment, publication or dependency change occurred.
+
+The existing input-settings operation and protected dialog now support all nine
+base Part302–304 parameter bindings: report/deadtime for all three families,
+occupancy hold and light percentage/minimum hysteresis. Pure checked plans and
+independent emulator profiles use separate command maps. Fresh optional evidence
+preflights a whole mixed patch before any common/sensor write, then actual
+requested values must match. HoldFF is known unsupported; null is unknown;
+raw0 means one second. Other numericFF bytes remain data. Optional quality stays
+independent so common-only settings remain usable with partial sensor evidence.
+The original owner, permit, authority/deadline and permanent Notice cuts remain.
+Saved identities, bindings, configuration and input measurement values are kept.
+
+The same compact dialog shows exact seconds/50ms steps and applicable hysteresis
+fields without rounding. Unsupported hold leaves report/deadtime editable. API,
+operator and contributor guides describe native bytes versus display units and
+the limits of the independent profiles. No natural stimulus scheduler was added.
+
+Tests first failed on missing model/managed support and missing frontend guards.
+All **22 focused native cases**, **61 frontend cases** and **11 serial fault
+controls** pass (each intentional fault produced its declared RED,109.2s total).
+The complete suite passes **659/659 native tests** across eleven binaries
+(67.500s execution /132.9s command; the separately owned browser is skipped).
+Strict Clippy, Raspberry Pi library/four binaries, changed-file formatting,
+standalone wait validation, embedded asset byte check, whitespace and all twelve
+affected fault-control table plans pass. No new wait or owner was introduced.
+
+Actual full phone/desktop acceptance passes **921 owned commands in75.76s**,
+including all three sensor families, rawFF, one-second hold, save/reopen/restore
+and retained inventory. All six sensor screenshots were inspected. An initial
+full browser run passed the sensor flows but caught an old four-child count;
+the fixture now includes occupancy as its fifth instance. Both reassignment
+counts and explicit family coverage are checked in the passing run.
+
+Artifacts: `/tmp/dali-browser-fe073b2c6413c27988b46db167abb41b`;
+logs: `/tmp/dali-sensor-settings-browser2.log`,
+`/tmp/dali-sensor-settings-native3.log`, `/tmp/dali-sensor-settings-node3.log`,
+`/tmp/dali-sensor-settings-controls.log` and
+`/tmp/dali-sensor-settings-acceptance`. No reusable skill update is needed.
+Remaining inputs include indication/feedback, natural emulator stimuli,
+group/source routing, newer sensitivity/range capabilities and physical validation.
+
 ## P4i4 — managed push-button timing and exact-unit browser fields
 
 Implemented/frozen at `334b264`; internal allocation/documentation follow-up
@@ -2335,8 +2381,8 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base output codec/service/MQTT, named input metadata/live native events, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input event configuration/feedback, remaining colour modes/settings, split-address component bindings and remaining explicit capability support |
-| P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Input configuration and remaining capability workflows |
+| P4 capabilities | Quiet recovery, base outputs, named inputs/live events, common input configuration, button timing and all nine base sensor parameters, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input feedback/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
+| P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
