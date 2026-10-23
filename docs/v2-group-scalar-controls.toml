@@ -33,8 +33,8 @@ expect_text = "incomplete/empty scalar Set was acknowledged as confirmed"
 [[control]]
 name = "group_scalar_pre_send_owner_cut_is_omitted"
 file = "src/service/owner.rs"
-anchor = "if group_output::invalidate(&mut snapshot, &hat) {"
-replacement = "if false && group_output::invalidate(&mut snapshot, &hat) {"
+anchor = "if group_output::invalidate(&mut snapshot, &hat) || feedback_changed {"
+replacement = "if false && group_output::invalidate(&mut snapshot, &hat) || feedback_changed {"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_literal_ignored_write)"]
 expect_text = "group actual was not invalidated before the individual native send"

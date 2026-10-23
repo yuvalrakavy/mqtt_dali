@@ -773,6 +773,24 @@ impl Hat {
             .filter(|p| p.work.changes_group_values())
             .map(|p| p.work.bus())
     }
+    pub(super) fn input_feedback_changing(&self, bus: u8, address: u8, target: &str) -> bool {
+        self.physical.as_ref().is_some_and(|p| match &p.work {
+            physical::Work::InputFeedback(q, _) => q.action.writing() && q.target == target,
+            physical::Work::Restore(_, r) => {
+                r.space == super::discovery::Space::Inputs
+                    && r.bus == bus
+                    && r.address == address
+                    && matches!(
+                        r.plan,
+                        super::restoration::Plan::Unique | super::restoration::Plan::Clear
+                    )
+            }
+            physical::Work::Reassignment(_, r) => {
+                r.space == super::discovery::Space::Inputs && r.bus == bus
+            }
+            _ => false,
+        })
+    }
     pub(super) fn enqueue_discovery(
         &mut self,
         request: super::discovery::Request,

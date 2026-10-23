@@ -72,6 +72,8 @@ pub struct Snapshot {
     pub outputs: std::collections::BTreeMap<String, output::Observation>,
     pub group_outputs: std::collections::BTreeMap<String, group_output::Observation>,
     pub inputs: std::collections::BTreeMap<String, input::Observation>,
+    pub feedbacks: std::collections::BTreeMap<String, Arc<input::feedback::Observation>>,
+    pub input_contexts: std::collections::BTreeMap<String, input::feedback::StateContext>,
     /// Routes with an installed receive boundary, independently of device presence.
     pub input_listeners: std::collections::BTreeSet<String>,
     pub identification: Option<identification::Status>,

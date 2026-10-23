@@ -54,6 +54,9 @@ impl Peer {
                         let value = match opcode {
                             0x80 => Some(kind),
                             0x81 => Some(resolution),
+                            // Target refresh also inspects this input's indicator.
+                            // This literal device explicitly has no features.
+                            0x8e => Some(0xfe),
                             0x8c => {
                                 cursor = 1;
                                 bytes.first().copied()

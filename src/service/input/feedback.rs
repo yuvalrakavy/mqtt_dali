@@ -17,6 +17,9 @@ use crate::service::{
     routing, Message, Phase, RequestContext, ServiceError, ServiceHandle, Snapshot,
 };
 use serde::Serialize;
+use std::sync::Arc;
+pub(in crate::service) mod cache;
+pub use cache::StateContext;
 use std::time::Duration;
 use tokio::{
     sync::{oneshot, OwnedSemaphorePermit},
@@ -89,16 +92,30 @@ pub(in crate::service) struct Request {
     pub action: Action,
     pub context: RequestContext,
     pub deadline: Instant,
-    pub reply: oneshot::Sender<Result<Report, ServiceError>>,
+    pub reply: oneshot::Sender<Result<Reply, ServiceError>>,
     pub started: bool,
     report: Box<Report>,
     _completion: Option<mqtt_bridge_kit::CommandCompletion>,
     _permit: OwnedSemaphorePermit,
 }
-pub(in crate::service) struct Observation {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Observation {
     pub report: Box<Report>,
-    pub stamp: Stamp,
-    pub stale: bool,
+    pub context: RequestContext,
+    pub(in crate::service) stamp: Stamp,
+    pub(in crate::service) stale: bool,
+}
+pub(in crate::service) enum Reply {
+    Observed(Arc<Observation>),
+    Unconfirmed(Box<Report>),
+}
+impl Reply {
+    fn into_report(self) -> Report {
+        match self {
+            Self::Observed(o) => (*o.report).clone(),
+            Self::Unconfirmed(r) => *r,
+        }
+    }
 }
 pub(in crate::service) struct Outcome {
     pub observation: Observation,
@@ -402,6 +419,7 @@ pub(in crate::service) async fn execute(
     Outcome {
         observation: Observation {
             report: Box::new(report),
+            context: r.context.clone(),
             stamp,
             stale: false,
         },
@@ -413,7 +431,7 @@ pub(in crate::service) fn accept(
     snapshot: &Snapshot,
     c: &mut Completion,
     hat: &crate::service::hat::Hat,
-) -> Result<Report, ServiceError> {
+) -> Result<Arc<Observation>, ServiceError> {
     if let Some(error) = c.error.take() {
         return Err(error);
     }
@@ -434,18 +452,18 @@ pub(in crate::service) fn accept(
             reject("feedback evidence changed before acceptance")
         });
     }
-    Ok(*o.report)
+    Ok(Arc::new(o))
 }
-pub(in crate::service) fn finish(q: Request, result: Result<Report, ServiceError>) {
+pub(in crate::service) fn finish(q: Request, result: Result<Arc<Observation>, ServiceError>) {
     let result = match result {
         Err(e) if q.started => {
             let mut r = *q.report;
             r.outcome = "unconfirmed";
             r.reason = Some(e.to_string());
             r.feedback = None;
-            Ok(r)
+            Ok(Reply::Unconfirmed(Box::new(r)))
         }
-        r => r,
+        r => r.map(Reply::Observed),
     };
     drop(q._permit);
     let _ = q.reply.send(result);
@@ -487,6 +505,18 @@ impl ServiceHandle {
         deadline: Instant,
         completion: Option<mqtt_bridge_kit::CommandCompletion>,
     ) -> Result<Report, ServiceError> {
+        self.feedback_evidence(target, action, context, deadline, completion)
+            .await
+            .map(Reply::into_report)
+    }
+    pub(in crate::service) async fn feedback_evidence(
+        &self,
+        target: &str,
+        action: Action,
+        context: RequestContext,
+        deadline: Instant,
+        completion: Option<mqtt_bridge_kit::CommandCompletion>,
+    ) -> Result<Reply, ServiceError> {
         let deadline = deadline.min(Instant::now() + Duration::from_secs(8));
         if Instant::now() >= deadline {
             return Err(ServiceError::Expired);

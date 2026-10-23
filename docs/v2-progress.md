@@ -5,6 +5,34 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4i8 — input feedback scalar bindings
+
+Implementation is under verification. Existing module/instance targets accept
+boolean FeedbackActive Desired values and publish independent feedback evidence
+alongside measurements. Native/typed/web command report shapes and configuration
+files stay compatible. The owner caches the exact accepted feedback Arc, retires
+it on reads/writes, revisions and physical/address changes, and keeps input
+Notices/values independent. Whole State rows use the latest owner-accepted input
+or feedback cause; same-value observations update provenance without forcing
+duplicate MQTT values. Final scalar acceptance checks the exact capture and
+requested actual value, rather than transport acknowledgement.
+
+Target refresh reads instance value then feedback, or module feedback alone.
+Aggregate refresh keeps its fifteen-second fair cursor and polls only previously
+sampled feedback scopes. Focused evidence includes scalar/atomic Desired, strict
+maps/authority, module/instance isolation, unique HTTP rows, unknown/unsupported/
+Off distinction, exact capture/deadline, native clear/revision invalidation,
+unchanged/coalesced trace ordering, sampled-only All and ignored native writes.
+The original behavioral test failed because no feedback State was published.
+Full regression, deliberate-fault controls and source gates remain in progress.
+Spec: [feedback bindings](superpowers/specs/2026-10-23-dali-v2-feedback-bindings.md).
+
+The parallel emulator agent completed its configurable standalone TCP HAT and
+separate web UI on `feat/dali-emulator-ui`, implementation `d28a5d7` and handoff
+`533f3ed`. It has not yet been integrated into this checkout. The agent reports
+653 library tests, nine standalone tests, registry, scoped Clippy/Pi and actual
+phone/desktop browser acceptance. Root integration verification remains pending.
+
 ## P2b — bridge TCP connector and emulator UI handoff
 
 Implementation `f3912a1`. The user requested a separate emulator process with

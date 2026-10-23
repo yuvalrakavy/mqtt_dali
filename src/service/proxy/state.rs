@@ -115,6 +115,20 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
         })
         .chain(super::super::input::projections(snapshot))
         .chain(super::group::projections(snapshot))
+        .chain(super::super::input::feedback::cache::projections(snapshot))
+        .fold(
+            std::collections::BTreeMap::<String, ContextualState>::new(),
+            |mut states, state| {
+                if let Some(prior) = states.get_mut(&state.state.target) {
+                    prior.state.values.extend(state.state.values);
+                    prior.context = state.context;
+                } else {
+                    states.insert(state.state.target.clone(), state);
+                }
+                states
+            },
+        )
+        .into_values()
         .collect()
 }
 

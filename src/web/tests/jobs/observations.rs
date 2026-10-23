@@ -830,6 +830,8 @@ fn web_observed_dense_valid_inventory_fits_the_measured_snapshot_budget() {
         outputs: Default::default(),
         group_outputs: Default::default(),
         inputs: Default::default(),
+        feedbacks: Default::default(),
+        input_contexts: Default::default(),
         input_listeners: Default::default(),
         version: "test",
         build_utc: "test",

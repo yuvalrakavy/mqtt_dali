@@ -1,0 +1,107 @@
+{
+ "rows": {
+  "feedback_binding_actual_confirmation_ignored": {
+   "last_real": {
+    "at": "2026-10-23T11:14:48Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:e330b492fb14a17f",
+     "row": "9531f70bcf5edd4a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 23.8,
+    "sha": "7ddc1ac9a6de05357121e3c6307822224e71dde3",
+    "verdict": "RED"
+   }
+  },
+  "feedback_binding_boolean_validation_ignored": {
+   "last_real": {
+    "at": "2026-10-23T11:14:24Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:a57ab4c21d7f0c2e",
+     "row": "9e18bd35c1a5d4f1",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.6,
+    "sha": "7ddc1ac9a6de05357121e3c6307822224e71dde3",
+    "verdict": "RED"
+   }
+  },
+  "feedback_binding_equal_data_replaces_capture": {
+   "last_real": {
+    "at": "2026-10-23T11:13:33Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:102424bf42dece15",
+     "row": "737cdf682ad2ba16",
+     "test": null
+    },
+    "path": "command",
+    "secs": 77.3,
+    "sha": "7ddc1ac9a6de05357121e3c6307822224e71dde3",
+    "verdict": "RED"
+   }
+  },
+  "feedback_binding_final_deadline_ignored": {
+   "last_real": {
+    "at": "2026-10-23T11:14:08Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:102424bf42dece15",
+     "row": "c902e76ad8fb4de2",
+     "test": null
+    },
+    "path": "command",
+    "secs": 35.2,
+    "sha": "7ddc1ac9a6de05357121e3c6307822224e71dde3",
+    "verdict": "RED"
+   }
+  },
+  "feedback_binding_latest_input_cause_ignored": {
+   "last_real": {
+    "at": "2026-10-23T11:15:52Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:ac8bec8cbc87e6d2",
+     "row": "5f94221973e48d0e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 64.1,
+    "sha": "7ddc1ac9a6de05357121e3c6307822224e71dde3",
+    "verdict": "RED"
+   }
+  },
+  "feedback_binding_native_address_retirement_ignored": {
+   "last_real": {
+    "at": "2026-10-23T11:16:39Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:a252b7687cc85abc",
+     "row": "5b836d3cd4dd445f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 46.8,
+    "sha": "7ddc1ac9a6de05357121e3c6307822224e71dde3",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

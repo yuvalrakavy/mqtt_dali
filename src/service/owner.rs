@@ -34,6 +34,20 @@ impl Drop for AdmissionGuard {
 impl DaliService {
     fn update_snapshot(&self, model: Arc<Model>, phase: Phase) -> Snapshot {
         let snapshot = Snapshot {
+            feedbacks: input::feedback::cache::retained(
+                &model,
+                self.handle
+                    .snapshot()
+                    .map(|s| s.feedbacks)
+                    .unwrap_or_default(),
+            ),
+            input_contexts: input::feedback::cache::retained_contexts(
+                &model,
+                self.handle
+                    .snapshot()
+                    .map(|s| s.input_contexts)
+                    .unwrap_or_default(),
+            ),
             group_outputs: group_output::retained(
                 &model,
                 self.handle
@@ -531,7 +545,8 @@ impl ProcessService for DaliService {
             // Sync before polling any public frame after durable activation.
             hat.sync_model(&owner.model);
             let mut snapshot = self.handle.snapshot().expect("service started");
-            if group_output::invalidate(&mut snapshot, &hat) {
+            let feedback_changed = input::feedback::cache::invalidate(&mut snapshot, &hat);
+            if group_output::invalidate(&mut snapshot, &hat) || feedback_changed {
                 self.state.send_replace(Some(snapshot.clone()));
                 let _ = self.handle.updates.send(snapshot);
             }
@@ -627,6 +642,7 @@ impl ProcessService for DaliService {
                     }
                     hat.invalidate_outputs(&mut snapshot.outputs);
                     group_output::invalidate(&mut snapshot, &hat);
+                    input::feedback::cache::invalidate(&mut snapshot, &hat);
                     // Cache and reply share the final validated sample. A second
                     // independent validation could otherwise change only one.
                     if let Some(physical::Completion::Output(completion))=&mut completion {
@@ -640,7 +656,9 @@ impl ProcessService for DaliService {
                             }
                         }
                     }
+                    let previous_inputs=snapshot.inputs.clone();
                     snapshot.inputs=hat.input_observations();
+                    input::feedback::cache::input_changes(&mut snapshot,&previous_inputs);
                     if let Some(physical::Completion::Input(completion))=&mut completion {
                         if let Some(observation)=&mut completion.observation {
                             if let Some(accepted)=snapshot.inputs.get(&completion.request.target)
@@ -660,6 +678,22 @@ impl ProcessService for DaliService {
                         }
                         Some(scenes::accept(&snapshot,completed,&hat))
                     } else {None};
+                    if let Some(physical::Completion::Input(completed))=&completion {
+                        if completed.error.is_none() {
+                            if let Some(o)=snapshot.inputs.get(&completed.request.target).filter(|o| !o.stale).cloned() {
+                                input::feedback::cache::note_input(&mut snapshot,&completed.request.target,&o.context);
+                            }
+                        }
+                    }
+                    let (notices,dropped)=hat.take_input_notices();
+                    for notice in &notices {
+                        if notice.current(&snapshot) { input::feedback::cache::note_input(&mut snapshot,&notice.target,&notice.context); }
+                    }
+                    let feedback_result=if let Some(physical::Completion::InputFeedback(completed))=&mut completion {
+                        let result=input::feedback::accept(&snapshot,completed,&hat);
+                        if let Ok(o)=&result { input::feedback::cache::note_feedback(&mut snapshot,&completed.request.target,o.clone()); }
+                        Some(result)
+                    }else{None};
                     let group_output_result=if let Some(physical::Completion::GroupOutput(completed))=&mut completion {
                         if completed.request.action.writing(){group_output::invalidate_actual(&mut snapshot,completed.request.bus);}
                         let result = group_output::accept(&snapshot,completed,&hat);
@@ -673,16 +707,12 @@ impl ProcessService for DaliService {
                     let input_actions_allowed=snapshot.phase==Phase::Ready;
                     self.state.send_replace(Some(snapshot.clone()));
                     let _=self.handle.updates.send(snapshot);
-                    let (notices,dropped)=hat.take_input_notices();
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion { match completion {
                       physical::Completion::OutputSettings(completed)=>output::settings::finish(completed.request,output_settings_result.expect("output settings accepted before publication")),
                       physical::Completion::GroupOutput(completed)=>group_output::finish(completed.request,group_output_result.expect("group output accepted before publication")),
-                      physical::Completion::InputFeedback(mut completion)=>{
-                        let result=input::feedback::accept(&self.handle.snapshot().expect("service started"),&mut completion,&hat);
-                        input::feedback::finish(completion.request,result);
-                      },
+                      physical::Completion::InputFeedback(completion)=>input::feedback::finish(completion.request,feedback_result.expect("feedback accepted before publication")),
                       physical::Completion::InputSettings(mut completion)=>{
                         let result=input::settings::accept(&self.handle.snapshot().expect("service started"),&mut completion,&hat);
                         input::settings::finish(completion.request,result);
@@ -932,7 +962,13 @@ impl ProcessService for DaliService {
                         )
                     };
                     match result {
-                        Ok(route) => hat.enqueue_input_feedback(request, route),
+                        Ok(route) => {
+                            let mut snapshot = self.handle.snapshot().expect("service started");
+                            input::feedback::cache::retire(&mut snapshot, &request.target);
+                            self.state.send_replace(Some(snapshot.clone()));
+                            let _ = self.handle.updates.send(snapshot);
+                            hat.enqueue_input_feedback(request, route);
+                        }
                         Err(error) => input::feedback::finish(request, Err(error)),
                     }
                 }
@@ -1053,6 +1089,7 @@ impl ProcessService for DaliService {
                     snapshot.hardware = hat.hardware();
                     hat.invalidate_outputs(&mut snapshot.outputs);
                     group_output::invalidate(&mut snapshot, &hat);
+                    input::feedback::cache::invalidate(&mut snapshot, &hat);
                     snapshot.inputs = hat.input_observations();
                     snapshot.input_listeners = hat.input_listeners();
                     self.state.send_replace(Some(snapshot.clone()));
@@ -1127,6 +1164,7 @@ impl ProcessService for DaliService {
         snapshot.input_listeners = hat.input_listeners();
         hat.invalidate_outputs(&mut snapshot.outputs);
         group_output::invalidate(&mut snapshot, &hat);
+        input::feedback::cache::invalidate(&mut snapshot, &hat);
         self.state.send_replace(Some(snapshot.clone()));
         let _ = self.handle.updates.send(snapshot);
         // WAIT: v2-store-close

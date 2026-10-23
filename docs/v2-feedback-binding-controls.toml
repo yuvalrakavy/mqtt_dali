@@ -1,0 +1,55 @@
+# Run serially; restore each mutation before another build or source review.
+
+[[control]]
+name = "feedback_binding_equal_data_replaces_capture"
+file = "src/service/proxy/feedback.rs"
+anchor = ".is_some_and(|o| Arc::ptr_eq(o, observed))"
+replacement = ".is_some_and(|o| o.as_ref() == observed.as_ref())"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(feedback_acceptance_requires_exact)"]
+expect_text = "equal feedback data replaced exact owner capture"
+
+[[control]]
+name = "feedback_binding_final_deadline_ignored"
+file = "src/service/proxy/feedback.rs"
+anchor = "if Instant::now() >= deadline\n        || observed.stale"
+replacement = "if false\n        || observed.stale"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(feedback_acceptance_requires_exact)"]
+expect_text = "expired feedback capture accepted"
+
+[[control]]
+name = "feedback_binding_boolean_validation_ignored"
+file = "src/service/proxy/feedback.rs"
+anchor = "values[\"FeedbackActive\"]\n        .as_bool()"
+replacement = "values[\"FeedbackActive\"]\n        .as_bool().or(Some(true))"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(feedback_validation_refuses)"]
+expect_text = "invalid map accepted"
+
+[[control]]
+name = "feedback_binding_actual_confirmation_ignored"
+file = "src/service/proxy/feedback.rs"
+anchor = "if !verified {"
+replacement = "if false && !verified {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(feedback_scalar_ignored)"]
+expect_text = "ignored feedback scalar write was acknowledged as confirmed"
+
+[[control]]
+name = "feedback_binding_latest_input_cause_ignored"
+file = "src/service/input/feedback/cache.rs"
+anchor = "if snapshot.inputs.get(target).is_some_and(|o| {"
+replacement = "if false && snapshot.inputs.get(target).is_some_and(|o| {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(feedback_coalesced_watcher)"]
+expect_text = "coalesced State replay resurrected older feedback trace"
+
+[[control]]
+name = "feedback_binding_native_address_retirement_ignored"
+file = "src/service/input/feedback/cache.rs"
+anchor = "|| hat.input_feedback_changing(o.report.bus, o.report.address, target)"
+replacement = "|| false"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(feedback_revision_and_native_address_clear)"]
+expect_text = "feedback actual evidence did not reach MQTT State"

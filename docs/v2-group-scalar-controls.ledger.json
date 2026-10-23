@@ -104,18 +104,18 @@
   },
   "group_scalar_pre_send_owner_cut_is_omitted": {
    "last_real": {
-    "at": "2026-10-23T05:09:08Z",
+    "at": "2026-10-23T11:19:14Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:aa71ffe275fae6c6",
-     "row": "aad70fef9b57d915",
+     "guard": "item:ea28fa085cc4ebe9",
+     "row": "e65da2e7aa4e30a1",
      "test": null
     },
     "path": "command",
-    "secs": 16.5,
-    "sha": "cd0135658217f1b331e6e948f6bb4fc2669b8cb0",
+    "secs": 26.4,
+    "sha": "7ddc1ac9a6de05357121e3c6307822224e71dde3",
     "verdict": "RED"
    }
   },

@@ -397,13 +397,18 @@ dialogs expose read/set commands; see `docs/input-feedback.md`. Keep original
 context/revision/token/stamp/deadline and fresh bounded support/presence proof.
 Confirm requested actual active state, including explicit equal-value sends.
 Feedback never cuts input Notice/value evidence or saves config. Scalar bindings
-and parameter settings remain subsequent work. Feature Type uses ordinary FE/00..1F,
+accept only boolean FeedbackActive on existing module/instance targets. Separate
+Arc feedback captures and owner-selected aggregate State causes preserve actual
+measurement/action semantics; final scalar acceptance requires the same Arc,
+revision, original deadline and current mapping/lifecycle. Target refresh reads
+value then feedback; All polls only already sampled feedback scopes. Parameter
+settings remain subsequent work. Feature Type uses ordinary FE/00..1F,
 feedback deviceFC/instance20..3F. FE is no-feature/end, FF multiple; bound adjacent
 enumeration and never interpret silent Active as false without fresh support and
 presence. No DT8 enable/repeat for Activate/Stop. Preserve raw unknown capability
 bits. Scenario `feedback` and runtime `feedback_state` use distinct omitted-empty
 keys. Controls: `docs/v2-feedback-foundation-controls.toml` and
-`docs/v2-managed-feedback-controls.toml`. Addressed
+`docs/v2-managed-feedback-controls.toml` and `docs/v2-feedback-binding-controls.toml`. Addressed
 discovery is documented in `docs/discovery.md`: one short address per bounded
 operation, captured probe evidence, durable additions only, preserved existing
 lifetimes and original command completion. Output/input address spaces are

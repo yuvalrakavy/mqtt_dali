@@ -91,9 +91,9 @@ expect_text = "stale merged input query data survived bus loss"
 
 [[control]]
 name = "wide_input_refresh_keeps_short_output_budget"
-file = "src/service/proxy.rs"
-anchor = "let deadline = Instant::now() + Duration::from_secs(4);"
-replacement = "let deadline = Instant::now() + Duration::from_secs(2);"
+file = "src/service/proxy/feedback.rs"
+anchor = "deadline.min(Instant::now() + Duration::from_secs(4)),"
+replacement = "deadline.min(Instant::now() + Duration::from_secs(2)),"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_readback_paced_255_bit)"]
 expect_text = "paced full-resolution input refresh failed its original deadline"

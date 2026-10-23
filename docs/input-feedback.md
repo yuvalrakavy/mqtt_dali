@@ -46,8 +46,49 @@ CSRF/session checks and original target authority. Typed callers use
 Each Set reads fresh support before sending one addressed Activate/Stop and
 verifies the requested actual state afterward. Even an equal active value sends
 the explicit command: on real devices activation can restart a feedback pattern.
-There is no retry, rollback, raw-address job or saved settings shadow. This slice
-provides commands; scalar Desired feedback bindings remain subsequent work.
+There is no retry, rollback, raw-address job or saved settings shadow.
+
+## Scalar indicator bindings
+
+Publish a JSON boolean to the existing input target's `FeedbackActive` property:
+
+```text
+DALI/Desired/Controller/Bus1.Inputs.WallPanel.Instances.Door/FeedbackActive
+```
+
+An atomic Desired object at the target topic accepts only `{"FeedbackActive":true}`
+or false. Both forms require the exact original MQTT v5 `target-generation`.
+Module targets work the same way. Input measurements remain read-only; mixed
+indicator/measurement writes reject before native IO.
+
+The target's ordinary State includes independent feedback properties:
+
+| Property | Meaning |
+|---|---|
+| FeedbackActive | Verified actual boolean, otherwise null |
+| FeedbackAvailable | True only with complete supported actual-state evidence |
+| FeedbackSupported | Fresh proven support boolean, otherwise null |
+| FeedbackCapabilityRaw | Fresh raw capability byte, otherwise null |
+| FeedbackQuality | unobserved, current, unsupported, partial, unavailable, type_mismatch or stale |
+
+These fields never replace a button's Status, a sensor's value, Available/Quality
+or native action events. Unsupported and unknown do not mean Off. Actual state
+is accepted and reported before a scalar write completes; a successful send alone
+does not confirm the requested value. An admitted failed read/write retires its
+old feedback evidence. Inventory revisions, transport/bus changes and native
+address clearing/reassignment also retire affected evidence.
+
+Target `refresh` reads module feedback within eight seconds. For an instance it
+first reads the input value (at most four seconds), then feedback (at most eight),
+under one twelve-second ceiling. Aggregate refresh keeps its fifteen-second
+fair cursor and adds only feedback scopes already sampled by a read or write.
+Cold startup does not query every possible indicator.
+
+An instance publishes one merged State object. Its trace identifies the latest
+accepted input observation/action or feedback observation. Same-value reads can
+update that cause without producing a duplicate MQTT value. Unrelated snapshot
+replays preserve it; unsolicited input data clears an older request trace.
+Command replies keep their own original request trace.
 
 Reports include operation/outcome, target/generation, revision, bus/address,
 optional instance/reported_type, before/current feedback, reason and

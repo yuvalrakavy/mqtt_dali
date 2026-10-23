@@ -81,7 +81,8 @@ remain separate work.
 ## Query current values
 
 An instance `refresh` queries physical type, resolution and the complete input
-value. It works before the first event and when event delivery is disabled.
+value, followed by its independent indicator feedback. It works before the first
+event and when event delivery is disabled.
 Send this Command with an MQTT v5 response topic to `DALI/Command/Controller`:
 
 ```json
@@ -125,8 +126,15 @@ Aggregate refresh includes enabled input instances alongside outputs under the
 existing fair cursor and 15 s total ceiling. Each input gets at most 4 s without
 renewing deadlines per byte. Both operation kinds share one UART owner/permit;
 caller cancellation does not release active physical work early. Project the
-latest same-generation snapshot after the final await. Input modules remain
-inventory metadata targets, and input Desired values remain unsupported.
+latest same-generation snapshot after the final await. Module target refresh
+reads indicator feedback. Instance target refresh has one twelve-second ceiling:
+four for the value and eight for feedback. Aggregate refresh adds feedback work
+only for previously sampled scopes within its existing fifteen-second ceiling.
+
+Input measurements remain read-only. Modules and instances accept boolean
+`FeedbackActive` Desired values and publish separate FeedbackActive/Available/
+Supported/CapabilityRaw/Quality fields. See [indicator bindings](input-feedback.md#scalar-indicator-bindings)
+for examples, unknown/stale semantics and aggregate State trace behavior.
 
 ## Native actions
 

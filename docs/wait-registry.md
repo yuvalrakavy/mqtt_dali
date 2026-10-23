@@ -126,7 +126,7 @@ blocking-methods = read_byte, shutdown_timeout, run_managed
 not-waits = sleep, sleep_until, yield_now
 # This code's own async methods, awaited on a receiver other than `self` (checked: the DALI
 # manager's, the session's own, and the config saver's, whose one wait is tagged inside it).
-local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, output_settings, input_boundary, read_input, input_settings, input_feedback, group_output, group_evidence, wait_for_receiver_close, discover, assign, assign_space, commission, search, program, groups, read_groups, change_groups, finished, identify_output, identification_output, scene, scene_setting, change_scene_row, reset_address_space, reset_space, clear, exchange, restore_address, restore, find_random, only_unaddressed, initialize_unaddressed, query
+local-methods = set_light_brightness_async, set_group_brightness_async, run_session, save_config, fence, control, edit, recover, change, attach, submit, fresh_boot_boundary, initialize, force_until, close_until, fence_until, quiet_fence_using, resynchronize, enqueue, command, execute_until, receive_fence_until, settle_until, read_output, apply_output, read_colour, apply_colour, apply_colour_with_output, output_settings, input_boundary, read_input, input_settings, input_feedback, feedback_evidence, group_output, group_evidence, wait_for_receiver_close, discover, assign, assign_space, commission, search, program, groups, read_groups, change_groups, finished, identify_output, identification_output, scene, scene_setting, change_scene_row, reset_address_space, reset_space, clear, exchange, restore_address, restore, find_random, only_unaddressed, initialize_unaddressed, query
 ```
 
 ## Waiters (generated)
@@ -237,7 +237,7 @@ v2-service-request src/service/commissioning.rs ServiceHandle::assign_space
 v2-service-request src/service/discovery.rs ServiceHandle::discover
 v2-service-request src/service/group_output.rs ServiceHandle::group_evidence
 v2-service-request src/service/groups.rs ServiceHandle::groups
-v2-service-request src/service/input/feedback.rs ServiceHandle::input_feedback
+v2-service-request src/service/input/feedback.rs ServiceHandle::feedback_evidence
 v2-service-request src/service/input/readback.rs ServiceHandle::read_input
 v2-service-request src/service/input/settings.rs ServiceHandle::input_settings
 v2-service-request src/service/output.rs ServiceHandle::output

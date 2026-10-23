@@ -46,6 +46,8 @@ pub(super) fn snapshot(model: Model, phase: Phase) -> Snapshot {
         outputs: Default::default(),
         group_outputs: Default::default(),
         inputs: Default::default(),
+        feedbacks: Default::default(),
+        input_contexts: Default::default(),
         input_listeners: Default::default(),
         identification: None,
         version: env!("CARGO_PKG_VERSION"),
