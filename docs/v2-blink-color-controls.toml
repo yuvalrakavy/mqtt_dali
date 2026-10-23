@@ -1,0 +1,36 @@
+# Active-color Blink restoration, readback and bounded request controls.
+[[control]]
+name = "blink_color_omits_exact_readback"
+file = "src/service/identification.rs"
+anchor = "if restored != Some(original) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(identification_color_ignored_restore)"]
+expect_text = "ignored color restoration was reported successful from sent intent"
+
+[[control]]
+name = "blink_color_skips_capture_preflight"
+file = "src/service/output/colour.rs"
+anchor = "        self.preflight(intent)?;"
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(identification_color_capture_requires)"]
+expect_text = "incomplete color capture started Blink"
+
+[[control]]
+name = "blink_color_reuses_prewrite_control"
+file = "src/service/output/colour.rs"
+anchor = "if sample\n        .feature_value()\n        .is_some_and(|features| features.rgbwaf_channels() > 0)"
+replacement = "if sample.control.is_none() && sample\n        .feature_value()\n        .is_some_and(|features| features.rgbwaf_channels() > 0)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(identification_color_restore_requires_fresh)"]
+expect_text = "incorrect RGBWAF control was reported restored from prewrite evidence"
+
+[[control]]
+name = "blink_color_retains_base_request_budget"
+file = "src/service/proxy.rs"
+anchor = "Self::Identify(_) => 8,"
+replacement = "Self::Identify(_) => 4,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(identification_color_paced_capture)"]
+expect_text = "paced color restoration expired"

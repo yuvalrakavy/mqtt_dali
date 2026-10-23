@@ -157,6 +157,55 @@ impl Observation {
         self.reason =
             (!current).then(|| "active colour evidence is incomplete or unsupported".into());
     }
+    /// Capture only a complete active color that the existing write path can restore.
+    pub(in crate::service) fn restoration(&self) -> Result<Option<Intent>, String> {
+        if self.dt8 == Some(false) {
+            return Ok(None);
+        }
+        let incomplete = || "Blink needs a complete, supported active color to restore".to_owned();
+        if self.dt8 != Some(true) || self.quality != Quality::Current {
+            return Err(incomplete());
+        }
+        let word = |query| match self.value(query) {
+            Some(Value::Word(WordValue::Known(raw))) => Ok(raw),
+            _ => Err(incomplete()),
+        };
+        let intent = match self.active() {
+            Some(ColourType::Temperature) => Intent::temperature(
+                codec::Temperature::new(word(ValueQuery::Temperature)?)
+                    .map_err(|_| incomplete())?,
+            ),
+            Some(ColourType::Xy) => Intent::xy(
+                codec::Coordinate::new(word(ValueQuery::X)?).map_err(|_| incomplete())?,
+                codec::Coordinate::new(word(ValueQuery::Y)?).map_err(|_| incomplete())?,
+            ),
+            Some(ColourType::Rgbwaf) => {
+                let Some(Reply::Value(raw)) = self
+                    .control
+                    .filter(|reply| matches!(reply, Reply::Value(raw) if raw >> 6 == 2))
+                else {
+                    return Err(incomplete());
+                };
+                let control =
+                    crate::dali::scenes::RgbwafControl::new(raw).map_err(|_| incomplete())?;
+                let mut channels = [None; 6];
+                for query in self.required(ColourType::Rgbwaf) {
+                    let slot = CHANNELS
+                        .iter()
+                        .position(|value| *value == query)
+                        .ok_or_else(incomplete)?;
+                    let Some(Value::Byte(ByteValue::Known(raw))) = self.value(query) else {
+                        return Err(incomplete());
+                    };
+                    channels[slot] = Some(codec::Channel::new(raw).map_err(|_| incomplete())?);
+                }
+                Intent::rgbwaf_for_restoration(channels, control).map_err(|_| incomplete())?
+            }
+            _ => return Err(incomplete()),
+        };
+        self.preflight(intent)?;
+        Ok(Some(intent))
+    }
     pub(super) fn preflight(&self, intent: Intent) -> Result<(), String> {
         if self.dt8 != Some(true) || !self.supported(intent.kind()) {
             return Err("requested colour representation is unsupported or unknown".into());
@@ -165,7 +214,11 @@ impl Observation {
             return Err("colour writes require confirmed gear features".into());
         }
         if let Some(channels) = intent.channels() {
-            if !matches!(self.control, Some(Reply::Value(raw)) if raw >> 6 == 2) {
+            let normalized = intent.rgbwaf_control().map_or_else(
+                || matches!(self.control, Some(Reply::Value(raw)) if raw >> 6 == 2),
+                |control| control.raw() >> 6 == 2,
+            );
+            if !normalized {
                 return Err("RGBWAF control is not confirmed normalized mode".into());
             }
             for (slot, value) in channels.iter().enumerate() {
@@ -187,6 +240,9 @@ impl Observation {
     pub(super) fn confirms(&self, intent: Intent) -> bool {
         self.quality == Quality::Current
             && self.active() == Some(intent.kind())
+            && intent
+                .rgbwaf_control()
+                .is_none_or(|control| self.control == Some(Reply::Value(control.raw())))
             && intent.channels().is_none_or(|channels| {
                 channels
                     .iter()
@@ -318,7 +374,6 @@ pub(in crate::service) async fn discover(
     );
     if let Some(features) = sample.feature_value() {
         if features.rgbwaf_channels() > 0 {
-            sample.control = Some(query(link, route, stamp, deadline, Query::RgbwafControl).await?);
             for index in 0..features.rgbwaf_channels() {
                 let replies = plan(
                     link,
@@ -351,6 +406,13 @@ pub(super) async fn read_values(
     // Mark incomplete before awaiting, so a transport failure cannot retain a
     // pre-write Current classification over a partially replaced sample.
     sample.quality = Quality::Partial;
+    if sample
+        .feature_value()
+        .is_some_and(|features| features.rgbwaf_channels() > 0)
+    {
+        sample.control = None;
+        sample.control = Some(query(link, route, stamp, deadline, Query::RgbwafControl).await?);
+    }
     sample.status = Some(
         query(link, route, stamp, deadline, Query::Status)
             .await?

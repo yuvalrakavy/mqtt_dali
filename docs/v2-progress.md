@@ -3037,3 +3037,21 @@ no verification. Physical hardware validation remains outstanding.
 No v2 release, production installation, live Store migration, push or merge has
 been performed. The legacy master checkout and v1 maintenance branch retain their
 existing application source.
+
+## 23 October — UI corrections and Blink active-color restoration
+
+The owner requested the eye icon for password visibility, American color spelling,
+and capability-aware Color controls after observing a dimmer offered Color. Both
+row/menu entries now require confirmed DT8; real Chrome phone/desktop checks pass
+for dimmer/relay absence, DT8 presence, reload and row layout. Eye controls and
+spelling checks also pass actual phone/desktop sign-in and dialogs.
+
+The owner approved restoring original active color when Blink ends. The previous
+base-only DT8 activation policy in P5g is superseded by this extension, preserving
+its historical evidence. A literal-peer regression first failed with original
+Tc250 becoming/staying Tc350 after Stop. New capture/restoration reuses the output
+owner and Combined ordering, exact native values/control, original identity/stamp
+and fixed deadlines; unconfirmed/unsupported captures refuse before pulsing.
+Design review GPT-6.1 Sol/high approves with two implemented requirements:
+preflight captured intents, and query RGBWAF control again after writes. Source-only,
+same-family coverage. Native controls, final checks and source review are ongoing.

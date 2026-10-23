@@ -93,7 +93,7 @@ impl Channel {
 enum Drive {
     Temperature(Temperature),
     Xy(Option<Coordinate>, Option<Coordinate>),
-    Rgbwaf([Option<Channel>; 6]),
+    Rgbwaf([Option<Channel>; 6], Option<super::scenes::RgbwafControl>),
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Intent(Drive);
@@ -102,12 +102,12 @@ impl Intent {
         match self.0 {
             Drive::Temperature(_) => ColourType::Temperature,
             Drive::Xy(_, _) => ColourType::Xy,
-            Drive::Rgbwaf(_) => ColourType::Rgbwaf,
+            Drive::Rgbwaf(_, _) => ColourType::Rgbwaf,
         }
     }
     pub fn channels(self) -> Option<[Option<Channel>; 6]> {
         match self.0 {
-            Drive::Rgbwaf(values) => Some(values),
+            Drive::Rgbwaf(values, _) => Some(values),
             _ => None,
         }
     }
@@ -129,9 +129,23 @@ impl Intent {
         if channels.iter().all(Option::is_none) {
             return Err(Error::Empty);
         }
-        Ok(Self(Drive::Rgbwaf(channels)))
+        Ok(Self(Drive::Rgbwaf(channels, None)))
     }
-    /// Includes ACTIVATE, but no power/brightness or control-mode change.
+    /// Exact captured normalized control is private to identification restoration.
+    pub(crate) fn rgbwaf_for_restoration(
+        channels: [Option<Channel>; 6],
+        control: super::scenes::RgbwafControl,
+    ) -> Result<Self, Error> {
+        Self::rgbwaf(channels)?;
+        Ok(Self(Drive::Rgbwaf(channels, Some(control))))
+    }
+    pub(crate) fn rgbwaf_control(self) -> Option<super::scenes::RgbwafControl> {
+        match self.0 {
+            Drive::Rgbwaf(_, control) => control,
+            _ => None,
+        }
+    }
+    /// Includes ACTIVATE; restoration may also stage captured RGBWAF control.
     pub fn frames(self, target: Destination) -> Vec<u16> {
         let mut frames = self.staged_frames(target);
         extended(&mut frames, target, 0xe2);
@@ -146,7 +160,7 @@ impl Intent {
                 load_word(&mut frames, target, x.map_or(65535, Coordinate::raw), 0xe0);
                 load_word(&mut frames, target, y.map_or(65535, Coordinate::raw), 0xe1);
             }
-            Drive::Rgbwaf(channels) => {
+            Drive::Rgbwaf(channels, control) => {
                 let values = channels.map(|channel| channel.map_or(255, Channel::raw));
                 for (triple, opcode) in [(&values[..3], 0xeb), (&values[3..], 0xec)] {
                     frames.extend([
@@ -155,6 +169,10 @@ impl Intent {
                         special(0xc5, triple[2]),
                     ]);
                     extended(&mut frames, target, opcode);
+                }
+                if let Some(control) = control {
+                    frames.push(special(0xa3, control.raw()));
+                    extended(&mut frames, target, 0xed);
                 }
             }
         }

@@ -478,8 +478,13 @@ intent after rename. Private restoration requires continuing Origin/location and
 the captured physical stamp. Public writes to the active Origin refuse both at
 submission and owner admission. Metadata waits fairly only while identifying,
 within its original deadline. Restore reports actual readback, not captured intent
-or completed fade. Ordinary power may activate staged DT8 colour; no explicit
-colour/settings writes. Parent drop owns teardown; no crash/shutdown restoration
+or completed fade. Capture complete native active color before pulsing; Stop/
+rename/expiry restore Tc, xy or normalized RGBWAF plus its captured control byte.
+Require exact accepted active-color readback, including fresh post-write control;
+unknown/unsupported captures refuse before power writes. Eight-second capture/
+restoration and public budgets; two-second pulses. Pending temporary instructions
+and inactive families are not restored; only captured RGBWAF control is restored. Browser Color
+controls require confirmed DT8 support. Parent drop owns teardown; no crash/shutdown restoration
 guarantee or journal. Controls: `docs/v2-identification-controls.toml`.
 
 ## Architecture (legacy)

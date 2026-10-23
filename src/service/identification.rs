@@ -13,6 +13,7 @@ use std::{
 const DWELL: Duration = Duration::from_millis(750);
 const SESSION: Duration = Duration::from_secs(120);
 const STEP: Duration = Duration::from_secs(2);
+const COLOR_STEP: Duration = Duration::from_secs(8);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -137,7 +138,7 @@ impl ServiceHandle {
     async fn identification_output(
         &self,
         target: &str,
-        intent: Option<Intent>,
+        intent: Option<output::WriteIntent>,
         stamp: Option<output::Stamp>,
         context: RequestContext,
         deadline: Instant,
@@ -161,8 +162,9 @@ impl ServiceHandle {
         self.send
             .try_send(Message::Output(output::Request {
                 target: target.into(),
-                intent: intent.map(output::WriteIntent::Base),
-                include_colour: false,
+                intent,
+                include_colour: intent.is_none()
+                    || matches!(intent, Some(output::WriteIntent::Combined(_, _))),
                 identification: true,
                 required_stamp: stamp,
                 context,
@@ -367,15 +369,19 @@ async fn run(
     } = request;
     let mut reply = Some(reply);
     let mut captured = None;
+    let mut captured_colour = None;
     let ends = Instant::now() + SESSION;
     let operation:Result<(),ServiceError>=async {
         let (target,cause)=continuing(&handle,&claim,&context)?;
-        let sample=handle.identification_output(&target,None,None,cause,deadline.min(Instant::now()+STEP)).await?;
+        let sample=handle.identification_output(&target,None,None,cause,deadline.min(Instant::now()+COLOR_STEP)).await?;
         proxy::accept_output(&handle.snapshot().ok_or(ServiceError::Closed)?,&target,&sample)?;
         let Some(LevelValue::Known(level))=sample.level() else {return Err(ServiceError::Rejected("identification needs a known actual level".into()))};
         if sample.quality!=output::Quality::Current || !matches!(sample.status,Some(QueryReply::Value(QueryValue::Status(s))) if !s.fade_running()) {
             return Err(ServiceError::Rejected("identification needs stable current output evidence".into()))
         }
+        captured_colour=sample.colour.as_ref()
+            .ok_or_else(||ServiceError::Rejected("Blink needs confirmed color capabilities".into()))?
+            .restoration().map_err(ServiceError::Rejected)?;
         captured=Some((level,sample.stamp));
         let mut on=true;
         let mut changes=handle.state.clone();
@@ -386,7 +392,7 @@ async fn run(
             // Rename during initial capture also ends identification before its first write.
             if cause.generation()!=context.generation() {break}
             let until=if reply.is_some(){deadline}else{ends}.min(Instant::now()+STEP);
-            let observed=handle.identification_output(&target,Some(Intent::new(Some(on),None).unwrap()),Some(sample.stamp),cause.clone(),until).await?;
+            let observed=handle.identification_output(&target,Some(output::WriteIntent::Base(Intent::new(Some(on),None).unwrap())),Some(sample.stamp),cause.clone(),until).await?;
             proxy::accept_output(&handle.snapshot().ok_or(ServiceError::Closed)?,&target,&observed)?;
             let status=publish(&state,&mut claim,target,&cause,Stage::Blinking,observed.level().and_then(|v|if let LevelValue::Known(l)=v {Some(l)}else{None}));
             if let Some(reply)=reply.take() {if reply.send(Ok(status)).is_err() {break}}
@@ -426,14 +432,17 @@ async fn run(
                 );
                 let until = stop
                     .borrow()
-                    .unwrap_or(Instant::now() + STEP)
-                    .min(Instant::now() + STEP);
+                    .unwrap_or(Instant::now() + COLOR_STEP)
+                    .min(Instant::now() + COLOR_STEP);
                 let intent = if level.raw() == 0 {
                     Intent::new(Some(false), None)
                 } else {
                     Intent::new(None, Some(level.normalized()))
                 }
                 .unwrap();
+                let intent = captured_colour.map_or(output::WriteIntent::Base(intent), |colour| {
+                    output::WriteIntent::Combined(intent, colour)
+                });
                 handle
                     .identification_output(&target, Some(intent), Some(stamp), cause.clone(), until)
                     .await
@@ -443,6 +452,18 @@ async fn run(
                             &target,
                             &sample,
                         )?;
+                        if let Some(original) = captured_colour {
+                            let restored = sample
+                                .colour
+                                .as_ref()
+                                .and_then(|colour| colour.restoration().ok())
+                                .flatten();
+                            if restored != Some(original) {
+                                return Err(ServiceError::Uncertain(
+                                    "original color restoration was not confirmed".into(),
+                                ));
+                            }
+                        }
                         let actual = match sample.level() {
                             Some(LevelValue::Known(l)) => Some(l),
                             _ => None,

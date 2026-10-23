@@ -197,7 +197,11 @@ fn respond(service: Option<&DaliService>, request: output::Request, level: u8) {
         context: request.context.clone(),
         actual_level: Some(Query::ActualLevel.decode(BusReply::Value(level))),
         status: Some(Query::Status.decode(BusReply::Value(4))),
-        colour: None,
+        colour: Some(output::colour::Observation {
+            dt8: Some(false),
+            quality: output::colour::Quality::Unsupported,
+            ..Default::default()
+        }),
         quality: output::Quality::Current,
         reason: None,
         stamp: output::Stamp {
@@ -315,7 +319,7 @@ async fn identification_expires_after_two_minutes_and_restores_once_with_origina
     ));
     let capture = next(&mut service).await;
     assert!(capture.intent.is_none());
-    assert!(!capture.include_colour);
+    assert!(capture.include_colour);
     respond(Some(&service), capture, 73);
     let pulse = next(&mut service).await;
     assert_eq!(

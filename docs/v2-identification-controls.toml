@@ -10,8 +10,8 @@ expect_text = "Stop failed to restore captured actual level"
 [[control]]
 name = "identification_never_recalls_maximum"
 file = "src/service/identification.rs"
-anchor = "Some(Intent::new(Some(on),None).unwrap())"
-replacement = "Some(Intent::new(Some(false),None).unwrap())"
+anchor = "Some(output::WriteIntent::Base(Intent::new(Some(on),None).unwrap()))"
+replacement = "Some(output::WriteIntent::Base(Intent::new(Some(false),None).unwrap()))"
 target = "command"
 argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(identification_blinks_real_fixture)"]
 expect_text = "Blink did not recall actual maximum"

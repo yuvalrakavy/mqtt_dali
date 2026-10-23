@@ -6,6 +6,7 @@ use crate::{
 
 const TARGET: &str = "Bus1.Outputs.Light1";
 const TRACE: &str = "00-11111111111111111111111111111111-2222222222222222-01";
+mod color;
 mod peer;
 fn until() -> Instant {
     Instant::now() + Duration::from_secs(4)
@@ -27,7 +28,7 @@ async fn command(
     ));
     assert!(
         broker
-            .wait_until(Duration::from_secs(5), |b| !b
+            .wait_until(Duration::from_secs(9), |b| !b
                 .received_on(&topic)
                 .is_empty())
             .await,
@@ -309,7 +310,7 @@ async fn identification_capture_refuses_mask_and_fading_before_any_mutation() {
                 .lock()
                 .unwrap()
                 .iter()
-                .all(|f| matches!(f, 0x01a0 | 0x0190)),
+                .all(|f| matches!(f, 0x01a0 | 0x0190 | 0x0199)),
             "unknown or fading identification capture mutated the fixture"
         );
         assert!(running.stop().await);
@@ -318,7 +319,7 @@ async fn identification_capture_refuses_mask_and_fading_before_any_mutation() {
 }
 
 #[tokio::test]
-async fn identification_power_can_activate_staged_dt8_but_issues_no_explicit_colour_settings() {
+async fn identification_restores_original_dt8_color_after_staged_auto_activation() {
     let fixture = Fixture::new();
     let peer = peer::Peer::new(None, true);
     let broker = FakeBroker::start().await;
@@ -351,8 +352,8 @@ async fn identification_power_can_activate_staged_dt8_but_issues_no_explicit_col
     let snapshot = peer.model.lock().unwrap().snapshot();
     let gear = &snapshot["buses"][0]["outputs"][0];
     assert_eq!(
-        gear["colour_state"]["actual"]["temperature"]["value"], 350,
-        "identification hid ordinary DT8 power auto-activation behavior"
+        gear["colour_state"]["actual"]["temperature"]["value"], 250,
+        "Stop failed to restore captured active color"
     );
     assert_eq!(gear["colour_state"]["temporary"]["temperature"], 65535);
     assert_eq!(gear["colour"]["auto_activation"], true);
@@ -362,8 +363,8 @@ async fn identification_power_can_activate_staged_dt8_but_issues_no_explicit_col
             .lock()
             .unwrap()
             .iter()
-            .all(|f| matches!(f, 0x01a0 | 0x0190 | 0x0105 | 0x0100 | 0x0049)),
-        "identification issued explicit colour or settings writes"
+            .all(|f| !matches!(f, 0x0120..=0x0180)),
+        "identification changed persistent gear settings or native scenes"
     );
     assert!(running.stop().await);
     peer.close().await;

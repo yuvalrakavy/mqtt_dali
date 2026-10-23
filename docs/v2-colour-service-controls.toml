@@ -12,7 +12,7 @@ expect_text = "invalid colour preflight reached mutation"
 [[control]]
 name = "colour_normalized_control_preflight_removed"
 file = "src/service/output/colour.rs"
-anchor = "if !matches!(self.control, Some(Reply::Value(raw)) if raw >> 6 == 2) {"
+anchor = "if !normalized {"
 replacement = "if false {"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(colour_service_preflight_rejects)"]

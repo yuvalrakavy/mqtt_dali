@@ -1,5 +1,12 @@
 # P5g: output identification with Blink and Stop
 
+The original base-only color policy and four-/two-second start/restore budgets
+below are historical and superseded by the owner-approved
+[active-color restoration extension](2026-10-23-dali-v2-blink-color-restoration.md).
+Current behavior captures/restores supported active color with eight-second
+capture/restore/public budgets and exact color readback; pulses remain two seconds.
+The original identity, ownership and shutdown rules remain in force.
+
 ## Problem and selected shape
 
 The approved bus screen requires Blink/Stop while editing the fixture name.

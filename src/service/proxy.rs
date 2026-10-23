@@ -402,7 +402,7 @@ impl DeviceDriver for DaliProxy {
                     target.ok_or_else(|| OpError::Rejected("output target required".into()))?,
                     stop,
                     context.clone(),
-                    Instant::now() + Duration::from_secs(4),
+                    Instant::now() + Operation::Identify(stop).budget(),
                 )
                 .await
                 .map_err(op_error)?;
@@ -1106,7 +1106,7 @@ impl Operation {
                     8
                 }
             }
-            Self::Identify(_) => 4,
+            Self::Identify(_) => 8,
             Self::SavedScene | Self::Metadata(_) | Self::Groups(groups::Action::Read, _) => 2,
             Self::Discovery(_) => 10,
             Self::Restore(_)

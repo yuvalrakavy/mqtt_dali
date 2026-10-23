@@ -121,18 +121,18 @@
   },
   "colour_normalized_control_preflight_removed": {
    "last_real": {
-    "at": "2026-10-22T00:56:48Z",
+    "at": "2026-10-23T12:29:05Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:0c2b2ba07e149b4a",
-     "row": "f00c560d49ad9d01",
+     "guard": "item:06a0ad925f510d92",
+     "row": "7c5be35706efe942",
      "test": null
     },
     "path": "command",
-    "secs": 5.9,
-    "sha": "80f358b372d1a3a5003277e141f809d4093d1c54",
+    "secs": 35.3,
+    "sha": "8fb7d04ef39603bd385ab01522cfbbf770f5caea",
     "verdict": "RED"
    }
   },

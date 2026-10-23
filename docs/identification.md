@@ -1,23 +1,28 @@
 # Identify a light with Blink and Stop
 
 Start Blink on an individual saved output to find its physical fixture. The bridge
-reads its current level, then alternates immediate maximum and off with 750 ms
+reads its current level and active color, then alternates immediate maximum and off with 750 ms
 dwell after each completed operation. One fixture can blink per controller. Stop
 before starting another fixture. Unknown or currently fading levels cannot start
 identification because the prior level must be stable.
 
-Stop restores the captured actual level. A successful changed fixture or bus
+Stop restores the captured actual level and, on supported DT8 gear, its original
+active color. Color temperature, xy and normalized RGBWAF channels/selection are
+captured as native values and checked after restoration. Unknown or incomplete
+color evidence, Primary-N and unsupported RGBWAF modes refuse Blink before any
+power change. A successful changed fixture or bus
 rename stops pulsing and starts restoration automatically, preserving identity.
 Invalid, failed and unchanged renames keep blinking while routing remains ready.
 The rename reply confirms the saved name; observe identification status to see
-restoration complete. A positive restored level can fade according to existing
+restoration complete. Color readback must match the original active values; a
+failed or mismatched restore is interrupted. A positive restored level can fade according to existing
 gear settings; readback does not promise the fade has finished.
 
 MQTT commands are `{"command":"blink","target":"Bus1.Outputs.Light1"}` and
 `{"command":"stop_blink","target":"Bus1.Outputs.Light1"}`. Supply the selected
 output's current `target-generation` and normal response metadata. HTTP uses the
 same names with empty `params` in the authenticated job envelope. Neither takes
-expected_revision or changes saved configuration. Both retain a four-second
+expected_revision or changes saved configuration. Both retain an eight-second
 request deadline. Stop on an inactive fixture performs no hardware write.
 
 The result and snapshot's nullable `identification` carry target, generation,
@@ -27,21 +32,24 @@ interrupted does not claim successful restoration. Snapshot/SSE phase updates
 require authentication. There is no new retained MQTT scalar for this transient
 operator activity.
 
-Stop identification before ordinary power or colour writes to that fixture. The
+Stop identification before ordinary power or color writes to that fixture. The
 bridge rejects those writes so restoration cannot overwrite new intent. Reads,
 other fixtures and metadata remain available through shared UART admission.
 
 Identification automatically restores after at most two minutes, plus one bounded
-restoration operation. Closing the browser leaves the bounded service owner in
+eight-second restoration operation. Closing the browser leaves the bounded service owner in
 charge. Removal, disabling the bus, uncertain configuration or changed UART/bus
 evidence interrupts rather than writing to a potentially different fixture.
 Process shutdown/crash does not guarantee restoration and no prior level is saved
 across restart. No automatic retry or journal is introduced.
 
-Only basic power/level commands are sent; fade, group, scene and colour settings
-are not explicitly changed. On DT8 gear with auto-activation enabled, power
-commands can activate already-staged colour. The bridge preserves this native
-behavior and does not switch modes or roll it back.
+Blink pulses use basic power/level commands. On DT8 gear, power commands may
+activate a previously staged color while blinking; Stop restores the captured
+active color and level. Pending temporary instructions and inactive color-family
+registers are not restored. Fade, group, scene and automatic-activation settings
+are unchanged. RGBWAF restoration also restores the captured channel-selection
+byte, with fresh post-write control readback. Capture and restoration each allow
+up to eight seconds; ordinary pulse steps retain their two-second bound.
 
 Local tests use the independent ATX emulator and literal PTY peers. Physical
 fixture and firmware timing remain unverified. See [capability status](support-matrix.md).
@@ -60,3 +68,8 @@ later physical Work requires the original stamp; public request tokens are never
 refreshed. Only public status enters HTTP snapshots. Parent cancellation drops
 the future before HAT/config/web close. See [design](superpowers/specs/2026-10-22-dali-v2-p5g-identification.md)
 and [behavioral controls](v2-identification-controls.toml).
+
+The web device table and Actions menu offer Color only after DT8 support is
+confirmed by discovery or native capabilities. An ordinary dimmer/relay has an
+empty color cell. Read current values and Refresh addressed remain available;
+choosing a representation alone is not evidence of physical color support.

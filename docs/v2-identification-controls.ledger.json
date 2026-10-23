@@ -104,18 +104,18 @@
   },
   "identification_never_recalls_maximum": {
    "last_real": {
-    "at": "2026-10-22T09:51:24Z",
+    "at": "2026-10-23T12:29:54Z",
     "dirty": true,
     "expected": "RED",
     "fingerprints": {
      "files": null,
-     "guard": "item:7cc7783a2d19c0ec",
-     "row": "f2abc42ddc91af20",
+     "guard": "item:38051db87c1ae9fd",
+     "row": "fe09e1a09549cfea",
      "test": null
     },
     "path": "command",
-    "secs": 16.1,
-    "sha": "758b0d2f3d40ee7c6677b113d8d23b3d09b7600e",
+    "secs": 49.0,
+    "sha": "8fb7d04ef39603bd385ab01522cfbbf770f5caea",
     "verdict": "RED"
    }
   },
