@@ -165,7 +165,7 @@ same-family limitation remains. No architectural revision is required.
   unchanged independent snapshot assertion, not counted as a passing control.
 - [x] Operator/native/MQTT/browser guides, support matrix and contributor notes
   state the explicit-reply boundary and pending retained metadata/virtual capture.
-- [ ] Frozen sequential source reviews and complete restored native/Pi/lint/
+- [x] Frozen sequential source reviews and complete restored native/Pi/lint/
   format/wait/assets/Node/control-plan acceptance, recorded in progress afterward.
 
 Methodology: sample missing neighboring diagnostics even when a positive capability
@@ -186,3 +186,10 @@ The focused browser mode runs this same flow/login/service in16s; final acceptan
 still runs the full workflow. Both affected native-draft and hidden-minimum browser
 faults are RED with the unchanged snapshot/no-job assertions. Methodology: test
 invalid → disabled → enabled, and distinguish absent drafts from explicit blanks.
+
+Both final source gates APPROVE after those corrections. Frozen `e3db774` passes
+the complete protected browser workflow:1177real commands,108.65s. Node89,
+generated assets, Pi, protected-assets1/1, whitespace and every repository
+control-table plan pass after the UI-only fix; backend734/734/Clippy/format/wait
+acceptance remains applicable. All17current controls are RED,243.9s latest-row
+sum. Detailed acceptance and scope limits are recorded in `docs/v2-progress.md`.

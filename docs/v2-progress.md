@@ -5,6 +5,65 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4f2 — managed DT7 thresholds and virtual limits
+
+Frozen implementation `e3db774`. Sequential final native/contract and UI/state
+source reviews APPROVE after the corrections below. Reviews are source-only and
+same-family; the host does not expose their token usage.
+
+The existing typed/MQTT/protected HTTP fixture settings path now carries strict
+optional switching patches and fresh explicit relay capability/raw replies.
+The protected dialog edits all four adjustable thresholds, including disabled255
+and downward0. Fixed/unknown thresholds remain read-only. Positive Type7 and
+adjustable-feature evidence permit virtual minimum1 below physical254, with real
+physical evidence still required. Common and relay quality remain independent;
+the whole mixed patch is preflighted before writes and every requested native
+value is compared afterward. Existing ownership, authority and inventory shapes
+are reused. Retained relay component metadata remains pending.
+
+Behavioral REDs proved the rejected nested patch and physical254 floor. A further
+literal RED caught missing physical evidence incorrectly marked complete. Eighteen
+focused native cases pass, including both repeat profiles, malformed multi-type
+prefixes, partial requested/unrequested families and successive virtual limits.
+The final UI review found a real invalid → Disabled → enabled defect: blank text
+submitted a hidden minimum1. The real browser reproduced it; explicit invalid
+text now survives that transition. Blank and300 submit no job/native change;
+corrected55/56 persist through native readback. The shared renderer covers all
+four threshold fields.
+
+Restored native acceptance passes **734/734** across eleven binaries (76.262s
+execution,146.4s command; one opt-in browser test skipped). Strict Clippy16.6s,
+Pi library/four binaries4.0s, changed Rust formatting, wait validation0findings,
+Node89, generated asset byte-check and affected control plans pass. After the
+UI-only correction, Node89, assets, Pi1.5s, native protected-assets1/1, whitespace
+and every repository control-table plan pass again. Backend source is unchanged.
+
+Final protected phone/desktop workflow passes **1177 real owned commands** in
+108.65s on the frozen implementation. Fresh screenshots were inspected: one
+relay column on phone, two on desktop, readable scrolling diagnostics. A focused
+mode executes the same relay workflow/login/private stack in15.93s (164commands)
+for regression checks. The sequential browser harness explicitly disables All
+polling; this does not certify operator/poll overlap. A confirmed-recovery
+completion barrier fixes the observed stale-enabled-button test race. Earlier
+unrelated Busy runs are not counted as acceptance evidence.
+
+All **17 current deliberate faults** produce their named REDs (243.9s latest-row
+sum), plus both affected common-limit controls. An initial blur-only mutation
+was GREEN because clicking the checkbox commits the text on blur; it remains
+historical, replaced by native draft-loss with the same independent snapshot
+assertion. Source/assets were restored before freeze. Native review also found
+two old generic Off guarantees; both guides now qualify ordinary dimmers.
+
+Methodology: test absent versus explicit invalid drafts through neighboring mode
+changes, missing diagnostics beside capability exceptions, and zero/one/two
+types around a terminating sentinel. No live HAT/Store, SDK, memory/skill,
+release, publication, deployment or push/merge changes. Virtual scene capture,
+retained classification, timed fades/fault profiles and physical validation remain
+pending. Spec: [managed DT7 settings](superpowers/specs/2026-10-23-dali-v2-managed-dt7-settings.md).
+Evidence: `/tmp/dali-managed-dt7-{acceptance,postfix,browser-final,toggle-red,toggle-green,toggle-controls}.log`,
+`/tmp/dali-managed-dt7-acceptance/`, `/tmp/dali-managed-dt7-postfix/` and
+`/tmp/dali-browser-5139cc4985f2ae73a63f30692a082773`.
+
 ## P4f1 — DT7 switching protocol and independent relay foundation
 
 Frozen source `f3b2e30`. Combined design and both sequential final codec/native
@@ -2786,7 +2845,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, DT7 protocol/independent relay foundation, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Managed DT7 settings/metadata and virtual scene capture, extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
+| P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, DT7 protocol/independent relay foundation and managed thresholds/virtual limits, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Retained DT7 metadata and virtual scene capture, extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
