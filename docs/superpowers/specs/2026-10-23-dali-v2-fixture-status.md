@@ -1,6 +1,6 @@
 # Fixture status in MQTT, compact fault UI and emulator lamp failures
 
-Status: implementing the explicitly approved feature (23 October2026). TierT2:
+Status: implemented and locally verified (23 October2026). TierT2:
 additive MQTT state fields and optional emulator scenario/control fields. Existing
 output owner, physical transactions, polling, HTTP snapshots and Preact UI remain.
 No v1 topics, Store schema, UART recovery or new polling process.
@@ -124,3 +124,46 @@ plans have zero rotted rows. Two earlier browser setup failures were corrected:
 target authority must come from live Inventory, and snapshot-driven checkbox
 tests must click then await confirmed native state rather than require an
 immediate optimistic checked state. No production workaround was introduced.
+
+## Final acceptance
+
+Source implementation cafc74e received APPROVE from a fresh read-only GPT-6
+Astra/high depth/test-validity review: no actionable blockers. Reviewer traced
+projection acceptance/ownership/context, native output isolation, scenario and
+reboot/reset persistence, live UI state and tests. The reviewer ran no runtime
+checks or mutations; root owns the following measured evidence. Same-family
+review only; no independent model-family or physical certification.
+
+- Full native suite:791/791 across eleven binaries, one opt-in browser skipped
+  by default;89.815s execution,182.4s including build/discovery.
+- Complete linked TCP-emulator/bridge Chrome phone/desktop suite:1/1 pass,
+ 146.415s. No bridge-page runtime/CSP errors. It tests real emulator controls,
+ dirty-name preservation, eight flags, raw status, stale quality, refresh/clear,
+ compact layout, native levels and saved bindings. Emulator console assertions
+ are separately exercised by its standalone suite.
+- Frontend unit suite:91/91. Both TypeScript builds pass. Standalone emulator
+ phone/desktop full workflow passes21.3s, including live/initial fault checkboxes,
+ capture/export, reset, strict import and runtime/CSP checks.
+- Four scoped controls:all named RED/restored in58.3s. Control plans (new and
+ affected existing) have no rotted rows. Initial behavioral RED was absent
+ LampFailure; no compile failure is counted as behavioral evidence.
+- Strict scoped Clippy, Pi library/four binaries, normal wait validator0,
+ changed Rust formatting, both asset byte reproductions and whitespace pass.
+- Rebuilt/restarted only the owned loopback demo after normally checking Blink.
+ Captured/preserved all five native fixtures and exact bridge configuration.
+ Real demo Light1 lamp failure set/read/icon/dialog/clear and both viewports pass;
+ all original fault flags, levels, active colors, addresses, groups and scenes
+ restored. Read all five outputs after restart, leaving both processes running.
+
+Logs use /tmp/dali-fixture-status-*; final coordinator is
+/tmp/dali-fixture-status-final-checks.log. Browser screenshots:
+/tmp/dali-browser-80b468f51027eaa1355f72a7e17f9b66/{phone,desktop}-fixture-status.png.
+Standalone emulator artifacts:
+/var/folders/jv/t_kwbmsx4l19_13z1f9lg2040000gp/T/dali-emulator-browser-JvwHge/.
+Visible demo screenshots:
+/tmp/dali-visible-ec07216a38/fixture-status-{row,dialog,emulator}-{phone,desktop}.png.
+
+Guides, support matrix, CLAUDE context and progress were updated. No skill or
+memory write was needed. v1, SDK, Store and PanelScript remain outside this
+change; broader capabilities remain in the support matrix. Physical HAT and
+fixture failure-reporting verification remain pending.

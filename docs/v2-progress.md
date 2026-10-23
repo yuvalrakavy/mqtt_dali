@@ -5,6 +5,50 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4 — fixture status and simulated lamp failures
+
+Implementation `cafc74e` adds all eight read-only fixture flags plus
+FixtureStatusRaw/FixtureStatusQuality to individual MQTT State. Status freshness
+is independent of brightness; stale/missing/retired evidence explicitly clears
+raw and flags. Existing polling, output ownership, trace context and v1 behavior
+remain. No fault is inferred from illumination or requested level.
+
+Output rows show compact red/amber fault icons or neutral unknown status beside
+the inline name. The read-only dialog follows current SSE values and permits an
+explicit normal read. All-clear rows use no extra icon. The independent emulator
+supports live and initial lamp_failure checkboxes, strict output-ID control and
+optional default-false version1 scenario data. Native status adds only the lamp
+failure bit; level/settings, other fixtures and the bridge configuration stay
+unchanged. Capture/export/reboot retain faults; Reset uses the saved scenario.
+Guides: [MQTT](mqtt-outputs.md), [fixture status](gear-settings.md#fixture-status),
+[emulator](emulator-web.md#simulate-a-lamp-failure).
+
+Final acceptance: **791/791 native tests** across eleven binaries (the opt-in
+browser is run separately); **91/91 frontend tests**; complete linked real Chrome
+phone/desktop acceptance146.415s; standalone emulator phone/desktop workflows21.3s.
+Four deliberate defects returned named REDs and restored source. Strict Clippy,
+Pi library/four binaries, normal wait0, changed formatting, both committed-asset
+reproductions, affected control plans and whitespace pass. Fresh design review
+and final source review of frozen cafc74e both APPROVE; same-family/source-only
+review limits remain. Root ran the runtime checks.
+
+The visible private demo was rebuilt/restarted with all five user fixtures and
+saved bridge bytes retained. Root exercised Light1 lamp-failure set/read/details/
+clear on phone and desktop, restored all original fault flags and verified
+unchanged native brightness, active colors, addresses, groups and scenes. Both
+processes remain running. Re-read all saved outputs after restart for current UI
+values; no new automatic poller or configuration mutation was added.
+
+Evidence: `/tmp/dali-fixture-status-{red,focused,controls,browser-confirmed}.log`,
+`/tmp/dali-fixture-status-final-*.log` and
+`/tmp/dali-fixture-status-demo-{preflight,restart,check}.log`.
+The first corrected RED failed because LampFailure was absent. Browser setup
+errors were corrected to use live Inventory authority and await confirmed
+checkbox snapshots. No physical HAT, live Store/home broker, SDK publication,
+release tag, push or main merge. Specialist/data/emergency diagnostics and other
+remaining capabilities stay tracked in [the support matrix](support-matrix.md).
+Spec: [fixture status](superpowers/specs/2026-10-23-dali-v2-fixture-status.md).
+
 ## P2c — integrated configurable emulator and linked browser tabs
 
 Integrated parallel implementation `d28a5d7` as `a60adbe`, with result handoff
