@@ -1,3 +1,4 @@
+import { inputSettingsFlow } from './input-settings.mjs';
 import { scenesFlow } from './scenes.mjs';
 import { reassignmentFlow } from './reassignment.mjs';
 import { restorationFlow } from './restoration.mjs';
@@ -24,7 +25,7 @@ const named=name=>page.getByRole('textbox',{name:`Name ${name}`,exact:true});
 async function quiet(){await until(async()=>!(await page.getByRole('status').allTextContents()).some(t=>t.includes('Saving')),'name save remained pending');}
 async function closeDialog(){await page.getByRole('button',{name:'Close dialog',exact:true}).click();}
 async function noOverflow(){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'page overflows horizontally');}
-async function dialogVisible(){await page.locator('dialog').waitFor({state:'visible'});const box=await page.locator('dialog').boundingBox();assert.ok(box&&box.x>=0&&box.y>=0&&box.x+box.width<=390&&box.y+box.height<=844,'phone dialog is clipped');}
+async function dialogVisible(){await page.locator('dialog').waitFor({state:'visible'});const box=await page.locator('dialog').boundingBox(),viewport=page.viewportSize();assert.ok(box&&viewport&&box.x>=0&&box.y>=0&&box.x+box.width<=viewport.width&&box.y+box.height<=viewport.height,'dialog is clipped by the viewport');}
 try {
   await page.goto(`${origin}/buses/0`);await until(()=>Promise.resolve(page.url().endsWith('/login')),'unauthenticated page did not redirect');
   assert.equal((await context.request.get(`${origin}/assets/app.js`,{maxRedirects:0})).status(),303);
@@ -74,6 +75,7 @@ try {
   await row('HallNew').getByRole('button',{name:'Actions HallNew',exact:true}).click();await page.getByRole('button',{name:'Remove from list',exact:true}).click();await page.getByRole('button',{name:'Remove from list',exact:true}).click();await until(async()=>(await inventory()).buses[0].outputs.length===2,'remove did not persist');assert.equal((await control({op:'snapshot'})).buses[0].outputs.length,3,'remove altered physical fixtures');
   await page.getByRole('button',{name:'Refresh addressed',exact:true}).click();await until(async()=>!await page.getByRole('button',{name:'Refresh addressed',exact:true}).isDisabled(),'rediscovery did not finish',90000);assert.deepEqual((await inventory()).buses[0].outputs.map(o=>o.name),['KitchenMain','KitchenSide','Light1'],'rediscovery failed to preserve existing names and add the removed address');
   await page.getByRole('link',{name:'Settings',exact:true}).click();const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Download inventory report',exact:true}).click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'dali-inventory-report.json');await page.getByRole('link',{name:'Diagnostics',exact:true}).click();await page.getByRole('heading',{name:'Recent commands',exact:true}).waitFor();await page.screenshot({path:join(artifacts,'desktop-diagnostics.png'),fullPage:true});
+  await inputSettingsFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await clearAddressFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await restorationFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
   await reassignmentFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});

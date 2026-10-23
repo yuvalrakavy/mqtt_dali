@@ -41,8 +41,8 @@ the next. Available requests include:
 32769 is 0x008001, a device/instance button press at input address 0, instance 0;
 command-bit frames are rejected. With matching saved input metadata, the bridge
 now publishes [native input State/events](mqtt-inputs.md). Input value profiles
-are described below. Managed input configuration remains in development; the
-native setting model is described below. One next-response fault may
+are described below. The native setting model below supports the bridge's
+[explicit event configuration](input-event-settings.md). One next-response fault may
 be armed at once. It affects the next J/N/X/Z terminal, excluding echoes, status
 and input events; in the two-terminal profile it affects the first terminal.
 
@@ -160,7 +160,8 @@ ordinary settings affect only the selected existing instance.
 state, filters and scheme. `set_input_value` does not generate events. Natural
 stimulus/gesture scheduling, event timers, feedback and hardware persistence
 validation are later work. Literal model and UART/reboot tests cover this
-foundation; it is not yet a managed MQTT/HTTP/browser configuration feature.
+foundation. Managed MQTT/HTTP/browser settings use this independent model;
+literal peers additionally check the executing service's evidence and repeats.
 
 ## Colour fixtures
 

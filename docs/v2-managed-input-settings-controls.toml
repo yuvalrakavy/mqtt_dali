@@ -1,0 +1,98 @@
+[[control]]
+name = "input_settings_ignore_original_revision"
+file = "src/service/input/settings.rs"
+anchor = "if context.generation().is_none() || *expected != snapshot.model.inventory().revision {"
+replacement = "if context.generation().is_none() {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_input_settings_refuse_stale)"]
+expect_text = "invalid/stale input settings reached hardware"
+
+[[control]]
+name = "input_settings_collision_becomes_disabled"
+file = "src/service/input/settings.rs"
+anchor = "BusReply::Value(255) => Some(true),\n        BusReply::NoResponse => Some(false),\n        _ => None,"
+replacement = "BusReply::Value(255) => Some(true),\n        BusReply::NoResponse => Some(false),\n        _ => Some(false),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_input_settings_literal_enabled)"]
+expect_text = "assertion `left == right` failed"
+
+[[control]]
+name = "input_settings_missing_filter_byte_becomes_zero"
+file = "src/service/input/settings.rs"
+anchor = "filter_bytes[index] = byte(query(bus, route, q).await?);"
+replacement = "filter_bytes[index] = Some(byte(query(bus, route, q).await?).unwrap_or(0));"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_input_settings_literal_enabled)"]
+expect_text = "missing filter byte became complete"
+
+[[control]]
+name = "input_settings_ignore_final_physical_epoch"
+file = "src/service/input/settings.rs"
+anchor = "|| !hat.evidence_current(route.input.bus, observation.stamp)"
+replacement = ""
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_input_settings_final_epoch)"]
+expect_text = "retired physical epoch reported configured input"
+
+[[control]]
+name = "input_settings_send_without_actual_patch_match"
+file = "src/service/input/settings.rs"
+anchor = ".is_some_and(|v| settings.matches(v))"
+replacement = ".is_some_and(|v| true)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_input_settings_literal_repeat)"]
+expect_text = "native input send was accepted without matching readback"
+
+[[control]]
+name = "input_settings_admission_keeps_old_press_valid"
+file = "src/service/hat.rs"
+anchor = "request.started = true;\n                        self.inputs\n                            .cut_for_restore(route.input.bus, route.input.address.raw());"
+replacement = "request.started = true;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_input_settings_revoke_old)"]
+expect_text = "old press remained valid at input settings admission"
+
+[[control]]
+name = "input_settings_ready_reply_renews_expired_caller"
+file = "src/service/input/settings.rs"
+anchor = "let result = timeout_at(deadline, receive).await;\n        if Instant::now() >= deadline {"
+replacement = "let result = timeout_at(deadline, receive).await;\n        if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_input_settings_ready_reply)"]
+expect_text = "ready input settings bypassed caller expiry"
+
+[[control]]
+name = "input_settings_browser_accepts_retired_read"
+file = "web/src/input-settings.ts"
+anchor = "this.assert();const row=this.row;"
+replacement = "const row=this.row;"
+target = "command"
+argv = ["node","--test","web/src/input-settings.test.ts"]
+expect_text = "Missing expected rejection"
+
+[[control]]
+name = "input_settings_browser_ignores_requested_values"
+file = "web/src/input-settings.ts"
+anchor = "if(frozen[field]!==undefined&&frozen[field]!==actual[field])"
+replacement = "if(false)"
+target = "command"
+argv = ["node","--test","web/src/input-settings.test.ts"]
+expect_text = "Missing expected rejection"
+
+[[control]]
+name = "input_settings_browser_accepts_unconfirmed"
+file = "web/src/input-settings.ts"
+anchor = "if(result.outcome!==(operation==='configure_input'?'configured':'current'))"
+replacement = "if(false)"
+target = "command"
+argv = ["node","--test","web/src/input-settings.test.ts"]
+expect_text = "Missing expected rejection"
+
+[[control]]
+name = "input_settings_enabled_without_final_presence"
+file = "src/service/input/settings.rs"
+anchor = "if final_kind != kind {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_input_settings_literal_enabled)"]
+expect_text = "missing final type became disabled"

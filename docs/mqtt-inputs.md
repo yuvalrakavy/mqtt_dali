@@ -2,8 +2,9 @@
 
 This guide is for operators and MQTT consumers of the v2 development bridge.
 Named input instances now publish observed State and native events through the
-existing managed UART service. Hardware discovery and event configuration are
-still in development; this boundary uses saved module/instance metadata. No
+existing managed UART service. Addressed discovery and explicit native event
+configuration are implemented locally; see [event settings](input-event-settings.md).
+This boundary uses saved module/instance metadata. No
 physical I4 or switch certification is claimed by local emulator tests.
 
 ## Configure the physical hierarchy
@@ -33,8 +34,10 @@ light. Preserve other native numeric types as unknown. Device/instance event
 sources identify the saved endpoint directly. Device/type sources resolve only
 when exactly one saved instance in that module matches. Ambiguous type sources,
 instance/type sources without a device address and group sources without
-implemented membership evidence do not become guessed named actions. Discovery
-and event-scheme configuration will supply the remaining integration.
+implemented membership evidence do not become guessed named actions. Configure
+scheme 2 (device/instance) to identify each saved instance directly. Other native
+schemes can serve other bus consumers; source/group routing beyond the rules
+above remains pending.
 
 ## Current state
 

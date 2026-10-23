@@ -1,5 +1,19 @@
 # Building and testing the served browser UI
 
+Input-instance **Event settings** uses `InputSettingsScope` and its own compact
+modal. Freeze row, token, root and connection epoch; recheck after each awaited
+job. Job reports are local hardware evidence, never inventory/State authority.
+Read only on entry; patch only changed fields; require complete exact readback
+before showing success. Unknown filters are read-only. Explicit dismissal revokes
+synchronously and layout cleanup revokes on navigation. The actual browser flow
+checks phone/desktop save/reopen, retained inventory, sensor labels and held entry
+read cancellation. Dialog-bound assertions use the actual viewport dimensions.
+
+The input-settings rejection test varies one failure at a time: keep actual
+settings equal to the requested patch except in the explicit mismatch case.
+Otherwise a mismatch guard can hide a broken outcome/authority check. Intentional
+controls in `v2-managed-input-settings-controls.toml` exercise those guards.
+
 For bridge contributors: `web/` owns the responsive Preact/TypeScript application.
 Node is needed to change assets, not to run the bridge or compile its embedded
 assets with Cargo. Use Node 24.11 or newer with the exact npm lockfile:

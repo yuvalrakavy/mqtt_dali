@@ -16,6 +16,10 @@ pub(super) enum Work {
     Discovery(discovery::Request, discovery::Route),
     Output(output::Request, output::Route),
     Input(readback::Request, readback::Route),
+    InputSettings(
+        super::input::settings::Request,
+        super::input::settings::Route,
+    ),
 }
 impl Work {
     pub fn bus(&self) -> u8 {
@@ -27,6 +31,7 @@ impl Work {
             Self::Groups(_, r) => r.bus,
             Self::Output(_, r) => r.bus,
             Self::Input(_, r) => r.bus,
+            Self::InputSettings(_, r) => r.input.bus,
             Self::Discovery(_, r) => r.bus,
             Self::Commission(_, r) => r.bus,
         }
@@ -69,6 +74,7 @@ impl Work {
             Self::Groups(q, _) => q.deadline,
             Self::Output(q, _) => q.deadline,
             Self::Input(q, _) => q.deadline,
+            Self::InputSettings(q, _) => q.deadline,
             Self::Discovery(q, _) => q.deadline,
             Self::Commission(q, _) => q.deadline,
         }
@@ -82,11 +88,15 @@ impl Work {
             Self::Groups(q, _) => q.reply.is_closed(),
             Self::Output(q, _) => q.reply.is_closed(),
             Self::Input(q, _) => q.reply.is_closed(),
+            Self::InputSettings(q, _) => q.reply.is_closed(),
             Self::Discovery(q, _) => q.reply.is_closed(),
             Self::Commission(q, _) => q.reply.is_closed(),
         }
     }
     pub fn mutating(&self) -> bool {
+        if matches!(self, Self::InputSettings(q, _) if q.action.writing()) {
+            return true;
+        }
         if matches!(self, Self::Restore(_, r) if matches!(r.plan,restoration::Plan::Unique | restoration::Plan::Clear))
         {
             return true;
@@ -120,6 +130,10 @@ impl Work {
             Self::Groups(_, r) => r.context.operation_span(&r.controller, "groups"),
             Self::Output(_, r) => r.context.operation_span(&r.controller, "output"),
             Self::Input(_, r) => r.context.operation_span(&r.controller, "input_read"),
+            Self::InputSettings(_, r) => r
+                .input
+                .context
+                .operation_span(&r.input.controller, r.action.name()),
             Self::Discovery(_, r) => r.context.operation_span(&r.controller, "discover_address"),
             Self::Commission(_, r) => r.context.operation_span(
                 &r.controller,
@@ -132,6 +146,10 @@ impl Work {
     }
     pub async fn wait_for_receiver_close(&mut self) {
         match self {
+            Self::InputSettings(q, _) => {
+                // WAIT: v2-hat-loop
+                q.reply.closed().await
+            }
             Self::Restore(q, _) => {
                 // WAIT: v2-hat-loop
                 q.reply.closed().await
@@ -177,6 +195,9 @@ impl Work {
     ) -> impl std::future::Future<Output = Outcome> + Send + 'static {
         // Capture values only: the owner retains requests, replies and permits.
         let run = match self {
+            Self::InputSettings(q, r) => {
+                Run::InputSettings(r.clone(), q.deadline, q.target.clone())
+            }
             Self::Restore(q, r) => Run::Restore(r.clone(), q.deadline),
             Self::Reassignment(q, r) => Run::Reassignment(r.clone(), q.deadline),
             Self::SceneSettings(q, r) => Run::SceneSettings(r.clone(), q.deadline),
@@ -217,6 +238,15 @@ impl Work {
         };
         async move {
             match run {
+                Run::InputSettings(route, deadline, target) => {
+                    let value =
+                        super::input::settings::execute(link, route, stamp, deadline, target).await;
+                    Outcome {
+                        sample: Sample::InputSettings(value.observation),
+                        error: value.error,
+                        recovery: value.recovery,
+                    }
+                }
                 Run::Restore(route, deadline) => {
                     let value = restoration::execute::execute(link, route, stamp, deadline).await;
                     Outcome {
@@ -331,6 +361,16 @@ impl Work {
                 }),
                 error,
             }),
+            (Self::InputSettings(request, _), sample) => {
+                Completion::InputSettings(super::input::settings::Completion {
+                    request,
+                    observation: sample.map(|s| match s {
+                        Sample::InputSettings(o) => o,
+                        _ => unreachable!("physical result kind"),
+                    }),
+                    error,
+                })
+            }
             (Self::Groups(request, _), sample) => Completion::Groups(groups::Completion {
                 request,
                 observation: sample.map(|s| match s {
@@ -380,6 +420,7 @@ impl Work {
     }
 }
 enum Run {
+    InputSettings(super::input::settings::Route, Instant, String),
     Restore(restoration::Route, Instant),
     Reassignment(reassignment::Route, Instant),
     SceneSettings(scene_settings::Route, Instant),
@@ -391,6 +432,7 @@ enum Run {
     Input(readback::Route, Instant),
 }
 pub(super) enum Sample {
+    InputSettings(super::input::settings::Observation),
     Restore(restoration::Observation),
     Reassignment(reassignment::Observation),
     SceneSettings(scene_settings::Observation),
@@ -404,6 +446,7 @@ pub(super) enum Sample {
 impl Sample {
     pub fn invalidate(&mut self, reason: &str) {
         match self {
+            Self::InputSettings(value) => value.stale = true,
             Self::Restore(value) => value.stale = true,
             Self::Reassignment(value) => value.stale = true,
             Self::SceneSettings(value) => value.stale = true,
@@ -426,6 +469,7 @@ pub(super) struct Outcome {
     pub recovery: bool,
 }
 pub(super) enum Completion {
+    InputSettings(super::input::settings::Completion),
     Restore(restoration::Completion),
     Reassignment(reassignment::Completion),
     SceneSettings(scene_settings::Completion),
@@ -439,6 +483,10 @@ pub(super) enum Completion {
 impl Completion {
     pub fn reject(self) {
         match self {
+            Self::InputSettings(q) => super::input::settings::finish(
+                q.request,
+                Err(q.error.unwrap_or(ServiceError::Closed)),
+            ),
             Self::Restore(q) => {
                 restoration::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
             }

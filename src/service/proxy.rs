@@ -28,6 +28,7 @@ impl DeviceDriver for DaliProxy {
                 "adopt_scene_row",
                 "repair_scene_row",
                 "assign_group",
+                "configure_input",
                 "adopt_groups",
                 "repair_groups",
                 "restore_unaddressed_address",
@@ -47,6 +48,10 @@ impl DeviceDriver for DaliProxy {
             ]
             .into_iter()
             .map(|name| CommandSpec::new(name, CommandClass::WithReply))
+            .chain(std::iter::once(CommandSpec::new(
+                "read_input_settings",
+                CommandClass::Read,
+            )))
             .chain(std::iter::once(CommandSpec::new(
                 "read_groups",
                 CommandClass::Read,
@@ -223,6 +228,26 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::InputSettings(action) = &change {
+            if !action.writing() {
+                let result = self
+                    .handle
+                    .input_settings(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("input instance target required".into())
+                        })?,
+                        action.clone(),
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(8),
+                        None,
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+        }
         if let Operation::SavedScene = change {
             return serde_json::to_value(
                 scene_settings::view::read(
@@ -308,6 +333,24 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::InputSettings(action) => {
+                let result = self
+                    .handle
+                    .input_settings(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("input instance target required".into())
+                        })?,
+                        action,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(8),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
             Operation::SceneSettings(action) => {
                 let result = self
                     .handle
@@ -721,6 +764,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    InputSettings(input::settings::Action),
     Restore(restoration::Action),
     Reassignment(Assignment, discovery::Space),
     SavedScene,
@@ -740,6 +784,15 @@ impl Operation {
         context: &RequestContext,
     ) -> Result<(), ServiceError> {
         match self {
+            Self::InputSettings(action) => input::settings::resolve(
+                snapshot,
+                target.ok_or_else(|| {
+                    ServiceError::Rejected("input instance target required".into())
+                })?,
+                action,
+                context,
+            )
+            .map(|_| ()),
             Self::SavedScene => scene_settings::view::read(
                 snapshot,
                 target.ok_or_else(|| ServiceError::Rejected("named scene required".into()))?,
@@ -818,6 +871,7 @@ impl Operation {
     }
     fn budget(&self) -> Duration {
         Duration::from_secs(match self {
+            Self::InputSettings(_) => 8,
             Self::SceneSettings(action) => {
                 if action.writing() {
                     18
@@ -1059,6 +1113,19 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::InputSettings(action) => value(
+                handle
+                    .input_settings(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("input instance target required".into())
+                        })?,
+                        action,
+                        context,
+                        deadline,
+                        None,
+                    )
+                    .await?,
+            ),
             Operation::Restore(action) => value(
                 handle
                     .restore(
@@ -1234,6 +1301,35 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if matches!(
+        call.command.as_str(),
+        "read_input_settings" | "configure_input"
+    ) {
+        if target.is_none() {
+            return Err(OpError::Rejected("input instance target required".into()));
+        }
+        if call.command == "read_input_settings" {
+            if !call.params.is_empty() {
+                return Err(OpError::Rejected(
+                    "read_input_settings accepts no parameters".into(),
+                ));
+            }
+            return Ok(Operation::InputSettings(input::settings::Action::Read));
+        }
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Configure {
+            expected_revision: u64,
+            settings: input::settings::Patch,
+        }
+        let p: Configure = decode(call)?;
+        return Ok(Operation::InputSettings(
+            input::settings::Action::Configure {
+                expected: p.expected_revision,
+                settings: p.settings,
+            },
+        ));
+    }
     if call.command == "read_scene_settings" {
         if target.is_none() || !call.params.is_empty() {
             return Err(OpError::Rejected(

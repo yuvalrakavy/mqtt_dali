@@ -1,5 +1,25 @@
 # Managed inventory service (v2 development)
 
+Native input event settings use `input::settings` and a separate
+`physical::Work::InputSettings` variant. Read/Patch/Readback retains the original
+request, optional MQTT completion, permit and eight-second maximum deadline
+through settlement. It performs no ConfigStore edit. Resolve the saved instance
+and original write generation/revision before admission and at final acceptance;
+use `Hat::evidence_current`, not private stamp access or cached hardware alone.
+`commissioning::Bus::command` already implements two ordinary 24-bit sends under
+one combined 100 ms bound; do not use the ATX 16-bit repeat flag.
+
+Settings reports never enter the input value/Event cache. Type proofs bracket
+the yes/no Enabled query; collisions are not NoResponse. Required filter bytes
+must be complete, and FF remains data. At write admission and settlement the
+affected module's current values and permanently revocable Notices are cut, even
+when a final sample is missing/stale. Read work does not cut or synthesize actions.
+The strict shared commands and operator workflow are in
+[event settings](input-event-settings.md); fault controls are
+`v2-managed-input-settings-controls.toml`. Literal service peers complement the
+independent physical emulator. Their task must capture the whole PTY so its slave
+keeper survives disjoint field capture.
+
 This guide is for bridge contributors and embedders. The service library owns
 durable configuration, runtime routing, optional UART health, individual-output
 operations, selected-family DT8 MQTT controls and native input observations/actions. The canonical

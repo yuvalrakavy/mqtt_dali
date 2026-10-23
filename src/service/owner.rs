@@ -654,6 +654,10 @@ impl ProcessService for DaliService {
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion { match completion {
+                      physical::Completion::InputSettings(mut completion)=>{
+                        let result=input::settings::accept(&self.handle.snapshot().expect("service started"),&mut completion,&hat);
+                        input::settings::finish(completion.request,result);
+                      },
                       physical::Completion::Scenes(completion)=>scenes::finish(completion.request,scene_result.expect("scene accepted before publication")),
                       physical::Completion::Groups(_)=>unreachable!("groups accepted before cache publication"),
                       physical::Completion::Restore(_)=>unreachable!("restoration accepted before cache publication"),
@@ -858,6 +862,23 @@ impl ProcessService for DaliService {
                         }
                     }
                 }
+                Message::InputSettings(request) => {
+                    let result = if request.reply.is_closed() || Instant::now() >= request.deadline
+                    {
+                        Err(ServiceError::Expired)
+                    } else {
+                        input::settings::resolve(
+                            &self.handle.snapshot().expect("service started"),
+                            &request.target,
+                            &request.action,
+                            &request.context,
+                        )
+                    };
+                    match result {
+                        Ok(route) => hat.enqueue_input_settings(request, route),
+                        Err(error) => input::settings::finish(request, Err(error)),
+                    }
+                }
                 Message::Input(request) => {
                     if request.reply.is_closed() || Instant::now() >= request.deadline {
                         let _ = request.reply.send(Err(ServiceError::Expired));
@@ -955,6 +976,9 @@ impl ProcessService for DaliService {
                 }
                 Message::Discovery(request) => {
                     let _ = request.reply.send(Err(ServiceError::Closed));
+                }
+                Message::InputSettings(request) => {
+                    input::settings::finish(request, Err(ServiceError::Closed));
                 }
                 Message::Input(request) => {
                     let _ = request.reply.send(Err(ServiceError::Closed));

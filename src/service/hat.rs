@@ -833,6 +833,13 @@ impl Hat {
     ) {
         self.enqueue_physical(physical::Work::Input(request, route));
     }
+    pub(super) fn enqueue_input_settings(
+        &mut self,
+        request: input::settings::Request,
+        route: input::settings::Route,
+    ) {
+        self.enqueue_physical(physical::Work::InputSettings(request, route));
+    }
     fn enqueue_physical(&mut self, work: physical::Work) {
         let error = if self.physical.is_some() || self.completed.is_some() {
             Some(ServiceError::Busy)
@@ -909,6 +916,13 @@ impl Hat {
                 }
                 let physical = self.physical.as_mut().unwrap();
                 physical.stage = physical::Stage::Running;
+                if let physical::Work::InputSettings(request, route) = &mut physical.work {
+                    if request.action.writing() {
+                        request.started = true;
+                        self.inputs
+                            .cut_for_restore(route.input.bus, route.input.address.raw());
+                    }
+                }
                 if let physical::Work::Input(request, _) = &mut physical.work {
                     request.native_sequence = self.inputs.native_sequence(&request.target);
                 }
@@ -952,6 +966,13 @@ impl Hat {
     }
     fn complete_physical(&mut self, reason: Option<String>) {
         let physical = self.physical.take().expect("owned physical completion");
+        if let physical::Work::InputSettings(request, route) = &physical.work {
+            if request.started {
+                self.inputs
+                    .cut_for_restore(route.input.bus, route.input.address.raw());
+                self.next = Instant::now();
+            }
+        }
         let stale = reason.or_else(|| {
             (self.stamp(physical.work.bus()) != Some(physical.stamp)
                 || self.closing

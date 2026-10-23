@@ -94,8 +94,9 @@ authority, type/presence and actual settings afterward. QueryEnabled answers FF
 for true and silence for false, so an absent device must be ruled out separately.
 
 This slice supplies pure plans and an [independent emulator model](emulator.md#input-event-settings-model).
-Managed MQTT/HTTP setting commands and browser controls remain pending; existing
-discovery does not configure inputs. Timers and feedback are separate work.
+Managed MQTT/HTTP commands and browser controls now use these plans; see
+[event settings](input-event-settings.md). Existing discovery does not configure
+inputs. Timers and feedback are separate work.
 
 ## Exact full-resolution values
 

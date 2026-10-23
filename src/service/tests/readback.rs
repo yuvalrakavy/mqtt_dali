@@ -3,6 +3,8 @@ use crate::atx::transactions::RepeatPolicy;
 use crate::emulator::{pty, scenario::Scenario, session::Control};
 use crate::service::input::{self, Evidence};
 mod peer;
+mod settings;
+mod settings_peer;
 
 #[tokio::test]
 async fn input_readback_reply_and_cache_use_the_same_final_acceptance_evidence() {
