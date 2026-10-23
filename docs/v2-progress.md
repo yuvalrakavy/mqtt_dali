@@ -16,11 +16,21 @@ hardware validation remains pending.
 
 Current work: P8 Store integration design on claimed lane
 `/Users/yuval/Documents/Projects/Store-t3`, branch `feat/dali-v2-store`, based on
-Store `3c168f3ce`. Its server has not been started; no Store implementation or
-live Store migration has occurred. The owner confirmed that preset hardware
+Store `3c168f3ce`. Its isolated server is running on gRPC10300 with broker1886;
+startup loads no household stores. No Store implementation or live migration
+has occurred. The owner confirmed that preset hardware
 scenes run first, then individual light values override them. Shared components,
 split-address RGB/RGBW composition, identity-preserving Store migration and
 release preparation remain to be done.
+
+Three temporary design probes pass: the existing string parser accepts a
+512KiB JSON document; a real512KiB external MQTT message reaches that parser;
+and shared triggers fire once per event without replay on rebinding. No new
+parser or trigger delivery mechanism is needed. The earlier scratch-fixture
+failures are not accepted evidence: constructing a large Blob inside Rhai hits
+its100,000-element limit, which the real external MQTT probe avoids. Logs:
+`/tmp/dali-p8-primitives-final.log` (2/2) and `/tmp/dali-p8-wire-run.log` (1/1).
+These are design probes, separate from the accepted bridge test totals.
 
 The refreshed private bridge/emulator demo preserves all5 current fixtures and
 the exact saved bridge configuration. Remaining capability extensions and
@@ -3429,7 +3439,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | Design in claimed Store-t3 lane, branch feat/dali-v2-store; no implementation or live migration; server not started | Identity-preserving migration, shared color/input/scene components and preset ordering: hardware scene first, individual values override |
+| P8 Store integration | Design in claimed Store-t3 lane, branch feat/dali-v2-store; isolated server/broker running, three design probes pass; no implementation or live migration | Identity-preserving migration, generation-aware MQTT requests, shared color/input/scene components and scene-first preset ordering |
 | P9 release/docs | Pending; Pi compile checks pass locally | Release cross-link/build, portable shared dependency publication, deployment/rollback guides and physical acceptance |
 
 No v2 release, production installation, live Store migration, push or merge has
