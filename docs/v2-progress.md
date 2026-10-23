@@ -5,22 +5,70 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
-Current work: typed Part251 luminaire data, using the accepted memory owner.
-The implementation adds OEM identity/ratings/text to explicit read reports and
-the device information dialog. Eighteen focused native cases and104 frontend
-tests pass, including existing memory compatibility. Real Chrome phone/desktop
-checks pass in17.291s. Documentation and the final mutation/source/full gates
-are in progress. Its fresh design review APPROVES with a distribution-mask
-clarification applied; implementation follows the fail-first phases in
-`superpowers/specs/2026-10-23-dali-v2-luminaire-data.md`.
+Current work: Part252 energy/power captures, following accepted Part251 luminaire
+data. The next design reuses the memory owner, checked standard banks, exact
+decimal values and a verified latch transition/release. Its fresh design review
+APPROVES after TMASK/allFF and fresh-snapshot clarifications. Implementation
+starts with the pure decoder and literal fixtures.
 
-Most recent completed capability: read-only device identity and memory-bank access,
-accepted locally at `9a466c7`. The protected demo now includes Device information on
-fixtures and input modules. Remaining bridge capabilities are listed below and
+Most recent completed capability: Part251 luminaire identity, ratings and text,
+accepted locally at `7938bab`. The protected demo includes explicit luminaire
+reads in Device information on fixtures. Remaining capabilities are listed below and
 in the support matrix. Split-address RGB/RGBW composition
 belongs to Home equipment/Store integration under the approved architecture §9;
 the bridge already supplies its individual and group brightness bindings.
-Implementation spec: `superpowers/specs/2026-10-23-dali-v2-identity-memory.md`.
+Implementation spec: `superpowers/specs/2026-10-23-dali-v2-luminaire-data.md`.
+
+## P4 — Part251 luminaire data
+
+Implementation `4976bff` and GTIN boundary regression `7938bab` add strict
+output-only `read_luminaire_data` MQTT Read commands, authenticated jobs and
+typed service API. The same Memory Work/owner/permit reads bank1's bounded
+prefix, proves content format0003, then extends through min(header,0x77) under
+the original15s cap, parsed revision/generation and final stamp/reply checks.
+Unknown formats preserve only the prefix; public raw reads stay1–64 bytes.
+Identity/raw reports omit the new optional luminaire field. No write, poller,
+cache, worker, retry or configuration/observation change.
+
+The pure decoder returns fourteen OEM identity/rating/text fields with explicit
+value/unknown/unavailable/invalid statuses and units. GTIN and64-bit luminaire
+ID remain exact strings; CCTFFFE is a Part209 indication, never65534K or inferred
+DT8 capability. DistributionFF is unknown and6–254 are invalid. ASCII/NUL text
+retains holes before termination and is escaped in the dialog; it never changes
+saved name/Description/Origin. An independent raw-bank scenario configures the
+emulator without a new model. Guide: [luminaire data](luminaire-data.md).
+
+Final acceptance: **819/819 native tests** across eleven binaries;
+**104/104 frontend tests**; scoped real Chrome phone/desktop17.291s and complete
+linked workflow166.550s (browser separate from native suite). Nineteen focused
+memory/luminaire cases cover literalC3/A3/C5 framing, offsets/silence/collision
+positions, format/header bounds, generic MQTT/read class, strict targets/params,
+original prepared revision and unchanged native settings/levels/colors/groups/
+scenes/input data/configuration/caches. Browser checks cover exact IDs/units,
+partial/variable-CCT data, safe OEM markup,120-byte scrolling, unknown prefixes,
+lost reply without retry, explicit refresh and retired dialogs on phone/desktop.
+
+Eight initial deliberate controls (seven new plus the corrected existing input
+feedback/group-cache anchor) each produced their intended behavioral RED. An
+extra oversized-GTIN mutation survived the original tests; a literal maximum/
+overflow regression first failed against that defect and then passed with the
+current implementation. No production fix was needed. The eighth luminaire
+control now records that boundary. Fresh depth review of `5572656..7938bab`
+APPROVES without findings. Reviews are same-family/source-only; root ran runtime
+checks. Strict Clippy, Pi library/four binaries, wait lint0, changed formatting,
+both asset reproductions, all affected control plans and whitespace pass.
+
+The existing private demo was refreshed at the same endpoints. Its profile-free
+fixtures honestly show unavailable OEM data, and input modules omit this action.
+Phone/desktop checks retain all five outputs, exact saved bytes, levels/colors/
+modes/addresses/groups/scenes/settings and lamp-failure flags. The dynamic progress
+pane remains live. Physical HAT/fixture validation, Store integration, main merge,
+push/publication and release remain pending.
+
+Evidence: `/tmp/dali-luminaire-{red,codec,service-red,native,browser2,web-test}.log`,
+`/tmp/dali-luminaire-gtin-{red,green}.log`,
+`/tmp/dali-luminaire-mutation-results.json`, `/tmp/dali-luminaire-final-*.log`,
+`/tmp/dali-luminaire-demo-{preflight,restart,check}.log`.
 
 ## P4 — device identity and read-only memory
 
@@ -3198,7 +3246,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Core, persistent TCP connector/listener, configurable web UI and linked browser tabs implemented and verified locally | P4 extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual/group DT8 control and read-only identity/memory implemented | Part251 luminaire data next; retained DT7 metadata/presentation, specialist settings/diagnostics, feedback parameters/source routing, remaining color modes/settings, data Parts252–253 and DT1 emergency |
+| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual/group DT8 control, read-only identity/memory and Part251 luminaire data implemented | Part252 energy next; retained DT7 metadata/presentation, specialist settings/diagnostics, feedback parameters/source routing, remaining color modes/settings, Part253 data and DT1 emergency |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
