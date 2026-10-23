@@ -163,7 +163,7 @@ async fn location(
     Ok(LocationReading {
         address,
         reading: Some(scenes::Reading::byte(
-            bus.query(native.read()).await?,
+            bus.query(native.read_frame()).await?,
             false,
         )),
     })

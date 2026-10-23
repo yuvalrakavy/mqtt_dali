@@ -28,7 +28,7 @@ impl Target {
             Self::Input(_) => DaliFrame::Bits24(0xc13000 | u32::from(offset)),
         }
     }
-    pub fn read(self) -> DaliFrame {
+    pub fn read_frame(self) -> DaliFrame {
         match self {
             Self::Output(a) => DaliFrame::Bits16((u16::from(a.raw()) << 9) | 0x01c5),
             Self::Input(a) => DaliFrame::Bits24((u32::from((a.raw() << 1) | 1) << 16) | 0xfe3c),
@@ -145,18 +145,18 @@ mod tests {
         let input = Target::Input(input::Address::new(63).unwrap());
         assert_eq!(output.bank(255), DaliFrame::Bits16(0xc3ff));
         assert_eq!(output.offset(254), DaliFrame::Bits16(0xa3fe));
-        assert_eq!(output.read(), DaliFrame::Bits16(0x7fc5));
+        assert_eq!(output.read_frame(), DaliFrame::Bits16(0x7fc5));
         assert_eq!(output.version(), DaliFrame::Bits16(0x7f97));
         assert_eq!(input.bank(255), DaliFrame::Bits24(0xc131ff));
         assert_eq!(input.offset(254), DaliFrame::Bits24(0xc130fe));
-        assert_eq!(input.read(), DaliFrame::Bits24(0x7ffe3c));
+        assert_eq!(input.read_frame(), DaliFrame::Bits24(0x7ffe3c));
         assert_eq!(input.version(), DaliFrame::Bits24(0x7ffe34));
         assert_eq!(
-            Target::Output(gear::ShortAddress::new(0).unwrap()).read(),
+            Target::Output(gear::ShortAddress::new(0).unwrap()).read_frame(),
             DaliFrame::Bits16(0x01c5)
         );
         assert_eq!(
-            Target::Input(input::Address::new(0).unwrap()).read(),
+            Target::Input(input::Address::new(0).unwrap()).read_frame(),
             DaliFrame::Bits24(0x01fe3c)
         );
         assert_eq!(
