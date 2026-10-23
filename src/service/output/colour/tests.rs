@@ -14,6 +14,43 @@ use crate::service::{ServiceError, ServiceHandle};
 use peer::{Peer, Profile};
 const TARGET: &str = "Bus1.Outputs.Light1";
 
+#[test]
+fn group_color_and_individual_confirmation_require_fresh_normalized_rgbwaf_mode() {
+    let mut sample = Observation {
+        dt8: Some(true),
+        gear_features: Some(Reply::Value(0)),
+        features: Some(Reply::Value(Features::decode(0xc0))),
+        assignments: (1..=3)
+            .map(|value| Reply::Value(AssignedColour::decode(value)))
+            .collect(),
+        status: Some(Reply::Value(Status::decode(0x80))),
+        control: Some(Reply::Value(0x80)),
+        quality: Quality::Current,
+        values: [ValueQuery::Red, ValueQuery::Green, ValueQuery::Blue]
+            .into_iter()
+            .map(|query| (query, Reply::Value(Value::Byte(ByteValue::Known(127)))))
+            .collect(),
+        ..Observation::default()
+    };
+    let intent = Intent::rgbwaf([
+        Some(codec::Channel::new(127).unwrap()),
+        None,
+        None,
+        None,
+        None,
+        None,
+    ])
+    .unwrap();
+    assert!(sample.confirms(intent));
+    for control in [Some(Reply::Value(0x40)), Some(Reply::NoResponse), None] {
+        sample.control = control;
+        assert!(
+            !sample.confirms(intent),
+            "postwrite unnormalized RGBWAF confirms while ColorAvailable=false"
+        );
+    }
+}
+
 #[tokio::test]
 async fn mqtt_colour_complete_paced_write_uses_original_eight_second_budget() {
     use crate::config::ColorRepresentation;

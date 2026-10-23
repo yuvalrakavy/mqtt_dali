@@ -240,6 +240,8 @@ impl Observation {
     pub(in crate::service) fn confirms(&self, intent: Intent) -> bool {
         self.quality == Quality::Current
             && self.active() == Some(intent.kind())
+            && (intent.channels().is_none()
+                || matches!(self.control, Some(Reply::Value(raw)) if raw >> 6 == 2))
             && intent
                 .rgbwaf_control()
                 .is_none_or(|control| self.control == Some(Reply::Value(control.raw())))

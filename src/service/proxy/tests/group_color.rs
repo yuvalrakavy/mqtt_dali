@@ -53,7 +53,7 @@ async fn group_color_native_tcp_temperature_desired_reports_uniform_mixed_and_st
     let saved = fixture.current_bytes();
     let gear = |id, address, level, groups, value| {
         json!({"id":id,"short_address":address,"level":level,"groups":groups,"device_type":8,
-        "colour":{"active":"temperature","temperature":{"value":value,"coolest":200,"warmest":500,"physical_coolest":150,"physical_warmest":550}}})
+        "colour":{"active":"temperature","temperature":{"value":value,"coolest":200,"warmest":if address==1{400}else{500},"physical_coolest":150,"physical_warmest":550}}})
     };
     let scenario: Scenario = serde_json::from_value(
         json!({"version":1,"clock":"frozen","buses":[{"number":0,"outputs":[
@@ -90,6 +90,10 @@ async fn group_color_native_tcp_temperature_desired_reports_uniform_mixed_and_st
     .await;
     assert_eq!(state["ColorTemperatureMixed"], false);
     assert_eq!(state["ColorXMixed"], Value::Null);
+    assert_eq!(
+        state["ColorCapabilities"]["temperature_limits"]["warmest_kelvin"].as_f64(),
+        Some(2500.0)
+    );
     assert_eq!(state["Available"], true);
     assert_eq!(state["BrightnessMixed"], true);
     assert_eq!(state["Brightness"], Value::Null);
@@ -150,6 +154,37 @@ async fn group_color_native_tcp_temperature_desired_reports_uniform_mixed_and_st
     assert_eq!(mixed["ColorTemperature"], Value::Null);
     assert_eq!(mixed["ActiveColorRepresentation"], "temperature");
     assert_eq!(mixed["ActiveColorRepresentationMixed"], false);
+    let clamped = handle
+        .set_group_color(
+            TARGET,
+            1,
+            group_output::ColorIntent {
+                color: Intent::temperature(Temperature::new(500).unwrap()),
+                base: None,
+            },
+            context(1),
+            deadline(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(clamped.outcome, "sent");
+    let actual = emulator
+        .control(Control::Snapshot, Duration::from_secs(1))
+        .await
+        .unwrap();
+    assert_eq!(
+        actual["buses"][0]["outputs"][0]["colour_state"]["actual"]["temperature"]["value"],
+        500
+    );
+    assert_eq!(
+        actual["buses"][0]["outputs"][1]["colour_state"]["actual"]["temperature"]["value"], 400,
+        "group color echoed intent instead of independently clamped actual"
+    );
+    let clamped = current(&broker, |v| {
+        v["ColorAvailable"] == true && v["ColorTemperatureMixed"] == true
+    })
+    .await;
+    assert_eq!(clamped["ColorTemperature"], Value::Null);
     assert_eq!(
         fixture.current_bytes(),
         saved,

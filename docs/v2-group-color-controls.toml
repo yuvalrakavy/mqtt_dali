@@ -1,5 +1,15 @@
 # Execute serially in an isolated mutation worktree; restore after each row.
 [[control]]
+name = "group_color_confirms_unnormalized_rgbwaf"
+file = "src/service/output/colour.rs"
+anchor = '''            && (intent.channels().is_none()
+                || matches!(self.control, Some(Reply::Value(raw)) if raw >> 6 == 2))'''
+replacement = ''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_color_and_individual_confirmation)"]
+expect_text = "postwrite unnormalized RGBWAF confirms while ColorAvailable=false"
+
+[[control]]
 name = "group_color_skips_actual_member_preflight"
 file = "src/service/group_output/color.rs"
 anchor = '''    roster(route, samples)?;
