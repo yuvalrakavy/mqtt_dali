@@ -5,6 +5,64 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4i7 — managed input feedback and compact protected controls
+
+Frozen source `9cbbc1b`; reviewed UI correction `4dd92f4`. Design and final
+native/owner source lenses APPROVE. The UI/API lens found one ordinary-path P2:
+a failed activation reply left old Off evidence actionable. The narrow fix
+clears scope/display evidence before I/O and restores it only from a validated
+reply; uncertain actions require Refresh before another toggle. Its delta review
+APPROVE. All reviews are source-only/read-only and same-family.
+
+Saved input modules and individual instances now support strict
+`read_input_feedback` / `set_input_feedback` through MQTT, protected HTTP jobs
+and typed API, with a compact Feedback row menu/dialog. Fresh feature32/support,
+capability and closing presence/type proof precede a single explicit native
+Activate/Stop; complete matching actual evidence confirms Set. Same-value
+activation is explicit, collisions never become false, and unsupported/partial
+evidence authorizes no mutation. Original generation/revision/deadline/stamp
+and command completion remain under the physical owner. Feedback changes do not
+retire button Notices, input values, names, bindings or saved configuration.
+
+All **6 new native tests** pass, including23 independent literal evidence cases,
+actual module/instance MQTT/PTY toggles, continuing input activity, disabled
+buses and final original authority. Full acceptance passes **672/672 native
+tests** across eleven binaries (69.661s execution/130.3s command), strict Clippy,
+Pi library/four binaries, changed formatting, independent wait validation,
+assets/whitespace and31 affected control-table plans. All **70 frontend cases**
+pass. All **11 serial intentional faults** produce their named REDs (initial9
+in124s; two UI evidence-lifetime controls in0.6s). Wait generation and validation
+were run separately. The final correction is UI-only; no redundant native suite
+rerun is claimed.
+
+Actual final phone/desktop acceptance passes **964 owned commands in83.35s**:
+read/toggle/reopen/restore on module, button and absolute input, unsupported input,
+retained inventory/values/settings, held entry reads across dismissal/navigation,
+and actual native activation with an unusable browser admission reply. The stale
+toggle disappears; Refresh reads actual On and the next explicit action restores
+Off. Four new error-state screenshots were inspected. An initial injected502
+version passed its interaction assertions but failed the global console oracle;
+the fixture now substitutes an unusable200 admission body without suppressing
+console errors. Production behavior was not changed to accommodate the fixture.
+
+Guides/contract/emulator/CLAUDE/support matrix describe the managed path and the
+remaining scalar Desired bindings, feedback parameter settings and broader
+physical profiles. No live HAT, Store, deployment/publication, dependency or
+memory/skill change occurred. Existing ownership/invalidation patterns held in
+review; the confirmed UI finding is covered by fail-first recovery and measured
+fault controls rather than new transport machinery.
+
+Artifacts: `/tmp/dali-browser-37fdd855e2490d8daac53b068c5d347b`;
+logs: `/tmp/dali-managed-feedback-acceptance`,
+`/tmp/dali-managed-feedback-controls.log`,
+`/tmp/dali-managed-feedback-stale-ui-red.log`,
+`/tmp/dali-managed-feedback-stale-ui-controls.log`,
+`/tmp/dali-managed-feedback-node4.log` and
+`/tmp/dali-managed-feedback-browser3.log`.
+Next: native group power/dimming, keeping actual mixed/unknown member evidence
+separate from saved group assignments. Remaining specialist families stay listed
+in the support matrix; this does not mark all P4 capabilities complete.
+
 ## P4i6 — feature decoding and basic feedback foundation
 
 Frozen source `8dccb7f`. The combined design gate and sequential final codec/

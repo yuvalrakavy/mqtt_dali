@@ -213,3 +213,15 @@ affected control-table plans. The UI-only correction does not change native
 behavior; frontend, asset, browser and affected-source review checks are repeated.
 Methodology: retain existing uncertainty handling and test the operator-visible
 evidence lifetime; do not build new outage/retry machinery for this correction.
+
+UI/API delta source lens APPROVE at4dd92f4. The final full phone/desktop run
+passes964 owned commands in83.35s; all four new module/instance error-state
+screenshots were inspected. Artifact directory:
+`/tmp/dali-browser-37fdd855e2490d8daac53b068c5d347b`; log:
+`/tmp/dali-managed-feedback-browser3.log`. The initial502 fixture passed its
+interaction assertions but triggered the global console-error oracle. The final
+test substitutes a200 reply lacking a usable admission id after real native
+activation; client rejection and recovery are unchanged, with no console filter.
+No production mechanism changed after the approved UI delta. Node70, embedded
+asset equality, whitespace and all11 affected managed-feedback control anchors
+are green. Physical HAT/fixture and distinct-model-family review remain unclaimed.
