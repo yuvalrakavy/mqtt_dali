@@ -5,6 +5,48 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4i6 — feature decoding and basic feedback foundation
+
+Frozen source `8dccb7f`. The combined design gate and sequential final codec/
+contract and independent-model/compatibility source lenses APPROVE, without
+findings. Reviews were read-only/source-only and same-family. No live HAT,
+Store, deployment, publication or dependency change occurred.
+
+Pure `input::features` validates feature32..96 and decodes bounded captured
+Type/Next sequences: FE is none/end, FF multiple, with strict ascending numbers
+and a final terminator. Pure `input::feedback` supplies individual device/instance
+Activate/Stop/Capability/Active frames and lossless base capability flags. Input
+and feature selector namespaces stay distinct; basic feedback is one ordinary
+24-bit send. Unknown capability bits remain diagnostic data, not authority.
+
+The independent emulator has opt-in visible on/off profiles at device or existing
+instance scope. Scenario `feedback` and runtime `feedback_state` are distinct,
+omitted-empty vectors, preserving legacy serialized shape. Activation/stop are
+idempotent, independent of input enablement and sensor settings. HAT reboot and
+readdress retain the powered fixture model; no fixture power-cycle guarantee,
+timed/colour/audio profile, managed operation or web feedback control is claimed.
+Codec/emulator/service guides, CLAUDE and support matrix explain these boundaries.
+
+The first valid runtime baseline failed all3 new literal model cases. All **7 new
+codec/model/actual-PTY cases** and **17 neighboring input cases** pass. All **7
+intentional faults** produce their named REDs in94.0s measured command time; one
+whitespace anchor was rejected before mutation, corrected and rerun separately.
+Full acceptance passes **666/666 native tests** across eleven binaries
+(67.577s execution /127.2s command), strict Clippy, Pi library/four binaries,
+formatting, standalone wait validation, whitespace and all11 affected control
+plans. No new runtime wait/task/owner or bridge configuration field was added.
+Web source/assets did not change, so the prior real phone/desktop pass remains
+the latest UI evidence; no redundant browser run was claimed.
+
+Logs: `/tmp/dali-feedback-model-red2.log`,
+`/tmp/dali-feedback-foundation-native.log`,
+`/tmp/dali-feedback-foundation-native2.log`,
+`/tmp/dali-feedback-foundation-controls.log`,
+`/tmp/dali-feedback-foundation-control-end.log` and
+`/tmp/dali-feedback-foundation-acceptance`.
+No reusable skill update is needed. Next: managed capability/feedback operations
+and protected web controls, then remaining input/output capability families.
+
 ## P4i5 — absolute, occupancy and light sensor event parameters
 
 Frozen source `b776346`. Design and final native/model and UI/API source lenses

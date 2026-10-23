@@ -142,3 +142,15 @@ the missing-end list. No production fix was required. Mutation sources were
 restored after each row. Logs: `/tmp/dali-feedback-foundation-controls.log` and
 `/tmp/dali-feedback-foundation-control-end.log`; ledger:
 `docs/v2-feedback-foundation-controls.ledger.json`.
+
+## Final acceptance
+
+Frozen `8dccb7f` receives APPROVE from sequential source-only codec/contract and
+model/compatibility lenses, without findings. Same-family limitation applies.
+Full native acceptance passes666/666 across11 binaries (67.577s execution /
+127.2s command; separate browser skipped). Strict Clippy, Pi library/four
+binaries, changed-file format, standalone wait validation, whitespace and all11
+affected fault-control plans pass. No subsequent production mechanism change.
+All required guides, CLAUDE, support matrix and progress are updated; no reusable
+skill change is needed. Logs: `/tmp/dali-feedback-foundation-acceptance`.
+Managed capability/feedback commands and web controls remain the next boundary.
