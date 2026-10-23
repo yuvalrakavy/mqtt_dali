@@ -5,25 +5,69 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
-Current work: Part253 driver/light-source diagnostics and static luminaire
-maintenance ratings. The fresh T2 design review APPROVES the39-field layout,
-per-field MASK/TMASK interpretation and reuse of the existing memory owner.
-The decoder, independent model, strict managed MQTT/HTTP/typed read and protected
-dialog are implemented. All41 focused native tests and118 frontend tests pass;
-the new native behaviors first failed against the stub/missing command, and a
-deliberate browser invalid-range defect was caught by its named test. Real
-phone/desktop Chrome45.957s, strict Clippy, wait lint0 and affected control plans
-pass. Final mutation/source/full regression checks remain;
-this is not yet accepted diagnostic support.
-Spec: `superpowers/specs/2026-10-24-dali-v2-diagnostics-data.md`.
+Current work: one combined milestone for common DT1 emergency status,
+configuration and explicit tests, plus retained relay/emergency type capability
+reporting. The fresh T2 design review approves the corrected bounded type-read
+and pending-timeout behavior. Implement the whole family with focused checks
+between steps and one final regression/review cycle, rather than separate
+acceptance gates for each layer. Spec:
+`superpowers/specs/2026-10-24-dali-v2-native-completion.md`.
 
-Most recent completed capability: Part252 exact energy and power captures,
-accepted locally at `6031571`. The protected demo includes explicit energy
-and luminaire reads in Device information on fixtures. Remaining capabilities are listed below and
+Most recent completed capability: Part253 driver/light-source diagnostics and
+static luminaire maintenance ratings, accepted locally at `33a214f`.
+The protected demo includes explicit diagnostic, energy and luminaire reads in
+Device information on fixtures. Remaining capabilities are listed below and
 in the support matrix. Split-address RGB/RGBW composition
 belongs to Home equipment/Store integration under the approved architecture §9;
 the bridge already supplies its individual and group brightness bindings.
-Implementation spec: `superpowers/specs/2026-10-23-dali-v2-energy-data.md`.
+Implementation spec: `superpowers/specs/2026-10-24-dali-v2-diagnostics-data.md`.
+
+## P4 — Part253 diagnostics and maintenance
+
+Implementation `33a214f` adds strict output-only `read_diagnostics` MQTT Read,
+protected jobs and typed reads for banks205/206/207. The existing Memory owner,
+permit, original15s deadline, parsed revision/generation and final stamp/reply
+checks remain. Dynamic205/206 use the verified freshFF→AA snapshot and same-
+lifetime release; static207 uses ordinary reads and works with an unverified HAT
+profile. Unsupported versions stop at the prefix. No memory unlock/general write,
+new worker, poller, retry, persistent cache or journal was introduced.
+
+All39 fields retain raw evidence, exact values/units and per-field MASK/TMASK,
+invalid, unknown and unavailable states. Temperature is unsigned raw minus60°C;
+booleans and percentages reject invalid codes. Independent emulator profiles
+cover both dynamic bank lengths, frozen/live isolation and static ratings. The
+protected dialog offers an explicit bank selector and read, compact fields and
+raw details, with lost/retired reply clearing and no automatic read on selection.
+Guide: [diagnostics data](diagnostics-data.md).
+
+Final acceptance: **841/841 native tests** across eleven binaries;
+**118/118 frontend tests**. Real phone/desktop Chrome passes the focused45.957s
+workflow and complete linked176.884s regression. Forty-one focused native cases
+cover literal UART and independent TCP, both repeat policies, fresh snapshot
+proof/release, static unverified reads, unsupported/absent/truncated layouts,
+strict commands/targets and preservation of unrelated native/configuration data.
+The new behavior first failed against the stub/missing command. Browser checks
+cover all3 banks, reserved values/ranges, missing fields, scrolling, lost/held
+replies, explicit retry and retired dialogs.
+
+All eight deliberate controls produce their intended behavioral RED, with no
+compile failures, empty filters or survivors (8 test executions,290.604s).
+Fresh depth review of `24a3e50..33a214f` APPROVES without findings. Review is
+source-only/same-family; root ran the runtime checks. Strict Clippy, Pi library/
+four binaries, wait lint0, formatting, both asset reproductions, all affected
+control plans and whitespace pass. Native body104.238s/full command245.8s.
+
+The private demo was refreshed at its existing endpoints. Phone/desktop checks
+preserve all current fixtures, exact saved configuration and native brightness,
+colors, modes, addresses, groups, scenes, settings and lamp-failure flags.
+Profile-free fixtures honestly show unavailable diagnostic data; input modules
+omit the action. Physical HAT/fixture validation and later Store/release work
+remain pending.
+
+Evidence: `/tmp/dali-diagnostics-{managed-green,web-test,browser}.log`,
+`/tmp/dali-diagnostics-mutation-results.json`,
+`/tmp/dali-diagnostics-final-*.log`,
+`/tmp/dali-diagnostics-demo-{preflight,restart,check}.log`.
 
 ## P4 — Part252 energy and power
 
@@ -3303,7 +3347,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Core, persistent TCP connector/listener, configurable web UI and linked browser tabs implemented and verified locally | P4 extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual/group DT8 control, read-only identity/memory, Part251 luminaire and Part252 energy data implemented | Part253 diagnostics next; retained DT7 metadata/presentation, specialist settings/diagnostics, feedback parameters/source routing, remaining color modes/settings and DT1 emergency |
+| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual/group DT8 control, read-only identity/memory and Parts251–253 data implemented | Combined DT1 emergency and retained DT7 metadata/presentation next; specialist settings, feedback parameters/source routing and extended color modes/settings remain explicit follow-ups |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
