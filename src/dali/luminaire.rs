@@ -274,6 +274,30 @@ mod tests {
         assert_eq!(j["fields"]["luminaire_id"]["value"], "FEDCBA9876543210");
     }
     #[test]
+    fn luminaire_data_gtin_limit_stays_fourteen_decimal_digits() {
+        let mut b = bank();
+        put(&mut b, 3, &[0x5a, 0xf3, 0x10, 0x7a, 0x3f, 0xff]);
+        text(&decode(&b), "manufacturer_gtin", "99999999999999");
+        for raw in [
+            [0x5a, 0xf3, 0x10, 0x7a, 0x40, 0x00],
+            [0xff, 0xff, 0xff, 0xff, 0xff, 0xfe],
+        ] {
+            put(&mut b, 3, &raw);
+            let field = &decode(&b).fields["manufacturer_gtin"];
+            assert_eq!(
+                field.status,
+                Status::Invalid,
+                "invalid GTIN exceeded fourteen decimal digits"
+            );
+            assert_eq!(field.value, None);
+        }
+        put(&mut b, 3, &[255; 6]);
+        assert_eq!(
+            decode(&b).fields["manufacturer_gtin"].status,
+            Status::Unknown
+        );
+    }
+    #[test]
     fn luminaire_data_unknowns_and_invalid_encoding_do_not_invent_numeric_values() {
         let mut b = bank();
         put(&mut b, 3, &[255; 6]);

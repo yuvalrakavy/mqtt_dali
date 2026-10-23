@@ -61,3 +61,12 @@ replacement = 'count<1||count>120||start+count>255'
 target = "command"
 argv = ["node","--test","web/src/device-info.test.ts"]
 expect_text = "luminaire capture does not relax raw memory windows"
+
+[[control]]
+name = "luminaire_gtin_accepts_fifteen_digits"
+file = "src/dali/luminaire.rs"
+anchor = 'if value > 99_999_999_999_999 {'
+replacement = 'if false && value > 99_999_999_999_999 {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(luminaire_data_gtin_limit)"]
+expect_text = "invalid GTIN exceeded fourteen decimal digits"
