@@ -8,7 +8,8 @@ this pure codec. Managed discovery, saved named modules/instances and durable
 metadata rename use the [inventory contract](inventory-contract.md).
 Enable, priority, event scheme, filter and instance-group configuration are
 available through the managed service and protected browser controls; see
-[input event settings](input-event-settings.md). Timers, feedback and natural
+[input event settings](input-event-settings.md). The button timing codec/model
+below is implemented; managed timer controls, sensor timers, feedback and natural
 emulator stimuli remain pending.
 
 Input short addresses are 0..63, independently of output addresses. Instances
@@ -98,7 +99,41 @@ for true and silence for false, so an absent device must be ruled out separately
 This slice supplies pure plans and an [independent emulator model](emulator.md#input-event-settings-model).
 Managed MQTT/HTTP commands and browser controls now use these plans; see
 [event settings](input-event-settings.md). Existing discovery does not configure
-inputs. Timers and feedback are separate work.
+inputs. Managed timers and feedback are separate work.
+
+## Push-button timing plans
+
+`dali::input::button` supplies Part 301 `Timer::{Short, Double, Repeat, Stuck}`,
+checked `Value`, current/minimum query frames and two-step write plans. Only
+short/double have native minimum queries. Static byte-range checks are separate
+from `Value::check_minimum`: an owner must first establish a button instance,
+query its actual minimum, validate it and verify actual settings after writing.
+A plan performs none of that I/O. Double zero disables timing, but an invalid or
+missing minimum reply does not become a valid minimum. FF is valid short/stuck
+data. `duration()` uses 20ms units except stuck's one-second units.
+
+For example, the [independent emulator's button profile](emulator.md#push-button-timing-profile)
+at input short address 0/instance 0 answers `J19` to minimum query `l01000B`
+(25 * 20ms = 500ms). To choose a one-second short threshold after that proof:
+
+```text
+lC13032
+l010000
+l010000
+l01000A
+```
+
+DTR0 receives 50, then the short setting is repeated as ordinary 24-bit frames
+within100ms. Current query returns `J32` in this model. Keep the complete plan
+under one bus permit. A HAT `N` terminal confirms transmission, not application.
+This foundation has no managed MQTT/HTTP timer command or browser field yet;
+it does not recognize gestures or change settings during discovery.
+
+The command map and units follow [python-dali Part 301](https://github.com/sde1000/python-dali/blob/master/dali/device/pushbutton.py).
+[Beckhoff's variable table](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5908386187.html)
+defines static ranges, while [SetShortTimer](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5643146123.html)
+directs callers to query the device minimum. Do not substitute the emulator's
+chosen minimum for hardware evidence.
 
 ## Exact full-resolution values
 

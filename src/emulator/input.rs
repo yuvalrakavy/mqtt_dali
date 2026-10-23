@@ -2,6 +2,7 @@
 use super::scenario::Input;
 use serde::Serialize;
 use std::collections::BTreeMap;
+mod button;
 
 #[derive(Serialize)]
 pub(super) struct State {
@@ -27,6 +28,8 @@ struct Settings {
     scheme: u8,
     filter: u32,
     groups: [u8; 3],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    button_timers: Option<button::Timers>,
 }
 fn filter_mask(kind: u8) -> u32 {
     match kind {
@@ -51,6 +54,7 @@ impl State {
                     0
                 },
                 groups: [255; 3],
+                button_timers: (*kind == 1).then(button::Timers::new),
             })
             .collect();
         Self {
@@ -147,6 +151,9 @@ impl State {
         // Settings exist independently of a measurement value profile. The bus
         // admits repeated writes before this independent per-instance handler.
         let settings = &mut self.settings[usize::from(instance)];
+        if matches!(opcode, 0..=3 | 0x0a..=0x0f) {
+            return settings.button_timers.as_mut()?.command(opcode, self.dtr0);
+        }
         match opcode {
             0x61 => {
                 if (2..=5).contains(&self.dtr0) {

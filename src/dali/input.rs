@@ -1,5 +1,6 @@
 //! Part 103 input addresses, query frames and native Part 301–304 event data.
 //! This pure codec performs no I/O and does not assign an event to a named target.
+pub mod button;
 pub mod commissioning;
 pub mod settings;
 mod value;

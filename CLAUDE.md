@@ -288,6 +288,10 @@ unsupported as explicitly listed. Never use emulator agreement as certification.
 
 `dali::input` decodes standard Part 103 source schemes and native Part 301–304
 data, and builds individual read-query frames; see `docs/dali-input-contract.md`.
+Part301 timing uses `dali::input::button`: checked static ranges, separately
+queried short/double minima and exact units. Its independent emulator profile
+retains settings across HAT reboot/readdress but schedules no gestures. Timer
+commands/browser fields remain pending. Controls: `docs/v2-button-timing-controls.toml`.
 The codec is pure. Saved Inputs/Instances use the existing named identity ledger
 and durable metadata rename path; see `docs/inventory-contract.md`. Module
 replacement retires every child lifetime; ordinary rename preserves them. Replay

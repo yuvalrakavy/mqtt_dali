@@ -1,0 +1,107 @@
+{
+ "rows": {
+  "button_timer_below_device_minimum_accepted": {
+   "last_real": {
+    "at": "2026-10-23T02:30:49Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:4fec25b69224b040",
+     "row": "f955104c7bfe6c9a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.7,
+    "sha": "32b799dea1a22c690c839b8d8dc89f25c6ccc8b6",
+    "verdict": "RED"
+   }
+  },
+  "button_timer_model_cannot_disable_double": {
+   "last_real": {
+    "at": "2026-10-23T02:31:19Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:1646bca41f03d169",
+     "row": "b61adbf551cc7f1c",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.1,
+    "sha": "32b799dea1a22c690c839b8d8dc89f25c6ccc8b6",
+    "verdict": "RED"
+   }
+  },
+  "button_timer_model_writes_instance_zero": {
+   "last_real": {
+    "at": "2026-10-23T02:31:35Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:243d42e767812430",
+     "row": "da0fee029b612abd",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.2,
+    "sha": "32b799dea1a22c690c839b8d8dc89f25c6ccc8b6",
+    "verdict": "RED"
+   }
+  },
+  "button_timer_plan_omits_repeat": {
+   "last_real": {
+    "at": "2026-10-23T02:30:17Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:a020b58a91990e30",
+     "row": "b672cc6e2e7c6e4f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.5,
+    "sha": "32b799dea1a22c690c839b8d8dc89f25c6ccc8b6",
+    "verdict": "RED"
+   }
+  },
+  "button_timer_single_model_write_applies": {
+   "last_real": {
+    "at": "2026-10-23T02:31:04Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:fcea837cad6293e9",
+     "row": "fc0f213305ce9a61",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.9,
+    "sha": "32b799dea1a22c690c839b8d8dc89f25c6ccc8b6",
+    "verdict": "RED"
+   }
+  },
+  "button_timer_unit_halved": {
+   "last_real": {
+    "at": "2026-10-23T02:30:34Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:ff35ec7fc774b52e",
+     "row": "e14db4765bd1ff51",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.1,
+    "sha": "32b799dea1a22c690c839b8d8dc89f25c6ccc8b6",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

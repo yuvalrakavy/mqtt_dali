@@ -115,6 +115,69 @@ async fn literal_input_settings_uart_reboot_preserves_disabled_instance() {
 }
 
 #[tokio::test]
+async fn literal_button_timing_uart_and_hat_reboot_retains_physical_settings() {
+    let scenario =
+        serde_json::from_value(serde_json::json!({"version":1,"clock":"frozen","buses":[
+            {"number":0,"inputs":[{"id":"panel","short_address":0,"instances":[1]}]}
+        ]}))
+        .unwrap();
+    let (stream, mut bridge) = tokio::io::duplex(4096);
+    let emulator = Emulator::start(stream, scenario).unwrap();
+    assert_eq!(line(&mut bridge).await, b"B000004\n");
+    bridge
+        .write_all(b"lC130FF\nl010000\nl010000\nl01000A\nlC13032\nl010001\nl010001\nl01000C\n")
+        .await
+        .unwrap();
+    for expected in [
+        b"LC130FF\n".as_slice(),
+        b"N\n",
+        b"L010000\n",
+        b"N\n",
+        b"L010000\n",
+        b"N\n",
+        b"L01000A\n",
+        b"JFF\n",
+        b"LC13032\n",
+        b"N\n",
+        b"L010001\n",
+        b"N\n",
+        b"L010001\n",
+        b"N\n",
+        b"L01000C\n",
+        b"J32\n",
+    ] {
+        assert_eq!(
+            line(&mut bridge).await,
+            expected,
+            "literal UART button timing mismatch"
+        );
+    }
+    control(&emulator, Control::Reboot).await;
+    assert_eq!(line(&mut bridge).await, b"B000004\n");
+    bridge
+        .write_all(b"l01000A\nl01000C\nl01000B\nl01000D\n")
+        .await
+        .unwrap();
+    for expected in [
+        b"L01000A\n".as_slice(),
+        b"JFF\n",
+        b"L01000C\n",
+        b"J32\n",
+        b"L01000B\n",
+        b"J19\n",
+        b"L01000D\n",
+        b"J0A\n",
+    ] {
+        assert_eq!(
+            line(&mut bridge).await,
+            expected,
+            "HAT reboot changed physical button timing"
+        );
+    }
+    emulator.close().await.unwrap();
+}
+
+#[tokio::test]
 async fn production_transactions_use_actual_pty_and_receive_input_during_a_delayed_reply() {
     let pty = super::super::pty::spawn(scenario()).await.unwrap();
     let (link, mut events) = Transactions::start(

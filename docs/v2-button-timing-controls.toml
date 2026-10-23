@@ -1,0 +1,55 @@
+# Run serially; each independent intentional fault must produce its named RED.
+
+[[control]]
+name = "button_timer_plan_omits_repeat"
+file = "src/dali/input/button.rs"
+anchor = "frame: address.command(instance.raw(), self.timer.setting_opcode()),\n                repeat: true,"
+replacement = "frame: address.command(instance.raw(), self.timer.setting_opcode()),\n                repeat: false,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(button_timer_literal_plans)"]
+expect_text = "button timer plan has wrong address/opcode/DTR/repeat"
+
+[[control]]
+name = "button_timer_unit_halved"
+file = "src/dali/input/button.rs"
+anchor = "if self.timer == Timer::Stuck { 1000 } else { 20 }"
+replacement = "if self.timer == Timer::Stuck { 1000 } else { 10 }"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(button_timer_literal_plans)"]
+expect_text = "button timer unit is wrong"
+
+[[control]]
+name = "button_timer_below_device_minimum_accepted"
+file = "src/dali/input/button.rs"
+anchor = "if self.raw < minimum && !(self.timer == Timer::Double && self.raw == 0) {"
+replacement = "if false && self.raw < minimum && !(self.timer == Timer::Double && self.raw == 0) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(button_timer_checks_static)"]
+expect_text = "below-device-minimum timer was accepted"
+
+[[control]]
+name = "button_timer_single_model_write_applies"
+file = "src/emulator/model.rs"
+anchor = "(instance <= 31 && matches!(opcode, 0x00..=0x03 | 0x61..=0x68))"
+replacement = "(instance <= 31 && matches!(opcode, 0x61..=0x68))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_button_timing_all_settings)"]
+expect_text = "single button timer write applied"
+
+[[control]]
+name = "button_timer_model_cannot_disable_double"
+file = "src/emulator/input/button.rs"
+anchor = "1 if dtr0 == 0 || (self.double_min..=100).contains(&dtr0) => self.double = dtr0,"
+replacement = "1 if (self.double_min..=100).contains(&dtr0) => self.double = dtr0,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_button_timing_all_settings)"]
+expect_text = "double timer zero did not disable timing"
+
+[[control]]
+name = "button_timer_model_writes_instance_zero"
+file = "src/emulator/input.rs"
+anchor = "let settings = &mut self.settings[usize::from(instance)];"
+replacement = "let settings = &mut self.settings[0];"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_button_timing_last_instance)"]
+expect_text = "last button instance write changed instance zero"

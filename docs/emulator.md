@@ -65,7 +65,7 @@ explicit dispatcher policy. Physical repeat cardinality remains unverified.
 Base coverage includes addressing, DTRs, direct level/MASK, off/steps/max/min,
 groups/scenes and selected queries/configuration. Levels currently change
 immediately. The DT8 colour profile below adds selected colour operations.
-Fade timing, timed UP/DOWN, input timers/feedback, emergency and memory/data
+Fade timing, timed UP/DOWN, sensor timers/feedback, emergency and memory/data
 models remain P4 extensions. Unsupported operations never fabricate a
 positive device reply. N proves HAT transmission, not device support.
 
@@ -87,7 +87,8 @@ draws. RANDOMISE replaces participating modules' random addresses. Input and
 output repeat latches are separate, and 24-bit input traffic preserves output DT8
 selection. Identical backward bytes still aggregate to one value; independent
 literal-peer tests supply exact-collision refusal evidence. Physical certification,
-input timers and feedback are outside this model.
+sensor timers and feedback are outside this model. The button timing profile is
+described below.
 
 Standard FD broadcast-unaddressed input queries answer only modules without a
 short address, independently of the bridge codec. Sole-candidate recovery uses
@@ -158,10 +159,37 @@ ordinary settings affect only the selected existing instance.
 
 `input_event` remains raw UART test injection and deliberately bypasses enabled
 state, filters and scheme. `set_input_value` does not generate events. Natural
-stimulus/gesture scheduling, event timers, feedback and hardware persistence
+stimulus/gesture scheduling, sensor timers, feedback and hardware persistence
 validation are later work. Literal model and UART/reboot tests cover this
 foundation. Managed MQTT/HTTP/browser settings use this independent model;
 literal peers additionally check the executing service's evidence and repeats.
+
+## Push-button timing profile
+
+Type1 instances have a `button_timers` object in their diagnostic settings,
+even without a measurement value profile. Other types do not. The independent
+model supports four repeated setting opcodes (00..03) and six queries (0A..0F):
+
+| Timer | Initial raw value | Profile minimum | Unit |
+|---|---|---|---|
+| Short | 25 | 25, query0B | 20ms |
+| Double | 0 (disabled) | 10 for nonzero values, query0D | 20ms |
+| Repeat | 8 | 5 (maximum100) | 20ms |
+| Stuck | 20 | 5 | 1s |
+
+These are explicit emulator profile choices, not universal hardware defaults.
+Short/stuck accept FF; double accepts0 or10..100. Invalid/below-profile-minimum
+writes are ignored by this limited model; hardware may clamp differently.
+Each write needs adjacent equal ordinary24-bit frames within100ms under the
+existing repeat owner. Input/output interruption breaks the pair. See the
+[codec guide's literal UART example](dali-input-contract.md#push-button-timing-plans).
+
+Timer changes preserve values, captured latches, other settings and unselected
+instances/devices/buses. Readdress and HAT reboot retain physical timer state.
+The profile does not schedule actual short/double/long gestures; raw injected
+events still bypass settings. There is no managed timer command/UI yet, and no
+scenario schema or disk-persistence change. Intentional faults are recorded in
+`v2-button-timing-controls.toml` and its ledger.
 
 ## Colour fixtures
 
