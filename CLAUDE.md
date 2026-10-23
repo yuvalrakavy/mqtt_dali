@@ -41,6 +41,13 @@ with hard links and directory fsync. No migration command contacts the real bus.
 New migration safety controls are in `docs/v2-migration-controls.toml`. Run them
 with Store's `scripts/negative-control.py --root <this-worktree> <table>`; the
 runner restores each mutation. Avoid simultaneous builds or edits while it runs.
+After controls in a disposable checkout share the canonical native target,
+run `cargo clean -p mqtt_dali --target aarch64-apple-darwin` from the real bridge
+checkout before its final verification. This removes this package's artifacts,
+preserving dependency caches. Source restoration alone does not retire a
+guard-disabled test binary: Cargo reused one whose dependency record still
+named the mutation checkout even while reporting other units recompiled.
+Do this once after the control batch, not between individual controls.
 
 The v2 library's `atx` modules provide typed line framing, continuous monitoring
 and a common raw Unix UART/PTY adapter. `Monitor::write` reports bytes accepted

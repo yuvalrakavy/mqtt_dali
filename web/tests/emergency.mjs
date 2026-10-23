@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {join} from 'node:path';
+import {waitForAdmittedJob} from './jobs.mjs';
 
 export async function emergencyFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,emulatorPage,emulatorCard}){
   await page.goto(`${origin}/buses/2`);await page.getByRole('button',{name:'Set up bus',exact:true}).click();await page.getByRole('button',{name:'Save bus',exact:true}).click();
@@ -40,7 +41,7 @@ export async function emergencyFlow({page,origin,artifacts,inventory,control,unt
   // Lose an admitted mutation's reply after the actual gear changed. Retain
   // the draft, clear actionable evidence, and require an explicit refresh.
   await page.getByLabel('Prolong (seconds)',{exact:true}).fill('120');let lose=true;
-  const intercept=async route=>{if(lose&&route.request().postDataJSON().command==='configure_emergency'){lose=false;await route.fetch();await until(async()=>(await selected()).emergency_state.prolong===4,'lost emergency setting did not reach hardware');await route.fulfill({status:200,contentType:'application/json',json:{error:'Emergency result unavailable'}});}else await route.continue();};
+  const intercept=async route=>{if(lose&&route.request().postDataJSON().command==='configure_emergency'){lose=false;await waitForAdmittedJob(route,page,origin,until);assert.equal((await selected()).emergency_state.prolong,4,'lost emergency setting did not reach hardware');await route.fulfill({status:200,contentType:'application/json',json:{error:'Emergency result unavailable'}});}else await route.continue();};
   await page.route(`${origin}/api/jobs`,intercept);const count=commands.length;
   try{await page.getByRole('button',{name:'Save emergency settings',exact:true}).click();await idle();assert.equal(await page.getByRole('region',{name:'Emergency status',exact:true}).count(),0);assert.ok((await page.locator('dialog').innerText()).includes('unsaved settings are retained'));assert.deepEqual(commands.slice(count).map(call=>call.command),['configure_emergency'],'lost emergency reply caused automatic replay');}
   finally{await page.unroute(`${origin}/api/jobs`,intercept);}

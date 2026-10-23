@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {waitForAdmittedJob} from './jobs.mjs';
 import {join} from 'node:path';
 
 export async function outputSettingsFlow({page,context,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible}){
@@ -40,7 +41,7 @@ export async function outputSettingsFlow({page,context,origin,artifacts,inventor
     // Lose the response after a real admitted setting has reached hardware.
     // Stale values must disappear, and no second mutation may be auto-submitted.
     await open();await page.getByLabel('Fade time',{exact:true}).selectOption('2');
-    let lose=true;const intercept=async route=>{const call=route.request().postDataJSON();if(lose&&call.command==='configure_output'){lose=false;await route.fetch();await until(async()=>(await selected()).fade===0x27,'admitted fixture setting never reached hardware');await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({error:'Fixture settings result unavailable. Refresh to inspect again.'})});}else await route.continue();};
+    let lose=true;const intercept=async route=>{const call=route.request().postDataJSON();if(lose&&call.command==='configure_output'){lose=false;await waitForAdmittedJob(route,page,origin,until);assert.equal((await selected()).fade,0x27,'admitted fixture setting never reached hardware');await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({error:'Fixture settings result unavailable. Refresh to inspect again.'})});}else await route.continue();};
     await page.route(`${origin}/api/jobs`,intercept);const count=commands.length;
     try{await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.getByRole('button',{name:'Refresh settings',exact:true}).isEnabled(),'lost settings reply did not settle');assert.equal(await page.getByLabel('Minimum brightness (%)',{exact:true}).count(),0,'lost settings reply retained actionable fields');assert.equal(await page.getByRole('button',{name:'Save settings',exact:true}).isDisabled(),true);assert.deepEqual(commands.slice(count).map(c=>c.command),['configure_output'],'failed settings mutation retried automatically');}
     finally{await page.unroute(`${origin}/api/jobs`,intercept);}

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {waitForAdmittedJob} from './jobs.mjs';
 import { join } from 'node:path';
 
 export async function feedbackFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible}){
@@ -29,7 +30,7 @@ export async function feedbackFlow({page,origin,artifacts,inventory,control,unti
     // Prior Off evidence must not remain actionable while the hardware is On.
     for(const scope of [{name:module.name,instance:null},{name:module.instances[0].name,instance:0}]){
       await open(scope.name);const toggle=page.getByRole('button',{name:'Feedback active',exact:true});assert.equal(await toggle.getAttribute('aria-pressed'),'false');
-      let lose=true;const failed=async route=>{const call=route.request().postDataJSON();if(lose&&call.command==='set_input_feedback'){lose=false;await route.fetch();await until(async()=>(await native()).feedback_state.find(p=>p.instance===scope.instance).active,'admitted feedback did not reach hardware');await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({error:'Feedback result unavailable. Refresh to inspect again.'})});}else await route.continue();};
+      let lose=true;const failed=async route=>{const call=route.request().postDataJSON();if(lose&&call.command==='set_input_feedback'){lose=false;await waitForAdmittedJob(route,page,origin,until);assert.equal((await native()).feedback_state.find(p=>p.instance===scope.instance).active,true,'admitted feedback did not reach hardware');await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({error:'Feedback result unavailable. Refresh to inspect again.'})});}else await route.continue();};
       await page.route('**/api/jobs',failed);const count=commands.length;await toggle.click();await idle();
       await page.getByText('Feedback is unavailable. Refresh to read it again.',{exact:true}).waitFor();assert.equal(await toggle.count(),0,'failed activation left stale feedback actionable');
       assert.equal((await native()).feedback_state.find(p=>p.instance===scope.instance).active,true);assert.deepEqual(commands.slice(count).map(c=>c.command),['set_input_feedback'],'failed activation retried without refresh');

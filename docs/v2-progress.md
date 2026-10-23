@@ -5,22 +5,34 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
-Current work: one combined milestone for common DT1 emergency status,
-configuration and explicit tests, plus retained relay/emergency type capability
-reporting. Native protocol/model/owner/strict command paths and both UIs are
-implemented. All67 affected native checks, the final21-case storage/authority
-check, all124 frontend tests and real linked phone/desktop Chrome13.112s pass.
-Literal UART, unverified policy, original prepared revision, pending timeouts,
-lost/retired replies and native/configuration preservation are covered. Strict
-production Clippy and all affected control plans pass. Final mutation/source/full
-regression checks remain; this milestone is not yet accepted.
-An actual build-trigger fix also avoids relinking native tests after docs/browser
-script edits: the subsequent browser-script rerun reused its build in0.14s.
-The fresh T2 design review approves the corrected bounded type-read
-and pending-timeout behavior. Implement the whole family with focused checks
-between steps and one final regression/review cycle, rather than separate
-acceptance gates for each layer. Spec:
-`superpowers/specs/2026-10-24-dali-v2-native-completion.md`.
+Current work: final verification of the combined DT1 emergency and retained
+relay/emergency capability milestone, implemented at `a9acfa5` with corrections
+at `0438fea`. Both source reviews approve; all10 original mutation controls and
+the one affected guard recheck caught their intended behavioral faults. The
+correct-source run passes860/860 native tests and124/124 frontend tests. The
+complete linked browser and remaining build checks are running; this milestone
+is not yet accepted.
+
+The first full native run completed856/860: two strict test peers lacked the
+new type query, emergency wait-registry entries were missing, and an
+identification guard check failed. The peers and registry were corrected;
+the test's previously unsynchronized admission is now deterministic. All4
+affected checks pass in the focused run; the identification test holds the
+queued request before owner admission and its guard-disabled mutation fails
+specifically in the after-submission case. The confirming full run's guard failure
+was traced to the deliberately broken mutation binary being reused from the
+shared target: its dependency record still names the mutation checkout. This is
+a verification-cache defect, not evidence of a restored-source guard defect.
+The package-only clean removed782,578 files/442.5GiB in146.4s; dependencies
+remained cached. The rebuilt guard passes, and its dependency record now names
+the real bridge checkout. Full native verification passes in109.0s wall time
+(89.225s test body); the full frontend suite also passes.
+See the current checkpoint below.
+
+Store integration design preparation has started; no Store files or live stores
+have been changed. The owner confirmed that preset hardware scenes run first,
+then individual light values override them. Split-address RGB/RGBW composition,
+identity-preserving Store migration and release preparation remain to be done.
 
 Most recent completed capability: Part253 driver/light-source diagnostics and
 static luminaire maintenance ratings, accepted locally at `33a214f`.
@@ -30,6 +42,62 @@ in the support matrix. Split-address RGB/RGBW composition
 belongs to Home equipment/Store integration under the approved architecture §9;
 the bridge already supplies its individual and group brightness bindings.
 Implementation spec: `superpowers/specs/2026-10-24-dali-v2-diagnostics-data.md`.
+
+## P4 — combined emergency operations and retained type capabilities
+
+Implementation and both UIs are complete at `a9acfa5` plus `0438fea`; final
+regression acceptance is in progress. DT1 supports explicit status/settings,
+function/duration test requests and Stop, with independent emulator profiles,
+clock-driven pending/running/results and battery/fault simulation. Ordinary
+output readback retains nullable relay/emergency type facts; proved relay rows
+use power controls and scene values are labeled as virtual levels.
+
+Focused evidence:67 affected native checks,21 final storage/authority checks,
+124 frontend tests and linked phone/desktop Chrome13.112s passed. Strict
+production Clippy and all affected control plans passed. The final source review
+of `96e2059..a9acfa5` found only one P3: embedded HTML was missing from the build
+timestamp inputs. The five-file correction at `0438fea` also updates the two
+remaining literal peers, the wait registry and deterministic owner-admission
+test. Its fresh confirming source review approves with no findings. Both reviews
+were source-only/same-family and do not certify runtime or physical behavior.
+
+All10 original controls produced meaningful behavioral RED, one executed test
+each, no compiler failures and exact source restoration (231.043s including
+clean baselines). Only the changed identification fixture's control was repeated:
+baseline GREEN, guard-disabled after-submission case RED, exact restoration
+(63.812s). Its4 affected regression checks pass in1.454s. The first full run's
+856/860 result is retained as failed evidence, not counted as acceptance.
+
+The second full native run was859/860, but reused the guard-disabled test binary
+whose dependency metadata names `/private/tmp/dali-emergency-mutation`; it is not
+accepted as verification of the restored source. Earlier attribution of the
+observed guard failure to the scheduling race was premature: the mailbox
+barrier removes a real unsynchronized test assumption, while the cache explains
+the reproduced deliberate-fault behavior. No production guard was changed.
+
+The correct-source native run passes860/860 (109.0s wall/89.225s test body), the
+frontend suite passes124/124, and the rebuilt guard passes with dependency
+provenance pointing to the real checkout. The complete linked browser and
+Clippy/Pi/waits/format/assets/plan checks are running at `0438fea`. Accepted totals
+in older checkpoints below remain unchanged until this cycle succeeds. Physical
+I4/DT1 validation, Store integration and release remain pending. The visible
+private demo still runs the previous accepted diagnostic milestone; refresh will
+preserve its saved inventory and native fixtures after final acceptance.
+
+Workflow changes: one combined family milestone, focused checks between edits,
+one final review/regression cycle plus the necessary confirming fix run. Build
+metadata watches application inputs including embedded HTML; documentation or
+browser-script-only edits no longer relink native tests (measured build reuse
+0.14s). No new UART recovery policy, emergency poller, journal or worker.
+
+Evidence: `/tmp/dali-native-completion-final-execution.log` and
+`/tmp/dali-native-completion-final-native.log` retain the first failed run;
+`/tmp/dali-native-completion-final2-execution.log` preserves the contaminated
+confirming run. `/tmp/dali-native-completion-final3-execution.log` and corresponding
+step logs record the current cycle. Controls:
+`/tmp/dali-emergency-mutation-results.json` and
+`/tmp/dali-native-completion-fix-mutation-results.json`.
+Spec: `superpowers/specs/2026-10-24-dali-v2-native-completion.md`.
 
 ## P4 — Part253 diagnostics and maintenance
 
@@ -3356,11 +3424,11 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Core, persistent TCP connector/listener, configurable web UI and linked browser tabs implemented and verified locally | P4 extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual/group DT8 control, read-only identity/memory and Parts251–253 data implemented | Combined DT1 emergency and retained DT7 metadata/presentation next; specialist settings, feedback parameters/source routing and extended color modes/settings remain explicit follow-ups |
+| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 settings/capture, named inputs/events/settings/sensors/feedback, individual/group DT8 and Parts251–253 data accepted locally; combined DT1 emergency and retained relay/emergency metadata/UI implemented, final verification running | Accept the confirming combined-milestone checks; specialist settings, feedback parameters/source routing and extended color modes/settings remain explicit follow-ups |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | Pending | Scoped dev-track and persisted-data migration preserving bindings |
+| P8 Store integration | Design preparation; implementation pending, no Store mutations | Scoped dev-track, identity-preserving migration, shared color/input/scene components and preset ordering: hardware scene first, individual values override |
 | P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |
 
 No v2 release, production installation, live Store migration, push or merge has
