@@ -60,7 +60,7 @@ pub(super) fn lifecycle(snapshot: &Snapshot, bus: u8) -> bool {
 
 pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
     let table = routing::generations(&snapshot.model);
-    snapshot
+    let mut states: Vec<_> = snapshot
         .model
         .projections()
         .into_iter()
@@ -115,21 +115,21 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
         })
         .chain(super::super::input::projections(snapshot))
         .chain(super::group::projections(snapshot))
-        .chain(super::super::input::feedback::cache::projections(snapshot))
-        .fold(
-            std::collections::BTreeMap::<String, ContextualState>::new(),
-            |mut states, state| {
-                if let Some(prior) = states.get_mut(&state.state.target) {
-                    prior.state.values.extend(state.state.values);
-                    prior.context = state.context;
-                } else {
-                    states.insert(state.state.target.clone(), state);
-                }
-                states
-            },
-        )
-        .into_values()
-        .collect()
+        .collect();
+    let mut feedback: std::collections::BTreeMap<_, _> =
+        super::super::input::feedback::cache::projections(snapshot)
+            .into_iter()
+            .map(|s| (s.state.target.clone(), s))
+            .collect();
+    // Preserve the existing output/input/group order; append new module rows.
+    for state in &mut states {
+        if let Some(added) = feedback.remove(&state.state.target) {
+            state.state.values.extend(added.state.values);
+            state.context = added.context;
+        }
+    }
+    states.extend(feedback.into_values());
+    states
 }
 
 pub(super) fn accepted(

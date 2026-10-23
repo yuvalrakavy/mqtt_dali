@@ -54,6 +54,8 @@ impl Peer {
                             b"l010080\n"=>Some(b"J01\n".to_vec()),
                             b"l010081\n"=>Some(b"J01\n".to_vec()),
                             b"l01008C\n"=>Some(b"JFF\n".to_vec()),
+                            // The refreshed button has no optional input features.
+                            b"l01008E\n"=>Some(b"JFE\n".to_vec()),
                             b"l010180\n"=>Some(b"J02\n".to_vec()),
                             b"l010181\n"=>Some(b"J0A\n".to_vec()),
                             b"l01018C\n"=>Some(b"JAB\n".to_vec()),
@@ -337,8 +339,8 @@ async fn live_input_mqtt_actions_survive_a_pending_light_command_and_publish_tru
             .iter()
             .filter(|b| b.starts_with(b"h") || b.starts_with(b"l"))
             .count()
-            + 3,
-        "input refresh did not send its complete type/resolution/value query"
+            + 6,
+        "input refresh did not send its complete value and unsupported-feedback queries"
     );
     assert!(running.stop().await);
     peer.task.abort();

@@ -468,9 +468,17 @@ async fn web_observed_input_queries_preserve_exact_resolution_and_do_not_create_
         format!("7F{}", "FF".repeat(31)),
         "HTTP input read truncated full-resolution value"
     );
+    let mut expected = read["values"].as_object().unwrap().clone();
+    expected.extend(
+        serde_json::from_value::<serde_json::Map<String, Value>>(json!({
+            "FeedbackActive":null,"FeedbackAvailable":false,"FeedbackSupported":null,
+            "FeedbackCapabilityRaw":null,"FeedbackQuality":"unobserved"
+        }))
+        .unwrap(),
+    );
     assert_eq!(
         state(&fixture, &cookie, &wide.target).await["values"],
-        read["values"]
+        json!(expected)
     );
     for _ in 0..2 {
         let update = pull(&mut stream).await;
@@ -818,6 +826,7 @@ fn web_observed_dense_valid_inventory_fits_the_measured_snapshot_budget() {
             matches!(
                 p.location,
                 crate::inventory::Location::Output { .. }
+                    | crate::inventory::Location::Input { .. }
                     | crate::inventory::Location::InputInstance { .. }
             )
         })
