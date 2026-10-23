@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 export async function inputSettingsFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible}){
   const saved=await inventory(),input=saved.buses[0].inputs[0],button=input.instances[0];
+  assert.deepEqual([...new Set(input.instances.filter(i=>[2,3,4].includes(i.instance_type)).map(i=>i.instance_type))].sort(),[2,3,4],'browser fixture must exercise all three sensor families');
   const physicalBefore=await control({op:'snapshot'}),settingsBefore=physicalBefore.buses[0].inputs.find(i=>i.id==='buttons').settings[0];
   const row=name=>page.locator('.device-row').filter({has:page.getByRole('textbox',{name:`Name ${name}`,exact:true})});
   const idle=()=>until(async()=>await page.getByRole('button',{name:'Add unaddressed',exact:true}).isEnabled(),'input settings operation did not settle');
@@ -35,7 +36,30 @@ export async function inputSettingsFlow({page,origin,artifacts,inventory,control
   await page.getByLabel('Input enabled',{exact:true}).check();await page.getByLabel('Event priority',{exact:true}).selectOption('4');await page.getByLabel('Double press',{exact:true}).check();await page.getByLabel('Primary group',{exact:true}).selectOption('255');await page.getByLabel('Instance group 2',{exact:true}).selectOption('255');
   await page.getByLabel('Short press (ms)',{exact:true}).fill('500');await page.getByLabel('Double press (ms)',{exact:true}).fill('0');await page.getByLabel('Long repeat (ms)',{exact:true}).fill('160');await page.getByLabel('Stuck button (s)',{exact:true}).fill('20');
   await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'restored input settings did not close');await idle();
-  for(const instance of input.instances.filter(i=>[2,4].includes(i.instance_type))){await open(instance.name);await page.getByLabel(instance.instance_type===2?'Position changed':'Light level changed',{exact:true}).waitFor();const count=commands.length;await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.equal(commands.length,count,'cancelled input settings wrote hardware');}
+  for(const instance of input.instances.filter(i=>[2,3,4].includes(i.instance_type))){
+    const kind=instance.instance_type;
+    for(const viewport of [{width:390,height:844},{width:1440,height:1024}]){
+      await page.setViewportSize(viewport);await open(instance.name);await dialogVisible();await noOverflow();
+      await page.getByLabel(kind===2?'Position changed':kind===3?'Occupied':'Light level changed',{exact:true}).waitFor();
+      const initial=(await control({op:'snapshot'})).buses[0].inputs.find(i=>i.id==='buttons').settings[instance.number].sensor_settings;
+      await page.getByLabel('Report interval (s)',{exact:true}).fill('255');await page.getByLabel('Deadtime (ms)',{exact:true}).fill('1000');
+      if(kind===3)await page.getByLabel('Hold time (s)',{exact:true}).fill('1');
+      if(kind===4){await page.getByLabel('Hysteresis (%)',{exact:true}).fill('25');await page.getByLabel('Minimum hysteresis (sensor units)',{exact:true}).fill('255');}
+      await page.getByRole('button',{name:'Save settings',exact:true}).scrollIntoViewIfNeeded();
+      await page.screenshot({path:join(artifacts,`${viewport.width===390?'phone':'desktop'}-sensor-settings-${kind}.png`),fullPage:true});
+      await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'sensor settings save did not close');await idle();
+      const actual=(await control({op:'snapshot'})).buses[0].inputs.find(i=>i.id==='buttons').settings[instance.number].sensor_settings;
+      assert.deepEqual(actual,{...initial,report:255,deadtime:20,...(kind===3?{hold:0}:{}),...(kind===4?{hysteresis:25,hysteresis_min:255}:{})},'sensor native values or exact units did not persist');
+      await open(instance.name);assert.equal(await page.getByLabel('Report interval (s)',{exact:true}).inputValue(),'255');assert.equal(await page.getByLabel('Deadtime (ms)',{exact:true}).inputValue(),'1000');
+      if(kind===3)assert.equal(await page.getByLabel('Hold time (s)',{exact:true}).inputValue(),'1');
+      if(kind===4){assert.equal(await page.getByLabel('Hysteresis (%)',{exact:true}).inputValue(),'25');assert.equal(await page.getByLabel('Minimum hysteresis (sensor units)',{exact:true}).inputValue(),'255');}
+      await page.getByLabel('Report interval (s)',{exact:true}).fill(String(initial.report));await page.getByLabel('Deadtime (ms)',{exact:true}).fill(String(initial.deadtime*50));
+      if(kind===3)await page.getByLabel('Hold time (s)',{exact:true}).fill(String(initial.hold===0?1:initial.hold*10));
+      if(kind===4){await page.getByLabel('Hysteresis (%)',{exact:true}).fill(String(initial.hysteresis));await page.getByLabel('Minimum hysteresis (sensor units)',{exact:true}).fill(String(initial.hysteresis_min));}
+      await page.getByRole('button',{name:'Save settings',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'restored sensor settings did not close');await idle();
+      assert.deepEqual(await inventory(),saved,'sensor settings changed saved inventory');
+    }
+  }
   // A held entry read must not revive the form after actual dismissal/navigation.
   for(const dismissal of ['cancel','navigate']){
     let entered,release;const admitted=new Promise(r=>entered=r),held=new Promise(r=>release=r);let hold=true;
@@ -48,5 +72,5 @@ export async function inputSettingsFlow({page,origin,artifacts,inventory,control
     await page.goto(`${origin}/buses/0`);await idle();
   }
   assert.deepEqual(await inventory(),saved);await noOverflow();
-  console.log('PASS input event settings: phone/desktop real menu/read/patch/readback, enable/filter/priority/groups/button timers with exact units, unchanged identity, common sensor labels, cancelled/retired dialog');
+  console.log('PASS input event settings: phone/desktop real read/patch/reopen/restore, common settings/button timers/all sensor families with exact units and one-second hold, unchanged identity, cancelled/retired dialog');
 }

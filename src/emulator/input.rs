@@ -3,6 +3,7 @@ use super::scenario::Input;
 use serde::Serialize;
 use std::collections::BTreeMap;
 mod button;
+mod sensor;
 
 #[derive(Serialize)]
 pub(super) struct State {
@@ -30,6 +31,8 @@ struct Settings {
     groups: [u8; 3],
     #[serde(skip_serializing_if = "Option::is_none")]
     button_timers: Option<button::Timers>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sensor_settings: Option<sensor::Profile>,
 }
 fn filter_mask(kind: u8) -> u32 {
     match kind {
@@ -55,6 +58,7 @@ impl State {
                 },
                 groups: [255; 3],
                 button_timers: (*kind == 1).then(button::Timers::new),
+                sensor_settings: sensor::Profile::new(*kind),
             })
             .collect();
         Self {
@@ -188,6 +192,11 @@ impl State {
             0x8b => return Some(settings.scheme),
             0x90..=0x92 => return Some((settings.filter >> (8 * (opcode - 0x90))) as u8),
             _ => {}
+        }
+        if let Some(profile) = settings.sensor_settings.as_mut() {
+            if let Some(reply) = profile.command(opcode, self.dtr0) {
+                return reply;
+            }
         }
         let value = self.config.values.iter().find(|v| v.instance == instance)?;
         match opcode {

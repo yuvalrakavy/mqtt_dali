@@ -312,7 +312,13 @@ from collisions, bracket it with Type proofs, keep settings outside input value
 State and retain module-wide permanent Notice cuts at admission and settlement.
 Only complete matching readback with the original authority/deadline/current
 stamp reports success. No ConfigStore save or implicit discovery writes.
-Sensor timers and feedback remain subsequent work. Addressed
+Part302–304 parameters use `dali::input::sensor`, independent emulator profiles
+and optional managed `sensor_settings`; see `docs/input-event-settings.md`.
+Keep optional quality separate, preflight the whole mixed patch before any
+setting write and confirm actual requested values. HoldFF is known unsupported,
+null unknown, raw0 one second; numeric report/deadtime/minimumFF stay data. The
+same frozen dialog uses exact display units. Controls:
+`docs/v2-sensor-settings-controls.toml`. Feedback remains subsequent work. Addressed
 discovery is documented in `docs/discovery.md`: one short address per bounded
 operation, captured probe evidence, durable additions only, preserved existing
 lifetimes and original command completion. Output/input address spaces are

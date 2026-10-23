@@ -3,6 +3,7 @@ use crate::atx::transactions::RepeatPolicy;
 use crate::emulator::{pty, scenario::Scenario, session::Control};
 use crate::service::input::{self, Evidence};
 mod peer;
+mod sensor;
 mod settings;
 mod settings_peer;
 mod timing;

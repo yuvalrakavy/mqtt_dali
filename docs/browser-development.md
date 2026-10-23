@@ -24,6 +24,16 @@ unchanged inventory. For no-submit assertions, check the actual command count
 before checking the error message, so another validation guard cannot hide I/O.
 Controls: `v2-managed-button-timing-controls.toml`.
 
+Part302–304 fields use `sensor-settings.ts` in that same frozen scope. Keep raw
+bytes in the draft, show report seconds/deadtime50ms steps, occupancy hold1s or
+10s increments, and light hysteresis percent/minimum sensor input units. Hold's
+valid display set is1 or10..2540 in10s increments; do not rely on HTML step alone
+or round a value. Preserve unsupportedFF versus missingnull; an unsupported hold
+does not disable report/deadtime. Validate family, support, ranges, complete
+evidence and actual requested values. The real phone/desktop flow edits/reopens/
+restores all three families, checks raw native settings and unchanged inventory,
+and scrolls the actions into view. Controls: `v2-sensor-settings-controls.toml`.
+
 For bridge contributors: `web/` owns the responsive Preact/TypeScript application.
 Node is needed to change assets, not to run the bridge or compile its embedded
 assets with Cargo. Use Node 24.11 or newer with the exact npm lockfile:

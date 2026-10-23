@@ -15,6 +15,10 @@ hierarchy; it does not change which events a device sends.
    Buttons also show short/double/long-repeat/stuck timing when complete device
    evidence is available. The first three fields use milliseconds in 20ms steps;
    stuck uses whole seconds. Device minimums are shown; double0 disables timing.
+   Absolute, occupancy and light sensors show their applicable report interval,
+   deadtime, hold and hysteresis fields. Report uses seconds; deadtime uses exact
+   50ms steps. Occupancy hold accepts 1s or 10s increments through 2540s. An
+   unsupported hold stays read-only; report and deadtime can still be edited.
    On a phone, scroll the dialog to reach its actions.
 4. Choose **Save settings**. The bridge changes only edited fields and reads them
    back. Success means the actual supported settings matched the request.
@@ -37,8 +41,8 @@ groups 0..15. Each of the three group slots may be unassigned.
 
 Unknown instance types show their full raw filter without editable event labels.
 Generic enable/priority/scheme/group settings remain available when complete
-standard readback exists. Sensor timers, feedback and calibrated sensor units
-remain separate capabilities. No physical HAT certification or power-cycle persistence
+standard readback exists. Feedback and calibrated sensor units remain separate
+capabilities. No physical HAT certification or power-cycle persistence
 claim follows from local emulator/readback checks.
 
 The saved name, identity, bindings, inventory revision and configuration file
@@ -102,6 +106,24 @@ keys, writable minima and non-button timer patches are rejected. FF is valid
 short/stuck data, not MASK. The web UI converts display units exactly and never
 rounds a non-native step into a different threshold.
 
+For Part302–304 sensors, put a nonempty `sensor_settings` object inside
+`settings`. Values are native bytes, unlike the browser's display units:
+
+```json
+{"sensor_settings":{"report":30,"deadtime":20,"hold":0}}
+```
+
+That occupancy example requests a 30-second report interval, 1000ms deadtime
+and one-second hold. All three types accept report0..255 (seconds) and
+deadtime0..255 (50ms ticks); zero disables the respective timer. Only occupancy
+accepts hold0..254: zero means1s, other values mean raw*10s. Only light sensors
+accept hysteresis0..25 (percent; zero disables) and hysteresis_min0..255 (sensor
+input units, without a lux conversion). Omit inapplicable/unchanged fields.
+Wrong families, empty patches, nulls, unknown fields and invalid ranges reject.
+Fresh complete sensor evidence and supported hold, when requested, are checked
+before any common or sensor write in a mixed patch. No automatic event-filter
+change, retry or rollback accompanies a timer change.
+
 Authenticated HTTP jobs accept these same command names/parameters and require
 their normal CSRF/session/original-target authority. The typed Rust APIs are
 `ServiceHandle::read_input_settings` and `configure_input` with `input::settings::Patch`.
@@ -123,6 +145,15 @@ describes complete common settings, not a claim that every optional timer is
 known. Any requested timer change requires complete valid timing evidence and
 matching actual readback. A missing minimum stays null, including when requesting
 double0. Unavailable timings appear read-only in the dialog.
+
+`settings.sensor_settings` is null for other instance types. Sensor reports have
+nullable raw report/deadtime/hold/hysteresis/hysteresis_min, hold_supported and
+independent complete/partial quality. Inapplicable fields are null. Occupancy
+hold255 means known unsupported (hold_supported=false); null means unknown,
+including its support status. Unsupported hold can be complete evidence, so
+report/deadtime remain writable. FF is ordinary numeric report/deadtime/minimum
+data. A partial sensor read leaves common-only settings usable; any sensor
+change requires complete valid sensor evidence and matching actual readback.
 
 Only complete, matching readback with current authority, physical epoch and the
 original deadline can report `current`/`configured`. A write failure after possible

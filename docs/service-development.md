@@ -30,6 +30,18 @@ intentional controls are in `v2-managed-button-timing-controls.toml`; the litera
 peer records input commands so the no-write preflight assertion observes actual
 wire traffic, including a later invalid timer after an earlier valid one.
 
+Optional `settings::SensorPatch` / `SensorValues` use `settings/sensor.rs` within
+the same owner, original permit/deadline and permanent Notice cuts. Probe only
+the instance family's parameters before the closing type proof. Keep sensor
+quality separate from common settings. HoldFF is raw known unsupported, not
+null/zero; report/deadtime/minimumFF remain numeric. A mixed sensor/common patch
+needs complete valid sensor evidence and supported requested hold before the
+first setting write. Common-only patches tolerate partial optional evidence.
+Append checked sensor plans and require actual requested values before success.
+Do not save settings or put them in current input State. Literal peers assert
+wire command counts before unwrapping a refused result, so an unexpected write
+cannot hide behind a later script failure. Controls: `v2-sensor-settings-controls.toml`.
+
 This guide is for bridge contributors and embedders. The service library owns
 durable configuration, runtime routing, optional UART health, individual-output
 operations, selected-family DT8 MQTT controls and native input observations/actions. The canonical

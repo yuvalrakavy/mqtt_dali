@@ -3,6 +3,7 @@ import { Modal, useUi } from './ui.tsx';
 import { type PhysicalRow } from './model.ts';
 import { InputSettingsScope, changedSettings, eventFlags, type InputValues } from './input-settings.ts';
 import {timerKeys,timerDisplay,timerRaw} from './button-timing.ts';
+import {applicableSensors,sensorDisplay,sensorRaw} from './sensor-settings.ts';
 
 export function InputSettings({row,close}:{row:PhysicalRow;close:()=>void}){
   const ui=useUi(),[scope]=useState(()=>new InputSettingsScope(ui,row));
@@ -32,6 +33,14 @@ export function InputSettings({row,close}:{row:PhysicalRow;close:()=>void}){
           return <label>{label}<input type="number" inputMode="numeric" aria-label={label} min={minimum} max={key==='short'?5100:key==='stuck'?255:2000} step={key==='stuck'?1:20} value={Number.isFinite(raw)?timerDisplay(key,raw):''} onChange={e=>update({button_timers:{...timers,[key]:timerRaw(key,e.currentTarget.value)}})}/></label>;
         })}</div><p class="hint">Short minimum: {draft.button_timers.short_min!*20}ms. Double minimum: {draft.button_timers.double_min!*20}ms; 0 disables double press. Other millisecond values use 20ms steps.</p>
       </>:<p class="hint">Button timing is unavailable or incomplete. Basic event settings remain available.</p>}</fieldset>}
+      {applicableSensors(row.item.instance_type??-1).length>0&&<fieldset><legend>Sensor settings</legend>{scope.values?.sensor_settings?.quality==='complete'&&draft.sensor_settings?<>
+        <div class="input-timer-grid">{applicableSensors(row.item.instance_type!).map(key=>{
+          const s=draft.sensor_settings!;
+          if(key==='hold'&&!s.hold_supported)return <p class="hint">Hold time is not supported by this sensor.</p>;
+          const label=({report:'Report interval (s)',deadtime:'Deadtime (ms)',hold:'Hold time (s)',hysteresis:'Hysteresis (%)',hysteresis_min:'Minimum hysteresis (sensor units)'})[key],raw=s[key]!;
+          return <label>{label}<input type="number" inputMode="numeric" aria-label={label} min={key==='hold'?1:0} max={key==='deadtime'?12750:key==='hold'?2540:key==='hysteresis'?25:255} step={key==='deadtime'?50:1} value={Number.isFinite(raw)?sensorDisplay(key,raw):''} onChange={e=>update({sensor_settings:{...s,[key]:sensorRaw(key,e.currentTarget.value)}})}/></label>;
+        })}</div><p class="hint">0 disables reporting, deadtime or percentage hysteresis.{row.item.instance_type===3?' Hold time: 1s or 10s increments.':''}{row.item.instance_type===4?' Minimum hysteresis uses sensor input units.':''}</p>
+      </>:<p class="hint">Sensor settings are unavailable or incomplete. Basic event settings remain available.</p>}</fieldset>}
     </fieldset>}
     <div class="dialog-actions"><button onClick={dismiss}>Cancel</button><button disabled={!!ui.busy} onClick={load}>Refresh settings</button><button class="primary" disabled={!!ui.busy||!draft} onClick={save}>Save settings</button></div>
   </Modal>;

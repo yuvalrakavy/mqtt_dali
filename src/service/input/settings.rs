@@ -19,7 +19,9 @@ use tokio::{
     time::{timeout_at, Instant},
 };
 mod button;
+mod sensor;
 pub use button::{Patch as ButtonPatch, Values as ButtonValues};
+pub use sensor::{Patch as SensorPatch, Values as SensorValues};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -60,6 +62,12 @@ pub struct Patch {
         skip_serializing_if = "Option::is_none"
     )]
     pub button_timers: Option<ButtonPatch>,
+    #[serde(
+        default,
+        deserialize_with = "present",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub sensor_settings: Option<SensorPatch>,
 }
 fn present<'de, T: Deserialize<'de>, D: serde::Deserializer<'de>>(
     d: D,
@@ -78,6 +86,7 @@ pub struct Values {
     /// Raw group bytes: FF is unassigned; null is unavailable.
     pub groups: [Option<u8>; 3],
     pub button_timers: Option<ButtonValues>,
+    pub sensor_settings: Option<SensorValues>,
     pub quality: &'static str,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -133,7 +142,10 @@ impl Patch {
             }
             timers.plans()?;
         }
-        if values.is_empty() && self.button_timers.is_none() {
+        if let Some(sensor) = &self.sensor_settings {
+            sensor.plans(kind)?;
+        }
+        if values.is_empty() && self.button_timers.is_none() && self.sensor_settings.is_none() {
             return Err(ServiceError::Rejected(
                 "change at least one input setting".into(),
             ));
@@ -157,6 +169,10 @@ impl Patch {
                 .button_timers
                 .as_ref()
                 .is_none_or(|p| v.button_timers.as_ref().is_some_and(|v| p.matches(v)))
+            && self
+                .sensor_settings
+                .as_ref()
+                .is_none_or(|p| v.sensor_settings.as_ref().is_some_and(|v| p.matches(v)))
     }
 }
 fn reject(error: impl std::fmt::Display) -> ServiceError {
@@ -187,6 +203,7 @@ pub(in crate::service) struct Route {
     pub revision: u64,
     plans: Vec<frames::Setting>,
     button_plans: Vec<crate::dali::input::button::Value>,
+    sensor_plans: Vec<crate::dali::input::sensor::Value>,
 }
 pub(in crate::service) struct Request {
     pub target: String,
@@ -224,6 +241,7 @@ pub(in crate::service) fn resolve(
     let input = readback::resolve(snapshot, target, context)?;
     let mut plans = Vec::new();
     let mut button_plans = Vec::new();
+    let mut sensor_plans = Vec::new();
     if let Action::Configure { expected, settings } = action {
         if context.generation().is_none() || *expected != snapshot.model.inventory().revision {
             return Err(ServiceError::Rejected(
@@ -237,6 +255,12 @@ pub(in crate::service) fn resolve(
             .map(ButtonPatch::plans)
             .transpose()?
             .unwrap_or_default();
+        sensor_plans = settings
+            .sensor_settings
+            .as_ref()
+            .map(|p| p.plans(input.kind))
+            .transpose()?
+            .unwrap_or_default();
     }
     Ok(Route {
         input,
@@ -244,6 +268,7 @@ pub(in crate::service) fn resolve(
         revision: snapshot.model.inventory().revision,
         plans,
         button_plans,
+        sensor_plans,
     })
 }
 fn report(target: &str, route: &Route) -> Report {
@@ -343,6 +368,11 @@ async fn probe(bus: &Bus<'_>, route: &Route) -> Result<Probe, Error> {
     } else {
         None
     };
+    let sensor_settings = if matches!(route.input.kind, 2..=4) {
+        Some(sensor::probe(bus, route).await?)
+    } else {
+        None
+    };
     let final_kind = byte(query(bus, route, InstanceQuery::Type).await?);
     if final_kind != kind {
         return Ok(Probe {
@@ -373,6 +403,7 @@ async fn probe(bus: &Bus<'_>, route: &Route) -> Result<Probe, Error> {
             filter_width,
             groups,
             button_timers,
+            sensor_settings,
             quality: if complete { "complete" } else { "partial" },
         }),
         outcome: if complete { "current" } else { "unavailable" },
@@ -406,6 +437,16 @@ pub(in crate::service) async fn execute(
         report.before = report.settings.take();
         report.outcome = "unconfirmed";
         if let Action::Configure { settings, .. } = &route.action {
+            if let Some(sensor) = &settings.sensor_settings {
+                sensor
+                    .preflight(
+                        report
+                            .before
+                            .as_ref()
+                            .and_then(|v| v.sensor_settings.as_ref()),
+                    )
+                    .map_err(Error::Evidence)?;
+            }
             if let Some(timers) = &settings.button_timers {
                 timers
                     .preflight(
@@ -425,6 +466,13 @@ pub(in crate::service) async fn execute(
             }
         }
         for value in &route.button_plans {
+            for step in value.plan(route.input.address, route.input.instance) {
+                attempted = true;
+                bus.command(DaliFrame::Bits24(step.frame), step.repeat)
+                    .await?;
+            }
+        }
+        for value in &route.sensor_plans {
             for step in value.plan(route.input.address, route.input.instance) {
                 attempted = true;
                 bus.command(DaliFrame::Bits24(step.frame), step.repeat)

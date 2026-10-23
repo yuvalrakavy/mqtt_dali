@@ -65,7 +65,7 @@ explicit dispatcher policy. Physical repeat cardinality remains unverified.
 Base coverage includes addressing, DTRs, direct level/MASK, off/steps/max/min,
 groups/scenes and selected queries/configuration. Levels currently change
 immediately. The DT8 colour profile below adds selected colour operations.
-Fade timing, timed UP/DOWN, sensor timers/feedback, emergency and memory/data
+Fade timing, timed UP/DOWN, feedback, emergency and memory/data
 models remain P4 extensions. Unsupported operations never fabricate a
 positive device reply. N proves HAT transmission, not device support.
 
@@ -86,8 +86,8 @@ missing values use a separate seeded input generator, preserving existing output
 draws. RANDOMISE replaces participating modules' random addresses. Input and
 output repeat latches are separate, and 24-bit input traffic preserves output DT8
 selection. Identical backward bytes still aggregate to one value; independent
-literal-peer tests supply exact-collision refusal evidence. Physical certification,
-sensor timers and feedback are outside this model. The button timing profile is
+literal-peer tests supply exact-collision refusal evidence. Physical certification
+and feedback are outside this model. Button and sensor timing profiles are
 described below.
 
 Standard FD broadcast-unaddressed input queries answer only modules without a
@@ -159,7 +159,7 @@ ordinary settings affect only the selected existing instance.
 
 `input_event` remains raw UART test injection and deliberately bypasses enabled
 state, filters and scheme. `set_input_value` does not generate events. Natural
-stimulus/gesture scheduling, sensor timers, feedback and hardware persistence
+stimulus/gesture scheduling, feedback and hardware persistence
 validation are later work. Literal model and UART/reboot tests cover this
 foundation. Managed MQTT/HTTP/browser settings use this independent model;
 literal peers additionally check the executing service's evidence and repeats.
@@ -191,6 +191,31 @@ events still bypass settings. Managed timer read/patch/readback and the protecte
 dialog now use this profile; literal service peers separately test minima and
 ignored writes. There is no scenario schema or disk-persistence change. Intentional faults are recorded in
 `v2-button-timing-controls.toml` and its ledger.
+
+## Sensor parameter profiles
+
+Types2/3/4 have a tagged `sensor_settings` object in diagnostic settings, even
+without measurement profiles. The independent native map implements all nine
+Part302–304 parameter bindings described in the
+[codec guide](dali-input-contract.md#sensor-parameter-plans), with no codec reuse.
+Initial raw values are explicit model choices:
+
+| Type | Report | Deadtime | Hold | Hysteresis | Minimum hysteresis |
+|---|---|---|---|---|---|
+| Absolute2 | 0 | 2 | — | — | — |
+| Occupancy3 | 20 | 2 | 90 | — | — |
+| Light4 | 30 | 30 | — | 5 | 0 |
+
+This occupancy profile supports hold; it does not claim every real sensor does.
+Literal service peers separately exercise known unsupported holdFF and missing
+or collided evidence. Invalid holdFF/hysteresis>25 writes are ignored. Numeric
+report/deadtime/minimumFF and hold0 keep their native meanings. Setters use the
+existing adjacent-repeat owner with a100ms window. Device-wide FE/status30 stays
+immediate. Values, latches, sibling settings and other buses are preserved;
+readdress/HAT reboot retain these settings. No natural stimulus scheduling,
+scenario schema change, disk persistence or physical certification is implied.
+Managed MQTT/HTTP and phone/desktop flows read, edit, reopen and restore all
+three profiles. Fault controls: `v2-sensor-settings-controls.toml` and its ledger.
 
 ## Colour fixtures
 

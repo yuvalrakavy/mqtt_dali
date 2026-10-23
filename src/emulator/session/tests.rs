@@ -178,6 +178,49 @@ async fn literal_button_timing_uart_and_hat_reboot_retains_physical_settings() {
 }
 
 #[tokio::test]
+async fn literal_sensor_settings_uart_and_reboot_preserves_physical_profile() {
+    let scenario =
+        serde_json::from_value(serde_json::json!({"version":1,"clock":"frozen","buses":[
+            {"number":0,"inputs":[{"id":"sensor","short_address":0,"instances":[4]}]}
+        ]}))
+        .unwrap();
+    let (stream, mut bridge) = tokio::io::duplex(4096);
+    let emulator = Emulator::start(stream, scenario).unwrap();
+    assert_eq!(line(&mut bridge).await, b"B000004\n");
+    bridge
+        .write_all(b"lC130FF\nl010030\nl010030\nl01003E\n")
+        .await
+        .unwrap();
+    for expected in [
+        b"LC130FF\n".as_slice(),
+        b"N\n",
+        b"L010030\n",
+        b"N\n",
+        b"L010030\n",
+        b"N\n",
+        b"L01003E\n",
+        b"JFF\n",
+    ] {
+        assert_eq!(
+            line(&mut bridge).await,
+            expected,
+            "literal sensor UART setting failed"
+        );
+    }
+    control(&emulator, Control::Reboot).await;
+    assert_eq!(line(&mut bridge).await, b"B000004\n");
+    bridge.write_all(b"l01003E\nl01FE30\n").await.unwrap();
+    for expected in [b"L01003E\n".as_slice(), b"JFF\n", b"L01FE30\n", b"J00\n"] {
+        assert_eq!(
+            line(&mut bridge).await,
+            expected,
+            "HAT reboot changed sensor settings or device status"
+        );
+    }
+    emulator.close().await.unwrap();
+}
+
+#[tokio::test]
 async fn production_transactions_use_actual_pty_and_receive_input_during_a_delayed_reply() {
     let pty = super::super::pty::spawn(scenario()).await.unwrap();
     let (link, mut events) = Transactions::start(

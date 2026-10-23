@@ -1,0 +1,100 @@
+# Serial controls with independent literal/model/service/UI assertions.
+
+[[control]]
+name = "sensor_codec_wrong_absolute_setting"
+file = "src/dali/input/sensor.rs"
+anchor = "(Absolute, Self::Report) => (0x10, 0x1e),"
+replacement = "(Absolute, Self::Report) => (0x11, 0x1e),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(sensor_parameter_literal_maps)"]
+expect_text = "sensor setting opcode, scope or repeat changed"
+
+[[control]]
+name = "sensor_hold_zero_duration_wrong"
+file = "src/dali/input/sensor.rs"
+anchor = "if self.raw == 0 {\n                    1000"
+replacement = "if self.raw == 0 {\n                    0"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(sensor_parameter_literal_maps)"]
+expect_text = "hold zero must mean one second"
+
+[[control]]
+name = "sensor_model_applies_single_send"
+file = "src/emulator/model.rs"
+anchor = "0x10..=0x11 | 0x21..=0x23 | 0x30..=0x33"
+replacement = "0x00"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_sensor_settings_all_nine)"]
+expect_text = "single sensor setting write applied"
+
+[[control]]
+name = "sensor_unsupported_hold_preflight_bypassed"
+file = "src/service/input/settings/sensor.rs"
+anchor = "if self.hold.is_some() && v.hold_supported != Some(true) {"
+replacement = "if false && self.hold.is_some() && v.hold_supported != Some(true) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_sensor_settings_literal_optional)"]
+expect_text = "sensor preflight sent a setting before checking support/evidence for the whole patch"
+
+[[control]]
+name = "sensor_missing_evidence_fabricated_zero"
+file = "src/service/input/settings/sensor.rs"
+anchor = "let raw = byte(bus.query(DaliFrame::Bits24(frame)).await?);"
+replacement = "let raw = byte(bus.query(DaliFrame::Bits24(frame)).await?).or(Some(0));"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_sensor_settings_literal_optional)"]
+expect_text = "missing sensor evidence became zero or unsupported"
+
+[[control]]
+name = "sensor_unsupported_hold_mask_discarded"
+file = "src/service/input/settings/sensor.rs"
+anchor = "v.hold = raw;"
+replacement = "v.hold = raw.filter(|v| *v != 255);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_sensor_settings_literal_optional)"]
+expect_text = "unsupported hold MASK was lost"
+
+[[control]]
+name = "sensor_ignored_write_reported_configured"
+file = "src/service/input/settings/sensor.rs"
+anchor = "&& self.report.is_none_or(|x| v.report == Some(x))"
+replacement = "&& self.report.is_none_or(|_x| v.report.is_some())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_sensor_settings_literal_optional)"]
+expect_text = "sensor configuration lacked complete matching supported evidence: ignored"
+
+[[control]]
+name = "sensor_ui_deadtime_units_wrong"
+file = "web/src/sensor-settings.ts"
+anchor = "key==='deadtime'?n/50:"
+replacement = "key==='deadtime'?n/5:"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "sensor UI conversion changed native units"
+
+[[control]]
+name = "sensor_ui_one_second_hold_wrong"
+file = "web/src/sensor-settings.ts"
+anchor = "n===1?0:n>=10?n/10:NaN"
+replacement = "n===1?1:n>=10?n/10:NaN"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "hold UI one-second value was misencoded"
+
+[[control]]
+name = "sensor_ui_actual_match_omitted"
+file = "web/src/input-settings.ts"
+anchor = "if(frozen.sensor_settings&&!sensorMatches(frozen.sensor_settings,actual.sensor_settings,this.row.item.instance_type??-1))"
+replacement = "if(false&&frozen.sensor_settings&&!sensorMatches(frozen.sensor_settings,actual.sensor_settings,this.row.item.instance_type??-1))"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "sensor actual mismatch was accepted"
+
+[[control]]
+name = "sensor_ui_unsupported_hold_preflight_bypassed"
+file = "web/src/sensor-settings.ts"
+anchor = "if(patch.hold!==undefined&&v.hold_supported!==true)throw"
+replacement = "if(false&&patch.hold!==undefined&&v.hold_supported!==true)throw"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "unsupported sensor hold sent part of a mixed edit"

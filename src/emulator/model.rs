@@ -217,7 +217,8 @@ impl Model {
             return Reply::None;
         }
         if ((instance == 0xfe && opcode == 0x14)
-            || (instance <= 31 && matches!(opcode, 0x00..=0x03 | 0x61..=0x68)))
+            || (instance <= 31 && matches!(opcode, 0x00..=0x03 | 0x61..=0x68))
+            || (instance <= 31 && matches!(opcode, 0x10..=0x11 | 0x21..=0x23 | 0x30..=0x33)))
             && !repeated
         {
             bus.input_repeat = Some((frame, self.now_ms));
@@ -643,5 +644,7 @@ mod colour_tests;
 mod input_settings_tests;
 #[cfg(test)]
 mod scene_tests;
+#[cfg(test)]
+mod sensor_settings_tests;
 #[cfg(test)]
 mod tests;

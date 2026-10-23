@@ -9,7 +9,7 @@ metadata rename use the [inventory contract](inventory-contract.md).
 Enable, priority, event scheme, filter and instance-group configuration are
 available through the managed service and protected browser controls; see
 [input event settings](input-event-settings.md). The button timing codec/model
-below is implemented with managed button controls; sensor timers, feedback and natural
+below and the Part302–304 sensor parameter plans have managed controls; feedback and natural
 emulator stimuli remain pending.
 
 Input short addresses are 0..63, independently of output addresses. Instances
@@ -99,7 +99,7 @@ for true and silence for false, so an absent device must be ruled out separately
 This slice supplies pure plans and an [independent emulator model](emulator.md#input-event-settings-model).
 Managed MQTT/HTTP commands and browser controls now use these plans; see
 [event settings](input-event-settings.md). Existing discovery does not configure
-inputs. Sensor timers and feedback are separate work.
+inputs. Feedback remains separate work.
 
 ## Push-button timing plans
 
@@ -136,6 +136,32 @@ The command map and units follow [python-dali Part 301](https://github.com/sde10
 defines static ranges, while [SetShortTimer](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5643146123.html)
 directs callers to query the device minimum. Do not substitute the emulator's
 chosen minimum for hardware evidence.
+
+## Sensor parameter plans
+
+`dali::input::sensor` provides checked `Parameter`/`Value`, type-specific queries
+and DTR0/repeated setting plans. Part302 absolute inputs support report10/1E and
+deadtime11/1D (set/query hex opcodes). Part303 occupancy supports hold21/2D,
+report22/2E and deadtime23/2C. Part304 light supports report30/3E,
+hysteresis31/3F, deadtime32/3D and minimum hysteresis33/3C. Device-wide FE/status30
+is separate from instance light set30.
+
+Report/deadtime bytes span0..255 in seconds/50ms; zero disables. Hold accepts
+0..254, with raw0 meaning1s and other bytes meaning raw*10s. A queried holdFF
+is known unsupported; never turn it into zero or missing evidence. Hysteresis
+is0..25 percent, zero disabled; minimum hysteresis0..255 uses sensor input units.
+FF is numeric report/deadtime/minimum data. `duration()` preserves exact timer
+units and returns None for either hysteresis parameter.
+
+Plans reject wrong families and invalid ranges but prove no device support.
+Keep the complete DTR0/single plus addressed/repeated ordinary24-bit plan under
+one permit. The managed sensor patch uses fresh complete evidence, checks support
+before any mixed write and verifies actual requested values; see
+[event settings](input-event-settings.md). The independent model implements the
+wire map separately. The map follows the
+[Phoenix Contact manual, pages149–152](https://s3.eu-central-1.amazonaws.com/plcnext-store-prod/doc/SE_DAL2_Dali2-v2_0_0-20210324153545.pdf),
+cross-checked against the published Beckhoff variable tables and python-dali
+Part303/304 definitions. IEC62386-303 section9.5.4 defines hold0 and unsupportedFF.
 
 ## Exact full-resolution values
 

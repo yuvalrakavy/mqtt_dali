@@ -2,6 +2,7 @@
 //! This pure codec performs no I/O and does not assign an event to a named target.
 pub mod button;
 pub mod commissioning;
+pub mod sensor;
 pub mod settings;
 mod value;
 pub use value::{InputValue, Resolution, ValueError};

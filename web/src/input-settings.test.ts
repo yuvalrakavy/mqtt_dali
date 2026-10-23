@@ -4,6 +4,7 @@ import { Controller } from './controller.ts';
 import { InputSettingsScope, changedSettings, type InputValues } from './input-settings.ts';
 import type { Snapshot,PhysicalRow } from './model.ts';
 import {timerRaw,timerDisplay,decodeButtonTimers} from './button-timing.ts';
+import {sensorRaw,sensorDisplay,decodeSensorSettings,type SensorValues} from './sensor-settings.ts';
 
 function fixture(){
   const ui=new Controller(),epoch='0123456789abcdef0123456789abcdef',target='Bus1.Inputs.Panel.Instances.Key';
@@ -77,5 +78,65 @@ test('partial timer evidence allows common-only settings but refuses timer chang
   Object.assign(f.values,{button_timers:timers});await f.scope.read();
   await assert.rejects(f.scope.save({button_timers:{double:0}}),/Complete button timing/);
   f.ui.client.job=async(_g,_t,command)=>({...f.report(command),settings:{...f.values,enabled:false}});
+  await f.scope.save({enabled:false});assert.match(f.ui.notice,/verified/);f.ui.client.close();
+});
+test('sensor settings require matching actual parameter evidence',async()=>{
+  const f=fixture();f.row.item.instance_type=3;f.ui.snapshot.inventory.buses[0].inputs![0].instances![0].instance_type=3;
+  const scope=new InputSettingsScope(f.ui,f.row);Object.assign(f.values,{event_filter:31,filter_bytes:[31,null,null],sensor_settings:{report:20,deadtime:2,hold:90,hold_supported:true,hysteresis:null,hysteresis_min:null,quality:'complete'}});
+  f.ui.client.job=async(_g,_t,command)=>({...f.report(command),reported_type:3});await scope.read();
+  await assert.rejects(scope.save({sensor_settings:{report:50}}),/sensor.*match/i,'sensor actual mismatch was accepted');f.ui.client.close();
+});
+test('unsupported hold preflight sends no part of a mixed sensor edit',async()=>{
+  const f=fixture();f.row.item.instance_type=3;f.ui.snapshot.inventory.buses[0].inputs![0].instances![0].instance_type=3;
+  const scope=new InputSettingsScope(f.ui,f.row);Object.assign(f.values,{event_filter:31,filter_bytes:[31,null,null],sensor_settings:{report:20,deadtime:2,hold:255,hold_supported:false,hysteresis:null,hysteresis_min:null,quality:'complete'}});
+  f.ui.client.job=async(_g,_t,command)=>{f.calls.push(command);return {...f.report(command),reported_type:3};};await scope.read();const calls=f.calls.length;
+  let failure:unknown;try{await scope.save({enabled:false,sensor_settings:{report:50,hold:0}} as any);}catch(e){failure=e;}
+  assert.equal(f.calls.length,calls,'unsupported sensor hold sent part of a mixed edit');assert.ok(failure instanceof Error);assert.match(failure.message,/support/i);f.ui.client.close();
+});
+
+function sensorFixture(kind:number,sensor:SensorValues){
+  const f=fixture();f.row.item.instance_type=kind;f.ui.snapshot.inventory.buses[0].inputs![0].instances![0].instance_type=kind;
+  const scope=new InputSettingsScope(f.ui,f.row),mask=kind===3?31:1;
+  Object.assign(f.values,{event_filter:mask,filter_bytes:[mask,null,null],sensor_settings:sensor});
+  const report=(command='read_input_settings')=>({...f.report(command),reported_type:kind});
+  f.ui.client.job=async(g,t,c,p)=>{f.calls.push({g,t,c,p});return report(c);};
+  return {...f,scope,report};
+}
+const occupancySettings:SensorValues={report:20,deadtime:2,hold:90,hold_supported:true,hysteresis:null,hysteresis_min:null,quality:'complete'};
+test('sensor UI units preserve native zero, FF and one-second hold',()=>{
+  assert.equal(sensorRaw('deadtime','1000'),20,'sensor UI conversion changed native units');
+  assert.equal(sensorDisplay('deadtime',255),12750);
+  assert.equal(sensorRaw('hold','1'),0,'hold UI one-second value was misencoded');assert.equal(sensorDisplay('hold',0),1,'hold zero lost one-second meaning');
+  assert.equal(sensorRaw('hold','2540'),254);assert.equal(sensorRaw('hold','10'),1);
+  for(const value of ['0','2','9',''])assert.ok(Number.isNaN(sensorRaw('hold',value)));
+  assert.equal(sensorRaw('report','255'),255);assert.equal(sensorRaw('hysteresis_min','255'),255);
+});
+test('unsupported sensor hold permits report edits and sends changed fields only',async()=>{
+  const f=sensorFixture(3,{...occupancySettings,hold:255,hold_supported:false});
+  const before=await f.scope.read(),after={...before,sensor_settings:{...before.sensor_settings!,report:50}};
+  assert.deepEqual(changedSettings(before,after),{sensor_settings:{report:50}});
+  f.ui.client.job=async(_g,_t,c)=>({...f.report(c),settings:after});
+  await f.scope.save({sensor_settings:{report:50}});assert.match(f.ui.notice,/verified/);f.ui.client.close();
+});
+test('sensor evidence rejects forged support, complete fields and wrong families',()=>{
+  assert.throws(()=>decodeSensorSettings({...occupancySettings,hold:255,hold_supported:true},3),/evidence/);
+  assert.throws(()=>decodeSensorSettings({...occupancySettings,hold:null,hold_supported:false},3),/evidence/);
+  assert.throws(()=>decodeSensorSettings({...occupancySettings,hold:null,hold_supported:null},3),/evidence/);
+  assert.throws(()=>decodeSensorSettings(occupancySettings,2),/evidence/);
+  const light={...occupancySettings,hold:null,hold_supported:null,hysteresis:26,hysteresis_min:255};
+  assert.throws(()=>decodeSensorSettings(light,4),/evidence/);
+  assert.equal(decodeSensorSettings({...light,hysteresis:25},4)?.hysteresis_min,255);
+});
+test('sensor preflight rejects wrong family, reserved hold and fractional steps without I/O',async()=>{
+  const f=sensorFixture(3,occupancySettings);await f.scope.read();const calls=f.calls.length;
+  for(const patch of [{hold:255},{hysteresis:1},{deadtime:sensorRaw('deadtime','1001')},{hold:sensorRaw('hold','11')},{hold:sensorRaw('hold','2')}]){
+    await assert.rejects(f.scope.save({sensor_settings:patch}));assert.equal(f.calls.length,calls);
+  }
+  f.ui.client.close();
+});
+test('partial sensor evidence allows common-only edits without inventing hold support',async()=>{
+  const f=sensorFixture(3,{...occupancySettings,hold:null,hold_supported:null,quality:'partial'});await f.scope.read();
+  await assert.rejects(f.scope.save({sensor_settings:{report:50}}),/Complete sensor/);
+  f.ui.client.job=async(_g,_t,c)=>({...f.report(c),settings:{...f.values,enabled:false}});
   await f.scope.save({enabled:false});assert.match(f.ui.notice,/verified/);f.ui.client.close();
 });

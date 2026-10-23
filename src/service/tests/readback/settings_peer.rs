@@ -65,7 +65,17 @@ pub(super) fn script(instance: u8, kind: u8, enabled: &str) -> Vec<(String, Stri
         (0x88, "JFF\n".into()),
         (0x89, "JFF\n".into()),
         (0x8a, "JFF\n".into()),
-        (0x90, "JFF\n".into()),
+        (
+            0x90,
+            format!(
+                "J{:02X}\n",
+                match kind {
+                    2 | 4 => 1,
+                    3 => 31,
+                    _ => 255,
+                }
+            ),
+        ),
     ] {
         script.push((format!("l01{instance:02X}{opcode:02X}\n"), value));
     }
@@ -89,6 +99,18 @@ pub(super) fn script(instance: u8, kind: u8, enabled: &str) -> Vec<(String, Stri
                 format!("J{value:02X}\n"),
             ));
         }
+    }
+    let sensor_queries: &[(u8, u8)] = match kind {
+        2 => &[(0x1e, 0), (0x1d, 2)],
+        3 => &[(0x2e, 20), (0x2c, 2), (0x2d, 90)],
+        4 => &[(0x3e, 30), (0x3d, 30), (0x3f, 5), (0x3c, 0)],
+        _ => &[],
+    };
+    for (opcode, value) in sensor_queries {
+        script.push((
+            format!("l01{instance:02X}{opcode:02X}\n"),
+            format!("J{value:02X}\n"),
+        ));
     }
     script.push((format!("l01{instance:02X}80\n"), format!("J{kind:02X}\n")));
     script

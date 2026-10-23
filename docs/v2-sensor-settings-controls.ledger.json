@@ -1,0 +1,192 @@
+{
+ "rows": {
+  "sensor_codec_wrong_absolute_setting": {
+   "last_real": {
+    "at": "2026-10-23T03:16:19Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:3afc8d491ba2b760",
+     "row": "c0961b19a6ec81cd",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.6,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_hold_zero_duration_wrong": {
+   "last_real": {
+    "at": "2026-10-23T03:16:31Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:131a4be9e9e9ae95",
+     "row": "a812dbc8c56e11fa",
+     "test": null
+    },
+    "path": "command",
+    "secs": 12.4,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_ignored_write_reported_configured": {
+   "last_real": {
+    "at": "2026-10-23T03:17:59Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:c41273c67d08b941",
+     "row": "c3ada16b4f488fd1",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.8,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_missing_evidence_fabricated_zero": {
+   "last_real": {
+    "at": "2026-10-23T03:17:21Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:8ac0f69105cf090b",
+     "row": "1e47d4d68698862a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 18.7,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_model_applies_single_send": {
+   "last_real": {
+    "at": "2026-10-23T03:16:46Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:75287d68b0720071",
+     "row": "17a287a63e7ecb6f",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.9,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_ui_actual_match_omitted": {
+   "last_real": {
+    "at": "2026-10-23T03:18:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:428bbe1512aadde8",
+     "row": "8f1fd80c894d524e",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.3,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_ui_deadtime_units_wrong": {
+   "last_real": {
+    "at": "2026-10-23T03:17:59Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:5924dc123146c9be",
+     "row": "272a72da4a81b009",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.5,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_ui_one_second_hold_wrong": {
+   "last_real": {
+    "at": "2026-10-23T03:18:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:5924dc123146c9be",
+     "row": "241872c9a5200058",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.3,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_ui_unsupported_hold_preflight_bypassed": {
+   "last_real": {
+    "at": "2026-10-23T03:18:00Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:5924dc123146c9be",
+     "row": "ba06592f958f1f88",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.3,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_unsupported_hold_mask_discarded": {
+   "last_real": {
+    "at": "2026-10-23T03:17:40Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:8ac0f69105cf090b",
+     "row": "d567df12e235b6f1",
+     "test": null
+    },
+    "path": "command",
+    "secs": 19.1,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  },
+  "sensor_unsupported_hold_preflight_bypassed": {
+   "last_real": {
+    "at": "2026-10-23T03:17:02Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:5c854f1b0480050a",
+     "row": "f18c41ff13f110de",
+     "test": null
+    },
+    "path": "command",
+    "secs": 16.3,
+    "sha": "5625a0887ca85ac94a719e5ae21c12de4b6c4e00",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}
