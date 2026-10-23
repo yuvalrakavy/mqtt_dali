@@ -20,7 +20,8 @@ modify a production configuration, or contact a live HAT/Store.
 ## Starting point
 
 - Source checkout: `/Users/yuval/Documents/Projects/Home/mqtt_dali-v2`.
-- Branch: `feat/dali-v2`; implementation baseline `b8a8ef6`.
+- Branch: `feat/dali-v2`; connector baseline `f3912a1` (includes the bridge's
+  completed raw TCP connector; earlier architecture baseline was `b8a8ef6`).
 - Use a separate branch and worktree from that baseline or its descendant that
   contains this handoff. Verify the actual tree is clean before creating it.
   Do not work in the original session's checkout.
@@ -88,6 +89,20 @@ event processing, deadlines and reconnect ownership. A TCP write still does not
 prove DALI execution. Do not redesign command correlation or bus-off recovery.
 Neither listener nor connector needs MQTT. Prefer loopback by default; remote
 raw TCP is an explicit trusted-network choice, separate from web authentication.
+
+The bridge connector is now implemented in `f3912a1`, including
+`DaliService::with_hat_tcp` and `atx::connection::{Endpoint, Connection}`.
+Tokio TcpStream already implements DrainRead in `src/atx/stream.rs`, so it can be
+passed to the existing generic emulator session without duplicating the adapter.
+Its managed service is tested with a literal TCP peer and the independent
+emulator core, including native repeated settings under both terminal profiles.
+
+Important ownership detail: `Emulator::start(TcpStream, scenario)` currently ends
+the whole session/model actor on EOF. It is useful for a connected test, but a
+listener/UI cannot restart it from the original scenario at every reconnect:
+that would discard live addresses, levels and settings. Keep model ownership
+independent of the replaceable TCP connection, as required above. HAT reboot and
+connection reset must preserve fixture state; scenario reset is a different act.
 
 Configuration UI:
 
@@ -217,9 +232,10 @@ Acceptance should include:
    bounded shutdown and HTTP access protections. Use fail-first regressions and
    meaningful fault controls for new correctness boundaries.
 
-Existing baseline evidence is **741 native tests**, Node89 and a separately run
-1177-command browser workflow; these are historical reference, not tests run by
-this handoff. Do not rerun broad suites after every small edit. Physical HAT
+Before the connector, baseline evidence was **741 native tests**, Node89 and a
+separately run1177-command browser workflow. These are historical reference;
+current connector evidence is recorded in `docs/v2-progress.md`. Do not rerun
+broad suites after every small edit. Physical HAT
 compatibility remains unverified even when the emulator tests pass.
 
 Return a final handoff with branch/worktree, exact commit IDs, changed public

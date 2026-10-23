@@ -5,6 +5,57 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P2b — bridge TCP connector and emulator UI handoff
+
+Implementation `f3912a1`. The user requested a separate emulator process with
+its own configuration/operation UI, emulating the HAT over TCP. The bridge keeps
+its existing web UI and physical UART support. The parallel-session scope and
+file ownership are in [the handoff](handoffs/2026-10-23-emulator-ui.md); no emulator
+implementation session was launched by this work.
+
+The bridge now accepts `--hat-tcp IP:port` instead of an explicit `--uart`.
+It uses the same ATX monitor/transactions and service owner through a concrete
+UART/TCP connection adapter. Numeric IPv4/bracketed IPv6, nonzero port and
+UART/TCP exclusivity validate before startup. Async connect is bounded to two
+seconds and retryable; UART blocking-open timeout and Boot policy are preserved.
+A new TCP connection requires a fresh remote parser/output lifetime and clears
+inherited parser poison. Input events, stamps, command deadlines and capability
+executors retain their existing shared path. No saved schema or MQTT changes.
+
+Fail-first process evidence showed the missing TCP connection. Twelve new tests
+cover actual raw process IO, kernel drain/EOF, pending reader wakeup, async
+timeout/cancel ownership, old UART/new TCP recovery arms, literal fragmented
+replies with input events, active-query disconnect, stale-action retirement,
+reconnect, retained fixture state and actual close. The independent emulator
+core runs over TCP, programs minimum_level2 and reads it back under both terminal
+profiles, alongside output and feedback operations. Refused endpoints leave
+metadata and bounded stop available.
+
+The full native run selected **753** tests across eleven binaries: **752 passed**,
+with only a missing wait-registry annotation failing; the opt-in browser was
+skipped. The annotation/row/generated waiter were corrected without changing
+production behavior. Final targeted **13/13**, including the registry and all
+twelve new tests, pass (1.841s execution). This is not a second full753-test run.
+Final strict Clippy, Pi library/four binaries, changed formatting, affected control
+plans, wait validation0findings, embedded-asset byte-check and whitespace pass.
+Final restored gate: **0 of 8 failed**. No bridge UI/asset changes, so no new
+browser/Node run is claimed.
+
+Eight current deliberate faults and the refreshed old UART timeout fault return
+their named REDs. Initial force-OneTerminal mutation was GREEN; the final control
+forces TwoTerminals against a one-terminal peer, proving missing-terminal
+detection without claiming rejection of every surplus-terminal mismatch.
+Both sequential source reviewers APPROVE, including the final comment/test
+extensions. Source-only, same-family reviews; token metrics unavailable.
+
+No emulator implementation files, physical HAT, live Store/broker, shared SDK,
+release, publication, deployment, push or merge changes. Emulator TCP listener,
+model lifetime across connections, scenario editor and its own web UI remain
+the parallel session's task. Spec/acceptance:
+[TCP HAT connector](superpowers/specs/2026-10-23-dali-v2-tcp-hat.md).
+Logs: `/tmp/dali-tcp-{acceptance,restored}/`,
+`/tmp/dali-tcp-{controls,repeat-control-final,uart-control}.log`.
+
 ## P4f3 — virtual DT7 scene capture
 
 Frozen implementation `b731f96`. Combined design gate and both sequential final
@@ -2898,7 +2949,7 @@ no verification. Physical hardware validation remains outstanding.
 | Phase | Status | Next concrete boundary |
 |---|---|---|
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
-| P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
+| P2 ATX emulator | Core and bridge TCP connector implemented and verified locally | Emulator TCP listener/configurable web UI assigned to a parallel implementation; P4 extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
 | P4 capabilities | Quiet recovery, native/scalar individual and group base outputs, managed common fixture settings/diagnostics, DT7 protocol/independent relay foundation, managed thresholds/virtual limits and virtual scene capture, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Retained DT7 metadata/presentation, extended/specialist output settings/diagnostics, group colour, feedback bindings/parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
