@@ -204,7 +204,8 @@ Four jobs can be active, including the small mailbox; excess returns 503. The
 existing service still owns one physical/configuration operation permit and may
 report Busy. History retains up to 32 jobs, evicting oldest completed records;
 running records are retained. Encoded sanitized results cap at 32 KiB as a whole,
-except complete `read_scene_settings` replies, which have a 1 MiB bound. Results
+except complete `read_scene_settings`, `read_group_output` and `set_group_output`
+replies, which have a 1 MiB bound for their saved-fixture rosters. Results
 are omitted from summary feeds so a history of large scenes cannot overflow SSE.
 All authenticated sessions share this controller's history. Passive polling does
 not keep sessions alive; authenticated submissions record explicit user activity.

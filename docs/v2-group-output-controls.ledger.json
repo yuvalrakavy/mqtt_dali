@@ -34,6 +34,23 @@
     "verdict": "RED"
    }
   },
+  "group_output_http_drops_dense_roster": {
+   "last_real": {
+    "at": "2026-10-23T04:48:19Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:b1b7f691efc5de95",
+     "row": "5143301b7a9b32a2",
+     "test": null
+    },
+    "path": "command",
+    "secs": 11.1,
+    "sha": "a40f840912fd9d6ff1929bf74aac6c463444c322",
+    "verdict": "RED"
+   }
+  },
   "group_output_identification_guard_omitted": {
    "last_real": {
     "at": "2026-10-23T04:35:25Z",

@@ -1,5 +1,14 @@
 # Run serially; the runner restores each mutation before the next control.
 [[control]]
+name = "group_output_http_drops_dense_roster"
+file = "src/web/jobs.rs"
+anchor = '"read_scene_settings" | "read_group_output" | "set_group_output"'
+replacement = '"read_scene_settings"'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_output_jobs_keep_complete_dense)"]
+expect_text = "dense group report was discarded after native work"
+
+[[control]]
 name = "group_output_prefix_promoted_to_complete"
 file = "src/dali/groups/state.rs"
 anchor = "let mut answered = false;\n    for address in roster {"

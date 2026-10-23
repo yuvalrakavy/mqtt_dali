@@ -140,7 +140,10 @@ impl Jobs {
         // WAIT: web-jobs-book
         let mut records = self.records.lock().unwrap_or_else(|p| p.into_inner());
         if let Some(record) = records.iter_mut().find(|r| r.id == id) {
-            let (result, error) = if record.command == "read_scene_settings" {
+            let (result, error) = if matches!(
+                record.command.as_str(),
+                "read_scene_settings" | "read_group_output" | "set_group_output"
+            ) {
                 public_result_with_budget(result, SCENE_RESULT_BYTES)
             } else {
                 public_result(result)

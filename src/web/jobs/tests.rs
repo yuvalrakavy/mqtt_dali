@@ -185,3 +185,94 @@ fn scene_saved_view_job_summaries_exclude_results_and_only_reader_gets_large_bud
         "saved-view result lost its upper bound"
     );
 }
+
+#[test]
+fn group_output_jobs_keep_complete_dense_rosters_with_a_bounded_result_budget() {
+    use crate::{
+        service::{
+            group_output::{Member, Report, Values},
+            scenes::Reading,
+        },
+        targets::{Namespace, Target},
+    };
+    let members = (0..64)
+        .map(|address| Member {
+            target: Target::item(
+                "Bus1",
+                Namespace::Outputs,
+                &format!("{}{:02}", "L".repeat(4000), address),
+            )
+            .unwrap()
+            .to_string(),
+            target_generation: "0123456789abcdef0123456789abcdef.1".into(),
+            address,
+            expected_member: true,
+            member: Some(true),
+            membership_low: Some(Reading::Value { raw: 255 }),
+            membership_high: Some(Reading::Value { raw: 255 }),
+            actual_level: Some(Reading::Value { raw: 127 }),
+            status: Some(Reading::Value { raw: 4 }),
+        })
+        .collect();
+    let mut report = Report {
+        operation: "read_group_output",
+        outcome: "observed",
+        target: "Bus1.Groups.All".into(),
+        target_generation: "0123456789abcdef0123456789abcdef.1".into(),
+        revision: 1,
+        bus: 0,
+        group: 15,
+        coverage: "saved_inventory",
+        membership_matches: Some(true),
+        values: Some(Values {
+            quality: "uniform",
+            power_state: Some(true),
+            brightness: Some(0.5),
+            power_mixed: Some(false),
+            brightness_mixed: Some(false),
+            known_members: 64,
+            unresolved: vec![],
+        }),
+        members,
+        reason: None,
+        configuration_changed: false,
+    };
+    for command in ["read_group_output", "set_group_output"] {
+        report.operation = command;
+        report.outcome = if command == "read_group_output" {
+            "observed"
+        } else {
+            "sent"
+        };
+        let value = serde_json::to_value(&report).unwrap();
+        let bytes = serde_json::to_vec(&value).unwrap().len();
+        assert!(bytes > RESULT_BYTES && bytes < SCENE_RESULT_BYTES);
+        let (jobs, mut receiver) = Jobs::new();
+        let record = jobs
+            .admit(command.into(), Some(report.target.clone()), prepared())
+            .unwrap();
+        let request = receiver.0.try_recv().unwrap();
+        jobs.finish(request.id, Ok(value.clone()));
+        let finished = jobs.get(&record.id).unwrap();
+        assert_eq!(
+            finished.status, "succeeded",
+            "dense group report was discarded after native work"
+        );
+        assert_eq!(finished.result, Some(value), "group roster was truncated");
+        assert!(
+            jobs.list()[0].result.is_none(),
+            "group job summary included its large result"
+        );
+        let oversized = jobs.admit(command.into(), None, prepared()).unwrap();
+        let request = receiver.0.try_recv().unwrap();
+        jobs.finish(
+            request.id,
+            Ok(json!({"members":"x".repeat(SCENE_RESULT_BYTES)})),
+        );
+        assert_eq!(
+            jobs.get(&oversized.id).unwrap().error.unwrap()["code"],
+            "result_unavailable",
+            "group result lost its upper bound"
+        );
+    }
+}

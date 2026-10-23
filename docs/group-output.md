@@ -1,7 +1,7 @@
 # Control a hardware group's power and brightness
 
-A DALI output group is one of a bus's sixteen hardware destinations. Create or
-save its name and [verify its assignments](groups.md) first. Native
+A DALI output group is one of a bus's sixteen hardware destinations. Save a group
+name and [verify its assignments](groups.md) first. Native
 group commands follow the fixtures' actual hardware membership, which can differ
 from the saved checkboxes. Untracked or unaddressed gear with that hardware
 membership also receives the command.
@@ -60,6 +60,8 @@ Both use the same strict parser and original authority. Typed callers use
 `ServiceHandle::read_group_output` / `set_group_output` with a checked gear Intent,
 original RequestContext and absolute deadline. Scalar Desired group properties
 and DT8 group colour are subsequent slices; this operation provides commands.
+Protected HTTP retains complete group results up to 1 MiB, including long saved
+fixture names. Job lists and live summaries omit the result; fetch it by job id.
 
 ## Understand the report
 
