@@ -1,7 +1,9 @@
 # ATX HAT emulator
 
 The standalone emulator owns a physical scenario independent of bridge inventory.
-It creates a local PTY; it never connects to MQTT or opens a real UART.
+It creates a local PTY by default; explicit raw TCP and a separate configurable
+[emulator browser](emulator-web.md) are also available. It never connects to MQTT
+or opens a real UART.
 
 ```sh
 cargo build --target aarch64-apple-darwin --bin dali_hat_emulator
@@ -63,7 +65,8 @@ delimiting interrupted output before B.
 The socket directory must belong to this user with mode 0700; the socket is mode
 0600. Existing paths are never replaced. After an unclean exit remove your stale
 socket explicitly. Cleanup is best effort, only for this process's socket inode.
-No HTTP/TCP endpoint exists. Requests are limited to 16 KiB and 16 concurrent
+Optional HTTP/TCP listeners are described in [emulator browser](emulator-web.md).
+Unix socket requests are limited to 16 KiB and 16 concurrent
 clients; idle clients close after 1 s. Timeout does not undo an applied control.
 
 `V000004`/`B000004` identify an emulated I4 profile, not actual firmware. Choose
@@ -130,8 +133,9 @@ both explicitly. Value/latch state is independent of the settings below.
 Use the bridge's normal authenticated Devices screen to operate simulated
 fixtures after discovery: On/Off, level, colour and Blink use the same virtual
 UART as physical hardware. The emulator snapshot is independent native evidence,
-while that screen shows what the bridge has observed. There is currently no
-graphical emulator control panel; button events and sensor changes use the socket.
+while that screen shows what the bridge has observed. The separate
+[emulator browser](emulator-web.md) configures scenarios and exposes semantic
+button/sensor controls; raw socket injection remains available.
 The basic scenario has type-only buttons; add a `values` profile when testing
 queried current values with `set_input_value`. Raw event injection alone does not
 change those queried values or schedule a press/release/short-press sequence.

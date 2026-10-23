@@ -1,16 +1,29 @@
 //! Independent Part 301 configuration profile; no production codec imports.
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
-pub(super) struct Timers {
-    short: u8,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Timers {
+    pub(super) short: u8,
     short_min: u8,
-    double: u8,
+    pub(super) double: u8,
     double_min: u8,
-    repeat: u8,
-    stuck: u8,
+    pub(super) repeat: u8,
+    pub(super) stuck: u8,
 }
 impl Timers {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.short_min < 10
+            || self.short < self.short_min
+            || !(10..=100).contains(&self.double_min)
+            || (self.double != 0 && !(self.double_min..=100).contains(&self.double))
+            || !(5..=100).contains(&self.repeat)
+            || self.stuck < 5
+        {
+            return Err("invalid native button timers".into());
+        }
+        Ok(())
+    }
     /// Explicit emulator profile, not universal hardware defaults or reset rules.
     pub fn new() -> Self {
         Self {

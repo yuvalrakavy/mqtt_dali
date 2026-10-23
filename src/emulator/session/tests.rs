@@ -7,6 +7,8 @@ use crate::atx::{
     wire::{Command as Tx, DaliFrame, Kind},
 };
 use tokio::io::{AsyncRead, AsyncReadExt};
+#[path = "tcp_tests.rs"]
+mod tcp_tests;
 
 fn scenario() -> Scenario {
     serde_json::from_str(r#"{"version":1,"clock":"frozen","buses":[{"number":0,"outputs":[{"id":"physical-A","short_address":3,"level":100}]}]}"#).unwrap()
@@ -631,6 +633,9 @@ async fn canceled_and_expired_queued_controls_do_not_mutate_the_model() {
 fn timer_and_uart_output_overflow_fail_explicitly_instead_of_dropping_bytes() {
     let scenario = scenario();
     let mut state = State {
+        saved: scenario.clone(),
+        reset_connection: false,
+        connected: true,
         model: Model::new(scenario.clone()).unwrap(),
         clock: scenario.clock,
         repeat: scenario.repeat,

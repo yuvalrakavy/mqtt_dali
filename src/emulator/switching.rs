@@ -13,6 +13,12 @@ pub(super) struct State {
     pending: Option<(u16, u64)>,
 }
 impl State {
+    pub fn profile(&self) -> Switching {
+        self.profile.clone()
+    }
+    pub fn restore_virtual(&mut self, level: u8) {
+        self.virtual_level = level;
+    }
     pub fn new(profile: Switching, actual: u8) -> Self {
         Self {
             profile,

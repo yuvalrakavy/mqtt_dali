@@ -8,6 +8,7 @@ use std::os::fd::OwnedFd;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use tokio::net::TcpListener;
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio::task::AbortHandle;
 use tokio::time::{timeout_at, Instant};
@@ -25,6 +26,34 @@ pub enum Fault {
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Control {
     Snapshot,
+    Scenario,
+    ApplyScenario {
+        scenario: Scenario,
+    },
+    ResetScenario,
+    CaptureScenario,
+    AddBus {
+        bus: super::scenario::Bus,
+    },
+    RemoveBus {
+        bus: u8,
+    },
+    AddOutput {
+        bus: u8,
+        output: super::scenario::Output,
+    },
+    AddInput {
+        bus: u8,
+        input: super::scenario::Input,
+    },
+    RemoveFixture {
+        id: String,
+    },
+    Stimulate {
+        id: String,
+        instance: u8,
+        stimulus: super::input::physical::Stimulus,
+    },
     AdvanceTime {
         millis: u64,
     },
@@ -95,6 +124,9 @@ struct Scheduled {
 }
 struct State {
     model: Model,
+    saved: Scenario,
+    reset_connection: bool,
+    connected: bool,
     clock: ClockMode,
     repeat: Repeat,
     started: Instant,
@@ -106,7 +138,26 @@ struct State {
     framer: Framer,
     unterminated_output: bool,
 }
+trait Stream: DrainRead + AsyncWrite + Unpin + Send {}
+impl<T: DrainRead + AsyncWrite + Unpin + Send> Stream for T {}
+type Transport = Box<dyn Stream>;
 impl Emulator {
+    /// Owns the installation independently of a replaceable raw ATX client.
+    pub async fn listen_tcp(
+        address: std::net::SocketAddr,
+        scenario: Scenario,
+    ) -> Result<(Self, std::net::SocketAddr), String> {
+        scenario.validate()?;
+        // WAIT: emulator-tcp-serve
+        let listener = TcpListener::bind(address)
+            .await
+            .map_err(|e| e.to_string())?;
+        let bound = listener.local_addr().map_err(|e| e.to_string())?;
+        Ok((
+            Self::start_owned(None, scenario, None, Some(listener))?,
+            bound,
+        ))
+    }
     pub fn start<S: DrainRead + AsyncWrite + Unpin + Send + 'static>(
         stream: S,
         scenario: Scenario,
@@ -118,8 +169,19 @@ impl Emulator {
         scenario: Scenario,
         slave: Option<OwnedFd>,
     ) -> Result<Self, String> {
+        Self::start_owned(Some(Box::new(stream)), scenario, slave, None)
+    }
+    fn start_owned(
+        stream: Option<Transport>,
+        scenario: Scenario,
+        slave: Option<OwnedFd>,
+        listener: Option<TcpListener>,
+    ) -> Result<Self, String> {
         let state = State {
             model: Model::new(scenario.clone())?,
+            saved: scenario.clone(),
+            reset_connection: false,
+            connected: stream.is_some(),
             clock: scenario.clock,
             repeat: scenario.repeat,
             started: Instant::now(),
@@ -137,7 +199,7 @@ impl Emulator {
         let worker = tokio::spawn(async move {
             let life = Life(done);
             let _slave = slave;
-            let result = run(stream, state, receive, stopping).await;
+            let result = run(stream, state, receive, stopping, listener).await;
             drop(_slave);
             life.0.send_replace(Some(result));
         });
@@ -201,6 +263,25 @@ impl Emulator {
     }
 }
 impl State {
+    fn reset(&mut self, scenario: Scenario) -> Result<(), String> {
+        let model = Model::new(scenario.clone())?;
+        self.model = model;
+        self.clock = scenario.clock;
+        self.repeat = scenario.repeat;
+        self.saved = scenario;
+        self.started = Instant::now();
+        self.offset_ms = 0;
+        self.reset_connection = true;
+        self.reset_transport();
+        Ok(())
+    }
+    fn reset_transport(&mut self) {
+        self.output.clear();
+        self.scheduled.clear();
+        self.next_fault = None;
+        self.framer = Framer::default();
+        self.unterminated_output = false;
+    }
     fn tick(&mut self) {
         let elapsed = if self.clock == ClockMode::Realtime {
             self.started.elapsed().as_millis().min(u64::MAX as u128) as u64
@@ -309,6 +390,29 @@ impl State {
     }
     fn control(&mut self, action: Control) -> Result<serde_json::Value, String> {
         match action {
+            Control::Scenario => {
+                return serde_json::to_value(&self.saved).map_err(|e| e.to_string())
+            }
+            Control::ApplyScenario { scenario } => self.reset(scenario)?,
+            Control::ResetScenario => self.reset(self.saved.clone())?,
+            Control::CaptureScenario => {
+                let captured = self.model.scenario(&self.saved);
+                captured.validate()?;
+                self.saved = captured;
+                return serde_json::to_value(&self.saved).map_err(|e| e.to_string());
+            }
+            Control::AddBus { bus } => self.model.add_bus(bus, &self.saved)?,
+            Control::RemoveBus { bus } => self.model.remove_bus(bus)?,
+            Control::AddOutput { bus, output } => {
+                self.model.add_output(bus, output, &self.saved)?
+            }
+            Control::AddInput { bus, input } => self.model.add_input(bus, input, &self.saved)?,
+            Control::RemoveFixture { id } => self.model.remove_fixture(&id)?,
+            Control::Stimulate {
+                id,
+                instance,
+                stimulus,
+            } => self.model.stimulate(&id, instance, stimulus)?,
             Control::Snapshot => {
                 let mut snapshot = self.model.snapshot();
                 snapshot["transport"] = serde_json::json!({
@@ -316,6 +420,7 @@ impl State {
                     "queued_bytes":self.output.iter().map(|o| o.bytes.len()-o.offset).sum::<usize>(),
                     "current_offset":self.output.front().map_or(0,|o| o.offset),
                     "scheduled_frames":self.scheduled.len(),
+                    "connected":self.connected,
                 });
                 return Ok(snapshot);
             }
@@ -386,32 +491,104 @@ async fn due(deadline: Option<Instant>) {
         None => std::future::pending().await,
     }
 }
-async fn run<S: DrainRead + AsyncWrite + Unpin>(
-    stream: S,
+async fn run(
+    stream: Option<Transport>,
     mut state: State,
     mut controls: mpsc::Receiver<Request>,
     mut stop: watch::Receiver<bool>,
+    listener: Option<TcpListener>,
 ) -> Result<(), String> {
-    let (mut reader, mut writer) = tokio::io::split(stream);
+    let persistent = listener.is_some();
+    let mut connection = stream.map(tokio::io::split);
     let mut bytes = [0; 512];
-    state.enqueue(b"B000004\n".to_vec())?;
-    loop {
+    if connection.is_some() {
+        state.enqueue(b"B000004\n".to_vec())?;
+    }
+    'session: loop {
         if *stop.borrow() {
             return Ok(());
         }
         state.tick();
+        for (bus, frame) in state.model.drain_events() {
+            if connection.is_some() {
+                if let Err(error) = state.enqueue(record(bus, &format!("L{frame:06X}"))) {
+                    if persistent {
+                        connection = None;
+                        state.reset_transport();
+                        continue 'session;
+                    }
+                    return Err(error);
+                }
+            }
+        }
+        if state.reset_connection {
+            state.reset_connection = false;
+            if persistent {
+                connection = None;
+                state.reset_transport();
+            } else {
+                if let Some((reader, writer)) = connection.take() {
+                    let mut stream = reader.unsplit(writer);
+                    // Bounded receive fence: continuous old commands must not
+                    // become commands against the replacement installation.
+                    let drain = std::future::poll_fn(|cx| {
+                        for _ in 0..128 {
+                            let mut bytes = [0; 512];
+                            let mut buffer = tokio::io::ReadBuf::new(&mut bytes);
+                            match std::pin::Pin::new(&mut *stream).poll_drain(cx, &mut buffer) {
+                                std::task::Poll::Ready(Ok(crate::atx::stream::Drain::Empty)) => {
+                                    return std::task::Poll::Ready(Ok(()))
+                                }
+                                std::task::Poll::Ready(Ok(_)) if buffer.filled().is_empty() => {
+                                    return std::task::Poll::Ready(Err(
+                                        "reset transport closed".to_string()
+                                    ))
+                                }
+                                std::task::Poll::Ready(Ok(_)) => {}
+                                std::task::Poll::Ready(Err(error)) => {
+                                    return std::task::Poll::Ready(Err(error.to_string()))
+                                }
+                                std::task::Poll::Pending => return std::task::Poll::Pending,
+                            }
+                        }
+                        std::task::Poll::Ready(
+                            Err("reset receive drain exceeds 64 KiB".to_string()),
+                        )
+                    });
+                    // WAIT: emulator-reset-fence
+                    tokio::time::timeout(Duration::from_millis(100), drain)
+                        .await
+                        .map_err(|_| "reset receive fence deadline")??;
+                    connection = Some(tokio::io::split(stream));
+                }
+                state.enqueue(b"\nB000004\n".to_vec())?;
+            }
+        }
+        if connection.is_none() {
+            state.reset_transport();
+        }
+        state.connected = connection.is_some();
         while state
             .scheduled
             .first()
             .is_some_and(|e| e.at <= Instant::now())
         {
             let entry = state.scheduled.remove(0);
-            state.enqueue(entry.bytes)?;
+            if let Err(error) = state.enqueue(entry.bytes) {
+                if persistent {
+                    connection = None;
+                    state.reset_transport();
+                    continue 'session;
+                }
+                return Err(error);
+            }
         }
         let deadline = [
             state.framer.deadline(),
             state.scheduled.first().map(|s| s.at),
             state.output.front().map(|o| o.deadline),
+            (state.clock == ClockMode::Realtime)
+                .then(|| Instant::now() + Duration::from_millis(20)),
         ]
         .into_iter()
         .flatten()
@@ -421,48 +598,107 @@ async fn run<S: DrainRead + AsyncWrite + Unpin>(
             .front()
             .is_some_and(|o| Instant::now() >= o.deadline)
         {
+            if persistent {
+                connection = None;
+                state.reset_transport();
+                continue;
+            }
             return Err("emulator UART write deadline".into());
         }
+        let (reader, writer) = match connection.as_mut() {
+            Some((reader, writer)) => (Some(reader), Some(writer)),
+            None => (None, None),
+        };
         // WAIT: emulator-loop
         tokio::select! {
             _ = stop.changed() => return Ok(()),
+            accepted = async {
+                match &listener {
+                    // WAIT: emulator-tcp-serve
+                    Some(listener) => listener.accept().await,
+                    // WAIT: emulator-tcp-serve
+                    None => std::future::pending().await,
+                }
+            } => {
+                let (stream,_) = accepted.map_err(|e|e.to_string())?;
+                if connection.is_none() {
+                    let _ = stream.set_nodelay(true);
+                    state.reset_transport();
+                    connection = Some(tokio::io::split(Box::new(stream) as Transport));
+                    state.enqueue(b"B000004\n".to_vec())?;
+                }
+                // A competing accepted socket is immediately dropped.
+            },
             request = controls.recv() => {
                 let Some(request) = request else { return Ok(()); };
                 if !request.reply.is_closed() && Instant::now() < request.deadline {
                     let result = state.control(request.action);
                     let fatal = result.as_ref().err().is_some_and(|e| e.contains("queue overflow"));
                     let _ = request.reply.send(result);
-                    if fatal { return Err("emulator control caused queue overflow".into()); }
+                    if fatal {
+                        if persistent { connection = None; state.reset_transport(); }
+                        else { return Err("emulator control caused queue overflow".into()); }
+                    }
                 }
             },
-            read = reader.read(&mut bytes) => {
-                let count = read.map_err(|e| e.to_string())?;
-                if count == 0 { return Ok(()); }
+            read = async {
+                match reader {
+                    // WAIT: emulator-loop
+                    Some(reader) => reader.read(&mut bytes).await,
+                    // WAIT: emulator-loop
+                    None => std::future::pending().await,
+                }
+            } => {
+                let count = match read {
+                    Ok(count) => count,
+                    Err(_) if persistent => { connection = None; state.reset_transport(); continue; },
+                    Err(error) => return Err(error.to_string()),
+                };
+                if count == 0 {
+                    if persistent { connection = None; state.reset_transport(); continue; }
+                    return Ok(());
+                }
                 for command in state.framer.feed(&bytes[..count],Instant::now()) {
-                    match command { Ok(command) => state.command(command)?, Err(_) => state.enqueue(b"X4\n".to_vec())? }
+                    let result=match command { Ok(command) => state.command(command), Err(_) => state.enqueue(b"X4\n".to_vec()) };
+                    if let Err(error)=result {
+                        if persistent {connection=None;state.reset_transport();continue 'session;}
+                        return Err(error);
+                    }
                 }
             },
             written = async {
-                match state.output.front() {
-                    Some(frame) => {
+                match (state.output.front(), writer) {
+                    (Some(frame),Some(writer)) => {
                         // WAIT: emulator-loop
                         writer.write(&frame.bytes[frame.offset..]).await
                     },
-                    None => {
+                    _ => {
                         // WAIT: emulator-loop
                         std::future::pending().await
                     },
                 }
             } => {
-                let count = written.map_err(|e| e.to_string())?;
-                if count == 0 { return Err("emulator UART write returned zero".into()); }
+                let count = match written {
+                    Ok(count) => count,
+                    Err(_) if persistent => { connection = None; state.reset_transport(); continue; },
+                    Err(error) => return Err(error.to_string()),
+                };
+                if count == 0 {
+                    if persistent {connection=None;state.reset_transport();continue 'session;}
+                    return Err("emulator UART write returned zero".into());
+                }
                 let frame = state.output.front_mut().unwrap();
                 state.unterminated_output = frame.bytes[frame.offset+count-1] != b'\n';
                 frame.offset += count;
                 if frame.offset == frame.bytes.len() { state.output.pop_front(); }
             },
             _ = due(deadline) => {
-                for _ in state.framer.feed(&[],Instant::now()) { state.enqueue(b"X4\n".to_vec())?; }
+                for _ in state.framer.feed(&[],Instant::now()) {
+                    if let Err(error)=state.enqueue(b"X4\n".to_vec()) {
+                        if persistent {connection=None;state.reset_transport();continue 'session;}
+                        return Err(error);
+                    }
+                }
             },
         }
     }

@@ -1,9 +1,10 @@
 //! Independent physical value/latch model; no bridge input codec dependencies.
 use super::scenario::Input;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 mod button;
 mod feedback;
+pub mod physical;
 mod sensor;
 
 #[derive(Serialize)]
@@ -14,6 +15,7 @@ pub(super) struct State {
     dtr1: u8,
     dtr2: u8,
     settings: Vec<Settings>,
+    physical: Vec<physical::Physical>,
     // Distinct from flattened scenario `feedback`; omit for legacy profiles.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     feedback_state: Vec<feedback::State>,
@@ -26,8 +28,9 @@ pub(super) struct State {
 }
 
 /// Deliberate emulator startup values, not universal device reset defaults.
-#[derive(Serialize)]
-struct Settings {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Settings {
     enabled: bool,
     priority: u8,
     scheme: u8,
@@ -37,6 +40,29 @@ struct Settings {
     button_timers: Option<button::Timers>,
     #[serde(skip_serializing_if = "Option::is_none")]
     sensor_settings: Option<sensor::Profile>,
+}
+impl Settings {
+    pub(crate) fn validate(&self, kind: u8) -> Result<(), String> {
+        if !(2..=5).contains(&self.priority)
+            || self.scheme > 4
+            || self.filter & !filter_mask(kind) != 0
+            || self.groups.iter().any(|g| *g > 31 && *g != 255)
+        {
+            return Err("invalid native input event settings".into());
+        }
+        if self.button_timers.is_some() != (kind == 1)
+            || self.sensor_settings.is_some() != matches!(kind, 2..=4)
+        {
+            return Err("input settings family does not match instance type".into());
+        }
+        if let Some(t) = &self.button_timers {
+            t.validate()?;
+        }
+        if let Some(s) = &self.sensor_settings {
+            s.validate(kind)?;
+        }
+        Ok(())
+    }
 }
 fn filter_mask(kind: u8) -> u32 {
     match kind {
@@ -48,29 +74,34 @@ fn filter_mask(kind: u8) -> u32 {
 }
 impl State {
     pub fn new(config: Input) -> Self {
-        let settings = config
-            .instances
-            .iter()
-            .map(|kind| Settings {
-                enabled: true,
-                priority: 4,
-                scheme: 2,
-                filter: if matches!(kind, 1..=4) {
-                    filter_mask(*kind)
-                } else {
-                    0
-                },
-                groups: [255; 3],
-                button_timers: (*kind == 1).then(button::Timers::new),
-                sensor_settings: sensor::Profile::new(*kind),
-            })
-            .collect();
+        let settings = config.settings.clone().unwrap_or_else(|| {
+            config
+                .instances
+                .iter()
+                .map(|kind| Settings {
+                    enabled: true,
+                    priority: 4,
+                    scheme: 2,
+                    filter: if matches!(kind, 1..=4) {
+                        filter_mask(*kind)
+                    } else {
+                        0
+                    },
+                    groups: [255; 3],
+                    button_timers: (*kind == 1).then(button::Timers::new),
+                    sensor_settings: sensor::Profile::new(*kind),
+                })
+                .collect()
+        });
         let feedback_state = config
             .feedback
             .iter()
             .map(|p| feedback::State::new(p.instance))
             .collect();
         Self {
+            physical: (0..config.instances.len())
+                .map(|i| physical::Physical::from_config(&config, i))
+                .collect(),
             config,
             dtr0: 0,
             dtr1: 0,
@@ -83,6 +114,12 @@ impl State {
             withdrawn: false,
             search: 0xffffff,
         }
+    }
+    pub fn captured_config(&self) -> Input {
+        let mut config = self.config.clone();
+        config.settings = Some(self.settings.clone());
+        config.initial_physical = Some(self.physical.iter().map(|p| p.capture()).collect());
+        config
     }
     pub fn advance_to(&mut self, now: u64) {
         if self.initialize_until.is_some_and(|until| now >= until) {

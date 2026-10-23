@@ -1,5 +1,8 @@
 use super::scenario::{Output, Scenario};
 use serde::Serialize;
+#[cfg(test)]
+#[path = "model/ui_tests.rs"]
+mod ui_tests;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Reply {
@@ -70,6 +73,7 @@ pub struct Model {
     input_rng: u64,
     now_ms: u64,
     unsupported: u64,
+    events: Vec<(u8, u32)>,
 }
 fn random(rng: &mut u64) -> u32 {
     *rng = rng.wrapping_add(0x9e3779b97f4a7c15);
@@ -79,6 +83,193 @@ fn random(rng: &mut u64) -> u32 {
     ((value ^ (value >> 31)) & 0xffffff) as u32
 }
 impl Model {
+    fn new_random(&mut self, input: bool) -> Result<u32, String> {
+        for _ in 0..512 {
+            let address = random(if input {
+                &mut self.input_rng
+            } else {
+                &mut self.rng
+            });
+            let used = self.buses.iter().any(|b| {
+                if input {
+                    b.inputs
+                        .iter()
+                        .any(|i| i.config.random_address == Some(address))
+                } else {
+                    b.outputs
+                        .iter()
+                        .any(|g| g.config.random_address == Some(address))
+                }
+            });
+            if !used {
+                return Ok(address);
+            }
+        }
+        Err("could not generate an unused random address".into())
+    }
+    /// Capture persistent installation settings, excluding transient HAT state.
+    pub fn scenario(&self, template: &Scenario) -> Scenario {
+        Scenario {
+            buses: self
+                .buses
+                .iter()
+                .map(|bus| super::scenario::Bus {
+                    number: bus.number,
+                    powered: bus.powered,
+                    outputs: bus
+                        .outputs
+                        .iter()
+                        .map(|gear| {
+                            let mut config = gear.config.clone();
+                            config.colour = gear.colour_state.as_ref().map(|s| s.actual());
+                            config.colour_memory = gear.colour_state.as_ref().map(|s| s.memory());
+                            config.switching = gear.switching_state.as_ref().map(|s| s.profile());
+                            config.settings = Some(super::scenario::GearSettings {
+                                min_level: gear.min_level,
+                                max_level: gear.max_level,
+                                power_on_level: gear.power_on_level,
+                                failure_level: gear.failure_level,
+                                fade: gear.fade,
+                                virtual_level: gear.control_level(),
+                            });
+                            config
+                        })
+                        .collect(),
+                    inputs: bus.inputs.iter().map(|i| i.captured_config()).collect(),
+                })
+                .collect(),
+            ..template.clone()
+        }
+    }
+    pub fn add_bus(
+        &mut self,
+        bus: super::scenario::Bus,
+        template: &Scenario,
+    ) -> Result<(), String> {
+        let output_random: Vec<_> = bus
+            .outputs
+            .iter()
+            .map(|g| g.random_address.is_none())
+            .collect();
+        let input_random: Vec<_> = bus
+            .inputs
+            .iter()
+            .map(|g| g.random_address.is_none())
+            .collect();
+        let mut candidate = self.scenario(template);
+        candidate.buses.push(bus);
+        let mut validated = Self::new(candidate)?;
+        let mut added = validated.buses.pop().unwrap();
+        // Existing random addresses in the validated candidate are explicit;
+        // generate new fixtures from the live RNG instead of replaying seed0.
+        for (gear, generate) in added.outputs.iter_mut().zip(output_random) {
+            if generate {
+                gear.config.random_address = Some(self.new_random(false)?);
+            }
+        }
+        for (input, generate) in added.inputs.iter_mut().zip(input_random) {
+            if generate {
+                input.config.random_address = Some(self.new_random(true)?);
+            }
+        }
+        self.buses.push(added);
+        Ok(())
+    }
+    pub fn remove_bus(&mut self, number: u8) -> Result<(), String> {
+        if self.buses.len() <= 1 {
+            return Err("installation requires at least one bus".into());
+        }
+        let index = self
+            .buses
+            .iter()
+            .position(|b| b.number == number)
+            .ok_or("bus does not exist")?;
+        self.buses.remove(index);
+        Ok(())
+    }
+    pub fn add_output(
+        &mut self,
+        number: u8,
+        output: Output,
+        template: &Scenario,
+    ) -> Result<(), String> {
+        let generate = output.random_address.is_none();
+        let mut candidate = self.scenario(template);
+        candidate
+            .buses
+            .iter_mut()
+            .find(|b| b.number == number)
+            .ok_or("bus does not exist")?
+            .outputs
+            .push(output);
+        let mut validated = Self::new(candidate)?;
+        let mut source = validated
+            .buses
+            .iter_mut()
+            .find(|b| b.number == number)
+            .unwrap()
+            .outputs
+            .pop()
+            .unwrap();
+        if generate {
+            source.config.random_address = Some(self.new_random(false)?);
+        }
+        self.buses
+            .iter_mut()
+            .find(|b| b.number == number)
+            .unwrap()
+            .outputs
+            .push(source);
+        Ok(())
+    }
+    pub fn add_input(
+        &mut self,
+        number: u8,
+        input: super::scenario::Input,
+        template: &Scenario,
+    ) -> Result<(), String> {
+        let generate = input.random_address.is_none();
+        let mut candidate = self.scenario(template);
+        candidate
+            .buses
+            .iter_mut()
+            .find(|b| b.number == number)
+            .ok_or("bus does not exist")?
+            .inputs
+            .push(input);
+        let mut validated = Self::new(candidate)?;
+        let mut source = validated
+            .buses
+            .iter_mut()
+            .find(|b| b.number == number)
+            .unwrap()
+            .inputs
+            .pop()
+            .unwrap();
+        if generate {
+            source.config.random_address = Some(self.new_random(true)?);
+        }
+        self.buses
+            .iter_mut()
+            .find(|b| b.number == number)
+            .unwrap()
+            .inputs
+            .push(source);
+        Ok(())
+    }
+    pub fn remove_fixture(&mut self, id: &str) -> Result<(), String> {
+        for bus in &mut self.buses {
+            if let Some(index) = bus.outputs.iter().position(|g| g.config.id == id) {
+                bus.outputs.remove(index);
+                return Ok(());
+            }
+            if let Some(index) = bus.inputs.iter().position(|i| i.config.id == id) {
+                bus.inputs.remove(index);
+                return Ok(());
+            }
+        }
+        Err("fixture ID does not exist".into())
+    }
     pub fn new(scenario: Scenario) -> Result<Self, String> {
         scenario.validate()?;
         let mut rng = scenario.seed;
@@ -109,26 +300,49 @@ impl Model {
                         config
                             .random_address
                             .get_or_insert_with(|| random(&mut rng));
-                        let switching_state = (config.device_type == 7).then(|| {
+                        let mut switching_state = (config.device_type == 7).then(|| {
                             super::switching::State::new(
                                 config.switching.clone().unwrap_or_default(),
                                 config.level,
                             )
                         });
                         let min_level = if switching_state.is_some() { 254 } else { 1 };
+                        if let (Some(state), Some(settings)) =
+                            (&mut switching_state, &config.settings)
+                        {
+                            state.restore_virtual(settings.virtual_level);
+                        }
+                        let mut colour_state = config.colour.clone().map(super::colour::State::new);
+                        if let (Some(state), Some(memory)) =
+                            (&mut colour_state, &config.colour_memory)
+                        {
+                            state.restore(memory.clone());
+                        }
+                        let settings =
+                            config
+                                .settings
+                                .clone()
+                                .unwrap_or(super::scenario::GearSettings {
+                                    min_level,
+                                    max_level: 254,
+                                    power_on_level: 254,
+                                    failure_level: 254,
+                                    fade: 7,
+                                    virtual_level: config.level,
+                                });
                         Gear {
-                            colour_state: config.colour.clone().map(super::colour::State::new),
+                            colour_state,
                             switching_state,
                             config,
                             dtr: [0; 3],
                             initialize_until: None,
                             withdrawn: false,
                             search: 0xffffff,
-                            min_level,
-                            max_level: 254,
-                            power_on_level: 254,
-                            failure_level: 254,
-                            fade: 7,
+                            min_level: settings.min_level,
+                            max_level: settings.max_level,
+                            power_on_level: settings.power_on_level,
+                            failure_level: settings.failure_level,
+                            fade: settings.fade,
                         }
                     })
                     .collect(),
@@ -140,6 +354,7 @@ impl Model {
             input_rng,
             now_ms: 0,
             unsupported: 0,
+            events: Vec::new(),
         })
     }
     pub fn snapshot(&self) -> serde_json::Value {
@@ -150,6 +365,11 @@ impl Model {
         for bus in &mut self.buses {
             for input in &mut bus.inputs {
                 input.advance_to(self.now_ms);
+                for frame in input.advance_physical(self.now_ms) {
+                    if bus.powered {
+                        self.events.push((bus.number, frame));
+                    }
+                }
             }
             for gear in &mut bus.outputs {
                 if gear
@@ -160,6 +380,27 @@ impl Model {
                 }
             }
         }
+    }
+    pub fn drain_events(&mut self) -> Vec<(u8, u32)> {
+        std::mem::take(&mut self.events)
+    }
+    pub fn stimulate(
+        &mut self,
+        id: &str,
+        instance: u8,
+        stimulus: super::input::physical::Stimulus,
+    ) -> Result<(), String> {
+        for bus in &mut self.buses {
+            if let Some(input) = bus.inputs.iter_mut().find(|i| i.config.id == id) {
+                let events = input.stimulate(instance, stimulus, self.now_ms)?;
+                if bus.powered {
+                    self.events
+                        .extend(events.into_iter().map(|frame| (bus.number, frame)));
+                }
+                return Ok(());
+            }
+        }
+        Err("input ID does not exist".into())
     }
     pub fn set_address(&mut self, id: &str, address: Option<u8>) -> Result<(), String> {
         if address.is_some_and(|a| a > 63) {

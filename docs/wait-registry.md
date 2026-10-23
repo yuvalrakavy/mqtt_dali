@@ -59,7 +59,12 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `emulator-runtime-shutdown` | bounded | Tokio worker shutdown | At most 500 ms; on expiry abandon any remaining worker. Detached filesystem and output threads are never joined. |
 | `emulator-control` | bounded | actor's capacity-32 local control queue response | Admission is nonwaiting. The caller supplies a total deadline; on expiry return an error saying an applied mutation is not undone. Expired/canceled requests are skipped before execution. Socket controls supply a 1 s bound. |
 | `emulator-close` | bounded | emulator session completion | At most 1 s; on expiry return shutdown-deadline error. Stop wakes the select even with unread UART or no input. Final handle drop aborts the worker and releases both PTY descriptors. |
-| `emulator-loop` | acyclic | UART readiness, model-independent transport timers, controls or stop | One session owns the model without sharing locks. Controls never wait for output consumers. Output offsets survive select cancellation; frame writes expire after 1 s and fail the session. Partial commands expire after 1 s. Idle may wait indefinitely; close independently wakes stop and bounds completion. |
+| `emulator-loop` | acyclic | UART readiness, model-independent transport timers, controls or stop | One session owns the model without sharing locks. Controls never wait for output consumers. Output offsets survive select cancellation; frame writes expire after 1 s and fail a PTY session or retire only a TCP connection. Scenario reset drains at most 64 KiB/100 ms from PTY before new Boot; TCP closes the old connection. Realtime physical timers wake at most every 20 ms. Partial commands expire after 1 s. Idle may wait indefinitely; close independently wakes stop and bounds completion. |
+| `emulator-tcp-serve` | acyclic | numeric raw TCP listener, owned connection or stop | One client owns parser/output; excess clients close immediately. Stop wakes accept and model controls remain available with no client. Read/write errors and the 1 s send deadline retire only the TCP session, clearing prior output/faults while retaining the model. |
+| `emulator-reset-fence` | bounded | nonblocking PTY receive drain during scenario replacement | At most 64 KiB or 100 ms. On expiry or budget exhaustion fail the PTY actor rather than execute old commands against the replacement installation. TCP replacement closes its old connection instead. |
+| `emulator-web-serve` | acyclic | loopback HTTP bind, accept and serve or cancellation | At most 64 owned accepted connections and 16 handlers. Stop cancels IO independently of clients; no handler owns the model. |
+| `emulator-web-handler` | bounded | bounded HTTP request and actor control | Total request bound 2 s, including body read; actor control at most 1 s. On expiry return timeout and drop the handler. Mutations may already have applied. |
+| `emulator-web-close` | bounded | HTTP owner and accepted IO destruction | Serve completion at most 1 s, then accepted IO destruction barrier at most 1 s. On expiry report incomplete shutdown; Drop cancels IO and aborts owner. |
 | `emulator-pty-open` | bounded | detached openpty/configuration worker | At most 2 s; on expiry return an error. Late owned descriptors are dropped; no worker join occurs at shutdown. |
 | `emulator-control-bind` | bounded | detached local socket setup worker | At most 2 s; on expiry return an error. A late listener and owned cleanup guard are dropped. Existing paths are never removed. |
 | `emulator-control-serve` | acyclic | local listener, at most 16 client tasks or stop | Each client has a separate 3 s outer bound. Session controls do not await client output. Stop drops the JoinSet, aborting clients; it never joins their I/O. Excess connections are closed without creating tasks. |
@@ -118,7 +123,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 
 ```wait-lint
 # rumqttc's client calls, which wait on its request channel, and its event loop's poll.
-wait-methods = publish, publish_with_properties, subscribe, unsubscribe, disconnect, poll
+wait-methods = publish, publish_with_properties, subscribe, unsubscribe, disconnect, poll, accept
 # The HAT protocol's one read from the UART (`hat_line::ByteSource`): a synchronous wait on the
 # device. tokio's `Runtime::shutdown_timeout`: a synchronous wait for the runtime's threads.
 blocking-methods = read_byte, shutdown_timeout, run_managed
@@ -192,11 +197,19 @@ emulator-loop src/emulator/session.rs run
 emulator-output src/bin/dali_hat_emulator.rs output
 emulator-pty-open src/bin/dali_hat_emulator.rs run
 emulator-pty-open src/emulator/pty.rs spawn
+emulator-reset-fence src/emulator/session.rs run
 emulator-runtime-shutdown src/bin/dali_hat_emulator.rs main
 emulator-startup src/bin/dali_hat_emulator.rs run
 emulator-startup-worker src/bin/dali_hat_emulator.rs worker
 emulator-supervise src/bin/dali_hat_emulator.rs main
 emulator-supervise src/bin/dali_hat_emulator.rs run
+emulator-tcp-serve src/emulator/session.rs Emulator::listen_tcp
+emulator-tcp-serve src/emulator/session.rs run
+emulator-web-close src/bin/dali_hat_emulator.rs run
+emulator-web-close src/emulator/web.rs Server::close
+emulator-web-handler src/emulator/web.rs protect
+emulator-web-serve src/emulator/web.rs Server::bind
+emulator-web-serve src/emulator/web_transport.rs <Listener as Listener>::accept
 mqtt-backlog-lock src/mqtt.rs Backlog::popped
 mqtt-backlog-lock src/mqtt.rs Backlog::pushed
 mqtt-backlog-lock src/mqtt.rs Backlog::session_ended

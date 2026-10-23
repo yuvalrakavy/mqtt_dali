@@ -1,0 +1,1 @@
+{"name":"dali-emulator-web","version":"1.0.0","private":true,"type":"module","scripts":{"build":"tsc --noEmit && node scripts/build.mjs","check-dist":"node scripts/build.mjs --check","test:browser":"node scripts/browser.mjs"},"dependencies":{"preact":"11.0.1"},"devDependencies":{"@preact/preset-vite":"2.10.6","playwright":"1.58.2","typescript":"7.0.2","vite":"8.3.5"}}

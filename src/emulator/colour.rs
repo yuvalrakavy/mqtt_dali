@@ -1,14 +1,36 @@
 //! Independently authored physical DT8 model; never imports the bridge codec.
 use super::scenario::{Colour, ColourType};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize)]
-struct Temporary {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Temporary {
     kind: Option<ColourType>,
     xy: [u16; 2],
     temperature: u16,
     rgbwaf: [u8; 6],
     control: u8,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Memory {
+    actual_control: u8,
+    scenes: [Temporary; 16],
+}
+impl Memory {
+    pub fn validate(&self, profile: &Colour) -> Result<(), String> {
+        for scene in &self.scenes {
+            if matches!(scene.kind, Some(ColourType::Xy)) && profile.xy.is_none()
+                || matches!(scene.kind, Some(ColourType::Temperature))
+                    && profile.temperature.is_none()
+                || matches!(scene.kind, Some(ColourType::Rgbwaf)) && profile.rgbwaf.is_none()
+                || scene.temperature == 0
+            {
+                return Err("invalid colour scene family/value".into());
+            }
+        }
+        Ok(())
+    }
 }
 impl Default for Temporary {
     fn default() -> Self {
@@ -32,6 +54,19 @@ pub(super) struct State {
     temperature_out_of_range: bool,
 }
 impl State {
+    pub fn memory(&self) -> Memory {
+        Memory {
+            actual_control: self.actual_control,
+            scenes: self.scenes.clone(),
+        }
+    }
+    pub fn restore(&mut self, memory: Memory) {
+        self.actual_control = memory.actual_control;
+        self.scenes = memory.scenes;
+    }
+    pub fn actual(&self) -> Colour {
+        self.actual.clone()
+    }
     pub fn new(profile: Colour) -> Self {
         Self {
             actual_control: if profile.rgbwaf.is_some() { 0x80 } else { 255 },

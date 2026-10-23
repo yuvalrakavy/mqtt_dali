@@ -1,6 +1,7 @@
 //! Standalone local ATX HAT emulator. Never opens a hardware UART or broker.
 use mqtt_dali::emulator::{control::Endpoint, pty, scenario::Scenario};
 use std::io::{Read, Write};
+use std::net::SocketAddr;
 use std::os::fd::FromRawFd;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::PathBuf;
@@ -11,10 +12,14 @@ use tokio::sync::watch;
 struct Arguments {
     scenario: PathBuf,
     socket: Option<PathBuf>,
+    hat_listen: Option<SocketAddr>,
+    web_listen: Option<SocketAddr>,
 }
 fn arguments() -> Result<Option<Arguments>, String> {
     let mut scenario = None;
     let mut socket = None;
+    let mut hat_listen = None;
+    let mut web_listen = None;
     let mut args = std::env::args_os().skip(1);
     while let Some(arg) = args.next() {
         match arg.to_str() {
@@ -29,12 +34,34 @@ fn arguments() -> Result<Option<Arguments>, String> {
                         .into(),
                 )
             }
+            Some("--hat-listen") => {
+                hat_listen = Some(
+                    args.next()
+                        .ok_or("--hat-listen requires numeric IP:port")?
+                        .to_str()
+                        .ok_or("invalid endpoint")?
+                        .parse()
+                        .map_err(|_| "invalid --hat-listen numeric IP:port")?,
+                );
+            }
+            Some("--web-listen") => {
+                web_listen = Some(
+                    args.next()
+                        .ok_or("--web-listen requires numeric IP:port")?
+                        .to_str()
+                        .ok_or("invalid endpoint")?
+                        .parse::<SocketAddr>()
+                        .map_err(|_| "invalid --web-listen numeric IP:port")?,
+                );
+            }
             _ => return Err(format!("unknown option {}", arg.to_string_lossy())),
         }
     }
     Ok(Some(Arguments {
         scenario: scenario.ok_or("--scenario is required")?,
         socket,
+        hat_listen,
+        web_listen,
     }))
 }
 fn main() -> ExitCode {
@@ -69,7 +96,7 @@ async fn run() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let startup = async {
         let Some(args) = arguments()? else {
-            output(libc::STDOUT_FILENO,"dali_hat_emulator --scenario scenario.json [--control-socket /private/directory/control.sock]\n\nPrints a JSON ready record with the PTY slave path. No MQTT or real HAT.\nThe optional control directory must belong to this user and have mode 0700.".into());
+            output(libc::STDOUT_FILENO,"dali_hat_emulator --scenario scenario.json [--hat-listen 127.0.0.1:5580] [--web-listen 127.0.0.1:5581] [--control-socket /private/directory/control.sock]\n\nPrints JSON ready with the actual endpoints. Omitting --hat-listen retains PTY mode. Web is loopback-only, with numeric host matching. No MQTT or real HAT.\nThe optional control directory must belong to this user and have mode 0700.".into());
             return Ok(None);
         };
         let logging = worker(|| {
@@ -80,8 +107,24 @@ async fn run() -> Result<(), String> {
         })
         .await?;
         let scenario = worker(move || load(args.scenario)).await??;
-        // WAIT: emulator-pty-open
-        let pty = pty::spawn(scenario).await?;
+        let (emulator, pty_path, hat_address) = match args.hat_listen {
+            Some(address) => {
+                let (emulator, bound) =
+                    mqtt_dali::emulator::session::Emulator::listen_tcp(address, scenario).await?;
+                (emulator, None, Some(bound))
+            }
+            None => {
+                // WAIT: emulator-pty-open
+                let pty = pty::spawn(scenario).await?;
+                (pty.emulator, Some(pty.path), None)
+            }
+        };
+        let web = match args.web_listen {
+            Some(address) => {
+                Some(mqtt_dali::emulator::web::Server::bind(address, emulator.clone()).await?)
+            }
+            None => None,
+        };
         let endpoint = match args.socket {
             Some(path) => Some(
                 Endpoint::bind(path.clone())
@@ -90,11 +133,11 @@ async fn run() -> Result<(), String> {
             ),
             None => None,
         };
-        output(libc::STDOUT_FILENO,serde_json::json!({"ready":true,"pty":pty.path,"control_socket":endpoint.as_ref().map(|(path,_)|path),"profile":"emulated-i4-v000004"}).to_string());
-        Ok::<_, String>(Some((pty, endpoint, logging)))
+        output(libc::STDOUT_FILENO,serde_json::json!({"ready":true,"pty":pty_path,"hat_listen":hat_address,"web_listen":web.as_ref().map(|w|w.address),"control_socket":endpoint.as_ref().map(|(path,_)|path),"profile":"emulated-i4-v000004"}).to_string());
+        Ok::<_, String>(Some((emulator, endpoint, web, logging)))
     };
     // WAIT: emulator-startup
-    let Some((pty, endpoint, logging)) = (tokio::select! {
+    let Some((emulator, endpoint, mut web, logging)) = (tokio::select! {
         _ = term.recv()=>return Ok(()),
         _ = interrupt.recv()=>return Ok(()),
         result = startup=>result?,
@@ -103,7 +146,6 @@ async fn run() -> Result<(), String> {
     };
     tracing::info!("emulator ready");
     let (stop, stopping) = watch::channel(false);
-    let emulator = pty.emulator;
     let endpoint_emulator = emulator.clone();
     let mut endpoint = tokio::spawn(async move {
         match endpoint {
@@ -128,6 +170,10 @@ async fn run() -> Result<(), String> {
     };
     stop.send_replace(true);
     endpoint.abort();
+    if let Some(web) = &mut web {
+        // WAIT: emulator-web-close
+        web.close().await?;
+    }
     // WAIT: emulator-close
     result.and(emulator.close().await)
 }

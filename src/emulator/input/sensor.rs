@@ -1,8 +1,8 @@
 //! Independent sensor configuration profiles, without production codec imports.
-use serde::Serialize;
-#[derive(Serialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub(super) enum Profile {
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Profile {
     Absolute {
         report: u8,
         deadtime: u8,
@@ -20,6 +20,23 @@ pub(super) enum Profile {
     },
 }
 impl Profile {
+    pub fn validate(&self, kind: u8) -> Result<(), String> {
+        if !matches!(
+            (kind, self),
+            (2, Self::Absolute { .. })
+                | (3, Self::Occupancy { hold: 0..=254, .. })
+                | (
+                    4,
+                    Self::Light {
+                        hysteresis: 0..=25,
+                        ..
+                    }
+                )
+        ) {
+            return Err("invalid sensor parameter family/range".into());
+        }
+        Ok(())
+    }
     /// Deliberate emulator defaults. Occupancy models a supported hold timer;
     /// this is not a claim that all occupancy devices support hold or these resets.
     pub fn new(kind: u8) -> Option<Self> {

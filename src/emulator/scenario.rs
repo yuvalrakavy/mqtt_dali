@@ -65,6 +65,20 @@ pub struct Output {
     pub colour: Option<Colour>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub switching: Option<Switching>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub settings: Option<GearSettings>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub colour_memory: Option<super::colour::Memory>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GearSettings {
+    pub min_level: u8,
+    pub max_level: u8,
+    pub power_on_level: u8,
+    pub failure_level: u8,
+    pub fade: u8,
+    pub virtual_level: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -175,6 +189,19 @@ pub struct Input {
     pub values: Vec<InputValue>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub feedback: Vec<Feedback>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "initial_settings")]
+    pub settings: Option<Vec<super::input::Settings>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_physical: Option<Vec<PhysicalStart>>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PhysicalStart {
+    pub pressed: bool,
+    pub raw_10: u16,
+    pub occupied: bool,
+    pub movement: bool,
 }
 /// Opt-in visible on/off feedback, independent from input event configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -223,6 +250,23 @@ impl Scenario {
                 }
             }
             for output in &bus.outputs {
+                if let Some(s) = &output.settings {
+                    if s.min_level == 0
+                        || s.min_level > s.max_level
+                        || s.max_level > 254
+                        || s.virtual_level > 254
+                    {
+                        return Err("invalid native gear limits or virtual level".into());
+                    }
+                }
+                if let Some(memory) = &output.colour_memory {
+                    memory.validate(
+                        output
+                            .colour
+                            .as_ref()
+                            .ok_or("colour memory requires a colour profile")?,
+                    )?;
+                }
                 if output.device_type == 7 && !matches!(output.level, 0 | 254) {
                     return Err("switching initial actual level must be 0 or 254".into());
                 }
@@ -253,6 +297,21 @@ impl Scenario {
                 return Err("input requires at most 32 valid instance types".into());
             }
             for input in &bus.inputs {
+                if let Some(states) = &input.initial_physical {
+                    if states.len() != input.instances.len()
+                        || states.iter().any(|s| s.raw_10 > 1023)
+                    {
+                        return Err("initial physical state must cover every instance with valid raw10 values".into());
+                    }
+                }
+                if let Some(settings) = &input.settings {
+                    if settings.len() != input.instances.len() {
+                        return Err("native input settings must cover every instance".into());
+                    }
+                    for (settings, kind) in settings.iter().zip(&input.instances) {
+                        settings.validate(*kind)?;
+                    }
+                }
                 if input.random_address.is_some_and(|a| a > 0xffffff) {
                     return Err("input random address exceeds 24 bits".into());
                 }
