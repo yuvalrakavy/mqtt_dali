@@ -84,3 +84,11 @@ The protocol cross-check is
 with the [DALI Alliance terminology](https://www.dali-alliance.org/about-us/terms.html)
 for control-curve terminology. Source facts were checked against the local legacy
 opcode anchors; emulator agreement alone is not hardware or standard validation.
+
+`dali::groups::state` separately summarizes captured individual-address evidence
+for a frozen saved roster. Every roster entry participates, including unvisited
+ones. It distinguishes uniform power from mixed levels, known empty membership
+from off, full-byte masks/status from level MASK, and complete from partial raw
+evidence. Duplicate/outside samples reject. It performs no query, send, cache or
+configuration mutation. The [native group service](group-output.md) supplies
+owned captures and explicitly limits coverage to saved inventory.

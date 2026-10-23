@@ -1,5 +1,5 @@
 //! UART lifecycle only. Fixture operations must join the service admission path.
-use super::{input, output, physical, ServiceError};
+use super::{group_output, input, output, physical, ServiceError};
 use super::{BusHealth, Hardware};
 use crate::atx::{
     monitor::{CloseReason, Event},
@@ -840,6 +840,13 @@ impl Hat {
     ) {
         self.enqueue_physical(physical::Work::InputFeedback(request, route));
     }
+    pub(super) fn enqueue_group_output(
+        &mut self,
+        request: group_output::Request,
+        route: group_output::Route,
+    ) {
+        self.enqueue_physical(physical::Work::GroupOutput(request, route));
+    }
     pub(super) fn enqueue_input_settings(
         &mut self,
         request: input::settings::Request,
@@ -923,6 +930,9 @@ impl Hat {
                 }
                 let physical = self.physical.as_mut().unwrap();
                 physical.stage = physical::Stage::Running;
+                if let physical::Work::GroupOutput(request, _) = &mut physical.work {
+                    request.started = request.action.writing();
+                }
                 if let physical::Work::InputFeedback(request, _) = &mut physical.work {
                     // Indicator changes do not retire native input activity.
                     request.started = request.action.writing();

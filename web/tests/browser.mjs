@@ -1,5 +1,6 @@
 import { inputSettingsFlow } from './input-settings.mjs';
 import { feedbackFlow } from './feedback.mjs';
+import { groupOutputFlow } from './group-output.mjs';
 import { scenesFlow } from './scenes.mjs';
 import { reassignmentFlow } from './reassignment.mjs';
 import { restorationFlow } from './restoration.mjs';
@@ -70,6 +71,7 @@ try {
   await review('KitchenMain').getByRole('button',{name:'Adopt hardware assignments',exact:true}).click();await until(async()=>(await inventory()).buses[0].groups.some(g=>g.group_address===3&&g.members.includes(0)),'adoption did not save unnamed hardware membership');await closeDialog();
   await page.getByRole('button',{name:'Verify all groups',exact:true}).click();await page.getByRole('heading',{name:'Verify group assignments',exact:true}).waitFor();await review('HallNew').getByRole('button',{name:'Repair to saved assignments',exact:true}).click();await until(async()=>(await control({op:'snapshot'})).buses[0].outputs[2].groups===0,'repair did not remove extraneous hardware membership');await until(async()=>await review('HallNew').innerText().then(t=>t.includes('Assignments match')),'repair did not re-read complete hardware membership');await closeDialog();
   await page.screenshot({path:join(artifacts,'phone-groups.png'),fullPage:true});await noOverflow();
+  await groupOutputFlow({page,context,origin,artifacts,inventory,control,until,commands,noOverflow});
   await scenesFlow({page,context,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
   await page.setViewportSize({width:1440,height:1024});await page.goto(`${origin}/buses/0`);await named('KitchenMain').waitFor();await noOverflow();await page.screenshot({path:join(artifacts,'desktop-devices.png'),fullPage:true});
   await row('KitchenSide').getByRole('button',{name:'Actions KitchenSide',exact:true}).click();await page.getByRole('button',{name:'Group membership',exact:true}).click();assert.ok(await page.getByRole('checkbox',{name:'Kitchen 0'}).isChecked());await closeDialog();

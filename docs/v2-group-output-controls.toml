@@ -1,0 +1,99 @@
+# Run serially; the runner restores each mutation before the next control.
+[[control]]
+name = "group_output_prefix_promoted_to_complete"
+file = "src/dali/groups/state.rs"
+anchor = "let mut answered = false;\n    for address in roster {"
+replacement = "let mut answered = false;\n    for address in roster.iter().filter(|a| captured[usize::from(a.raw())].is_some()) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_state_incomplete_roster)"]
+expect_text = "an incomplete saved roster became current"
+
+[[control]]
+name = "group_output_power_conflates_level_uniformity"
+file = "src/dali/groups/state.rs"
+anchor = "let power_mixed = levels.iter().any(|level| (level.raw() > 0) != power);"
+replacement = "let power_mixed = levels.iter().any(|level| *level != first);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_state_separates_uniform_power)"]
+expect_text = "group power/level uniformity was conflated"
+
+[[control]]
+name = "group_output_mask_becomes_maximum"
+file = "src/dali/groups/state.rs"
+anchor = "Level::new(*level).ok()"
+replacement = "Level::new((*level).min(254)).ok()"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_state_incomplete_roster)"]
+expect_text = "an incomplete saved roster became current"
+
+[[control]]
+name = "group_output_high_membership_byte_lost"
+file = "src/dali/groups/state.rs"
+anchor = "u16::from_le_bytes([*low, *high])"
+replacement = "u16::from_le_bytes([*low, 0])"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_state_uses_actual_membership)"]
+expect_text = "native high group or FF membership was lost"
+
+[[control]]
+name = "group_output_uses_individual_destination"
+file = "src/service/group_output.rs"
+anchor = "intent.frame(Destination::Group(r.group))"
+replacement = "intent.frame(Destination::Short(ShortAddress::new(r.group.raw()).unwrap()))"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_output_literal_boundaries)"]
+expect_text = "native group action was not single or used the wrong destination"
+
+[[control]]
+name = "group_output_keeps_old_actual_cache"
+file = "src/service/group_output.rs"
+anchor = "sample.invalidate(\"native group command requires fresh actual readback\");"
+replacement = "let _ = sample;"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_output_invalidates_its_bus)"]
+expect_text = "native group send retained old current data"
+
+[[control]]
+name = "group_output_final_physical_epoch_ignored"
+file = "src/service/group_output.rs"
+anchor = "|| !hat.evidence_current(r.bus, o.stamp)"
+replacement = "|| false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_output_final_epoch)"]
+expect_text = "retired group read epoch reported current evidence"
+
+[[control]]
+name = "group_output_identification_guard_omitted"
+file = "src/service/group_output.rs"
+anchor = "if route.action.writing() && identification::blocks_bus(handle, route.bus)"
+replacement = "if false && route.action.writing() && identification::blocks_bus(handle, route.bus)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_output_identification)"]
+expect_text = "group write ignored active identification"
+
+[[control]]
+name = "group_output_ui_accepts_incomplete_roster"
+file = "web/src/group-output.ts"
+anchor = "r.members.length!==roster.length"
+replacement = "false"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "forged group result accepted: row_missing"
+
+[[control]]
+name = "group_output_ui_post_await_authority_omitted"
+file = "web/src/group-output.ts"
+anchor = "this.assert();const {row,initial}=this;"
+replacement = "const {row,initial}=this;"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "retired group result was accepted"
+
+[[control]]
+name = "group_output_ui_failed_set_keeps_old_evidence"
+file = "web/src/group-output.ts"
+anchor = "const intent=groupIntent(patch);this.result=null;"
+replacement = "const intent=groupIntent(patch);"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "failed group operation retained current evidence"

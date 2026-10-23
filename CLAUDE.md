@@ -165,6 +165,23 @@ mask FFFF; incomplete halves never make a full mask. `read_groups` is Read-class
 and must dispatch before requiring CommandCompletion. `create_group` is ordinary
 controller metadata. Behavioral controls: `docs/v2-group-controls.toml`.
 
+Native group power/dimming uses `dali::groups::state`, `service::group_output`
+and `physical::Work::GroupOutput`; see `docs/group-output.md`. One native group
+frame follows actual hardware membership. Read individual membership and level/
+status for the complete frozen saved roster; never infer group state from a
+group query, intended level or agreeing prefix. Distinguish uniform power from
+mixed brightness, empty from off, and FF membership/status from level MASK.
+Reports explicitly cover saved_inventory, not an exhaustive physical census.
+Retain original group/member mappings, permit, completion,15s deadline and stamp.
+Invalidate cached output/colour actuals on that bus before possible mutation and
+again on settlement, including failed/canceled work. Keep input Notices/values,
+other buses and saved assignments intact. Read is Read-class; Set WithReply.
+Set reports sent with actual samples, not attained intent. Protected Groups
+controls are explicit, without automatic reads during assignment batches;
+freeze original UI authority and validate the whole raw roster/aggregate.
+Group scalar Desired and DT8 group colour remain subsequent work. Controls:
+`docs/v2-group-output-controls.toml`.
+
 The old runtime/CLI, modules and MQTT topics described below belong to
 `src/legacy_main.rs` / `mqtt_dali_v1`. They are not the canonical v2 interface.
 For v2 see `src/daemon.rs`, `src/service.rs`, `src/service/owner.rs`,

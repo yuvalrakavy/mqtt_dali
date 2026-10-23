@@ -30,6 +30,7 @@ impl DeviceDriver for DaliProxy {
                 "assign_group",
                 "configure_input",
                 "set_input_feedback",
+                "set_group_output",
                 "adopt_groups",
                 "repair_groups",
                 "restore_unaddressed_address",
@@ -49,6 +50,10 @@ impl DeviceDriver for DaliProxy {
             ]
             .into_iter()
             .map(|name| CommandSpec::new(name, CommandClass::WithReply))
+            .chain(std::iter::once(CommandSpec::new(
+                "read_group_output",
+                CommandClass::Read,
+            )))
             .chain(std::iter::once(CommandSpec::new(
                 "read_input_feedback",
                 CommandClass::Read,
@@ -233,6 +238,24 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::GroupOutput(action) = &change {
+            if !action.writing() {
+                let result = self
+                    .handle
+                    .group_output(
+                        target.ok_or_else(|| OpError::Rejected("group target required".into()))?,
+                        action.clone(),
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(15),
+                        None,
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+        }
         if let Operation::InputFeedback(action) = &change {
             if !action.writing() {
                 let result = self
@@ -356,6 +379,22 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::GroupOutput(action) => {
+                let result = self
+                    .handle
+                    .group_output(
+                        target.ok_or_else(|| OpError::Rejected("group target required".into()))?,
+                        action,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(15),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
             Operation::InputFeedback(action) => {
                 let result = self
                     .handle
@@ -549,7 +588,7 @@ impl DaliProxy {
                 && !matches!(value.location, crate::inventory::Location::Output { .. })
         }) {
             return Err(OpError::Unsupported(
-                "individual output required; group execution pending".into(),
+                "individual output required; use group output commands for group control".into(),
             ));
         }
         output::resolve(snapshot, target, cause, writing).map_err(op_error)
@@ -803,6 +842,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    GroupOutput(group_output::Action),
     InputFeedback(input::feedback::Action),
     InputSettings(input::settings::Action),
     Restore(restoration::Action),
@@ -824,6 +864,13 @@ impl Operation {
         context: &RequestContext,
     ) -> Result<(), ServiceError> {
         match self {
+            Self::GroupOutput(action) => group_output::resolve(
+                snapshot,
+                target.ok_or_else(|| ServiceError::Rejected("group target required".into()))?,
+                action,
+                context,
+            )
+            .map(|_| ()),
             Self::InputFeedback(action) => input::feedback::resolve(
                 snapshot,
                 target.ok_or_else(|| ServiceError::Rejected("input target required".into()))?,
@@ -918,6 +965,7 @@ impl Operation {
     }
     fn budget(&self) -> Duration {
         Duration::from_secs(match self {
+            Self::GroupOutput(_) => 15,
             Self::InputFeedback(_) => 8,
             Self::InputSettings(_) => 8,
             Self::SceneSettings(action) => {
@@ -1161,6 +1209,19 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::GroupOutput(action) => value(
+                handle
+                    .group_output(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("group target required".into())
+                        })?,
+                        action,
+                        context,
+                        deadline,
+                        None,
+                    )
+                    .await?,
+            ),
             Operation::InputFeedback(action) => value(
                 handle
                     .input_feedback(
@@ -1362,6 +1423,58 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if matches!(
+        call.command.as_str(),
+        "read_group_output" | "set_group_output"
+    ) {
+        if target.is_none() {
+            return Err(OpError::Rejected("group target required".into()));
+        }
+        if call.command == "read_group_output" {
+            if !call.params.is_empty() {
+                return Err(OpError::Rejected(
+                    "read_group_output accepts no parameters".into(),
+                ));
+            }
+            return Ok(Operation::GroupOutput(group_output::Action::Read));
+        }
+        if call
+            .params
+            .keys()
+            .any(|k| !matches!(k.as_str(), "expected_revision" | "power" | "brightness"))
+        {
+            return Err(OpError::Rejected("unknown group power parameter".into()));
+        }
+        let expected = call
+            .params
+            .get("expected_revision")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| {
+                OpError::Rejected("expected_revision must be an unsigned integer".into())
+            })?;
+        let power = call
+            .params
+            .get("power")
+            .map(|v| {
+                v.as_bool()
+                    .ok_or_else(|| OpError::Rejected("power must be a JSON boolean".into()))
+            })
+            .transpose()?;
+        let brightness = call
+            .params
+            .get("brightness")
+            .map(|v| {
+                v.as_f64()
+                    .ok_or_else(|| OpError::Rejected("brightness must be a JSON number".into()))
+            })
+            .transpose()?;
+        let intent = crate::dali::gear::Intent::new(power, brightness)
+            .map_err(|e| OpError::Rejected(e.to_string()))?;
+        return Ok(Operation::GroupOutput(group_output::Action::Set {
+            expected,
+            intent,
+        }));
+    }
     if matches!(
         call.command.as_str(),
         "read_input_feedback" | "set_input_feedback"

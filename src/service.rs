@@ -12,6 +12,7 @@ use tokio::{
 
 pub mod commissioning;
 pub mod discovery;
+pub mod group_output;
 pub mod groups;
 mod hat;
 pub mod identification;
@@ -286,6 +287,7 @@ enum Message {
     Input(input::readback::Request),
     InputSettings(input::settings::Request),
     InputFeedback(input::feedback::Request),
+    GroupOutput(group_output::Request),
     Attach(
         mqtt_bridge_kit::Reporter,
         oneshot::Sender<Result<(), String>>,

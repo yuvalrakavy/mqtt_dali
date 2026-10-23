@@ -1,5 +1,6 @@
 //! Pure Part 102 group membership frames. FF is a valid membership byte.
 use super::gear::{Destination, GroupAddress, ShortAddress};
+pub mod state;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mask(pub u16);

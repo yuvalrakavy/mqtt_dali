@@ -3,8 +3,11 @@
 Each output can belong to any of the bus's sixteen group slots (0..15).
 The saved configuration names groups and records desired membership. The hardware
 can differ, including memberships in slots the bridge has not named. These APIs
-make that difference visible. Browser pages and bus-wide pattern/batch operations
-remain under development; this slice operates on one saved fixture at a time.
+make that difference visible. The protected Groups screen provides fixture
+checkboxes, reviewed Add/Replace pattern assignment and bus-wide verification.
+Native [group power and dimming](group-output.md) use the selected saved group's
+hardware destination and leave assignments unchanged. The membership APIs below
+operate on one saved fixture at a time.
 
 ## Create a saved group
 

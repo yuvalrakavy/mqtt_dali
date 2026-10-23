@@ -647,6 +647,10 @@ impl ProcessService for DaliService {
                         }
                         Some(scenes::accept(&snapshot,completed,&hat))
                     } else {None};
+                    let group_output_result=if let Some(physical::Completion::GroupOutput(completed))=&mut completion {
+                        if completed.request.action.writing(){group_output::invalidate_actual(&mut snapshot,completed.request.bus);}
+                        Some(group_output::accept(&snapshot,completed,&hat))
+                    }else{None};
                     let input_actions_allowed=snapshot.phase==Phase::Ready;
                     self.state.send_replace(Some(snapshot.clone()));
                     let _=self.handle.updates.send(snapshot);
@@ -654,6 +658,7 @@ impl ProcessService for DaliService {
                     if dropped>0 {tracing::warn!(kind="input_event_loss",dropped,"Input notice batch overflowed");}
                     if input_actions_allowed {for notice in notices {let _=self.handle.input_events.send(notice);}}
                     if let Some(completion)=completion { match completion {
+                      physical::Completion::GroupOutput(completed)=>group_output::finish(completed.request,group_output_result.expect("group output accepted before publication")),
                       physical::Completion::InputFeedback(mut completion)=>{
                         let result=input::feedback::accept(&self.handle.snapshot().expect("service started"),&mut completion,&hat);
                         input::feedback::finish(completion.request,result);
@@ -866,6 +871,34 @@ impl ProcessService for DaliService {
                         }
                     }
                 }
+                Message::GroupOutput(request) => {
+                    let route = if request.reply.is_closed() || Instant::now() >= request.deadline {
+                        Err(ServiceError::Expired)
+                    } else {
+                        group_output::resolve(
+                            &self.handle.snapshot().expect("service started"),
+                            &request.target,
+                            &request.action,
+                            &request.context,
+                        )
+                        .and_then(|route| {
+                            group_output::admit(&self.handle, &route)?;
+                            Ok(route)
+                        })
+                    };
+                    match route {
+                        Ok(route) => {
+                            if request.action.writing() {
+                                let mut snapshot = self.handle.snapshot().expect("service started");
+                                group_output::invalidate_actual(&mut snapshot, route.bus);
+                                self.state.send_replace(Some(snapshot.clone()));
+                                let _ = self.handle.updates.send(snapshot);
+                            }
+                            hat.enqueue_group_output(request, route);
+                        }
+                        Err(error) => group_output::finish(request, Err(error)),
+                    }
+                }
                 Message::InputFeedback(request) => {
                     let result = if request.reply.is_closed() || Instant::now() >= request.deadline
                     {
@@ -1000,6 +1033,9 @@ impl ProcessService for DaliService {
                 }
                 Message::InputSettings(request) => {
                     input::settings::finish(request, Err(ServiceError::Closed));
+                }
+                Message::GroupOutput(request) => {
+                    group_output::finish(request, Err(ServiceError::Closed))
                 }
                 Message::InputFeedback(request) => {
                     input::feedback::finish(request, Err(ServiceError::Closed))

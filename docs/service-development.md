@@ -361,8 +361,11 @@ spans, rather than only an ingress span.
 `__inventory` is read-only and returns the complete observed saved inventory.
 Individual PowerState/Brightness writes and reads use the owned physical service.
 Selected-family colour properties also use that service with fresh capability
-preflight and actual readback. Groups and unsupported properties return explicit
-errors. Saved inventory does not prove physical state.
+preflight and actual readback. Group scalar properties and unsupported properties
+return explicit errors. Native group power/level uses the separate
+[`read_group_output` / `set_group_output` path](group-output.md), with actual
+individual-address samples and no desired membership changes. Saved inventory
+does not prove physical state.
 Consumers can be any MQTT implementation; no Store service is required. Follow
 the [inventory contract](inventory-contract.md), especially replay buffering and
 consumer-owned intent continuity.

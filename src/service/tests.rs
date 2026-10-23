@@ -4,6 +4,7 @@ use serde_json::json;
 mod buses;
 mod commissioning;
 mod discovery;
+mod group_output;
 mod groups;
 mod identification;
 mod input;

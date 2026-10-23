@@ -22,9 +22,10 @@ onto a fixture request.
 Brightness is the DALI control level, not measured luminous flux. Zero means off.
 Power true alone recalls maximum; it does not restore an application's remembered
 brightness. Nulls, unknown properties, wrong JSON types, out-of-range levels and
-contradictory pairs are rejected before any output command is sent. Group
-light-level/color control remains pending; [membership operations](groups.md)
-are available. Individual DT8 colour controls are described below.
+contradictory pairs are rejected before any output command is sent. Native
+[group power/level commands](group-output.md) and [membership operations](groups.md)
+are available; group scalar Desired and colour remain subsequent work. Individual
+DT8 colour controls are described below.
 
 BridgeKit coalesces pending Desired values by property. The driver validates and
 applies the complete effective map it receives. One rejected map can produce an

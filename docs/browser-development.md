@@ -46,6 +46,22 @@ dismissal/navigation. Compare native profile/settings/values and saved inventory
 The generation test varies the selected instance token for an instance, rather
 than only changing its parent's token. Controls: `v2-managed-feedback-controls.toml`.
 
+The Groups title's power/dimming card uses `GroupOutputScope`. Entering or
+remounting a saved group performs no hardware read; only explicit operations use
+admission, so membership assignment batches do not compete with automatic reads.
+Each click freezes the selected group, original token/revision, full saved output
+roster, connection epoch and component lifetime. Recheck after awaits; retire the
+scope on slot/generation/navigation unmount. Hide values after retirement or before
+I/O. Validate every captured member identity and raw reading, then independently
+check the aggregate against the whole roster. An omitted suffix cannot become
+uniform/empty. Power may be uniform while positive levels differ; never average
+brightness or echo a sent intent. Unknown aggregate values leave explicit native
+On/Off/level commands available. The slider is labeled New level, separate from
+observed brightness. Actual phone/desktop flows exercise native selection, mixed
+values, missing addresses, explicit writes without prior values, unchanged saved
+configuration/other fixtures, retirement across slot/navigation and actual level
+restoration. Controls: `v2-group-output-controls.toml`.
+
 For bridge contributors: `web/` owns the responsive Preact/TypeScript application.
 Node is needed to change assets, not to run the bridge or compile its embedded
 assets with Cargo. Use Node 24.11 or newer with the exact npm lockfile:
