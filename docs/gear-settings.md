@@ -16,8 +16,9 @@ settings to that identifying fixture; reads and unrelated fixtures remain usable
 Save submits only changed fields under the original row identity and revision.
 The bridge freshly checks the whole patch, including physical/current limits,
 before any setting is sent. It orders crossed limit changes to avoid unintended
-clamping. Limit changes can alter an already-lit fixture; an off fixture stays
-off. Requested fields must match actual readback before the dialog closes.
+clamping. Limit changes can alter a dimmer that is already on; an off ordinary
+dimmer stays off. DT7 virtual-limit changes can operate the relay contact.
+Requested fields must match actual readback before the dialog closes.
 An uncertain or failed save clears actionable values until explicit Refresh;
 it never silently resends the patch. Names, bindings, groups and saved bridge
 configuration are unchanged. No automatic reset or fixture-mode change is sent.
@@ -140,7 +141,8 @@ the verified HAT repeat policy. The managed API starts with individual
 fixtures: freshly read physical/current limits, validate the whole patch, order
 crossing minimum/maximum edits to avoid unintended native clamping, then compare
 actual readback. Raising minimum can brighten an already-lit fixture; lowering
-maximum can dim it. Off remains Off. Such writes must retire affected output,
+maximum can dim it. Off remains Off for ordinary dimmers; DT7 limits control a
+virtual level and can operate the contact. Such writes must retire affected output,
 colour and group cache evidence through the existing owner.
 
 The independent emulator already implements these registers and setters. Literal
