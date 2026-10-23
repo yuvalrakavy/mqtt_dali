@@ -66,6 +66,10 @@ context, physical stamp, permit, deadline and optional completion once. Write
 needs the known verified repeat profile. Re-resolve that original authority at
 owner admission and final settlement; never retry under a fresh token or epoch.
 Strict reads also retain their captured generation/revision across the await.
+Configure shares `identification::blocks` at ServiceHandle submission and again
+at owner admission, preserving the existing continuing-Origin exclusion across
+renames. Blink releases its permit during dwell, so the permit alone is not that
+guard. Read-only settings and unrelated-fixture operations remain allowed.
 
 Before any DTR write, probe fresh hardware and validate the whole patch. Require
 valid presence and readable native evidence for each requested setting family.
@@ -107,7 +111,10 @@ with exact code roundtrip), physical minimum read-only, power-on Off/Last active
 Level and bus-failure Off/Keep current/Level, basic fade-time dropdown with native
 nominal durations and explicit code0 caveat, fade-rate dropdown in steps/second.
 Unavailable fields stay unknown and disabled, while readable families remain
-usable. Show read-only actual brightness and status/version diagnostics without
+usable. A readable packed fade with reserved rate0 displays an unknown rate but
+allows selecting1..15 to repair it; do not treat it as a missing packed reply.
+Disable Save during matching identification and explain that Blink must stop;
+backend submission/admission guards remain authoritative. Show read-only actual brightness and status/version diagnostics without
 forcing navigation. Save submits only changed fields with original authority,
 requires matching returned values, then closes; Refresh makes a fresh explicit
 read under the still-original scope. Keep row height unchanged.
@@ -118,7 +125,8 @@ read under the still-original scope. Keep row height unchanged.
    limit orders, a later invalid field preventing all writes, physical-minimum
    refusal, independent special255 meanings, reserved packed rate0, silence/
    collisions/mismatch, original token/revision/epoch/deadline, held completion,
-   cache cuts versus reads/input Notices. Include normal independent model/PTY
+   cache cuts versus reads/input Notices, active identification and a claim
+   appearing between submission/admission. Include normal independent model/PTY
    roundtrip, unchanged inventory and strict MQTT/HTTP advertisement/parameters.
 2. Implement owner/proxy/API and preserve old strict peer oracles. New explicit
    operations must not add queries to ordinary All refresh. No model rewrite
@@ -145,3 +153,7 @@ Primary sources: [pinned Part102 commands](https://github.com/sde1000/python-dal
 and [native variable semantics](https://infosys.beckhoff.com/content/1033/tcplclib_tc3_dali/5908382347.html).
 One fresh combined design gate precedes implementation. No owner decision is
 needed within the already approved settings/UI architecture.
+The design gate identified the missing explicit identification guards; they are
+now specified at both existing boundaries. Reserved-rate repair is also explicit.
+Methodology: enumerate admission guards of the neighbouring mutation path, as
+well as its routing resolver, before adding another physical Work variant.
