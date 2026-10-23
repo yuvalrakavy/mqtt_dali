@@ -5,6 +5,61 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4b5 — native group power/dimming with actual full-roster evidence
+
+Frozen source `a40f840`; reviewed HTTP correction `f6685dc`. Design and final
+native/owner source lenses APPROVE. The UI/API lens found one ordinary-path P2:
+large valid full-roster reports exceeded the generic HTTP result cap, losing
+the result after native work. Both group commands now share the existing bounded
+1 MiB roster allowance; ordinary results stay at32 KiB and list/SSE summaries
+omit results. Its delta source review APPROVE. Reviews are source-only/read-only
+and same-family; no physical HAT certification is claimed.
+
+Strict MQTT/protected HTTP/typed `read_group_output` / `set_group_output` and
+compact Groups controls now send one native hardware-group OFF/MAX/DAPC, then
+sample individual membership and actual level/status across every saved output
+on that bus. Actual hardware membership includes untracked fixtures. Coverage is
+explicitly saved_inventory, not a physical census. Uniform power can coexist
+with mixed positive brightness; empty/missing/MASK/collision evidence never
+becomes false Off or an agreeing-prefix success. Sent means sent, not requested
+level attained. Unknown state permits explicit writes under normal authority.
+Names/assignments/configuration remain unchanged. Original group/member mappings,
+revision, token, trace, deadline and stamp remain under one permit through final
+acceptance. Output/colour actuals on that bus stale before possible mutation and
+at settlement, including uncertain/canceled work; other buses and input activity
+remain intact. No new task, transport or persisted configuration was added.
+
+All **12 new pure/native cases** pass, including literal group15/address63,
+actual hardware selection, ignored commands, strict maps, physical epoch, expired
+ready reply, Blink exclusion, bus-local caches and continuing button Notice.
+Full acceptance passes **684/684 native tests** across eleven binaries
+(71.858s execution/134.9s command), strict Clippy, Pi library/four binaries,
+changed formatting, independent wait validation, assets/whitespace and32 affected
+control-table plans. All **77 frontend cases** pass. The HTTP correction's
+additional typed64-member/long-target regression first fails for the named lost
+report, then all **5 job-result cases** pass (0.064s), including read/Set complete
+retrieval, summary omission, ordinary limits and the1 MiB upper bound. Narrow
+Clippy/Pi/format/wait/control-plan/whitespace checks pass after that correction;
+no redundant full-suite or browser rerun is claimed for its bounded result check.
+
+All **12 serial intentional faults** produce their named REDs: eleven initial
+aggregate/native/client controls in134s, plus removed HTTP allowance in11.2s.
+Wait generation and validation were independent. The actual phone/desktop suite
+passes **984 owned commands in85.50s**, with mixed/partial states, native On/Off/
+level, explicit unknown-state writes, unchanged configuration/other fixtures,
+held replies across slot/navigation and restored physical values. All four new
+screenshots were inspected. Its initial setup used private configuration rows
+as public targets; the fixture lookup was corrected without production changes.
+
+Guides/contracts/support matrix/CLAUDE describe native command coverage and limits.
+Artifacts: `/tmp/dali-browser-affea6b2334b8e30389429b4e3ea432b`; logs:
+`/tmp/dali-group-output-acceptance`, `/tmp/dali-group-output-controls.log`,
+`/tmp/dali-group-output-browser2.log` and
+`/tmp/dali-group-output-http-budget-{red,green,control,clippy,pi,wait}.log`.
+No live HAT, Store, deployment/publication, dependency or memory/skill change
+occurred. Next: base group scalar Desired/State bindings, then remaining explicit
+specialist capability families. DT8 group colour remains pending.
+
 ## P4i7 — managed input feedback and compact protected controls
 
 Frozen source `9cbbc1b`; reviewed UI correction `4dd92f4`. Design and final
@@ -2481,7 +2536,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Implemented and verified locally | P4 capability extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, base outputs, named inputs/live events, common input configuration, button timing and all nine base sensor parameters, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Input feedback/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
+| P4 capabilities | Quiet recovery, individual base/scalar and native group outputs, named inputs/live events, common input configuration, button timing, all nine base sensor parameters and managed feedback, DT8 codec/emulator/owned service and selected-family scalar MQTT with durable representation selection implemented | Group scalar/colour bindings, feedback parameters/stimuli/source routing, remaining colour modes/settings, split-address component bindings and other explicit capability families |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |

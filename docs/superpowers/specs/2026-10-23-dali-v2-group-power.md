@@ -196,3 +196,21 @@ roster, post-await authority and failed-action evidence clearing. The runner
 restores every mutation before frozen readers/builds. API/operator/contributor
 guides, support matrix and CLAUDE describe command versus scalar boundaries and
 truthful coverage. Final source lenses and broad acceptance follow this freeze.
+
+## Final acceptance
+
+Native/owner final source lens APPROVE at a40f840. UI/API lens found one P2:
+valid full-roster HTTP results could exceed32 KiB. Correction f6685dc grants both
+group commands the existing1 MiB roster allowance, preserving ordinary bounds and
+result-free summaries. The typed64-member/long-target regression first fails,
+then all5 job-result cases pass; removed allowance produces its named RED in11.2s.
+The narrow delta source lens APPROVE. No other source blockers were reported;
+same-family/source-only review and physical validation limits remain explicit.
+
+Full native passes684/684 across11 binaries,71.858s execution/134.9s command,
+with77 frontend cases, strict Clippy/Pi, format, independently validated waits,
+assets/whitespace and32 affected control plans. Narrow Clippy/Pi/format/wait/
+plan/whitespace checks also pass after the HTTP correction. Existing real browser
+984commands/85.50s remains valid for unchanged UI source. Total12 intentional
+faults are measured RED (134s initial11 plus11.2s result-budget correction).
+See progress P4b5 and group-output.md for final operator/consumer boundaries.
