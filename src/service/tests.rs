@@ -10,6 +10,7 @@ mod identification;
 mod input;
 mod input_assignment;
 mod live_input;
+mod output_settings;
 mod readback;
 mod reassignment;
 mod removal;

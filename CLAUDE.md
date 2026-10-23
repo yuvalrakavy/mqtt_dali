@@ -285,10 +285,15 @@ Close and navigation; directly toggling a unit-test scope cannot test that wirin
 failure255 and basic fade values plus DTR0/repeated setter plans; Query adds
 PowerOnLevel/SystemFailureLevel/FadeTimeRate. See `docs/gear-settings.md` and
 `docs/v2-gear-settings-controls.toml`. Fade FF is numeric15/15; rate0 stays raw
-unknown; basic time0 does not prove instant output. Existing independent model
-behavior is verified, not rewritten. Managed execution/UI remain subsequent work:
-whole-permit DTR ownership, physical/current limit preflight, ordered limit edits,
-actual readback and bus-local output/colour/group cache cuts are required there.
+unknown; basic time0 does not prove instant output. Managed `output::settings`
+and Work::OutputSettings implement strict MQTT/HTTP/typed read/configure and the
+protected fixture dialog. Keep whole-permit DTR ownership, fresh physical/current
+preflight and crossed-limit ordering, actual requested readback and bus-local
+output/colour/group cuts. Reads preserve caches and inputs/Notices. Partial
+unrequested fields do not block readable requested families. Identification guards
+are needed at submission and owner admission; Blink releases its permit during
+dwell. Reserved rate0 remains repairable in the UI. No settings State/config cache
+or automatic All queries. Fault controls: `docs/v2-managed-gear-settings-controls.toml`.
 
 `dali::colour` provides pure typed DT8 Tc/xy/RGBWAF values and complete frame plans;
 see `docs/dali-colour-contract.md`. `ServiceHandle::read_colour`/`apply_colour`

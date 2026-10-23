@@ -7,6 +7,7 @@ use crate::atx::{serial::Serial, transactions::Transactions};
 use tokio::time::Instant;
 
 pub(super) enum Work {
+    OutputSettings(output::settings::Request, output::settings::Route),
     GroupOutput(group_output::Request, group_output::Route),
     InputFeedback(
         super::input::feedback::Request,
@@ -31,6 +32,7 @@ impl Work {
     /// group. Input writes and nonactivating scene editing do not change them.
     pub fn changes_group_values(&self) -> bool {
         match self {
+            Self::OutputSettings(q, _) => q.action.writing(),
             Self::GroupOutput(q, _) => q.action.writing(),
             Self::Output(q, _) => q.intent.is_some(),
             Self::Scenes(q, _) => q.action.writing(),
@@ -53,6 +55,7 @@ impl Work {
     }
     pub fn bus(&self) -> u8 {
         match self {
+            Self::OutputSettings(_, r) => r.output.bus,
             Self::GroupOutput(_, r) => r.bus,
             Self::InputFeedback(_, r) => r.bus,
             Self::Restore(_, r) => r.bus,
@@ -98,6 +101,7 @@ impl Work {
     }
     pub fn deadline(&self) -> Instant {
         match self {
+            Self::OutputSettings(q, _) => q.deadline,
             Self::GroupOutput(q, _) => q.deadline,
             Self::InputFeedback(q, _) => q.deadline,
             Self::Restore(q, _) => q.deadline,
@@ -114,6 +118,7 @@ impl Work {
     }
     pub fn is_closed(&self) -> bool {
         match self {
+            Self::OutputSettings(q, _) => q.reply.is_closed(),
             Self::GroupOutput(q, _) => q.reply.is_closed(),
             Self::InputFeedback(q, _) => q.reply.is_closed(),
             Self::Restore(q, _) => q.reply.is_closed(),
@@ -129,6 +134,9 @@ impl Work {
         }
     }
     pub fn mutating(&self) -> bool {
+        if matches!(self,Self::OutputSettings(q,_)if q.action.writing()) {
+            return true;
+        }
         if matches!(self,Self::GroupOutput(q,_)if q.action.writing()) {
             return true;
         }
@@ -162,6 +170,10 @@ impl Work {
     }
     pub fn span(&self) -> tracing::Span {
         match self {
+            Self::OutputSettings(q, r) => r
+                .output
+                .context
+                .operation_span(&r.output.controller, q.action.name()),
             Self::GroupOutput(q, r) => r.context.operation_span(&r.controller, q.action.name()),
             Self::InputFeedback(q, r) => r.context.operation_span(&r.controller, q.action.name()),
             Self::Restore(q, r) => r.context.operation_span(&r.controller, q.action.name()),
@@ -189,6 +201,10 @@ impl Work {
     }
     pub async fn wait_for_receiver_close(&mut self) {
         match self {
+            Self::OutputSettings(q, _) => {
+                // WAIT: v2-hat-loop
+                q.reply.closed().await
+            }
             Self::GroupOutput(q, _) => {
                 // WAIT: v2-hat-loop
                 q.reply.closed().await
@@ -246,6 +262,9 @@ impl Work {
     ) -> impl std::future::Future<Output = Outcome> + Send + 'static {
         // Capture values only: the owner retains requests, replies and permits.
         let run = match self {
+            Self::OutputSettings(q, r) => {
+                Run::OutputSettings(r.clone(), q.deadline, q.target.clone())
+            }
             Self::GroupOutput(q, r) => Run::GroupOutput(r.clone(), q.deadline, q.target.clone()),
             Self::InputFeedback(q, r) => {
                 Run::InputFeedback(r.clone(), q.deadline, q.target.clone())
@@ -293,6 +312,15 @@ impl Work {
         };
         async move {
             match run {
+                Run::OutputSettings(route, deadline, target) => {
+                    let value =
+                        output::settings::execute(link, route, stamp, deadline, target).await;
+                    Outcome {
+                        sample: Sample::OutputSettings(value.observation),
+                        error: value.error,
+                        recovery: value.recovery,
+                    }
+                }
                 Run::GroupOutput(route, deadline, target) => {
                     let value = group_output::execute(link, route, stamp, deadline, target).await;
                     Outcome {
@@ -397,6 +425,16 @@ impl Work {
     }
     pub fn finish(self, sample: Option<Sample>, error: Option<ServiceError>) -> Completion {
         match (self, sample) {
+            (Self::OutputSettings(request, _), sample) => {
+                Completion::OutputSettings(output::settings::Completion {
+                    request,
+                    observation: sample.map(|s| match s {
+                        Sample::OutputSettings(o) => o,
+                        _ => unreachable!("physical result kind"),
+                    }),
+                    error,
+                })
+            }
             (Self::Restore(request, _), sample) => Completion::Restore(restoration::Completion {
                 request,
                 observation: sample.map(|s| match s {
@@ -512,6 +550,7 @@ impl Work {
     }
 }
 enum Run {
+    OutputSettings(output::settings::Route, Instant, String),
     GroupOutput(group_output::Route, Instant, String),
     InputFeedback(super::input::feedback::Route, Instant, String),
     InputSettings(super::input::settings::Route, Instant, String),
@@ -526,6 +565,7 @@ enum Run {
     Input(readback::Route, Instant),
 }
 pub(super) enum Sample {
+    OutputSettings(output::settings::Observation),
     GroupOutput(group_output::Observation),
     InputFeedback(super::input::feedback::Observation),
     InputSettings(super::input::settings::Observation),
@@ -542,6 +582,7 @@ pub(super) enum Sample {
 impl Sample {
     pub fn invalidate(&mut self, reason: &str) {
         match self {
+            Self::OutputSettings(value) => value.stale = true,
             Self::GroupOutput(value) => value.stale = true,
             Self::InputFeedback(value) => value.stale = true,
             Self::InputSettings(value) => value.stale = true,
@@ -567,6 +608,7 @@ pub(super) struct Outcome {
     pub recovery: bool,
 }
 pub(super) enum Completion {
+    OutputSettings(output::settings::Completion),
     GroupOutput(group_output::Completion),
     InputFeedback(super::input::feedback::Completion),
     InputSettings(super::input::settings::Completion),
@@ -583,6 +625,9 @@ pub(super) enum Completion {
 impl Completion {
     pub fn reject(self) {
         match self {
+            Self::OutputSettings(q) => {
+                output::settings::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
+            }
             Self::GroupOutput(q) => {
                 group_output::finish(q.request, Err(q.error.unwrap_or(ServiceError::Closed)))
             }

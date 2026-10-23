@@ -3,8 +3,8 @@
 This guide is for MQTT consumers and bridge operators using the development v2
 bridge. Any MQTT v5 consumer can use it. A Store server is not required. Configure
 the controller and saved outputs first; [discovery](discovery.md) and
-[commissioning](commissioning.md) APIs are available, with the browser interface
-under development. See [running v2](running-v2.md) and
+[commissioning](commissioning.md) APIs are available through the protected browser
+interface as well. See [running v2](running-v2.md) and
 [the inventory contract](inventory-contract.md).
 
 For controller `Controller`, bus `Bus1` and output `Light1`, the target is
@@ -32,6 +32,14 @@ BridgeKit coalesces pending Desired values by property. The driver validates and
 applies the complete effective map it receives. One rejected map can produce an
 Error for each property. Use an explicit refresh/readback to sequence actions;
 an Error count alone does not establish completion of a publication.
+
+## Fixture settings
+
+Common individual fixture settings use explicit `read_output_settings` and
+`configure_output` commands, with original target-generation and expected revision
+for writes. They return readback reports, separate from scalar Desired/State and
+All refresh. See [fixture settings](gear-settings.md) for fields, partial evidence,
+physical preflight, special values and unconfirmed outcomes.
 
 ## Hardware groups
 

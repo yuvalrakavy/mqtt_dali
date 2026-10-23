@@ -2,6 +2,18 @@
 use super::*;
 use serde_json::json;
 
+#[test]
+fn literal_gear_settings_physical_minimum_has_fixed_profile_readback() {
+    let mut m = physical();
+    assert_eq!(
+        m.transmit(0, 0x7f9a, 0),
+        Reply::Value(1),
+        "physical minimum query missing from the fixed output profile"
+    );
+    assert_eq!(m.transmit(1, 0x7f9a, 0), Reply::Value(1));
+    assert_eq!(m.transmit(0, 0x7fa2, 0), Reply::Value(1));
+}
+
 fn physical() -> Model {
     Model::new(
         serde_json::from_value(json!({"version":1,"buses":[

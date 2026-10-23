@@ -237,6 +237,7 @@ v2-service-request src/service/input/feedback.rs ServiceHandle::input_feedback
 v2-service-request src/service/input/readback.rs ServiceHandle::read_input
 v2-service-request src/service/input/settings.rs ServiceHandle::input_settings
 v2-service-request src/service/output.rs ServiceHandle::output
+v2-service-request src/service/output/settings.rs ServiceHandle::output_settings
 v2-service-request src/service/reassignment.rs ServiceHandle::reset_space
 v2-service-request src/service/restoration.rs ServiceHandle::restore
 v2-service-request src/service/scene_settings.rs ServiceHandle::scene_setting

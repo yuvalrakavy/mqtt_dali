@@ -1,5 +1,19 @@
 # Building and testing the served browser UI
 
+Output **Fixture settings** uses `OutputSettingsScope` and a compact modal under
+the existing row actions. Freeze the original row/address/token/root and view
+epoch; revoke synchronously on dismissal and in layout cleanup. Read on entry,
+save changed fields only and require coherent raw readings plus actual requested
+values. Missing families remain disabled; a readable packed fade with reserved
+rate0 allows repair. Percentage conversion preserves all255 ordinary native
+codes0..254. Retire actionable values before possible saves; failed/unconfirmed
+replies require explicit Refresh. Matching identification blocks Save, not Read.
+Use functional draft setters: blur and dropdown changes may be batched, and a
+captured draft can silently erase another field's pending edit. The actual browser
+flow checks both crossing limit orders, all six fields, Off retained, reopen,
+lost replies, explicit refresh, held Cancel/Close/navigation and exact restoration
+against native snapshots and unchanged inventory.
+
 Input-instance **Event settings** uses `InputSettingsScope` and its own compact
 modal. Freeze row, token, root and connection epoch; recheck after each awaited
 job. Job reports are local hardware evidence, never inventory/State authority.

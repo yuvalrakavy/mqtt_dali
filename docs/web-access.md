@@ -220,6 +220,13 @@ Snapshots include nullable `identification` status; successful rename starts
 restoration, whose completion is separate from durable rename success. See
 [Blink and Stop](identification.md) for the two-minute limit and DT8 behavior.
 
+Fixture settings use explicit `read_output_settings` (`params:{}`) and
+`configure_output` (`params:{expected_revision,settings}`) jobs on individual
+output targets, with original generation. The compact actions dialog and API
+share physical/current preflight, exact readback and partial-family handling.
+These settings do not enter scalar State or change saved inventory; see
+[fixture settings](gear-settings.md).
+
 Use the selected item's original generation and complete target for these jobs.
 They do not change inventory and take no expected_revision:
 

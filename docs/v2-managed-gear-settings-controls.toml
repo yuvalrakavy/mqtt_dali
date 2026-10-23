@@ -1,0 +1,181 @@
+# Run serially before freeze/source readers. Browser row restores exact derived assets.
+
+[[control]]
+name = "output_settings_physical_minimum_not_checked"
+file = "src/service/output/settings.rs"
+anchor = "min < physical"
+replacement = "false"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_literal_whole_patch)"]
+expect_text = "output settings preflight wrote part of a rejected patch: physical"
+
+[[control]]
+name = "output_settings_crossing_always_writes_minimum_first"
+file = "src/service/output/settings.rs"
+anchor = "if min > old_max {"
+replacement = "if false && min > old_max {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_literal_crossed_limits)"]
+expect_text = "native output settings crossing order or readback was not confirmed"
+
+[[control]]
+name = "output_settings_transport_send_is_confirmation"
+file = "src/service/output/settings/execute.rs"
+anchor = ".is_some_and(|v| settings.matches(v))"
+replacement = ".is_some_and(|v| { let _ = settings.matches(v); true })"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_literal_sends_never)"]
+expect_text = "native output settings send was mistaken for confirmation: ignored"
+
+[[control]]
+name = "output_settings_missing_closing_presence_is_accepted"
+file = "src/service/output/settings/execute.rs"
+anchor = "byte(&readings[\"status\"]).is_some() && byte(&readings[\"closing_status\"]).is_some()"
+replacement = "byte(&readings[\"status\"]).is_some()"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_literal_sends_never)"]
+expect_text = "native output settings send was mistaken for confirmation: missing_after"
+
+[[control]]
+name = "output_settings_final_physical_epoch_is_ignored"
+file = "src/service/output/settings.rs"
+anchor = "|| !hat.evidence_current(r.output.bus, o.stamp)"
+replacement = "|| (false && !hat.evidence_current(r.output.bus, o.stamp))"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_final_physical_epoch)"]
+expect_text = "old physical epoch accepted an output settings read"
+
+[[control]]
+name = "output_settings_preflight_keeps_old_actual_cache"
+file = "src/service/owner.rs"
+anchor = "group_output::invalidate_actual(&mut snapshot, route.output.bus);"
+replacement = "let _ = route.output.bus;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_cut_actual)"]
+expect_text = "settings left actual output current before native preflight"
+
+[[control]]
+name = "output_settings_does_not_retire_group_cache"
+file = "src/service/physical.rs"
+anchor = "Self::OutputSettings(q, _) => q.action.writing(),"
+replacement = "Self::OutputSettings(_, _) => false,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_cut_actual)"]
+expect_text = "settings left group evidence current before native preflight"
+
+[[control]]
+name = "output_settings_submission_ignores_identification"
+file = "src/service/output/settings.rs"
+anchor = "if writing && identification::blocks(self, target) {"
+replacement = "if false && writing && identification::blocks(self, target) {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_identification_guards)"]
+expect_text = "settings submission queued work despite an active identification claim"
+
+[[control]]
+name = "output_settings_owner_ignores_later_identification"
+file = "src/service/owner.rs"
+anchor = "if request.action.writing()\n                            && identification::blocks(&self.handle, &request.target)"
+replacement = "if false && request.action.writing()\n                            && identification::blocks(&self.handle, &request.target)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_identification_guards)"]
+expect_text = "settings ignored identification at submission/owner boundary"
+
+[[control]]
+name = "output_settings_held_reply_adopts_new_revision"
+file = "src/service/output/settings.rs"
+anchor = "if !current.as_ref().is_ok_and(|r| r.revision == revision) {"
+replacement = "if false && !current.as_ref().is_ok_and(|r| r.revision == revision) {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_ready_reply)"]
+expect_text = "held settings read renewed its original deadline or revision"
+
+[[control]]
+name = "output_settings_held_reply_renews_deadline"
+file = "src/service/output/settings.rs"
+anchor = "let result = timeout_at(deadline, receive).await;\n        if Instant::now() >= deadline {"
+replacement = "let result = timeout_at(deadline, receive).await;\n        if false && Instant::now() >= deadline {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_ready_reply)"]
+expect_text = "held settings read renewed its original deadline or revision"
+
+[[control]]
+name = "output_settings_null_member_is_silently_omitted"
+file = "src/service/output/settings.rs"
+anchor = "T::deserialize(d).map(Some)"
+replacement = "Option::<T>::deserialize(d)"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_mqtt_strict)"]
+expect_text = "strict output settings params or Read-class dispatch failed"
+
+[[control]]
+name = "output_settings_read_requires_mutation_completion"
+file = "src/service/proxy.rs"
+anchor = "if let Operation::OutputSettings(action) = &change {\n            if !action.writing() {"
+replacement = "if let Operation::OutputSettings(action) = &change {\n            if false && !action.writing() {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(managed_output_settings_mqtt_strict)"]
+expect_text = "strict output settings params or Read-class dispatch failed"
+
+[[control]]
+name = "output_settings_ui_scales_to_255"
+file = "web/src/output-settings.ts"
+anchor = "Math.round(value*254/100)"
+replacement = "Math.round(value*255/100)"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "settings percentage changed native level code"
+
+[[control]]
+name = "output_settings_ui_accepts_canceled_scope"
+file = "web/src/output-settings.ts"
+anchor = "this.cancelled||ui.cancelled"
+replacement = "false||ui.cancelled"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "retired output scope accepted a late read"
+
+[[control]]
+name = "output_settings_ui_does_not_match_requested_values"
+file = "web/src/output-settings.ts"
+anchor = "if(frozen[field]!==undefined&&result.settings?.[field]!==frozen[field])"
+replacement = "if(false&&frozen[field]!==undefined&&result.settings?.[field]!==frozen[field])"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "output settings accepted mismatched or retired write evidence"
+
+[[control]]
+name = "output_settings_ui_keeps_values_after_possible_write"
+file = "web/src/output-settings.ts"
+anchor = "validateOutputPatch(frozen,this.values);this.values=null;this.result=null;"
+replacement = "validateOutputPatch(frozen,this.values);"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "failed settings reply retained actionable values"
+
+[[control]]
+name = "output_settings_ui_ignores_result_generation"
+file = "web/src/output-settings.ts"
+anchor = "r.target_generation!==row.generation"
+replacement = "false&&r.target_generation!==row.generation"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "output settings accepted mismatched or retired write evidence"
+
+[[control]]
+name = "output_settings_ui_cannot_repair_reserved_rate"
+file = "web/src/output-settings.ts"
+anchor = "return v.fade_raw!==null;"
+replacement = "return v.fade_rate!==null;"
+target = "command"
+argv = ["node", "--test", "web/src/output-settings.test.ts"]
+expect_text = "readable reserved fade rate could not be repaired"
+
+[[control]]
+name = "output_settings_ui_only_commits_numbers_on_blur"
+file = "web/src/output-settings-ui.tsx"
+anchor = "onInput={e=>{const text=e.currentTarget.value;setPercentText"
+replacement = "onChange={e=>{const text=e.currentTarget.value;setPercentText"
+target = "command"
+argv = ["python3", "-c", "from pathlib import Path\nimport subprocess\nimport sys\nassets={p:p.read_bytes() for p in Path(\"web/dist\").rglob(\"*\") if p.is_file()}\nresult=None\ntry:\n    build=subprocess.run([\"npm\",\"--prefix\",\"web\",\"run\",\"build\"])\n    if build.returncode:\n        sys.exit(build.returncode)\n    result=subprocess.run([\"cargo\",\"test\",\"--offline\",\"--target\",\"aarch64-apple-darwin\",\"--lib\",\"browser_functional_phone_and_desktop\",\"--\",\"--ignored\",\"--nocapture\"])\nfinally:\n    for path,data in assets.items():\n        path.write_bytes(data)\nsys.exit(result.returncode)\n"]
+expect_text = "fixture settings or crossed-limit ordering failed; Off must remain Off"

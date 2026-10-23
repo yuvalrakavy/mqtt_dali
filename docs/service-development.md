@@ -1,12 +1,18 @@
 # Managed inventory service (v2 development)
 
-Common output settings currently have a [pure protocol foundation](gear-settings.md)
-in `dali::gear::settings`, with individual correlated query variants in the existing
-gear codec. They have no managed command, config or State cache yet. Reuse the
-existing physical owner when adding execution; keep the whole DTR/setter sequence
-under one permit, preflight current/physical limits, order crossed limit changes,
-and require actual requested readback. Limit writes may change actual brightness,
-so output/colour/group evidence must be invalidated before possible send.
+Common output settings use `output::settings` and concrete `Work::OutputSettings`
+with [checked native plans](gear-settings.md). Shared strict MQTT/HTTP and typed
+read/configure keep original context/revision/deadline/permit through settlement.
+Preflight the whole patch before DTR, including fresh physical/current limits and
+both crossed-limit orders. Preserve readable special255/packed rate0 and allow
+unrelated partial diagnostics. Only matching requested readback is configured.
+Settings are not bridge ConfigStore data or a scalar State cache. Configure cuts
+bus-local base/colour/group actual evidence before possible send and at settlement;
+reads preserve it and native input Notices/values. Identification guards apply at
+submission and owner admission for writes; read and unrelated gear remain usable.
+Read-class MQTT dispatch precedes requiring CommandCompletion. Keep all concrete
+Work/Run/Sample/Completion/Message and stop branches exhaustive. Both operations
+have one8s ceiling, original caller expiry and original mapping rechecks.
 
 Native input event settings use `input::settings` and a separate
 `physical::Work::InputSettings` variant. Read/Patch/Readback retains the original

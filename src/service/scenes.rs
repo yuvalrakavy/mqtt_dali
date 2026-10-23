@@ -49,7 +49,7 @@ pub enum Reading {
     TransmitCollision { code: Option<u8> },
 }
 impl Reading {
-    fn byte(reply: BusReply, masked: bool) -> Self {
+    pub(in crate::service) fn byte(reply: BusReply, masked: bool) -> Self {
         match reply {
             BusReply::Value(raw) if masked && raw == 255 => Self::Mask { raw: 255 },
             BusReply::Value(raw) => Self::Value {

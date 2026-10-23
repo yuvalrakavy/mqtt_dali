@@ -1,9 +1,75 @@
-# Common fixture settings protocol
+# Fixture settings
+
+On a bus's Devices page, open an output's actions and choose **Fixture settings**.
+The protected dialog reads the fixture on entry. It shows minimum/maximum
+brightness, power-on and bus-failure behavior, basic fade time and dimming rate.
+Fixture diagnostics shows actual brightness, active status flags and the raw
+reported version byte. Opening, Cancel and Refresh send no settings writes.
+
+Brightness percentages round-trip the native control code, rather than measured
+luminous flux. Physical minimum is read-only. Unavailable fields stay unknown;
+readable families remain usable. A readable packed fade with reserved rate0
+allows selecting a valid rate to repair it. Fade time0 uses other supported fade
+settings and does not guarantee an instant transition. Stop Blink before saving
+settings to that identifying fixture; reads and unrelated fixtures remain usable.
+
+Save submits only changed fields under the original row identity and revision.
+The bridge freshly checks the whole patch, including physical/current limits,
+before any setting is sent. It orders crossed limit changes to avoid unintended
+clamping. Limit changes can alter an already-lit fixture; an off fixture stays
+off. Requested fields must match actual readback before the dialog closes.
+An uncertain or failed save clears actionable values until explicit Refresh;
+it never silently resends the patch. Names, bindings, groups and saved bridge
+configuration are unchanged. No automatic reset or fixture-mode change is sent.
+
+## MQTT, HTTP and typed service
+
+Generic MQTT consumers use `read_output_settings` with an individual output target
+and no parameters, or `configure_output` with the original target-generation
+property, current expected revision and a strict changed-field patch:
+
+```json
+{"command":"configure_output","target":"Bus1.Outputs.Kitchen",
+ "expected_revision":7,"settings":{"minimum_level":5,"power_on_level":255,
+ "system_failure_level":0,"fade_time":1,"fade_rate":7}}
+```
+
+Publish using the ordinary BridgeKit command envelope and MQTT v5 reply/trace
+properties described in [MQTT outputs](mqtt-outputs.md). HTTP jobs use the same
+command names and `params` payload through the existing authenticated API.
+Embedders call `ServiceHandle::read_output_settings` / `configure_output` with
+an original RequestContext and absolute deadline. Total operation ceiling is8s,
+clipped to the caller's deadline. Writes need the configured verified HAT repeat
+profile. These operations are explicit and are not part of scalar All polling.
+
+Patch fields are `minimum_level`, `maximum_level`, `power_on_level`,
+`system_failure_level`, `fade_time` and `fade_rate`, all native integer codes.
+Null, unknown/read-only fields, fractional values, empty patches, bad ranges and
+retired authority reject. Startup/failure0..255 remain stored native settings;
+they need not equal current min/max. Limit edits require fresh valid physical
+minimum/current limits and a valid final min/max pair. Missing unrequested
+diagnostics do not prevent a supported patch.
+
+Reports retain original target/generation/revision/bus/address, before/after
+settings, raw correlated readings and decoded status flags. Read outcomes are
+`current`, `partial` or `unavailable`; write outcomes include `configured`,
+`rejected` and `unconfirmed`. HTTP success alone is not fixture confirmation.
+Only `configured` means every requested field matched fresh readback. Silence,
+both collision directions/codes, actual MASK and reserved fade rate stay explicit.
+`configuration_changed:false` refers to bridge inventory; hardware settings may
+have changed. After possible writes, inspect hardware before retrying uncertainty.
+
+There is no settings State cache. Configuring conservatively retires bus-local
+base/colour/group actuals until their normal fresh read; settings reads preserve
+those caches and native input values/Notices. Original authority, physical epoch,
+deadline and the shared permit remain under the existing owner through settlement.
+
+## Checked protocol foundation
 
 `dali::gear::settings` supplies checked values and command plans for minimum and
 maximum dimming levels, power-on and bus-failure levels, and basic fade time/rate.
-This is a library foundation. Managed MQTT commands, authenticated HTTP jobs and
-web controls for these settings are subsequent work.
+The managed service and protected controls above execute this checked foundation
+through the existing UART owner.
 
 | Value | Accepted native values | Meaning |
 |---|---|---|
@@ -32,7 +98,7 @@ destinations include individual, group and broadcast addresses. Building a plan
 does no I/O and neither saves bridge configuration nor proves fixture support.
 
 An executor must hold the existing whole-bus permit across both steps and use
-the verified HAT repeat policy. The later managed API starts with individual
+the verified HAT repeat policy. The managed API starts with individual
 fixtures: freshly read physical/current limits, validate the whole patch, order
 crossing minimum/maximum edits to avoid unintended native clamping, then compare
 actual readback. Raising minimum can brighten an already-lit fixture; lowering

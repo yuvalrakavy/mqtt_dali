@@ -5,6 +5,150 @@ use crate::{
     service::tests::{context, model, snapshot},
 };
 
+#[tokio::test]
+async fn managed_output_settings_identification_guards_submission_and_owner_race() {
+    use crate::{
+        atx::transactions::RepeatPolicy,
+        emulator::{pty, session::Control},
+        service::{
+            output::settings::Patch,
+            tests::{start, wait_for, Fixture},
+        },
+    };
+    use std::{
+        future::{poll_fn, Future},
+        task::Poll,
+    };
+    // Prove submission itself refuses the active claim, before an owner can
+    // mask a missing guard by rejecting a queued request later.
+    let (mut unopened, blocked, _) = fixture();
+    let mut refused = Box::pin(blocked.configure_output(
+        "Bus1.Outputs.Light1",
+        1,
+        Patch {
+            minimum_level: Some(5),
+            ..Default::default()
+        },
+        context(1),
+        Instant::now() + Duration::from_secs(2),
+    ));
+    poll_fn(|cx| {
+        match refused.as_mut().poll(cx) {
+            Poll::Ready(Err(ServiceError::Rejected(_))) => {}
+            _ => panic!("settings submission queued work despite an active identification claim"),
+        };
+        Poll::Ready(())
+    })
+    .await;
+    assert!(
+        unopened.receive.try_recv().is_err(),
+        "blocked settings reached the owner queue"
+    );
+    drop(refused);
+    drop(unopened);
+    let fixture = Fixture::new();
+    fixture.add_output(1, "Peer");
+    let emulator=pty::spawn(serde_json::from_value(serde_json::json!({"version":1,"buses":[{"number":0,"outputs":[{"id":"lamp","short_address":0,"level":100},{"id":"peer","short_address":1,"level":100}]}]})).unwrap()).await.unwrap();
+    let broker = mqtt_test_broker::FakeBroker::start().await;
+    let (service, handle) = fixture.service();
+    let claims = service.identification.clone();
+    let running = start(
+        service.with_uart(&emulator.path, RepeatPolicy::OneTerminal),
+        &handle,
+        &broker,
+    )
+    .await;
+    wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+    let location = Location::Output {
+        bus: 0,
+        short_address: 0,
+    };
+    let target = "Bus1.Outputs.Light1";
+    let claim = Claim {
+        status: Status {
+            target: target.into(),
+            generation: context(1).generation().unwrap().into(),
+            phase: Stage::Blinking,
+            actual_level: Some(100),
+        },
+        origin: handle
+            .snapshot()
+            .unwrap()
+            .model
+            .origin(location)
+            .unwrap()
+            .clone(),
+        location,
+    };
+    let patch = Patch {
+        minimum_level: Some(5),
+        ..Default::default()
+    };
+    for after_submission in [false, true] {
+        claims.send_replace(if after_submission {
+            None
+        } else {
+            Some(claim.clone())
+        });
+        let mut call = Box::pin(handle.configure_output(
+            target,
+            1,
+            patch.clone(),
+            context(1),
+            Instant::now() + Duration::from_secs(2),
+        ));
+        if after_submission {
+            poll_fn(|cx| {
+                assert!(call.as_mut().poll(cx).is_pending());
+                Poll::Ready(())
+            })
+            .await;
+            claims.send_replace(Some(claim.clone()));
+        }
+        assert!(
+            matches!(call.await,Err(ServiceError::Rejected(ref e))if e.contains("stop identification")),
+            "settings ignored identification at submission/owner boundary"
+        );
+        assert_eq!(
+            handle
+                .read_output_settings(target, context(1), Instant::now() + Duration::from_secs(2))
+                .await
+                .unwrap()
+                .outcome,
+            "current",
+            "identification blocked a read-only settings operation"
+        );
+        assert_eq!(
+            handle
+                .configure_output(
+                    "Bus1.Outputs.Peer",
+                    1,
+                    patch.clone(),
+                    context(1),
+                    Instant::now() + Duration::from_secs(2)
+                )
+                .await
+                .unwrap()
+                .outcome,
+            "configured",
+            "identification blocked an unrelated fixture"
+        );
+    }
+    let physical = emulator
+        .emulator
+        .control(Control::Snapshot, Duration::from_secs(1))
+        .await
+        .unwrap();
+    assert_eq!(
+        physical["buses"][0]["outputs"][0]["min_level"], 1,
+        "claimed fixture was configured despite the guard"
+    );
+    assert_eq!(physical["buses"][0]["outputs"][1]["min_level"], 5);
+    claims.send_replace(None);
+    assert!(running.stop().await);
+    emulator.emulator.close().await.unwrap();
+}
+
 fn fixture() -> (DaliService, ServiceHandle, Claim) {
     let (service, handle) = DaliService::new(
         ConfigPaths::in_directory(std::path::Path::new("/unused-identification-test")),

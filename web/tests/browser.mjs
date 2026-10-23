@@ -1,4 +1,5 @@
 import { inputSettingsFlow } from './input-settings.mjs';
+import { outputSettingsFlow } from './output-settings.mjs';
 import { feedbackFlow } from './feedback.mjs';
 import { groupOutputFlow } from './group-output.mjs';
 import { scenesFlow } from './scenes.mjs';
@@ -65,6 +66,7 @@ try {
   // Phone actions and colour form must fit and persist an actual DT8 write.
   await row('KitchenMain').getByRole('button',{name:'Actions KitchenMain',exact:true}).click();await dialogVisible();await page.getByRole('button',{name:'Colour representation and values',exact:true}).click();await dialogVisible();await page.getByLabel('Colour representation',{exact:true}).selectOption('temperature');await until(async()=>await page.locator('dialog').count()===0,'representation save did not finish');
   await row('KitchenMain').getByRole('button',{name:'Actions KitchenMain',exact:true}).click();await page.getByRole('button',{name:'Colour representation and values',exact:true}).click();await page.getByLabel('Temperature (K)',{exact:true}).fill('4000');await page.getByRole('button',{name:'Apply colour',exact:true}).click();await until(async()=>await page.locator('dialog').count()===0,'colour write failed');assert.equal((await control({op:'snapshot'})).buses[0].outputs[0].colour_state.actual.temperature.value,250,'DT8 temperature did not reach independent model');
+  await outputSettingsFlow({page,context,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await page.getByRole('link',{name:'Groups',exact:true}).click();await page.getByLabel('New group name',{exact:true}).fill('Kitchen');await page.getByRole('button',{name:'Create group',exact:true}).click();await page.getByLabel('Group name pattern',{exact:true}).fill('Kitchen*');await page.getByRole('button',{name:'Preview pattern',exact:true}).click();await dialogVisible();await page.getByRole('button',{name:'Apply reviewed changes',exact:true}).click();await until(async()=>(await control({op:'snapshot'})).buses[0].outputs.filter(o=>(o.groups&1)!==0).length===2,'pattern group assignment did not reach fixtures');
   await page.getByRole('button',{name:'Verify all groups',exact:true}).click();await page.getByRole('heading',{name:'Verify group assignments',exact:true}).waitFor();await dialogVisible();assert.ok((await page.locator('dialog').innerText()).includes('Assignments match'),'group verification did not read hardware');
   const review=name=>page.locator('.verify-row').filter({has:page.getByRole('heading',{name,exact:true})});

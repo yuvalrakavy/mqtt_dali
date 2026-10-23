@@ -590,6 +590,7 @@ impl Model {
                 0x97 => Some(8),
                 0x98 => Some(gear.dtr[0]),
                 0x99 => Some(gear.config.device_type),
+                0x9a => Some(1),
                 0x9c => Some(gear.dtr[1]),
                 0x9d => Some(gear.dtr[2]),
                 0xa0 => {

@@ -285,6 +285,7 @@ enum Message {
     Commission(commissioning::Request),
     Discovery(discovery::Request),
     Output(output::Request),
+    OutputSettings(output::settings::Request),
     Input(input::readback::Request),
     InputSettings(input::settings::Request),
     InputFeedback(input::feedback::Request),

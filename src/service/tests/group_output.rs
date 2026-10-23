@@ -55,7 +55,14 @@ async fn group_scalar_common_mutations_retire_only_their_bus_group_evidence() {
         .unwrap()
         .unwrap();
     let targets = ["Bus1.Groups.All", "Bus1.Groups.Sibling", "Bus2.Groups.All"];
-    for operation in ["individual", "group", "scene", "membership", "clear"] {
+    for operation in [
+        "individual",
+        "group",
+        "scene",
+        "membership",
+        "settings",
+        "clear",
+    ] {
         for target in targets {
             handle
                 .read_group_output(target, context(1), deadline())
@@ -87,6 +94,19 @@ async fn group_scalar_common_mutations_retire_only_their_bus_group_evidence() {
                 .values()
                 .all(|o| !o.stale),
             "input feedback retired group evidence"
+        );
+        handle
+            .read_output_settings("Bus1.Outputs.Light1", context(1), deadline())
+            .await
+            .unwrap();
+        assert!(
+            handle
+                .snapshot()
+                .unwrap()
+                .group_outputs
+                .values()
+                .all(|o| !o.stale),
+            "output settings read retired group evidence"
         );
         let before_input = handle.snapshot().unwrap().inputs[input].clone();
         match operation {
@@ -138,6 +158,25 @@ async fn group_scalar_common_mutations_retire_only_their_bus_group_evidence() {
                     )
                     .await
                     .unwrap();
+            }
+            "settings" => {
+                assert_eq!(
+                    handle
+                        .configure_output(
+                            "Bus1.Outputs.Light1",
+                            1,
+                            crate::service::output::settings::Patch {
+                                maximum_level: Some(200),
+                                ..Default::default()
+                            },
+                            context(1),
+                            deadline()
+                        )
+                        .await
+                        .unwrap()
+                        .outcome,
+                    "configured"
+                );
             }
             _ => {
                 handle

@@ -10,6 +10,7 @@ use crate::dali::gear::{
 };
 use std::collections::BTreeMap;
 pub mod colour;
+pub mod settings;
 
 #[derive(Debug, Clone, Copy)]
 pub(super) enum WriteIntent {

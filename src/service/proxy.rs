@@ -37,6 +37,7 @@ impl DeviceDriver for DaliProxy {
                 "repair_scene_row",
                 "assign_group",
                 "configure_input",
+                "configure_output",
                 "set_input_feedback",
                 "set_group_output",
                 "adopt_groups",
@@ -58,6 +59,10 @@ impl DeviceDriver for DaliProxy {
             ]
             .into_iter()
             .map(|name| CommandSpec::new(name, CommandClass::WithReply))
+            .chain(std::iter::once(CommandSpec::new(
+                "read_output_settings",
+                CommandClass::Read,
+            )))
             .chain(std::iter::once(CommandSpec::new(
                 "read_group_output",
                 CommandClass::Read,
@@ -290,6 +295,26 @@ impl DeviceDriver for DaliProxy {
                     .map_err(|e| OpError::Unusable(e.to_string()));
             }
         }
+        if let Operation::OutputSettings(action) = &change {
+            if !action.writing() {
+                let result = self
+                    .handle
+                    .output_settings(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("individual output target required".into())
+                        })?,
+                        action.clone(),
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(8),
+                        None,
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+        }
         if let Operation::InputSettings(action) = &change {
             if !action.writing() {
                 let result = self
@@ -416,6 +441,24 @@ impl DeviceDriver for DaliProxy {
                     .handle
                     .input_feedback(
                         target.ok_or_else(|| OpError::Rejected("input target required".into()))?,
+                        action,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(8),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+            Operation::OutputSettings(action) => {
+                let result = self
+                    .handle
+                    .output_settings(
+                        target.ok_or_else(|| {
+                            OpError::Rejected("individual output target required".into())
+                        })?,
                         action,
                         context.clone(),
                         Instant::now() + Duration::from_secs(8),
@@ -887,6 +930,7 @@ enum Operation {
     GroupOutput(group_output::Action),
     InputFeedback(input::feedback::Action),
     InputSettings(input::settings::Action),
+    OutputSettings(output::settings::Action),
     Restore(restoration::Action),
     Reassignment(Assignment, discovery::Space),
     SavedScene,
@@ -916,6 +960,15 @@ impl Operation {
             Self::InputFeedback(action) => input::feedback::resolve(
                 snapshot,
                 target.ok_or_else(|| ServiceError::Rejected("input target required".into()))?,
+                action,
+                context,
+            )
+            .map(|_| ()),
+            Self::OutputSettings(action) => output::settings::resolve(
+                snapshot,
+                target.ok_or_else(|| {
+                    ServiceError::Rejected("individual output target required".into())
+                })?,
                 action,
                 context,
             )
@@ -1010,6 +1063,7 @@ impl Operation {
             Self::GroupOutput(_) => 15,
             Self::InputFeedback(_) => 8,
             Self::InputSettings(_) => 8,
+            Self::OutputSettings(_) => 8,
             Self::SceneSettings(action) => {
                 if action.writing() {
                     18
@@ -1269,6 +1323,19 @@ impl PreparedCommand {
                     .input_feedback(
                         target.as_deref().ok_or_else(|| {
                             ServiceError::Rejected("input target required".into())
+                        })?,
+                        action,
+                        context,
+                        deadline,
+                        None,
+                    )
+                    .await?,
+            ),
+            Operation::OutputSettings(action) => value(
+                handle
+                    .output_settings(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("individual output target required".into())
                         })?,
                         action,
                         context,
@@ -1543,6 +1610,37 @@ fn parse(
             expected: p.expected_revision,
             active: p.active,
         }));
+    }
+    if matches!(
+        call.command.as_str(),
+        "read_output_settings" | "configure_output"
+    ) {
+        if target.is_none() {
+            return Err(OpError::Rejected(
+                "individual output target required".into(),
+            ));
+        }
+        if call.command == "read_output_settings" {
+            if !call.params.is_empty() {
+                return Err(OpError::Rejected(
+                    "read_output_settings accepts no parameters".into(),
+                ));
+            }
+            return Ok(Operation::OutputSettings(output::settings::Action::Read));
+        }
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Configure {
+            expected_revision: u64,
+            settings: output::settings::Patch,
+        }
+        let p: Configure = decode(call)?;
+        return Ok(Operation::OutputSettings(
+            output::settings::Action::Configure {
+                expected: p.expected_revision,
+                settings: p.settings,
+            },
+        ));
     }
     if matches!(
         call.command.as_str(),

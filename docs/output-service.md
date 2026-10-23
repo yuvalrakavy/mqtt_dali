@@ -2,10 +2,15 @@
 
 This guide is for bridge contributors and embedders. The shared service can read
 and control a saved individual DALI output through its UART owner. The same paths
-serve [MQTT base output properties](mqtt-outputs.md). The browser UI is pending.
+serve [MQTT base output properties](mqtt-outputs.md) and the protected browser UI.
 Groups, color and addressing
 have separate execution contracts; this API does not reinterpret a group as an
 individual address.
+
+Explicit common settings and diagnostics use `read_output_settings` /
+`configure_output` through this same owner, with separate reports and no scalar
+settings cache. See [fixture settings](gear-settings.md) for strict patches,
+physical/current preflight, original revision and matching actual confirmation.
 
 Start the managed service with UART enabled, then use its existing ServiceHandle:
 

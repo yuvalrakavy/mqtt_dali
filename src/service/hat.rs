@@ -860,6 +860,22 @@ impl Hat {
     ) {
         self.enqueue_physical(physical::Work::InputSettings(request, route));
     }
+    pub(super) fn enqueue_output_settings(
+        &mut self,
+        request: output::settings::Request,
+        route: output::settings::Route,
+    ) {
+        if request.action.writing()
+            && self
+                .settings
+                .as_ref()
+                .is_none_or(|s| s.repeat == RepeatPolicy::Unverified)
+        {
+            output::settings::finish(request,Err(ServiceError::Rejected("output settings require --uart-repeat-terminals 1 or 2 for a known HAT profile".into())));
+            return;
+        }
+        self.enqueue_physical(physical::Work::OutputSettings(request, route));
+    }
     fn enqueue_physical(&mut self, work: physical::Work) {
         let error = if self.physical.is_some() || self.completed.is_some() {
             Some(ServiceError::Busy)
@@ -936,6 +952,9 @@ impl Hat {
                 }
                 let physical = self.physical.as_mut().unwrap();
                 physical.stage = physical::Stage::Running;
+                if let physical::Work::OutputSettings(request, _) = &mut physical.work {
+                    request.started = request.action.writing();
+                }
                 if let physical::Work::GroupOutput(request, _) = &mut physical.work {
                     request.started = request.action.writing();
                 }

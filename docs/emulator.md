@@ -128,7 +128,10 @@ preserve unselected gear and other buses. Minimum/maximum clamp lit actual level
 while retaining Off; each fade setter preserves the other nibble. Power-on and
 failure FF remain raw special settings; packed fade FF remains numeric 15/15.
 Literal model and standalone UART/PTY tests verify this existing behavior against
-the [typed settings foundation](gear-settings.md). No register/snapshot shape
+the [typed settings foundation and managed API](gear-settings.md). The managed
+preflight exposed missing physical-minimum query9A; a literal regression first
+failed, then the fixed profile gained reply1, matching its minimum bound.
+Physical minimum is not a new scenario parameter. No register/snapshot shape
 change or new timing simulation is involved. Bus-power control is not fixture
 mains-power simulation; these tests do not prove startup/failure transitions or
 completed physical fades.
