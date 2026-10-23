@@ -5,56 +5,44 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
-Current work: final verification of the combined DT1 emergency and retained
-relay/emergency capability milestone, implemented at `a9acfa5` with corrections
-at `0438fea`. Both source reviews approve; all10 original mutation controls and
-the one affected guard recheck caught their intended behavioral faults. The
-correct-source run passes860/860 native tests and124/124 frontend tests. The
-complete linked browser and remaining build checks are running; this milestone
-is not yet accepted.
+Most recent accepted milestone: common DT1 emergency operations, emulator/UI
+support and retained relay/emergency type capabilities. Implementation
+`a9acfa5` plus `0438fea`, with browser-test/documentation corrections at
+`c52ef8b`, passes **860/860 native tests** and **124/124 frontend tests**.
+The complete linked phone/desktop Chrome workflow passes in189.102s; strict
+Clippy, Pi library/four-bin compile checks, wait lint, formatting, both asset
+checks, affected control plans and whitespace checks also pass. Physical
+hardware validation remains pending.
 
-The first full native run completed856/860: two strict test peers lacked the
-new type query, emergency wait-registry entries were missing, and an
-identification guard check failed. The peers and registry were corrected;
-the test's previously unsynchronized admission is now deterministic. All4
-affected checks pass in the focused run; the identification test holds the
-queued request before owner admission and its guard-disabled mutation fails
-specifically in the after-submission case. The confirming full run's guard failure
-was traced to the deliberately broken mutation binary being reused from the
-shared target: its dependency record still names the mutation checkout. This is
-a verification-cache defect, not evidence of a restored-source guard defect.
-The package-only clean removed782,578 files/442.5GiB in146.4s; dependencies
-remained cached. The rebuilt guard passes, and its dependency record now names
-the real bridge checkout. Full native verification passes in109.0s wall time
-(89.225s test body); the full frontend suite also passes.
-See the current checkpoint below.
+Current work: P8 Store integration design on claimed lane
+`/Users/yuval/Documents/Projects/Store-t3`, branch `feat/dali-v2-store`, based on
+Store `3c168f3ce`. Its server has not been started; no Store implementation or
+live Store migration has occurred. The owner confirmed that preset hardware
+scenes run first, then individual light values override them. Shared components,
+split-address RGB/RGBW composition, identity-preserving Store migration and
+release preparation remain to be done.
 
-Store integration design preparation has started; no Store files or live stores
-have been changed. The owner confirmed that preset hardware scenes run first,
-then individual light values override them. Split-address RGB/RGBW composition,
-identity-preserving Store migration and release preparation remain to be done.
-
-Most recent completed capability: Part253 driver/light-source diagnostics and
-static luminaire maintenance ratings, accepted locally at `33a214f`.
-The protected demo includes explicit diagnostic, energy and luminaire reads in
-Device information on fixtures. Remaining capabilities are listed below and
-in the support matrix. Split-address RGB/RGBW composition
-belongs to Home equipment/Store integration under the approved architecture §9;
-the bridge already supplies its individual and group brightness bindings.
-Implementation spec: `superpowers/specs/2026-10-24-dali-v2-diagnostics-data.md`.
+The refreshed private bridge/emulator demo preserves all5 current fixtures and
+the exact saved bridge configuration. Remaining capability extensions and
+physical checks are listed in the support matrix. The bridge remains usable
+by any MQTT consumer, independently of Store.
 
 ## P4 — combined emergency operations and retained type capabilities
 
-Implementation and both UIs are complete at `a9acfa5` plus `0438fea`; final
-regression acceptance is in progress. DT1 supports explicit status/settings,
+Accepted locally at `a9acfa5` plus `0438fea` and the test-only `c52ef8b`
+correction. DT1 supports explicit status/settings,
 function/duration test requests and Stop, with independent emulator profiles,
 clock-driven pending/running/results and battery/fault simulation. Ordinary
 output readback retains nullable relay/emergency type facts; proved relay rows
 use power controls and scene values are labeled as virtual levels.
 
-Focused evidence:67 affected native checks,21 final storage/authority checks,
-124 frontend tests and linked phone/desktop Chrome13.112s passed. Strict
-production Clippy and all affected control plans passed. The final source review
+Final evidence:860/860 native tests across11 binaries (one opt-in browser test
+skipped there and run separately),124/124 frontend tests and the complete linked
+Chrome phone/desktop workflow189.102s. Native wall time109.0s includes18.58s build
+and89.225s test execution. Strict production Clippy8.1s, Pi library/four-bin
+`cargo check`6.6s, wait lint1.7s with zero findings, formatting, both embedded
+asset checks and all affected control plans pass. Earlier focused checks cover
+67 affected native cases and21 storage/authority cases. The final source review
 of `96e2059..a9acfa5` found only one P3: embedded HTML was missing from the build
 timestamp inputs. The five-file correction at `0438fea` also updates the two
 remaining literal peers, the wait registry and deterministic owner-admission
@@ -65,8 +53,9 @@ All10 original controls produced meaningful behavioral RED, one executed test
 each, no compiler failures and exact source restoration (231.043s including
 clean baselines). Only the changed identification fixture's control was repeated:
 baseline GREEN, guard-disabled after-submission case RED, exact restoration
-(63.812s). Its4 affected regression checks pass in1.454s. The first full run's
-856/860 result is retained as failed evidence, not counted as acceptance.
+(63.812s). Its4 affected regression checks pass in1.454s. Earlier failed native
+runs (856/860 and859/860) remain recorded; only the clean-source860/860 run is
+accepted.
 
 The second full native run was859/860, but reused the guard-disabled test binary
 whose dependency metadata names `/private/tmp/dali-emergency-mutation`; it is not
@@ -75,26 +64,38 @@ observed guard failure to the scheduling race was premature: the mailbox
 barrier removes a real unsynchronized test assumption, while the cache explains
 the reproduced deliberate-fault behavior. No production guard was changed.
 
-The correct-source native run passes860/860 (109.0s wall/89.225s test body), the
-frontend suite passes124/124, and the rebuilt guard passes with dependency
-provenance pointing to the real checkout. The complete linked browser and
-Clippy/Pi/waits/format/assets/plan checks are running at `0438fea`. Accepted totals
-in older checkpoints below remain unchanged until this cycle succeeds. Physical
-I4/DT1 validation, Store integration and release remain pending. The visible
-private demo still runs the previous accepted diagnostic milestone; refresh will
-preserve its saved inventory and native fixtures after final acceptance.
+After the package-only clean removed782,578 files/442.5GiB in146.4s, the rebuilt
+guard passes and its dependency record names the real checkout. Dependency
+caches remain warm. The full browser run then exposed a test-only lost-reply
+race: a changed native field preceded completion of the admitted job. Three
+copies now wait for the actual job to finish before hiding its response.
+The focused emergency workflow passes in7.636s and the complete workflow passes
+in189.102s; no production retry or polling policy was added. Native/frontend
+results at `0438fea` carry forward because `c52ef8b` changes only external test
+scripts and documentation.
+
+The private demo was refreshed after acceptance. Phone/desktop checks preserve
+all5 outputs, exact saved bytes, addresses, levels, actual colors/modes, groups,
+scenes, settings and lamp-failure flags. Profile-free identity/data values remain
+honestly unavailable. No fixture/profile was injected into the user's demo.
+Physical I4/DT1 validation, Store integration and release remain pending.
 
 Workflow changes: one combined family milestone, focused checks between edits,
 one final review/regression cycle plus the necessary confirming fix run. Build
 metadata watches application inputs including embedded HTML; documentation or
 browser-script-only edits no longer relink native tests (measured build reuse
-0.14s). No new UART recovery policy, emergency poller, journal or worker.
+0.11–0.14s). The contributor instructions now require a package-only artifact
+clean once after a mutation checkout shares the canonical target. No new UART
+recovery policy, emergency poller, journal or worker.
 
 Evidence: `/tmp/dali-native-completion-final-execution.log` and
 `/tmp/dali-native-completion-final-native.log` retain the first failed run;
 `/tmp/dali-native-completion-final2-execution.log` preserves the contaminated
-confirming run. `/tmp/dali-native-completion-final3-execution.log` and corresponding
-step logs record the current cycle. Controls:
+confirming run. `/tmp/dali-native-completion-final3-execution.log` records the
+passing native/frontend suites and the browser fault-injection failure;
+`/tmp/dali-native-completion-final4-execution.log` records passing complete browser
+and all remaining checks. Demo logs:
+`/tmp/dali-native-completion-demo-{preflight,restart,check}.log`. Controls:
 `/tmp/dali-emergency-mutation-results.json` and
 `/tmp/dali-native-completion-fix-mutation-results.json`.
 Spec: `superpowers/specs/2026-10-24-dali-v2-native-completion.md`.
@@ -3424,12 +3425,12 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Core, persistent TCP connector/listener, configurable web UI and linked browser tabs implemented and verified locally | P4 extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 settings/capture, named inputs/events/settings/sensors/feedback, individual/group DT8 and Parts251–253 data accepted locally; combined DT1 emergency and retained relay/emergency metadata/UI implemented, final verification running | Accept the confirming combined-milestone checks; specialist settings, feedback parameters/source routing and extended color modes/settings remain explicit follow-ups |
+| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 settings/capture, named inputs/events/settings/sensors/feedback, individual/group DT8, Parts251–253 data and common DT1 emergency operations with retained relay/emergency capabilities accepted locally | Specialist settings, feedback parameters/source routing, extended color modes/settings and physical validation remain explicit follow-ups |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | Design preparation; implementation pending, no Store mutations | Scoped dev-track, identity-preserving migration, shared color/input/scene components and preset ordering: hardware scene first, individual values override |
-| P9 release/docs | Pending | Cross-build, deployment/rollback guides and hardware status matrix |
+| P8 Store integration | Design in claimed Store-t3 lane, branch feat/dali-v2-store; no implementation or live migration; server not started | Identity-preserving migration, shared color/input/scene components and preset ordering: hardware scene first, individual values override |
+| P9 release/docs | Pending; Pi compile checks pass locally | Release cross-link/build, portable shared dependency publication, deployment/rollback guides and physical acceptance |
 
 No v2 release, production installation, live Store migration, push or merge has
 been performed. The legacy master checkout and v1 maintenance branch retain their
