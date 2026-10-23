@@ -8,9 +8,9 @@ export function Feedback({row,close}:{row:PhysicalRow;close:()=>void}){
   const [values,setValues]=useState<FeedbackValues|null>(null),[loaded,setLoaded]=useState(false),[error,setError]=useState('');
   useLayoutEffect(()=>()=>{scope.cancelled=true;},[scope]);
   const dismiss=()=>{scope.cancelled=true;close();};
-  const load=()=>void ui.run(async()=>{setError('');setLoaded(false);try{const v=await scope.read();setValues(v);setLoaded(true);}catch(e){if(!scope.cancelled)setError((e as Error).message);throw e;}});
+  const load=()=>void ui.run(async()=>{setError('');setValues(null);setLoaded(false);try{const v=await scope.read();setValues(v);setLoaded(true);}catch(e){if(!scope.cancelled)setError((e as Error).message);throw e;}});
   useEffect(()=>{load();},[]);
-  const toggle=()=>void ui.run(async()=>{try{setError('');setValues(await scope.set(values?.active!==true));}catch(e){if(!scope.cancelled)setError((e as Error).message);throw e;}});
+  const toggle=()=>void ui.run(async()=>{const active=values?.active!==true;setError('');setValues(null);setLoaded(false);try{setValues(await scope.set(active));setLoaded(true);}catch(e){if(!scope.cancelled){setLoaded(true);setError((e as Error).message);}throw e;}});
   const capability=values?.capability??0;
   return <Modal title={`Feedback · ${row.item.name}`} close={dismiss}>
     <p class="hint">{scope.initial.inventory.name}/{row.bus.name} · address {row.kind==='input'?row.item.short_address:row.parent?.short_address}{row.kind==='instance'?` / instance ${row.item.number}`:' · module'}</p>

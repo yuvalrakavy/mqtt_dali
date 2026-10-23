@@ -25,6 +25,18 @@ export async function feedbackFlow({page,origin,artifacts,inventory,control,unti
     }
     const start=commands.length;await open(module.instances[3].name);await page.getByText('This input does not report supported feedback.',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Feedback active',exact:true}).count(),0,'unsupported input offered an activation');
     assert.deepEqual(commands.slice(start).map(c=>c.command),['read_input_feedback']);await dialogVisible();await noOverflow();await page.getByRole('button',{name:'Close',exact:true}).click();
+    // Admit a real action, then lose its browser reply after the indicator turns on.
+    // Prior Off evidence must not remain actionable while the hardware is On.
+    for(const scope of [{name:module.name,instance:null},{name:module.instances[0].name,instance:0}]){
+      await open(scope.name);const toggle=page.getByRole('button',{name:'Feedback active',exact:true});assert.equal(await toggle.getAttribute('aria-pressed'),'false');
+      let lose=true;const failed=async route=>{const call=route.request().postDataJSON();if(lose&&call.command==='set_input_feedback'){lose=false;await route.fetch();await until(async()=>(await native()).feedback_state.find(p=>p.instance===scope.instance).active,'admitted feedback did not reach hardware');await route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({error:'Feedback result unavailable. Refresh to inspect again.'})});}else await route.continue();};
+      await page.route('**/api/jobs',failed);const count=commands.length;await toggle.click();await idle();
+      await page.getByText('Feedback is unavailable. Refresh to read it again.',{exact:true}).waitFor();assert.equal(await toggle.count(),0,'failed activation left stale feedback actionable');
+      assert.equal((await native()).feedback_state.find(p=>p.instance===scope.instance).active,true);assert.deepEqual(commands.slice(count).map(c=>c.command),['set_input_feedback'],'failed activation retried without refresh');
+      await dialogVisible();await noOverflow();await page.screenshot({path:join(artifacts,`${viewport.width===390?'phone':'desktop'}-feedback-unconfirmed-${scope.instance??'module'}.png`),fullPage:true});
+      await page.unroute('**/api/jobs',failed);await page.getByRole('button',{name:'Refresh feedback',exact:true}).click();await idle();assert.equal(await toggle.getAttribute('aria-pressed'),'true','refresh did not recover actual active feedback');
+      await toggle.click();await idle();assert.equal((await native()).feedback_state.find(p=>p.instance===scope.instance).active,false);await page.getByRole('button',{name:'Close',exact:true}).click();
+    }
   }
   // Hold a real admitted entry read across synchronous dismissal/navigation.
   for(const dismissal of ['close','navigate']){
@@ -36,5 +48,5 @@ export async function feedbackFlow({page,origin,artifacts,inventory,control,unti
     await page.goto(`${origin}/buses/0`);await idle();
   }
   const after=await native();assert.deepEqual(after.feedback_state,before.feedback_state);assert.deepEqual(after.settings,before.settings);assert.deepEqual(after.values,before.values);assert.deepEqual(await inventory(),saved);
-  console.log('PASS feedback: phone/desktop module and instance read/toggle/reopen/restore, native scopes, unsupported input, unchanged inventory/input values/settings and retired entry reads');
+  console.log('PASS feedback: phone/desktop module and instance read/toggle/reopen/restore, native scopes, unsupported input, lost replies retire stale toggles until actual refresh, unchanged inventory/input values/settings and retired entry reads');
 }

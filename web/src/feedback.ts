@@ -51,11 +51,13 @@ export class FeedbackScope {
     return v;
   }
   async read(){
-    this.assert();const r=await this.ui.client.job(this.row.generation,this.row.item.target,'read_input_feedback',{});
+    this.assert();this.values=null;const r=await this.ui.client.job(this.row.generation,this.row.item.target,'read_input_feedback',{});
     const v=this.accepted(r,'read_input_feedback');this.values=v;return structuredClone(v);
   }
   async set(active:boolean){
     this.assert();if(typeof active!=='boolean'||!feedbackWritable(this.values))throw new Error('Complete supported feedback evidence is required. Refresh first.');
+    // An admitted action may reach hardware even when its reply is unavailable.
+    this.values=null;
     const r=await this.ui.client.job(this.row.generation,this.row.item.target,'set_input_feedback',{expected_revision:this.initial.inventory.revision,active});
     const v=this.accepted(r,'set_input_feedback');
     if(v?.active!==active)throw new Error('Feedback does not match the requested state. Refresh to inspect again.');

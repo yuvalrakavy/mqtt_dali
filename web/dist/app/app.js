@@ -1530,12 +1530,13 @@ var mt = class {
 		return a;
 	}
 	async read() {
-		this.assert();
+		this.assert(), this.values = null;
 		let e = await this.ui.client.job(this.row.generation, this.row.item.target, "read_input_feedback", {}), t = this.accepted(e, "read_input_feedback");
 		return this.values = t, structuredClone(t);
 	}
 	async set(e) {
 		if (this.assert(), typeof e != "boolean" || !pt(this.values)) throw Error("Complete supported feedback evidence is required. Refresh first.");
+		this.values = null;
 		let t = await this.ui.client.job(this.row.generation, this.row.item.target, "set_input_feedback", {
 			expected_revision: this.initial.inventory.revision,
 			active: e
@@ -1553,7 +1554,7 @@ function ht({ row: e, close: t }) {
 	let u = () => {
 		r.cancelled = !0, t();
 	}, d = () => void n.run(async () => {
-		l(""), s(!1);
+		l(""), a(null), s(!1);
 		try {
 			let e = await r.read();
 			a(e), s(!0);
@@ -1565,10 +1566,12 @@ function ht({ row: e, close: t }) {
 		d();
 	}, []);
 	let f = () => void n.run(async () => {
+		let e = i?.active !== !0;
+		l(""), a(null), s(!1);
 		try {
-			l(""), a(await r.set(i?.active !== !0));
+			a(await r.set(e)), s(!0);
 		} catch (e) {
-			throw r.cancelled || l(e.message), e;
+			throw r.cancelled || (s(!0), l(e.message)), e;
 		}
 	}), p = i?.capability ?? 0;
 	return /* @__PURE__ */ J(Z, {

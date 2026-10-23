@@ -186,3 +186,30 @@ closing presence, ignored write, final epoch, preserving button Notice, client
 unsupported preflight, actual matching and post-await authority. The runner
 restores each mutation; no readers/builds shared its mutable tree. Wait registry
 generation is separate from final validation.
+
+## Final review correction
+
+Native/owner source lens APPROVE at9cbbc1b. The UI/API lens found one P2:
+an activation whose readback/reply fails left prior complete Off evidence and
+the toggle actionable. This is an ordinary uncertain-operation path, not a new
+transport recovery problem. The fix retires scope evidence before either read
+or Set I/O and clears the dialog's old values while waiting; only complete
+validated replies restore actionability. Failed Set requires Refresh, which
+recovers actual state before the next toggle. No native owner mechanism changes.
+
+The new fail-first case reproduces retained evidence after a successful initial
+read. It now passes for both scopes across transport, unconfirmed, missing,
+mismatched and wrong-identity results and failed refresh. All70 frontend cases
+pass. Two additional serial controls each produce the intended RED (0.6s total).
+Real phone/desktop regression admits an activation on the real backend, waits
+for the native indicator to turn On, loses its browser response and checks that
+the toggle disappears until Refresh reads On, then explicitly restores Off.
+This final browser verification is recorded in the acceptance ledger.
+
+The first frozen full acceptance passes672/672 native across eleven binaries
+(69.661s execution/130.3s command), strict Clippy, Pi library/four binaries,
+formatting, independent wait validation, embedded assets, whitespace and31
+affected control-table plans. The UI-only correction does not change native
+behavior; frontend, asset, browser and affected-source review checks are repeated.
+Methodology: retain existing uncertainty handling and test the operator-visible
+evidence lifetime; do not build new outage/retry machinery for this correction.

@@ -102,6 +102,40 @@
     "verdict": "RED"
    }
   },
+  "feedback_ui_failed_refresh_keeps_old_evidence": {
+   "last_real": {
+    "at": "2026-10-23T04:06:57Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:c85e53eec38fb43a",
+     "row": "0138546951200a62",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.3,
+    "sha": "9cbbc1b02d296a8cf0252b1c83e64125336575a9",
+    "verdict": "RED"
+   }
+  },
+  "feedback_ui_failed_set_keeps_old_evidence": {
+   "last_real": {
+    "at": "2026-10-23T04:06:57Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "file:c85e53eec38fb43a",
+     "row": "c47cc12fbeb4ac1c",
+     "test": null
+    },
+    "path": "command",
+    "secs": 0.3,
+    "sha": "9cbbc1b02d296a8cf0252b1c83e64125336575a9",
+    "verdict": "RED"
+   }
+  },
   "feedback_ui_post_await_authority_omitted": {
    "last_real": {
     "at": "2026-10-23T03:59:27Z",

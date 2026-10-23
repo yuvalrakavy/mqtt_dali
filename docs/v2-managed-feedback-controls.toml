@@ -79,3 +79,21 @@ replacement = "const row=this.row,address="
 target = "command"
 argv = ["npm","--prefix","web","test"]
 expect_text = "retired feedback read was accepted"
+
+[[control]]
+name = "feedback_ui_failed_set_keeps_old_evidence"
+file = "web/src/feedback.ts"
+anchor = "// An admitted action may reach hardware even when its reply is unavailable.\n    this.values=null;"
+replacement = "// An admitted action may reach hardware even when its reply is unavailable."
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "failed feedback retained actionable evidence"
+
+[[control]]
+name = "feedback_ui_failed_refresh_keeps_old_evidence"
+file = "web/src/feedback.ts"
+anchor = "this.assert();this.values=null;const r=await this.ui.client.job"
+replacement = "this.assert();const r=await this.ui.client.job"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "failed feedback retained actionable evidence"

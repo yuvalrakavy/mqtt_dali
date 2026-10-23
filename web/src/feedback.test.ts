@@ -27,7 +27,21 @@ test('feedback module and instance read/set keep original authority and actual v
 test('feedback set refuses a reported success with mismatched actual state',async()=>{
   const f=fixture();await f.scope.read();
   await assert.rejects(f.scope.set(true),/match the requested state/,'feedback actual mismatch was accepted');
-  assert.equal(f.ui.notice,'');assert.equal(f.scope.values?.active,false);f.ui.client.close();
+  assert.equal(f.ui.notice,'');assert.equal(f.scope.values,null);f.ui.client.close();
+});
+test('feedback failed operations retire prior actionable evidence until refreshed',async()=>{
+  for(const kind of ['input','instance'] as const)for(const failure of ['transport','unconfirmed','missing','mismatch','identity','refresh']){
+    const f=fixture(kind);await f.scope.read();
+    f.ui.client.job=async()=>{f.calls.push('failed');if(failure==='transport'||failure==='refresh')throw new Error('Readback failed');
+      const r=f.report('set_input_feedback');r.feedback.active=true;
+      if(failure==='unconfirmed')r.outcome='unconfirmed';if(failure==='missing')r.feedback=null as any;
+      if(failure==='mismatch')r.feedback.active=false;if(failure==='identity')r.target='retired';return r;};
+    await assert.rejects(failure==='refresh'?f.scope.read():f.scope.set(true));
+    assert.equal(f.scope.values,null,'failed feedback retained actionable evidence');
+    const count=f.calls.length;await assert.rejects(f.scope.set(false));assert.equal(f.calls.length,count,'uncertain feedback submitted another action without refresh');
+    f.ui.client.job=async(_generation,_target,command,params:any)=>({...f.report(command),feedback:{...f.values,active:command==='read_input_feedback'?true:params.active}});
+    assert.equal((await f.scope.read())?.active,true);assert.equal((await f.scope.set(false))?.active,false);f.ui.client.close();
+  }
 });
 test('feedback unsupported partial or unread evidence cannot submit an action',async()=>{
   for(const v of [null,{features:[],capability:null,supported:false,active:null,quality:'complete'},
