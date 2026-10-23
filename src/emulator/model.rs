@@ -180,7 +180,7 @@ impl Model {
             .take()
             .is_some_and(|(old, at)| old == frame && self.now_ms.saturating_sub(at) <= 100);
         if high == 0 && address == 0xc1 {
-            if (instance > 10 && instance != 0x30)
+            if (instance > 10 && !matches!(instance, 0x30..=0x32))
                 || (matches!(instance, 0 | 2 | 3 | 4 | 10) && opcode != 0)
             {
                 self.unsupported += 1;
@@ -216,7 +216,10 @@ impl Model {
             self.unsupported += 1;
             return Reply::None;
         }
-        if instance == 0xfe && opcode == 0x14 && !repeated {
+        if ((instance == 0xfe && opcode == 0x14)
+            || (instance <= 31 && matches!(opcode, 0x61..=0x68)))
+            && !repeated
+        {
             bus.input_repeat = Some((frame, self.now_ms));
             return Reply::None;
         }
@@ -634,6 +637,8 @@ impl Model {
 mod addressing_tests;
 #[cfg(test)]
 mod colour_tests;
+#[cfg(test)]
+mod input_settings_tests;
 #[cfg(test)]
 mod scene_tests;
 #[cfg(test)]

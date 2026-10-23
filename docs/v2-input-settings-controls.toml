@@ -1,0 +1,46 @@
+# Run sequentially; the control runner restores each production mutation.
+
+[[control]]
+name = "input_setting_plan_omits_repeat"
+file = "src/dali/input/settings.rs"
+anchor = "        repeat: true,"
+replacement = "        repeat: false,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_setting_plans_have_literal)"]
+expect_text = "filter plan changed width, byte order or repeat scope"
+
+[[control]]
+name = "input_filter_truncated_to_low_byte"
+file = "src/emulator/input.rs"
+anchor = "u32::from_le_bytes([self.dtr0, self.dtr1, self.dtr2, 0]) & filter_mask(kind)"
+replacement = "u32::from(self.dtr0) & filter_mask(kind)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_input_settings_filters_keep)"]
+expect_text = "24bit event filter was truncated"
+
+[[control]]
+name = "input_setting_late_pair_accepted"
+file = "src/emulator/model.rs"
+anchor = "let [high, address, instance, opcode] = frame.to_be_bytes();\n        let repeated = bus\n            .input_repeat\n            .take()\n            .is_some_and(|(old, at)| old == frame && self.now_ms.saturating_sub(at) <= 100);"
+replacement = "let [high, address, instance, opcode] = frame.to_be_bytes();\n        let repeated = bus\n            .input_repeat\n            .take()\n            .is_some_and(|(old, at)| old == frame && self.now_ms.saturating_sub(at) <= 101);"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_input_settings_repeat_window)"]
+expect_text = "input setting repeat window/interruption violated"
+
+[[control]]
+name = "input_priority_reserved_one_accepted"
+file = "src/dali/input/settings.rs"
+anchor = "if !(2..=5).contains(&raw) {"
+replacement = "if !(1..=5).contains(&raw) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(input_setting_values_reject)"]
+expect_text = "reserved event priority was accepted"
+
+[[control]]
+name = "input_setting_writes_instance_zero"
+file = "src/emulator/input.rs"
+anchor = "let settings = &mut self.settings[usize::from(instance)];"
+replacement = "let settings = &mut self.settings[0];"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(literal_input_settings_last_address)"]
+expect_text = "last instance write changed instance zero"

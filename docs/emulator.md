@@ -41,7 +41,8 @@ the next. Available requests include:
 32769 is 0x008001, a device/instance button press at input address 0, instance 0;
 command-bit frames are rejected. With matching saved input metadata, the bridge
 now publishes [native input State/events](mqtt-inputs.md). Input value profiles
-are described below. Discovery/configuration remain in development. One next-response fault may
+are described below. Managed input configuration remains in development; the
+native setting model is described below. One next-response fault may
 be armed at once. It affects the next J/N/X/Z terminal, excluding echoes, status
 and input events; in the two-terminal profile it affects the first terminal.
 
@@ -64,7 +65,7 @@ explicit dispatcher policy. Physical repeat cardinality remains unverified.
 Base coverage includes addressing, DTRs, direct level/MASK, off/steps/max/min,
 groups/scenes and selected queries/configuration. Levels currently change
 immediately. The DT8 colour profile below adds selected colour operations.
-Fade timing, timed UP/DOWN, input configuration, emergency and memory/data
+Fade timing, timed UP/DOWN, input timers/feedback, emergency and memory/data
 models remain P4 extensions. Unsupported operations never fabricate a
 positive device reply. N proves HAT transmission, not device support.
 
@@ -85,8 +86,8 @@ missing values use a separate seeded input generator, preserving existing output
 draws. RANDOMISE replaces participating modules' random addresses. Input and
 output repeat latches are separate, and 24-bit input traffic preserves output DT8
 selection. Identical backward bytes still aggregate to one value; independent
-literal-peer tests supply exact-collision refusal evidence. Physical certification
-and input event configuration are outside this model.
+literal-peer tests supply exact-collision refusal evidence. Physical certification,
+input timers and feedback are outside this model.
 
 Standard FD broadcast-unaddressed input queries answer only modules without a
 short address, independently of the bridge codec. Sole-candidate recovery uses
@@ -115,7 +116,51 @@ captures all bytes; subsequent latch queries retain them even if `set_input_valu
 changes live data. A new INPUT VALUE restarts the latch. Input/output address
 spaces are independent; conflicting duplicate replies collide. `input_event`
 changes no query value, and `set_input_value` emits no native event. Tests select
-both explicitly. This models data rather than gestures or input configuration.
+both explicitly. Value/latch state is independent of the settings below.
+
+## Input event settings model
+
+Every existing instance has native enable, event priority, addressing scheme,
+24-bit filter and three instance-group settings, even without a value profile.
+The diagnostic snapshot includes a `settings` array by instance number plus
+the module's DTR0/1/2 scratch values. Scenario version 1 is unchanged.
+
+At emulator startup, instances use enabled=true, priority 4, scheme 2
+(device/instance), all common filter bits for types 1..4 or zero for unknown
+types, and three FF/unassigned groups. These are explicit model defaults, not
+claims about every manufacturer's reset defaults. Address changes and HAT
+reboot preserve these fixture settings and value latches.
+
+For example, send ordinary 24-bit `l` frames on bus 0:
+
+```text
+lC13002
+l010061
+l010061
+l010084
+```
+
+This stages priority 2 in the input DTR0, sets it on short address 0/instance 0
+using two adjacent setting frames, then queries it (`J02`). Each single setting
+transmission replies `N`, which proves transmission rather than application.
+The native pair must be within 100 ms; a late pair or intervening input/output
+frame does not set anything. The ATX 16-bit `t` command is unsuitable here.
+
+The independent model implements instance setting opcodes 61..68 and setting
+queries 84/86/88..8B/90..92. Invalid priority/scheme/group DTR values leave settings
+unchanged. Known types retain only their defined filter bits (FF/01/1F/01),
+while unknown types preserve all 24 raw bits without invented semantics. An FF
+filter byte is data. Disabled instances still answer their type/settings;
+QueryEnabled returns no backward byte when disabled. Missing instances likewise
+return no byte, so managed callers need a separate presence/type proof.
+FD reaches only unaddressed modules and FF all modules on the selected bus;
+ordinary settings affect only the selected existing instance.
+
+`input_event` remains raw UART test injection and deliberately bypasses enabled
+state, filters and scheme. `set_input_value` does not generate events. Natural
+stimulus/gesture scheduling, event timers, feedback and hardware persistence
+validation are later work. Literal model and UART/reboot tests cover this
+foundation; it is not yet a managed MQTT/HTTP/browser configuration feature.
 
 ## Colour fixtures
 

@@ -1,6 +1,7 @@
 //! Part 103 input addresses, query frames and native Part 301–304 event data.
 //! This pure codec performs no I/O and does not assign an event to a named target.
 pub mod commissioning;
+pub mod settings;
 mod value;
 pub use value::{InputValue, Resolution, ValueError};
 
@@ -314,7 +315,11 @@ pub enum InstanceQuery {
     Resolution,
     Error,
     Status,
+    EventPriority,
     Enabled,
+    PrimaryGroup,
+    Group1,
+    Group2,
     EventScheme,
     InputValue,
     InputValueLatch,
@@ -329,7 +334,11 @@ impl InstanceQuery {
             Self::Resolution => 0x81,
             Self::Error => 0x82,
             Self::Status => 0x83,
+            Self::EventPriority => 0x84,
             Self::Enabled => 0x86,
+            Self::PrimaryGroup => 0x88,
+            Self::Group1 => 0x89,
+            Self::Group2 => 0x8a,
             Self::EventScheme => 0x8b,
             Self::InputValue => 0x8c,
             Self::InputValueLatch => 0x8d,

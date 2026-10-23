@@ -1,8 +1,8 @@
 # DALI-2 input protocol codec
 
 This contributor guide describes `dali::input`, the pure codec used by input
-integration. It constructs read-query frames and interprets native event data.
-It performs no UART I/O or configuration writes. The managed service now connects
+integration. It constructs query and configuration plans and interprets native
+event data. It performs no UART I/O. The managed service now connects
 resolved input frames to [live MQTT State/events](mqtt-inputs.md), separately from
 this pure codec. Hardware discovery, configuration and browser controls remain
 in progress. Saved named modules/instances and durable
@@ -59,13 +59,43 @@ Queries include Status, Version and NumberOfInstances. For short address 0,
 NumberOfInstances is `01FE35`; at address 63 it is `7FFE35`.
 
 `Address::query_instance(instance, InstanceQuery)` addresses one instance.
-Queries include Type, Resolution, Error, Status, Enabled, EventScheme, InputValue,
+Queries include Type, Resolution, Error, Status, EventPriority, Enabled, the three
+instance groups, EventScheme, InputValue,
 InputValueLatch and the three event-filter bytes. InputValue at short address 63,
 instance 31 is `7F1F8C`. Wrap these in the existing ATX Bits24/`l` command; repeated
 16-bit `t` commands are a different operation.
 
 Building a query is not a device response or proof of presence. No response and
 collisions must remain unavailable evidence in the executing service.
+
+## Event-setting plans
+
+`dali::input::settings` builds per-instance enable/disable, event-priority,
+event-scheme, event-filter and instance-group plans. `EventPriority` accepts
+2..5 (2 highest); `EventScheme` accepts the five native schemes 0..4.
+`GroupSlot` selects Primary, Group1 or Group2; `None` writes unassigned FF,
+distinct from group 31. These are native input groups, independent of output
+groups 0..15. Choosing a scheme does not prove that the bridge can resolve a
+particular event uniquely; see the source ambiguity rules above.
+
+`EventFilter` preserves all 24 bits, including FF bytes. Use `validate_for`
+before a semantic write to a known common input: Part 301 mask FF (released,
+pressed, short, double, long start/repeat/stop, stuck/free); Part 302 mask 01;
+Part 303 mask 1F (occupied, vacant, repeat, movement, no movement); Part 304 mask 01.
+Unknown types retain raw diagnostic data but have no invented common semantics.
+
+`plan(address, instance, setting)` returns at most four `Step` values. Keep all
+steps under one bus permit. DTR0/1/2 are single C130/31/32 writes, least
+significant filter byte first; the final setting uses the checked short address
+and instance and must be sent twice within 100 ms. **A repeated 24-bit step means
+two ordinary ATX `l` sends**; the ATX `t`/repeat flag only accepts 16-bit frames.
+Transmission does not prove application: the managed caller must check current
+authority, type/presence and actual settings afterward. QueryEnabled answers FF
+for true and silence for false, so an absent device must be ruled out separately.
+
+This slice supplies pure plans and an [independent emulator model](emulator.md#input-event-settings-model).
+Managed MQTT/HTTP setting commands and browser controls remain pending; existing
+discovery does not configure inputs. Timers and feedback are separate work.
 
 ## Exact full-resolution values
 

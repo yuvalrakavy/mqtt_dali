@@ -1,0 +1,90 @@
+{
+ "rows": {
+  "input_filter_truncated_to_low_byte": {
+   "last_real": {
+    "at": "2026-10-23T01:51:24Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cd9bd9673ef75966",
+     "row": "1842f7f07faa3aec",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.3,
+    "sha": "fa617e99b0d4503648fab65472713438428b4f47",
+    "verdict": "RED"
+   }
+  },
+  "input_priority_reserved_one_accepted": {
+   "last_real": {
+    "at": "2026-10-23T01:51:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:53b91dcd0bea7c83",
+     "row": "811be23d2b8f05ef",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.8,
+    "sha": "fa617e99b0d4503648fab65472713438428b4f47",
+    "verdict": "RED"
+   }
+  },
+  "input_setting_late_pair_accepted": {
+   "last_real": {
+    "at": "2026-10-23T01:51:39Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:50c7eccac86fc179",
+     "row": "7af0575c52eff97b",
+     "test": null
+    },
+    "path": "command",
+    "secs": 14.6,
+    "sha": "fa617e99b0d4503648fab65472713438428b4f47",
+    "verdict": "RED"
+   }
+  },
+  "input_setting_plan_omits_repeat": {
+   "last_real": {
+    "at": "2026-10-23T01:51:10Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:1d74045da110d221",
+     "row": "fc1f3f781fb84721",
+     "test": null
+    },
+    "path": "command",
+    "secs": 7.2,
+    "sha": "fa617e99b0d4503648fab65472713438428b4f47",
+    "verdict": "RED"
+   }
+  },
+  "input_setting_writes_instance_zero": {
+   "last_real": {
+    "at": "2026-10-23T01:52:06Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:cd9bd9673ef75966",
+     "row": "e466a761ea5c8f1a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 12.2,
+    "sha": "fa617e99b0d4503648fab65472713438428b4f47",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

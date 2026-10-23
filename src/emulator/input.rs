@@ -8,6 +8,9 @@ pub(super) struct State {
     #[serde(flatten)]
     pub config: Input,
     dtr0: u8,
+    dtr1: u8,
+    dtr2: u8,
+    settings: Vec<Settings>,
     #[serde(skip)]
     latches: BTreeMap<u8, (Vec<u8>, usize)>,
     initialize_until: Option<u64>,
@@ -15,11 +18,47 @@ pub(super) struct State {
     withdrawn: bool,
     search: u32,
 }
+
+/// Deliberate emulator startup values, not universal device reset defaults.
+#[derive(Serialize)]
+struct Settings {
+    enabled: bool,
+    priority: u8,
+    scheme: u8,
+    filter: u32,
+    groups: [u8; 3],
+}
+fn filter_mask(kind: u8) -> u32 {
+    match kind {
+        1 => 0xff,
+        2 | 4 => 1,
+        3 => 0x1f,
+        _ => 0xffffff,
+    }
+}
 impl State {
     pub fn new(config: Input) -> Self {
+        let settings = config
+            .instances
+            .iter()
+            .map(|kind| Settings {
+                enabled: true,
+                priority: 4,
+                scheme: 2,
+                filter: if matches!(kind, 1..=4) {
+                    filter_mask(*kind)
+                } else {
+                    0
+                },
+                groups: [255; 3],
+            })
+            .collect();
         Self {
             config,
             dtr0: 0,
+            dtr1: 0,
+            dtr2: 0,
+            settings,
             latches: BTreeMap::new(),
             initialize_until: None,
             randomise_ready_at: None,
@@ -39,6 +78,8 @@ impl State {
         let exact = eligible && ready && self.config.random_address == Some(self.search);
         match (command, param) {
             (0x30, value) => self.dtr0 = value,
+            (0x31, value) => self.dtr1 = value,
+            (0x32, value) => self.dtr2 = value,
             (0, 0) => {
                 self.initialize_until = None;
                 self.withdrawn = false;
@@ -102,6 +143,44 @@ impl State {
         let kind = *self.config.instances.get(usize::from(instance))?;
         if opcode == 0x80 {
             return Some(kind);
+        }
+        // Settings exist independently of a measurement value profile. The bus
+        // admits repeated writes before this independent per-instance handler.
+        let settings = &mut self.settings[usize::from(instance)];
+        match opcode {
+            0x61 => {
+                if (2..=5).contains(&self.dtr0) {
+                    settings.priority = self.dtr0;
+                }
+                return None;
+            }
+            0x62 | 0x63 => {
+                settings.enabled = opcode == 0x62;
+                return None;
+            }
+            0x64..=0x66 => {
+                if self.dtr0 <= 31 || self.dtr0 == 255 {
+                    settings.groups[usize::from(opcode - 0x64)] = self.dtr0;
+                }
+                return None;
+            }
+            0x67 => {
+                if self.dtr0 <= 4 {
+                    settings.scheme = self.dtr0;
+                }
+                return None;
+            }
+            0x68 => {
+                settings.filter =
+                    u32::from_le_bytes([self.dtr0, self.dtr1, self.dtr2, 0]) & filter_mask(kind);
+                return None;
+            }
+            0x84 => return Some(settings.priority),
+            0x86 => return settings.enabled.then_some(255),
+            0x88..=0x8a => return Some(settings.groups[usize::from(opcode - 0x88)]),
+            0x8b => return Some(settings.scheme),
+            0x90..=0x92 => return Some((settings.filter >> (8 * (opcode - 0x90))) as u8),
+            _ => {}
         }
         let value = self.config.values.iter().find(|v| v.instance == instance)?;
         match opcode {

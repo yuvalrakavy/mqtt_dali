@@ -293,7 +293,10 @@ and durable metadata rename path; see `docs/inventory-contract.md`. Module
 replacement retires every child lifetime; ordinary rename preserves them. Replay
 validates hierarchy and continuing parent origins at every batch, and the
 independent consumer verifies this without producer replay helpers. Input
-configuration remains subsequent work. Addressed
+setting plans and the independent per-instance setting model now use
+`dali::input::settings`; see the input codec/emulator guides and
+`docs/v2-input-settings-controls.toml`. Managed setting commands/browser controls,
+timers and feedback remain subsequent work. Addressed
 discovery is documented in `docs/discovery.md`: one short address per bounded
 operation, captured probe evidence, durable additions only, preserved existing
 lifetimes and original command completion. Output/input address spaces are

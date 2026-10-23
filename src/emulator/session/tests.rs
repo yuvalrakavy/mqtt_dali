@@ -63,6 +63,58 @@ async fn literal_uart_transcript_changes_independent_fixture_state() {
 }
 
 #[tokio::test]
+async fn literal_input_settings_uart_reboot_preserves_disabled_instance() {
+    let scenario =
+        serde_json::from_value(serde_json::json!({"version":1,"clock":"frozen","buses":[
+            {"number":0,"inputs":[{"id":"panel","short_address":0,"instances":[1]}]}
+        ]}))
+        .unwrap();
+    let (stream, mut bridge) = tokio::io::duplex(4096);
+    let emulator = Emulator::start(stream, scenario).unwrap();
+    assert_eq!(line(&mut bridge).await, b"B000004\n");
+    bridge
+        .write_all(b"l010063\nl010063\nl010086\n")
+        .await
+        .unwrap();
+    for expected in [
+        b"L010063\n".as_slice(),
+        b"N\n",
+        b"L010063\n",
+        b"N\n",
+        b"L010086\n",
+        b"N\n",
+    ] {
+        assert_eq!(line(&mut bridge).await, expected);
+    }
+    let snapshot = control(&emulator, Control::Snapshot).await;
+    assert_eq!(
+        snapshot["buses"][0]["inputs"][0]["settings"][0]["enabled"], false,
+        "24bit UART settings did not reach physical model"
+    );
+    control(&emulator, Control::Reboot).await;
+    assert_eq!(line(&mut bridge).await, b"B000004\n");
+    bridge.write_all(b"l010080\nl010086\n").await.unwrap();
+    for expected in [b"L010080\n".as_slice(), b"J01\n", b"L010086\n", b"N\n"] {
+        assert_eq!(
+            line(&mut bridge).await,
+            expected,
+            "HAT reboot changed physical input settings"
+        );
+    }
+    // Raw test injection bypasses enable/filter state and does not re-enable it.
+    control(
+        &emulator,
+        Control::InputEvent {
+            bus: 0,
+            frame: 0x008001,
+        },
+    )
+    .await;
+    assert_eq!(line(&mut bridge).await, b"L008001\n");
+    emulator.close().await.unwrap();
+}
+
+#[tokio::test]
 async fn production_transactions_use_actual_pty_and_receive_input_during_a_delayed_reply() {
     let pty = super::super::pty::spawn(scenario()).await.unwrap();
     let (link, mut events) = Transactions::start(
