@@ -63,6 +63,45 @@ pub struct Output {
     pub device_type: u8,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub colour: Option<Colour>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub switching: Option<Switching>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Switching {
+    #[serde(default)]
+    pub adjustable_thresholds: bool,
+    #[serde(default = "switching_thresholds")]
+    pub thresholds: [u8; 4],
+    #[serde(default = "relay_type")]
+    pub gear_type: u8,
+}
+fn switching_thresholds() -> [u8; 4] {
+    [1, 255, 255, 0]
+}
+fn relay_type() -> u8 {
+    2
+}
+impl Default for Switching {
+    fn default() -> Self {
+        Self {
+            adjustable_thresholds: false,
+            thresholds: switching_thresholds(),
+            gear_type: relay_type(),
+        }
+    }
+}
+impl Switching {
+    fn validate(&self) -> Result<(), String> {
+        if self.thresholds[0] == 0 || self.thresholds[1] == 0 {
+            return Err("switching upward thresholds require 1..255".into());
+        }
+        if !self.adjustable_thresholds && self.thresholds != switching_thresholds() {
+            return Err("fixed switching profile requires default thresholds".into());
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -184,6 +223,15 @@ impl Scenario {
                 }
             }
             for output in &bus.outputs {
+                if output.device_type == 7 && !matches!(output.level, 0 | 254) {
+                    return Err("switching initial actual level must be 0 or 254".into());
+                }
+                if let Some(switching) = &output.switching {
+                    if output.device_type != 7 {
+                        return Err("switching profile requires device type 7".into());
+                    }
+                    switching.validate()?;
+                }
                 if let Some(colour) = &output.colour {
                     if output.device_type != 8 {
                         return Err("colour profile requires device type 8".into());

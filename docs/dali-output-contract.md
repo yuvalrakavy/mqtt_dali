@@ -6,6 +6,11 @@ send it, verify a fixture or change configuration. The
 [output service](output-service.md) and [MQTT adapter](mqtt-outputs.md) execute
 base intents and readbacks. The emulator retains its independent codec/model.
 
+[DT7 switching](dali-switching.md) has a separate checked threshold/query module
+and independent relay model. Its virtual control level and actual binary contact
+level are different; base observations retain the actual0/254 value. Relay-specific
+managed settings/metadata and web controls remain a subsequent integration slice.
+
 ## Addresses and writes
 
 `ShortAddress::new` accepts 0..63; `GroupAddress::new` accepts 0..15. Their storage is

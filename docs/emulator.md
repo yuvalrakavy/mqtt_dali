@@ -136,6 +136,17 @@ change or new timing simulation is involved. Bus-power control is not fixture
 mains-power simulation; these tests do not prove startup/failure transitions or
 completed physical fades.
 
+## DT7 switching profile
+
+`examples/emulator/switching-i4.json` combines fixed and adjustable DT7 relays
+with an ordinary dimmer. DT7 initial level must be actual0 or254; its separate
+live `switching_state` tracks virtual level and directional thresholds. A missing
+profile is fixed; optional `switching` permits adjustable thresholds and raw gear
+type. Non-DT7 scenarios/snapshots omit these fields. Native Part208 enable/repeat,
+threshold queries and nonactivating programming, virtual min/max/scenes/steps,
+actual binary readback and raw status retention are covered. No timed fades or
+electrical fault behavior is simulated. See [DT7 use and limits](dali-switching.md).
+
 ## Input event settings model
 
 Every existing instance has native enable, event priority, addressing scheme,

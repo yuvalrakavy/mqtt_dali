@@ -281,6 +281,16 @@ unmount. Passive effects can allow an awaited Stop reply to resume first. The
 real browser test pauses timers/animation frames while exercising actual Cancel,
 Close and navigation; directly toggling a unit-test scope cannot test that wiring.
 
+`dali::gear::switching` provides checked Part208 thresholds/query plans; see
+`docs/dali-switching.md`. One enable precedes both copies of each repeated
+setter. Preserve disabled255 versus actual MASK and raw unknown diagnostics.
+The independent optional DT7 profile separates virtual control from actual0/254,
+uses per-gear repeated setters and sees addressed interruption before base repeat
+early returns. STORE ACTUAL copies virtual level; RESET preserves raw status.
+Existing dimmer/DT8 scenarios omit new state. Relay-specific managed settings,
+metadata/browser, virtual scene capture and timed/fault behavior remain pending.
+Controls: `docs/v2-dt7-foundation-controls.toml`.
+
 `dali::gear::settings` provides pure checked limits, context-specific startup/
 failure255 and basic fade values plus DTR0/repeated setter plans; Query adds
 PowerOnLevel/SystemFailureLevel/FadeTimeRate. See `docs/gear-settings.md` and

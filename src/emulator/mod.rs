@@ -6,4 +6,5 @@ pub mod model;
 pub mod pty;
 pub mod scenario;
 pub mod session;
+mod switching;
 pub mod wire;

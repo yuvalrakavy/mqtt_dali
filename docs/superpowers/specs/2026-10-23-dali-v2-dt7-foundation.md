@@ -70,7 +70,8 @@ neither. Positive levels clamp to current virtual min/max;0 remains independent.
 Only adjustable DT7 profiles accept native MIN/MAX changes below254, bounded by
 1..opposite limit. Raising/lowering a limit can move virtual level and operate
 the contact. Threshold setters alone retain the contact unchanged. Reset restores
-default thresholds/limits, virtual254 and On; profile capabilities remain fixed.
+default thresholds/limits, virtual254 and On; profile capabilities and previous
+raw switch-status evidence remain fixed. Do not rebuild away that evidence.
 No timed fades, UP/DOWN simulation, mains/bus-failure transitions, electrical
 load faults or reference measurement are claimed in this immediate-state slice.
 
@@ -81,6 +82,9 @@ thresholds give On priority. Preserve raw last-threshold status without claiming
 startup evidence that was never observed. Same-level control retains state.
 Cover normal hysteresis, reverse switching, two applicable thresholds, ties and
 all-disabled profiles with literal model expectations.
+Direction reversal uses the new direction's comparisons even without crossing
+another threshold: up-on/off50/100, down-on/off150/200,254→140 is On and140→141
+is Off. A crossing-only implementation would incorrectly retain On.
 
 Keep Part208 repeat authority in each DT7 state, separate from existing base
 repeat handling. The first enabled setter waits for a matching second addressed
@@ -133,3 +137,11 @@ References: [IEC public preview, clauses9–11 and Figure2](https://cdn.standard
 [manufacturer command table, pp7–8](https://www.controlfreakuk.com/images/download/LIDA-D-User-Manual.pdf).
 The latter has Type6 typos in adjacent prose; use the IEC diagram for enable and
 repeat sequencing. Legacy optional features are not used to define this profile.
+
+Fresh combined source-only design gate APPROVE with no blockers. Its two concrete
+test recommendations (direction reversal and RESET retaining status evidence)
+are now explicit. Methodology: list consumers of actual/virtual state, then vary
+direction independently of threshold crossing and reset independently of defaults.
+Same-family review limitation applies; gate token usage is not exposed by this
+host. Design time includes primary-source and current-model inspection, not
+changes to the approved overall architecture.

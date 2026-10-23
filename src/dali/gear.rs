@@ -5,6 +5,7 @@
 //! decoded fixture value; see `docs/dali-output-contract.md` for integration limits.
 use crate::atx::transactions::BusReply;
 pub mod settings;
+pub mod switching;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum Error {

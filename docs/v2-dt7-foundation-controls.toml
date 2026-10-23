@@ -1,0 +1,145 @@
+# Intentional faults: checked Part208 framing and independent relay semantics.
+
+[[control]]
+name = "dt7_setter_enables_wrong_type"
+file = "src/dali/gear/switching.rs"
+anchor = "frame: 0xc107,"
+replacement = "frame: 0xc108,"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_setter_plans)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 threshold plan changed enable/order/repeat/scope"
+
+[[control]]
+name = "dt7_query_omits_correct_enable"
+file = "src/dali/gear/switching.rs"
+anchor = "[0xc107, Destination::Short(address).command(opcode)]"
+replacement = "[0xc108, Destination::Short(address).command(opcode)]"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_query_plans)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 individual query plan changed enable or opcode"
+
+[[control]]
+name = "dt7_disabled_threshold_is_full_level"
+file = "src/dali/gear/switching.rs"
+anchor = "Err(_) => Self::Disabled,"
+replacement = "Err(_) => Self::Level(Level::new(254).unwrap()),"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(dt7_threshold_endpoints)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 threshold raw value was lost"
+
+[[control]]
+name = "dt7_actual_echoes_virtual_level"
+file = "src/emulator/switching.rs"
+anchor = "    pub fn actual(&self) -> u8 {\n        if self.on {\n            254\n        } else {\n            0\n        }\n    }"
+replacement = "    pub fn actual(&self) -> u8 { self.virtual_level }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_hysteresis)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 hysteresis used virtual level as contact state"
+
+[[control]]
+name = "dt7_store_actual_copies_contact_level"
+file = "src/emulator/model.rs"
+anchor = "gear.dtr[0] = gear.control_level();"
+replacement = "gear.dtr[0] = gear.config.level;"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_hysteresis)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 STORE ACTUAL lost the virtual control level"
+
+[[control]]
+name = "dt7_direction_only_checks_crossed_thresholds"
+file = "src/emulator/switching.rs"
+anchor = "    pub fn drive(&mut self, level: u8) {\n        if level == self.virtual_level {\n            return;\n        }\n        let up = level > self.virtual_level;\n        self.virtual_level = level;\n        let on_index = if up { 0 } else { 2 };\n        let off_index = on_index + 1;\n        let on = self.profile.thresholds[on_index];\n        let off = self.profile.thresholds[off_index];\n        let applies = |threshold| {\n            threshold != 255\n                && if up {\n                    level >= threshold\n                } else {\n                    level <= threshold\n                }\n        };\n        let on_applies = applies(on);\n        let off_applies = applies(off);\n        // Last applicable threshold in the direction of travel wins; ties are On.\n        // Evaluate the new direction even when its threshold lies before old VAPL.\n        if on_applies && (!off_applies || if up { on >= off } else { on <= off }) {\n            self.on = true;\n            self.last_threshold = Some(on_index as u8);\n        } else if off_applies {\n            self.on = false;\n            self.last_threshold = Some(off_index as u8);\n        }\n    }"
+replacement = "    pub fn drive(&mut self, level: u8) {\n        if level == self.virtual_level {\n            return;\n        }\n        let old = self.virtual_level;\n        let up = level > self.virtual_level;\n        self.virtual_level = level;\n        let on_index = if up { 0 } else { 2 };\n        let off_index = on_index + 1;\n        let on = self.profile.thresholds[on_index];\n        let off = self.profile.thresholds[off_index];\n        let applies = |threshold| {\n            threshold != 255\n                && if up {\n                    level >= threshold && old < threshold\n                } else {\n                    level <= threshold && old > threshold\n                }\n        };\n        let on_applies = applies(on);\n        let off_applies = applies(off);\n        // Last applicable threshold in the direction of travel wins; ties are On.\n        // Evaluate the new direction even when its threshold lies before old VAPL.\n        if on_applies && (!off_applies || if up { on >= off } else { on <= off }) {\n            self.on = true;\n            self.last_threshold = Some(on_index as u8);\n        } else if off_applies {\n            self.on = false;\n            self.last_threshold = Some(off_index as u8);\n        }\n    }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_direction_reversal)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 direction reversal or last applicable threshold was ignored"
+
+[[control]]
+name = "dt7_equal_upward_threshold_prefers_off"
+file = "src/emulator/switching.rs"
+anchor = "on >= off"
+replacement = "on > off"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_direction_reversal)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 equal thresholds did not prefer On"
+
+[[control]]
+name = "dt7_disabled_thresholds_can_apply"
+file = "src/emulator/switching.rs"
+anchor = "threshold != 255"
+replacement = "true"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_direction_reversal)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 disabled thresholds operated the contact"
+
+[[control]]
+name = "dt7_programming_operates_contact"
+file = "src/emulator/model.rs"
+anchor = "switching.command(frame, gear.dtr[0], self.now_ms, enabled_type == Some(7))\n                    {\n                        known = true;"
+replacement = "switching.command(frame, gear.dtr[0], self.now_ms, enabled_type == Some(7))\n                    {\n                        known = true;\n                        if (0xe1..=0xe4).contains(&opcode) { gear.drive(254); }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_programming)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 threshold programming activated the contact"
+
+[[control]]
+name = "dt7_fixed_profile_accepts_threshold_setter"
+file = "src/emulator/switching.rs"
+anchor = "if self.adjustable() {\n                let index"
+replacement = "if true {\n                let index"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_fixed_profiles)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 fixed profile accepted a threshold setter"
+
+[[control]]
+name = "dt7_fixed_profile_accepts_virtual_limits"
+file = "src/emulator/model.rs"
+anchor = "    fn adjustable_limits(&self) -> bool {\n        self.switching_state.as_ref().is_none_or(|s| s.adjustable())\n    }"
+replacement = "    fn adjustable_limits(&self) -> bool { true }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_fixed_profiles)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 fixed profile changed virtual limits"
+
+[[control]]
+name = "dt7_reset_erases_status_evidence"
+file = "src/emulator/switching.rs"
+anchor = "self.pending = None;\n        // SWITCH STATUS"
+replacement = "self.pending = None;\n        self.last_threshold = None;\n        // SWITCH STATUS"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_programming)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 RESET erased previous raw switch status"
+
+[[control]]
+name = "dt7_second_setter_requires_another_enable"
+file = "src/emulator/switching.rs"
+anchor = "old == frame && now_ms.saturating_sub(at) <= 100"
+replacement = "enabled && old == frame && now_ms.saturating_sub(at) <= 100"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_one_enable)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 pair enable/intervening addressed command guard failed"
+
+[[control]]
+name = "dt7_early_base_repeat_skips_interruption"
+file = "src/emulator/model.rs"
+anchor = "switching.observe(frame);"
+replacement = "if !(0x20..=0x30).contains(&opcode) { switching.observe(frame); }"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_one_enable)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 pair enable/intervening addressed command guard failed"
+
+[[control]]
+name = "dt7_other_address_cancels_pair"
+file = "src/emulator/model.rs"
+anchor = "if special || gear.selected(address) {"
+replacement = "if true {"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_scope_unrelated)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 traffic to another address canceled the pending pair"
+
+[[control]]
+name = "dt7_repeat_accepts_expired_pair"
+file = "src/emulator/switching.rs"
+anchor = "now_ms.saturating_sub(at) <= 100"
+replacement = "now_ms.saturating_sub(at) <= 101"
+target = "command"
+argv = ["cargo", "nextest", "run", "--offline", "--target", "aarch64-apple-darwin", "--lib", "-E", "test(literal_dt7_one_enable)", "--status-level", "fail", "--final-status-level", "fail"]
+expect_text = "DT7 repeat window boundary changed"

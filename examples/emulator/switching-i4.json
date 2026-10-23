@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "buses": [{
+    "number": 0,
+    "outputs": [
+      {"id": "fixed-relay", "short_address": 0, "device_type": 7, "level": 0},
+      {"id": "threshold-relay", "short_address": 1, "device_type": 7, "level": 0,
+       "switching": {"adjustable_thresholds": true, "thresholds": [100, 255, 255, 50], "gear_type": 2}},
+      {"id": "dimmer", "short_address": 2, "device_type": 6, "level": 90}
+    ]
+  }]
+}

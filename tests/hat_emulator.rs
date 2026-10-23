@@ -350,6 +350,111 @@ async fn standalone_dt8_pty_activates_native_colour_with_input_traffic() {
 }
 
 #[tokio::test]
+async fn dt7_typed_plans_roundtrip_through_standalone_hat_with_both_repeat_profiles() {
+    use mqtt_dali::dali::gear::{settings, switching, Destination, ShortAddress};
+    for (profile, policy) in [
+        ("one_terminal", RepeatPolicy::OneTerminal),
+        ("two_terminals", RepeatPolicy::TwoTerminals),
+    ] {
+        let fixture = Fixture::new();
+        fs::write(fixture.0.join("physical.json"),serde_json::to_vec(&serde_json::json!({"version":1,"clock":"frozen","repeat":profile,"buses":[{"number":0,"outputs":[
+            {"id":"relay","short_address":3,"device_type":7,"switching":{"adjustable_thresholds":true}},
+            {"id":"dimmer","short_address":4,"level":90}]}]})).unwrap()).unwrap();
+        let mut child = fixture.command().spawn().unwrap();
+        let ready = ready(&mut child).await;
+        let (link, mut events) = Transactions::start(
+            Serial::open(ready["pty"].as_str().unwrap()).await.unwrap(),
+            policy,
+        );
+        tokio::time::timeout(Duration::from_secs(1), events.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        link.initialize(Duration::from_secs(1)).await.unwrap();
+        let address = ShortAddress::new(3).unwrap();
+        let minimum = settings::Setting::Minimum(settings::LimitLevel::new(1).unwrap())
+            .plan(Destination::Short(address));
+        for step in minimum {
+            link.execute(
+                Command::Send {
+                    bus: 0,
+                    frame: DaliFrame::Bits16(step.frame),
+                    repeat: step.repeat,
+                },
+                Duration::from_secs(1),
+            )
+            .await
+            .unwrap();
+        }
+        for (setting, query, expected) in [
+            (
+                switching::Setting::UpOn(switching::UpThreshold::new(80).unwrap()),
+                switching::Query::UpOn,
+                80,
+            ),
+            (
+                switching::Setting::UpOff(switching::UpThreshold::new(255).unwrap()),
+                switching::Query::UpOff,
+                255,
+            ),
+            (
+                switching::Setting::DownOn(switching::Threshold::Disabled),
+                switching::Query::DownOn,
+                255,
+            ),
+            (
+                switching::Setting::DownOff(switching::Threshold::from_raw(30)),
+                switching::Query::DownOff,
+                30,
+            ),
+        ] {
+            for step in setting.plan(Destination::Short(address)) {
+                let response = link
+                    .execute(
+                        Command::Send {
+                            bus: 0,
+                            frame: DaliFrame::Bits16(step.frame),
+                            repeat: step.repeat,
+                        },
+                        Duration::from_secs(1),
+                    )
+                    .await
+                    .unwrap();
+                assert!(
+                    matches!(response,Response::Dali(values) if values.iter().all(|v|*v==BusReply::NoResponse))
+                );
+            }
+            let [enable, frame] = query.plan(address);
+            literal_frame(&link, enable).await;
+            assert_eq!(
+                literal_frame(&link, frame).await,
+                BusReply::Value(expected),
+                "DT7 typed setter/query failed standalone HAT readback"
+            );
+        }
+        for (level, actual) in [(60, 0), (100, 254), (50, 254), (20, 0)] {
+            literal_frame(&link, 0x0600 | level).await;
+            assert_eq!(
+                literal_frame(&link, 0x07a0).await,
+                BusReply::Value(actual),
+                "DT7 standalone actual was not the relay contact state"
+            );
+        }
+        assert_eq!(literal_frame(&link, 0x07a2).await, BusReply::Value(1));
+        assert_eq!(literal_frame(&link, 0x079a).await, BusReply::Value(254));
+        assert_eq!(literal_frame(&link, 0x09a0).await, BusReply::Value(90));
+        let snapshot = request(&fixture, serde_json::json!({"op":"snapshot"})).await;
+        assert_eq!(
+            snapshot["result"]["buses"][0]["outputs"][0]["switching_state"]["virtual_level"],
+            20
+        );
+        assert_eq!(snapshot["result"]["buses"][0]["outputs"][0]["level"], 0);
+        link.close().await.unwrap();
+        terminate(&mut child).await;
+    }
+}
+
+#[tokio::test]
 async fn existing_control_path_is_never_replaced() {
     let fixture = Fixture::new();
     fs::write(fixture.socket(), b"keep this file").unwrap();

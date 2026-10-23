@@ -22,6 +22,34 @@ struct Gear {
     fade: u8,
     #[serde(skip_serializing_if = "Option::is_none")]
     colour_state: Option<super::colour::State>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    switching_state: Option<super::switching::State>,
+}
+impl Gear {
+    fn selected(&self, address: u8) -> bool {
+        match address {
+            0x00..=0x7f => self.config.short_address == Some(address >> 1),
+            0x80..=0x9f => self.config.groups & (1 << ((address >> 1) & 15)) != 0,
+            0xfc..=0xff => address >= 0xfe || self.config.short_address.is_none(),
+            _ => false,
+        }
+    }
+    fn control_level(&self) -> u8 {
+        self.switching_state
+            .as_ref()
+            .map_or(self.config.level, |s| s.level())
+    }
+    fn drive(&mut self, level: u8) {
+        self.config.level = if let Some(switching) = &mut self.switching_state {
+            switching.drive(level);
+            switching.actual()
+        } else {
+            level
+        };
+    }
+    fn adjustable_limits(&self) -> bool {
+        self.switching_state.as_ref().is_none_or(|s| s.adjustable())
+    }
 }
 #[derive(Serialize)]
 struct Bus {
@@ -81,14 +109,22 @@ impl Model {
                         config
                             .random_address
                             .get_or_insert_with(|| random(&mut rng));
+                        let switching_state = (config.device_type == 7).then(|| {
+                            super::switching::State::new(
+                                config.switching.clone().unwrap_or_default(),
+                                config.level,
+                            )
+                        });
+                        let min_level = if switching_state.is_some() { 254 } else { 1 };
                         Gear {
                             colour_state: config.colour.clone().map(super::colour::State::new),
+                            switching_state,
                             config,
                             dtr: [0; 3],
                             initialize_until: None,
                             withdrawn: false,
                             search: 0xffffff,
-                            min_level: 1,
+                            min_level,
                             max_level: 254,
                             power_on_level: 254,
                             failure_level: 254,
@@ -263,6 +299,32 @@ impl Model {
         };
         bus.input_repeat = None;
         let [address, opcode] = frame.to_be_bytes();
+        let special = matches!(
+            address,
+            0xa1 | 0xa3
+                | 0xa5
+                | 0xa7
+                | 0xa9
+                | 0xab
+                | 0xb1
+                | 0xb3
+                | 0xb5
+                | 0xb7
+                | 0xb9
+                | 0xbb
+                | 0xc1
+                | 0xc3
+                | 0xc5
+        );
+        // DT7's per-gear pair sees addressed traffic even when the existing
+        // Part102 repeat guard defers this first frame below.
+        for gear in &mut bus.outputs {
+            if special || gear.selected(address) {
+                if let Some(switching) = &mut gear.switching_state {
+                    switching.observe(frame);
+                }
+            }
+        }
         // One shared broadcast latch suffices: all gear on a modeled bus hears
         // the same C1 special. Consume standard commands before repeat/selection.
         let enabled_type = if address <= 0x9f || address >= 0xfc {
@@ -285,23 +347,6 @@ impl Model {
         if address == 0xc1 {
             bus.enabled_type = Some(opcode);
         }
-        let special = matches!(
-            address,
-            0xa1 | 0xa3
-                | 0xa5
-                | 0xa7
-                | 0xa9
-                | 0xab
-                | 0xb1
-                | 0xb3
-                | 0xb5
-                | 0xb7
-                | 0xb9
-                | 0xbb
-                | 0xc1
-                | 0xc3
-                | 0xc5
-        );
         let mut replies = Vec::new();
         let mut known = false;
         for gear in &mut bus.outputs {
@@ -404,16 +449,21 @@ impl Model {
                 }
                 continue;
             }
-            let selected = match address {
-                0x00..=0x7f => gear.config.short_address == Some(address >> 1),
-                0x80..=0x9f => gear.config.groups & (1 << ((address >> 1) & 15)) != 0,
-                0xfc..=0xff => address >= 0xfe || gear.config.short_address.is_none(),
-                _ => false,
-            };
-            if !selected {
+            if !gear.selected(address) {
                 continue;
             }
             if address & 1 == 1 && opcode >= 0xe0 {
+                if let Some(switching) = &mut gear.switching_state {
+                    if let Some(reply) =
+                        switching.command(frame, gear.dtr[0], self.now_ms, enabled_type == Some(7))
+                    {
+                        known = true;
+                        if let Some(value) = reply {
+                            replies.push(value);
+                        }
+                        continue;
+                    }
+                }
                 if enabled_type == Some(8) {
                     if let Some(colour) = &mut gear.colour_state {
                         if let Some(reply) = colour.command(opcode, &mut gear.dtr) {
@@ -433,11 +483,12 @@ impl Model {
                     colour.power_command();
                 }
                 if opcode != 255 {
-                    gear.config.level = if opcode == 0 {
+                    let level = if opcode == 0 {
                         0
                     } else {
                         opcode.clamp(gear.min_level, gear.max_level)
                     };
+                    gear.drive(level);
                 }
                 known = true;
                 continue;
@@ -449,39 +500,40 @@ impl Model {
             }
             let value = match opcode {
                 0 => {
-                    gear.config.level = 0;
+                    gear.drive(0);
                     None
                 }
                 3 | 8 => {
-                    if gear.config.level > 0 || opcode == 8 {
-                        gear.config.level = gear
-                            .config
-                            .level
+                    if gear.control_level() > 0 || opcode == 8 {
+                        let level = gear
+                            .control_level()
                             .saturating_add(1)
                             .clamp(gear.min_level, gear.max_level);
+                        gear.drive(level);
                     }
                     None
                 }
                 4 => {
-                    if gear.config.level > 0 {
-                        gear.config.level = gear.config.level.saturating_sub(1).max(gear.min_level);
+                    if gear.control_level() > 0 {
+                        gear.drive(gear.control_level().saturating_sub(1).max(gear.min_level));
                     }
                     None
                 }
                 5 => {
-                    gear.config.level = gear.max_level;
+                    gear.drive(gear.max_level);
                     None
                 }
                 6 => {
-                    gear.config.level = gear.min_level;
+                    gear.drive(gear.min_level);
                     None
                 }
                 7 => {
-                    gear.config.level = if gear.config.level <= gear.min_level {
+                    let level = if gear.control_level() <= gear.min_level {
                         0
                     } else {
-                        gear.config.level - 1
+                        gear.control_level() - 1
                     };
+                    gear.drive(level);
                     None
                 }
                 0x10..=0x1f => {
@@ -490,11 +542,12 @@ impl Model {
                         colour.recall_scene((opcode & 15) as usize, level);
                     }
                     if level != 255 {
-                        gear.config.level = if level == 0 {
+                        let level = if level == 0 {
                             0
                         } else {
                             level.clamp(gear.min_level, gear.max_level)
                         };
+                        gear.drive(level);
                     }
                     None
                 }
@@ -504,9 +557,16 @@ impl Model {
                     if let Some(colour) = &mut gear.colour_state {
                         colour.reset_scenes();
                     }
-                    gear.min_level = 1;
+                    gear.min_level = if gear.switching_state.is_some() {
+                        254
+                    } else {
+                        1
+                    };
                     gear.max_level = 254;
                     gear.config.level = 254;
+                    if let Some(switching) = &mut gear.switching_state {
+                        switching.reset();
+                    }
                     gear.config.random_address = Some(0xffffff);
                     gear.search = 0xffffff;
                     gear.power_on_level = 254;
@@ -515,21 +575,25 @@ impl Model {
                     None
                 }
                 0x21 => {
-                    gear.dtr[0] = gear.config.level;
+                    gear.dtr[0] = gear.control_level();
                     if let Some(colour) = &mut gear.colour_state {
                         colour.report_actual();
                     }
                     None
                 }
                 0x2a => {
-                    gear.max_level = gear.dtr[0].clamp(gear.min_level, 254);
-                    gear.config.level = gear.config.level.min(gear.max_level);
+                    if gear.adjustable_limits() {
+                        gear.max_level = gear.dtr[0].clamp(gear.min_level, 254);
+                        gear.drive(gear.control_level().min(gear.max_level));
+                    }
                     None
                 }
                 0x2b => {
-                    gear.min_level = gear.dtr[0].clamp(1, gear.max_level);
-                    if gear.config.level > 0 {
-                        gear.config.level = gear.config.level.max(gear.min_level);
+                    if gear.adjustable_limits() {
+                        gear.min_level = gear.dtr[0].clamp(1, gear.max_level);
+                        if gear.control_level() > 0 {
+                            gear.drive(gear.control_level().max(gear.min_level));
+                        }
                     }
                     None
                 }
@@ -590,7 +654,11 @@ impl Model {
                 0x97 => Some(8),
                 0x98 => Some(gear.dtr[0]),
                 0x99 => Some(gear.config.device_type),
-                0x9a => Some(1),
+                0x9a => Some(if gear.switching_state.is_some() {
+                    254
+                } else {
+                    1
+                }),
                 0x9c => Some(gear.dtr[1]),
                 0x9d => Some(gear.dtr[2]),
                 0xa0 => {
@@ -651,5 +719,7 @@ mod input_settings_tests;
 mod scene_tests;
 #[cfg(test)]
 mod sensor_settings_tests;
+#[cfg(test)]
+mod switching_tests;
 #[cfg(test)]
 mod tests;

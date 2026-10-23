@@ -7,6 +7,61 @@ use serde_json::json;
 use std::time::Duration;
 
 #[tokio::test]
+async fn dt7_managed_base_power_reports_actual_binary_contact_state() {
+    for (profile, policy) in [
+        ("one_terminal", RepeatPolicy::OneTerminal),
+        ("two_terminals", RepeatPolicy::TwoTerminals),
+    ] {
+        let fixture = Fixture::new();
+        let saved = fixture.disk();
+        let scenario=serde_json::from_value(json!({"version":1,"repeat":profile,"buses":[{"number":0,"outputs":[{"id":"relay","short_address":0,"device_type":7}]}]})).unwrap();
+        let emulator = pty::spawn(scenario).await.unwrap();
+        let broker = mqtt_test_broker::FakeBroker::start().await;
+        let (service, handle) = fixture.service();
+        let running = start(service.with_uart(&emulator.path, policy), &handle, &broker).await;
+        wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+        let target = "Bus1.Outputs.Light1";
+        let initial = handle
+            .read_output(target, context(1), deadline())
+            .await
+            .unwrap();
+        assert_eq!(initial.power(), Some(false));
+        assert_eq!(initial.brightness(), Some(0.0));
+        for (power, actual) in [(true, 254), (false, 0), (true, 254)] {
+            let sample = handle
+                .apply_output(
+                    target,
+                    Intent::new(Some(power), None).unwrap(),
+                    context(1),
+                    deadline(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(sample.quality, Quality::Current);
+            assert_eq!(sample.power(), Some(power));
+            assert_eq!(
+                sample.brightness(),
+                Some(f64::from(actual) / 254.0),
+                "managed DT7 observation echoed a virtual dimmer level"
+            );
+            let physical = emulator
+                .emulator
+                .control(Control::Snapshot, Duration::from_secs(1))
+                .await
+                .unwrap();
+            assert_eq!(physical["buses"][0]["outputs"][0]["level"], actual);
+        }
+        assert_eq!(
+            fixture.disk(),
+            saved,
+            "DT7 power changed saved names or bindings"
+        );
+        assert!(running.stop().await);
+        emulator.emulator.close().await.unwrap();
+    }
+}
+
+#[tokio::test]
 async fn output_reply_and_cache_share_the_final_acceptance_sample() {
     let fixture = Fixture::new();
     let broker = mqtt_test_broker::FakeBroker::start().await;
