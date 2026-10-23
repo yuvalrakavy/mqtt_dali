@@ -46,7 +46,7 @@ pub(super) fn intent(
     }
 }
 
-fn lifecycle(snapshot: &Snapshot, bus: u8) -> bool {
+pub(super) fn lifecycle(snapshot: &Snapshot, bus: u8) -> bool {
     matches!(snapshot.phase, Phase::Ready | Phase::Writing)
         && snapshot
             .model
@@ -114,6 +114,7 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
             ))
         })
         .chain(super::super::input::projections(snapshot))
+        .chain(super::group::projections(snapshot))
         .collect()
 }
 

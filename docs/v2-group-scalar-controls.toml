@@ -1,0 +1,83 @@
+# Run serially before frozen source readers; every mutation is restored.
+[[control]]
+name = "group_scalar_request_validation_has_no_group_dispatch"
+file = "src/service/proxy.rs"
+anchor = '''                if group::is_group(&snapshot, target) {
+                    group::route(&snapshot, target, context, true)?;
+                    group::intent(values)?;
+                    return Ok(());
+                }'''
+replacement = ''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_desired_uses_native_membership)"]
+expect_text = "group scalar actual evidence did not reach MQTT"
+
+[[control]]
+name = "group_scalar_cache_compares_report_without_original_stamp"
+file = "src/service/proxy/group.rs"
+anchor = "|| snapshot.group_outputs.get(target) != Some(observed)"
+replacement = "|| snapshot.group_outputs.get(target).map(|o| o.report()) != Some(observed.report())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_held_observation)"]
+expect_text = "held group result accepted retired physical or mapping evidence: bus_cycle"
+
+[[control]]
+name = "group_scalar_empty_or_partial_write_is_confirmed"
+file = "src/service/proxy/group.rs"
+anchor = "if !current {"
+replacement = "if false && !current {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_literal_ignored_write)"]
+expect_text = "incomplete/empty scalar Set was acknowledged as confirmed"
+
+[[control]]
+name = "group_scalar_pre_send_owner_cut_is_omitted"
+file = "src/service/owner.rs"
+anchor = "if group_output::invalidate(&mut snapshot, &hat) {"
+replacement = "if false && group_output::invalidate(&mut snapshot, &hat) {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_literal_ignored_write)"]
+expect_text = "group actual was not invalidated before the individual native send"
+
+[[control]]
+name = "group_scalar_membership_program_does_not_retire_cache"
+file = "src/service/physical.rs"
+anchor = "Self::Groups(_, r) => matches!(r.plan, groups::Plan::Program { .. }),"
+replacement = "Self::Groups(_, _) => false,"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_common_mutations)"]
+expect_text = "selected group freshness survived a native mutation: membership"
+
+[[control]]
+name = "group_scalar_input_feedback_wrongly_retires_groups"
+file = "src/service/physical.rs"
+anchor = '''            Self::InputFeedback(..)
+            | Self::InputSettings(..)'''
+replacement = '''            Self::InputFeedback(..) => true,
+            Self::InputSettings(..)'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_common_mutations)"]
+expect_text = "input feedback retired group evidence"
+
+[[control]]
+name = "group_scalar_ordinary_reads_wrongly_retire_cache"
+file = "src/service/group_output.rs"
+anchor = "!hat.cached_evidence_current(observation.report.bus, observation.stamp)"
+replacement = "!hat.evidence_current(observation.report.bus, observation.stamp)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_common_mutations)"]
+expect_text = "input read retired group evidence"
+
+[[control]]
+name = "group_scalar_mixed_brightness_becomes_invented_value"
+file = "src/service/proxy/group.rs"
+anchor = '''                    "Brightness".into(),
+                    control
+                        .and_then(|v| v.brightness)
+                        .map(Value::from)
+                        .unwrap_or(Value::Null),'''
+replacement = '''                    "Brightness".into(),
+                    control.and_then(|v| v.brightness).map(Value::from).unwrap_or(Value::from(0.5)),'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(group_scalar_refresh_separates_mixed)"]
+expect_text = "mixed group invented an average brightness"

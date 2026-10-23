@@ -70,6 +70,7 @@ pub struct Snapshot {
     pub phase: Phase,
     pub hardware: Hardware,
     pub outputs: std::collections::BTreeMap<String, output::Observation>,
+    pub group_outputs: std::collections::BTreeMap<String, group_output::Observation>,
     pub inputs: std::collections::BTreeMap<String, input::Observation>,
     /// Routes with an installed receive boundary, independently of device presence.
     pub input_listeners: std::collections::BTreeSet<String>,

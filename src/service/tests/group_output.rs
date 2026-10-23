@@ -3,6 +3,182 @@ use crate::service::group_output as group_service;
 mod literal;
 
 #[tokio::test]
+async fn group_scalar_common_mutations_retire_only_their_bus_group_evidence() {
+    let fixture = Fixture::new();
+    fixture.add_button();
+    let mut inventory = fixture.disk();
+    inventory.buses[0].groups.push(
+        serde_json::from_value(json!({"group_address":1,"name":"Sibling","members":[0]})).unwrap(),
+    );
+    inventory.buses[0]
+        .scenes
+        .push(serde_json::from_value(json!({"slot":0,"name":"Evening"})).unwrap());
+    let mut second = inventory.buses[0].clone();
+    second.bus = 1;
+    second.name = "Bus2".into();
+    second.inputs.clear();
+    inventory.buses.push(second);
+    fs::write(
+        &fixture.paths.current,
+        serde_json::to_vec(&inventory).unwrap(),
+    )
+    .unwrap();
+    let saved = fs::read(&fixture.paths.current).unwrap();
+    let emulator = pty::spawn(serde_json::from_value(json!({"version":1,"buses":[
+        {"number":0,"outputs":[{"id":"one","short_address":0,"level":100,"groups":3,"scenes":[40,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255]}],"inputs":[{"id":"panel","short_address":0,"instances":[1],"values":[{"instance":0,"resolution":1,"bytes":[255]}],"feedback":[{"instance":0}]}]},
+        {"number":1,"outputs":[{"id":"other","short_address":0,"level":150,"groups":3}]}]})).unwrap()).await.unwrap();
+    let broker = FakeBroker::start().await;
+    let (service, handle) = fixture.service();
+    let running = start(
+        service.with_uart(&emulator.path, RepeatPolicy::OneTerminal),
+        &handle,
+        &broker,
+    )
+    .await;
+    wait_for(&handle, |s| matches!(s.hardware, Hardware::Ready { .. })).await;
+    let input = "Bus1.Inputs.Panel.Instances.Button";
+    wait_for(&handle, |s| s.input_listeners.contains(input)).await;
+    let mut notices = handle.subscribe_inputs();
+    emulator
+        .emulator
+        .control(
+            Control::InputEvent {
+                bus: 0,
+                frame: 0x008001,
+            },
+            Duration::from_secs(1),
+        )
+        .await
+        .unwrap();
+    let notice = tokio::time::timeout(Duration::from_secs(2), notices.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    let targets = ["Bus1.Groups.All", "Bus1.Groups.Sibling", "Bus2.Groups.All"];
+    for operation in ["individual", "group", "scene", "membership", "clear"] {
+        for target in targets {
+            handle
+                .read_group_output(target, context(1), deadline())
+                .await
+                .unwrap();
+        }
+        handle
+            .read_input(input, context(1), deadline())
+            .await
+            .unwrap();
+        assert!(
+            handle
+                .snapshot()
+                .unwrap()
+                .group_outputs
+                .values()
+                .all(|o| !o.stale),
+            "input read retired group evidence"
+        );
+        handle
+            .set_input_feedback(input, 1, true, context(1), deadline())
+            .await
+            .unwrap();
+        assert!(
+            handle
+                .snapshot()
+                .unwrap()
+                .group_outputs
+                .values()
+                .all(|o| !o.stale),
+            "input feedback retired group evidence"
+        );
+        let before_input = handle.snapshot().unwrap().inputs[input].clone();
+        match operation {
+            "individual" => {
+                handle
+                    .apply_output(
+                        "Bus1.Outputs.Light1",
+                        crate::dali::gear::Intent::new(None, Some(0.5)).unwrap(),
+                        context(1),
+                        deadline(),
+                    )
+                    .await
+                    .unwrap();
+            }
+            "group" => {
+                assert_eq!(
+                    handle
+                        .set_group_output(
+                            targets[0],
+                            1,
+                            crate::dali::gear::Intent::new(Some(false), None).unwrap(),
+                            context(1),
+                            deadline()
+                        )
+                        .await
+                        .unwrap()
+                        .outcome,
+                    "sent"
+                );
+            }
+            "scene" => {
+                assert_eq!(
+                    handle
+                        .recall_scene("Bus1.Scenes.Evening", None, 1, context(1), deadline())
+                        .await
+                        .unwrap()
+                        .outcome,
+                    "sent"
+                );
+            }
+            "membership" => {
+                handle
+                    .change_groups(
+                        "Bus1.Outputs.Light1",
+                        crate::service::groups::Action::Repair { reviewed_mask: 3 },
+                        1,
+                        context(1),
+                        deadline(),
+                    )
+                    .await
+                    .unwrap();
+            }
+            _ => {
+                handle
+                    .clear_short_address("Bus1.Outputs.Light1", 1, context(1), deadline())
+                    .await
+                    .unwrap();
+            }
+        }
+        let snapshot = handle.snapshot().unwrap();
+        assert_eq!(
+            snapshot.group_outputs[targets[0]].stale,
+            operation != "group",
+            "selected group freshness survived a native mutation: {operation}"
+        );
+        assert!(
+            snapshot.group_outputs[targets[1]].stale,
+            "sibling group retained old actual evidence: {operation}"
+        );
+        assert!(
+            !snapshot.group_outputs[targets[2]].stale,
+            "another bus group was invalidated: {operation}"
+        );
+        assert!(
+            notice.current(&snapshot),
+            "group cache cut revoked continuing input notice: {operation}"
+        );
+        assert_eq!(
+            snapshot.inputs[input], before_input,
+            "output operation replaced input measurement: {operation}"
+        );
+        assert_eq!(
+            fs::read(&fixture.paths.current).unwrap(),
+            saved,
+            "actual operation changed saved inventory: {operation}"
+        );
+    }
+    assert!(running.stop().await);
+    emulator.emulator.close().await.unwrap();
+}
+
+#[tokio::test]
 async fn group_output_identification_blocks_group_writes_but_not_read_admission() {
     let fixture = Fixture::new();
     let emulator=pty::spawn(serde_json::from_value(json!({"version":1,"buses":[{"number":0,"outputs":[{"id":"member","short_address":0,"groups":1,"level":100}]}]})).unwrap()).await.unwrap();

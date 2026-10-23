@@ -58,8 +58,9 @@ Read is Read-class and Set WithReply. Successful BridgeKit MQTT replies carry
 the report under `value`; protected HTTP jobs return that report as their result.
 Both use the same strict parser and original authority. Typed callers use
 `ServiceHandle::read_group_output` / `set_group_output` with a checked gear Intent,
-original RequestContext and absolute deadline. Scalar Desired group properties
-and DT8 group colour are subsequent slices; this operation provides commands.
+original RequestContext and absolute deadline. Base scalar Desired/State also
+uses this owned operation; see [MQTT group bindings](mqtt-outputs.md#hardware-groups).
+DT8 group colour remains pending.
 Protected HTTP retains complete group results up to 1 MiB, including long saved
 fixture names. Job lists and live summaries omit the result; fetch it by job id.
 
@@ -104,8 +105,9 @@ bounded to15 seconds within the caller's deadline. Before possible mutation and
 again at settlement, cached actual output/colour samples on that bus become stale.
 This prevents old individual values staying current after a native group command,
 including one whose caller disappeared. Ordinary individual readbacks repopulate
-that cache; these reports are local evidence, not a replacement inventory/State
-stream. Other buses, input measurements, queued button activity and configuration
+that cache. Accepted group commands also update the group State cache, preserving
+the original observation and physical stamp. The richer report is distinct from
+the aggregate scalar State stream. Other buses, input measurements, queued button activity and configuration
 remain intact. Base commands can activate already staged DT8 colour; no explicit
 colour/scene/settings programming is part of this slice.
 

@@ -3,7 +3,15 @@ use mqtt_bridge_kit::*;
 use std::time::Duration;
 
 mod colour;
+mod group;
 mod state;
+
+#[derive(Clone, Copy)]
+enum ReadKind {
+    Output,
+    Input,
+    Group,
+}
 
 pub struct DaliProxy {
     pub(super) handle: ServiceHandle,
@@ -104,6 +112,11 @@ impl DeviceDriver for DaliProxy {
                 let target =
                     target.ok_or_else(|| OpError::Rejected("output target required".into()))?;
                 let snapshot = self.snapshot()?;
+                if group::is_group(&snapshot, target) {
+                    group::route(&snapshot, target, context, true)?;
+                    group::intent(values)?;
+                    return Ok(());
+                }
                 Self::output_route(&snapshot, target, context, true)?;
                 state::intent(values, colour::configured(&snapshot, target))?;
                 Ok(())
@@ -178,6 +191,9 @@ impl DeviceDriver for DaliProxy {
         context: &RequestContext,
     ) -> Result<(), OpError> {
         let snapshot = self.snapshot()?;
+        if group::is_group(&snapshot, target) {
+            return group::apply(self, &snapshot, target, values, context).await;
+        }
         Self::output_route(&snapshot, target, context, true)?;
         let intent = state::intent(values, colour::configured(&snapshot, target))?;
         let deadline = Instant::now()
@@ -588,7 +604,7 @@ impl DaliProxy {
                 && !matches!(value.location, crate::inventory::Location::Output { .. })
         }) {
             return Err(OpError::Unsupported(
-                "individual output required; use group output commands for group control".into(),
+                "individual output required for this operation".into(),
             ));
         }
         output::resolve(snapshot, target, cause, writing).map_err(op_error)
@@ -631,6 +647,16 @@ impl DaliProxy {
             }
             Scope::Target(target) => {
                 let snapshot = self.snapshot()?;
+                if group::is_group(&snapshot, &target) {
+                    let deadline = Instant::now() + Duration::from_secs(15);
+                    let observed = group::read(self, &target, cause.clone(), deadline).await?;
+                    return Ok(vec![group::accepted(
+                        &self.snapshot()?,
+                        &target,
+                        &observed,
+                        deadline,
+                    )?]);
+                }
                 if snapshot.model.projections().iter().any(|p| {
                     p.target == target
                         && matches!(p.location, crate::inventory::Location::InputInstance { .. })
@@ -698,10 +724,13 @@ impl DaliProxy {
         let snapshot = self.snapshot()?;
         let inventory = Self::inventory(&snapshot, cause)?;
         let table = routing::generations(&snapshot.model);
-        let targets: Vec<(String,bool)> = snapshot.model.projections().into_iter()
-            .filter(|value| matches!(value.location, crate::inventory::Location::Output { bus, .. } | crate::inventory::Location::InputInstance { bus, .. }
+        let mut targets: Vec<(String,ReadKind)> = snapshot.model.projections().into_iter()
+            .filter(|value| matches!(value.location, crate::inventory::Location::Output { bus, .. } | crate::inventory::Location::InputInstance { bus, .. } | crate::inventory::Location::Group { bus, .. }
                 if snapshot.model.inventory().buses.iter().any(|value| value.bus == bus && value.enabled)))
-            .map(|value| {let input=matches!(value.location,crate::inventory::Location::InputInstance{..});(value.target,input)}).collect();
+            .map(|value| { let kind = match value.location { crate::inventory::Location::InputInstance { .. } => ReadKind::Input, crate::inventory::Location::Group { .. } => ReadKind::Group, _ => ReadKind::Output }; (value.target,kind) }).collect();
+        // Preserve the existing individual/input order; append new group work.
+        // The same persistent cursor rotates across the complete endpoint list.
+        targets.sort_by_key(|(_, kind)| matches!(kind, ReadKind::Group));
         if targets.is_empty() {
             let mut states = vec![inventory];
             states.extend(state::projections(&snapshot));
@@ -716,6 +745,7 @@ impl DaliProxy {
         let deadline = Instant::now() + Duration::from_secs(15);
         let mut observed = Vec::new();
         let mut observed_inputs = Vec::new();
+        let mut observed_groups = Vec::new();
         let mut failed = 0;
         for offset in 0..targets.len() {
             if Instant::now() >= deadline {
@@ -726,17 +756,22 @@ impl DaliProxy {
             // Persist before the first await: runtime cancellation/reconnect
             // must not keep restarting at the same fixture.
             self.read_cursor = (index + 1) % targets.len();
-            let (target, input) = &targets[index];
+            let (target, kind) = &targets[index];
             let context = RequestContext::new(table.targets[target].clone())
                 .map_err(OpError::Unusable)?
                 .with_traceparent(cause.traceparent());
-            let budget = if *input {
-                Duration::from_secs(4)
-            } else {
-                Self::output_budget(&self.snapshot()?, target, false)
+            let budget = match kind {
+                ReadKind::Input => Duration::from_secs(4),
+                ReadKind::Group => Duration::from_secs(15),
+                ReadKind::Output => Self::output_budget(&self.snapshot()?, target, false),
             };
             let until = deadline.min(Instant::now() + budget);
-            if *input {
+            if matches!(kind, ReadKind::Group) {
+                match group::read(self, target, context, until).await {
+                    Ok(value) => observed_groups.push((target.clone(), value)),
+                    Err(_) => failed += 1,
+                }
+            } else if matches!(kind, ReadKind::Input) {
                 match self.read_input_observation(target, context, until).await {
                     Ok(state) => observed_inputs.push((target.clone(), state.context)),
                     Err(_) => failed += 1,
@@ -772,6 +807,13 @@ impl DaliProxy {
             .collect();
         for (target, value) in observed {
             match state::accept_projected(&latest, &target, &value, projected.remove(&target)) {
+                Ok(state) => states.push(state),
+                Err(_) => failed += 1,
+            }
+        }
+        for (target, value) in observed_groups {
+            projected.remove(&target);
+            match group::accepted(&latest, &target, &value, deadline) {
                 Ok(state) => states.push(state),
                 Err(_) => failed += 1,
             }

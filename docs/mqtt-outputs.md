@@ -1,4 +1,4 @@
-# Individual output control over MQTT
+# Output control over MQTT
 
 This guide is for MQTT consumers and bridge operators using the development v2
 bridge. Any MQTT v5 consumer can use it. A Store server is not required. Configure
@@ -24,13 +24,67 @@ Power true alone recalls maximum; it does not restore an application's remembere
 brightness. Nulls, unknown properties, wrong JSON types, out-of-range levels and
 contradictory pairs are rejected before any output command is sent. Native
 [group power/level commands](group-output.md) and [membership operations](groups.md)
-are available; group scalar Desired and colour remain subsequent work. Individual
-DT8 colour controls are described below.
+are available. Groups support the base scalar properties described below;
+individual DT8 colour controls follow in the next section. Group colour remains
+pending.
 
 BridgeKit coalesces pending Desired values by property. The driver validates and
 applies the complete effective map it receives. One rejected map can produce an
 Error for each property. Use an explicit refresh/readback to sequence actions;
 an Error count alone does not establish completion of a publication.
+
+## Hardware groups
+
+Saved groups use the same PowerState/Brightness Desired properties and strict
+complete-map validation as individual outputs, with the group's own original
+target-generation. For example, publish `0.5` at
+`DALI/Desired/Controller/Bus1.Groups.Kitchen/Brightness`, or
+`{"PowerState":false}` at `DALI/Desired/Controller/Bus1.Groups.Kitchen`.
+No inventory revision parameter is needed in Desired. The driver captures one
+current revision and rejects a racing change without retokening or retrying.
+Colour and read-only/unknown properties reject the whole group map.
+
+The bridge sends one native group command. Actual hardware membership determines
+which fixtures receive it, including untracked or unaddressed members; saved
+checkboxes are not a fanout list. Refresh uses the ordinary command envelope
+`{"command":"refresh","target":"Bus1.Groups.Kitchen"}`. A supplied generation
+must match; omitted generation binds the current mapping once.
+
+State at `DALI/State/Controller/Bus1.Groups.Kitchen` summarizes individual-address
+membership and actual level/status across the complete saved bus roster:
+
+```json
+{"Available":true,"Quality":"current","Coverage":"saved_inventory",
+ "PowerState":true,"Brightness":null,"PowerMixed":false,"BrightnessMixed":true,
+ "KnownMembers":2,"MembershipMatches":true}
+```
+
+This group is uniformly On but its actual brightness values differ. No average
+is invented. Complete mixed evidence has Available=true; each mixed scalar is
+null with its own mixed flag true. Consumers check the property as well as
+availability. Coverage is the saved inventory, not a census of every physical
+member. MembershipMatches compares actual membership to saved intent; group
+control never repairs it. KnownMembers is a lower bound for partial membership.
+
+Empty groups have Available=false/Quality=empty; missing/MASK/collided evidence
+is partial or unavailable. Invalidated evidence is stale, and an unsampled mapping
+is unobserved. Scalar values and mixed flags are explicitly null whenever no
+complete aggregate is usable, clearing older merged State. Stale/unobserved
+counts and comparisons are also null. Empty/missing never means Off.
+
+Scalar writes publish accepted actual State before completion. Ignored/clamped
+writes still report actual values. Partial/empty/unconfirmed post-write evidence
+returns an error after publishing its truthful quality; it does not confirm an
+attained level. Native read/Set commands retain their richer per-fixture reports
+and sent/observed/unconfirmed outcomes; see [group operations](group-output.md).
+
+Individual, colour, Blink, scene, group-membership and output-address operations
+invalidate cached group evidence on their bus before possible mutation. A native
+group Set refreshes only its own group; siblings need fresh reads. Inventory
+revision changes retire captured roster evidence. Inputs and other buses remain
+independent. Group observations survive ordinary read traffic and do not save
+configuration. Polling uses the existing fair cursor and total15s ceiling, with
+each group clipped to15s and the remaining total; there is no extra poller.
 
 ## Colour controls
 

@@ -42,6 +42,7 @@ pub(super) fn snapshot(model: Model, phase: Phase) -> Snapshot {
         phase,
         hardware: Hardware::NotStarted,
         outputs: Default::default(),
+        group_outputs: Default::default(),
         inputs: Default::default(),
         input_listeners: Default::default(),
         identification: None,

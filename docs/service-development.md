@@ -361,10 +361,20 @@ spans, rather than only an ingress span.
 `__inventory` is read-only and returns the complete observed saved inventory.
 Individual PowerState/Brightness writes and reads use the owned physical service.
 Selected-family colour properties also use that service with fresh capability
-preflight and actual readback. Group scalar properties and unsupported properties
-return explicit errors. Native group power/level uses the separate
+preflight and actual readback. Group base scalar Desired/refresh use the same
+native group owner as the explicit
 [`read_group_output` / `set_group_output` path](group-output.md), with actual
-individual-address samples and no desired membership changes. Saved inventory
+individual-address samples and no desired membership changes. Group colour and
+unsupported properties return explicit errors. A private evidence reply preserves
+the accepted Observation/context/stamp for final scalar acceptance; public native
+wrappers still return Report. Snapshot group reports share an Arc, retire on root
+revision/bus/output mutation and publish explicit nulls for mixed/unknown fields.
+The pending Work predicate runs before polling HAT progress, covering typed/web/
+Blink mutations too; input-only work and nonactivating scene editing are excluded.
+Cache validity reuses individual-output handling of ordinary Writing/Awaiting;
+final acceptance still requires Ready and exact original evidence. Group All
+reads share the existing fair cursor/15s ceiling. See [MQTT group bindings](mqtt-outputs.md#hardware-groups).
+Saved inventory
 does not prove physical state.
 Consumers can be any MQTT implementation; no Store service is required. Follow
 the [inventory contract](inventory-contract.md), especially replay buffering and

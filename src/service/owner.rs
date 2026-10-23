@@ -34,6 +34,13 @@ impl Drop for AdmissionGuard {
 impl DaliService {
     fn update_snapshot(&self, model: Arc<Model>, phase: Phase) -> Snapshot {
         let snapshot = Snapshot {
+            group_outputs: group_output::retained(
+                &model,
+                self.handle
+                    .snapshot()
+                    .map(|s| s.group_outputs)
+                    .unwrap_or_default(),
+            ),
             input_listeners: self
                 .handle
                 .snapshot()
@@ -523,6 +530,11 @@ impl ProcessService for DaliService {
         loop {
             // Sync before polling any public frame after durable activation.
             hat.sync_model(&owner.model);
+            let mut snapshot = self.handle.snapshot().expect("service started");
+            if group_output::invalidate(&mut snapshot, &hat) {
+                self.state.send_replace(Some(snapshot.clone()));
+                let _ = self.handle.updates.send(snapshot);
+            }
             // WAIT: v2-service-loop
             let message = tokio::select! {
                 biased;
@@ -614,6 +626,7 @@ impl ProcessService for DaliService {
                         if let Some(hook)=&self.output_acceptance_hook { hook(&mut hat); }
                     }
                     hat.invalidate_outputs(&mut snapshot.outputs);
+                    group_output::invalidate(&mut snapshot, &hat);
                     // Cache and reply share the final validated sample. A second
                     // independent validation could otherwise change only one.
                     if let Some(physical::Completion::Output(completion))=&mut completion {
@@ -649,7 +662,9 @@ impl ProcessService for DaliService {
                     } else {None};
                     let group_output_result=if let Some(physical::Completion::GroupOutput(completed))=&mut completion {
                         if completed.request.action.writing(){group_output::invalidate_actual(&mut snapshot,completed.request.bus);}
-                        Some(group_output::accept(&snapshot,completed,&hat))
+                        let result = group_output::accept(&snapshot,completed,&hat);
+                        if let Ok(observation) = &result { snapshot.group_outputs.insert(completed.request.target.clone(), observation.clone()); }
+                        Some(result)
                     }else{None};
                     let input_actions_allowed=snapshot.phase==Phase::Ready;
                     self.state.send_replace(Some(snapshot.clone()));
@@ -994,6 +1009,7 @@ impl ProcessService for DaliService {
                     let mut snapshot = self.handle.snapshot().expect("service started");
                     snapshot.hardware = hat.hardware();
                     hat.invalidate_outputs(&mut snapshot.outputs);
+                    group_output::invalidate(&mut snapshot, &hat);
                     snapshot.inputs = hat.input_observations();
                     snapshot.input_listeners = hat.input_listeners();
                     self.state.send_replace(Some(snapshot.clone()));
@@ -1064,6 +1080,7 @@ impl ProcessService for DaliService {
         snapshot.inputs = hat.input_observations();
         snapshot.input_listeners = hat.input_listeners();
         hat.invalidate_outputs(&mut snapshot.outputs);
+        group_output::invalidate(&mut snapshot, &hat);
         self.state.send_replace(Some(snapshot.clone()));
         let _ = self.handle.updates.send(snapshot);
         // WAIT: v2-store-close

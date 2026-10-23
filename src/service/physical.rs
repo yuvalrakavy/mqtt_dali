@@ -27,6 +27,30 @@ pub(super) enum Work {
     ),
 }
 impl Work {
+    /// Native work that can change the actual membership/levels of an output
+    /// group. Input writes and nonactivating scene editing do not change them.
+    pub fn changes_group_values(&self) -> bool {
+        match self {
+            Self::GroupOutput(q, _) => q.action.writing(),
+            Self::Output(q, _) => q.intent.is_some(),
+            Self::Scenes(q, _) => q.action.writing(),
+            Self::Groups(_, r) => matches!(r.plan, groups::Plan::Program { .. }),
+            Self::Restore(_, r) => {
+                r.space == discovery::Space::Outputs
+                    && matches!(r.plan, restoration::Plan::Unique | restoration::Plan::Clear)
+            }
+            Self::Reassignment(_, r) => r.space == discovery::Space::Outputs,
+            Self::Commission(_, r) => {
+                r.space == discovery::Space::Outputs
+                    && matches!(r.plan, commissioning::Plan::Program(_))
+            }
+            Self::InputFeedback(..)
+            | Self::InputSettings(..)
+            | Self::Input(..)
+            | Self::Discovery(..)
+            | Self::SceneSettings(..) => false,
+        }
+    }
     pub fn bus(&self) -> u8 {
         match self {
             Self::GroupOutput(_, r) => r.bus,

@@ -179,8 +179,18 @@ other buses and saved assignments intact. Read is Read-class; Set WithReply.
 Set reports sent with actual samples, not attained intent. Protected Groups
 controls are explicit, without automatic reads during assignment batches;
 freeze original UI authority and validate the whole raw roster/aggregate.
-Group scalar Desired and DT8 group colour remain subsequent work. Controls:
-`docs/v2-group-output-controls.toml`.
+Base scalar Desired/refresh uses `proxy::group` and the same owned operation.
+Cache the exact accepted Observation/context/stamp with an Arc report; native
+wrappers extract Report, scalar completion compares original evidence to the
+nonstale latest cache. Explicit nulls clear mixed/unknown scalars. Complete mixed
+groups remain Available with per-property mixed flags. Before polling HAT progress,
+cut bus-local group evidence for concrete output-mutating Work, including Blink,
+scene recall, membership Program continuations and output address changes; exclude
+input-only and nonactivating scene work. Cached samples share existing ordinary
+Writing/Awaiting validity; final acceptance still requires Ready. Root revision
+and physical epoch changes permanently stale roster evidence. All group reads
+share the existing cursor and15s total ceiling. DT8 group colour remains pending.
+Controls: `docs/v2-group-output-controls.toml` and `docs/v2-group-scalar-controls.toml`.
 
 The old runtime/CLI, modules and MQTT topics described below belong to
 `src/legacy_main.rs` / `mqtt_dali_v1`. They are not the canonical v2 interface.

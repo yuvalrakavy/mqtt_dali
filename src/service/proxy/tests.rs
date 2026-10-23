@@ -8,6 +8,7 @@ use std::time::Duration;
 mod colour;
 mod commissioning;
 mod discovery;
+mod group_scalar;
 
 async fn refresh(broker: &FakeBroker, topic: &str) -> Value {
     assert!(broker.send_with(

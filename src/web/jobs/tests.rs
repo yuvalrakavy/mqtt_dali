@@ -17,6 +17,7 @@ fn prepared() -> PreparedCommand {
         phase: Phase::Ready,
         hardware: Hardware::NotStarted,
         outputs: Default::default(),
+        group_outputs: Default::default(),
         inputs: Default::default(),
         input_listeners: Default::default(),
         version: "test",

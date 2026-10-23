@@ -828,6 +828,7 @@ fn web_observed_dense_valid_inventory_fits_the_measured_snapshot_budget() {
         phase: Phase::Ready,
         hardware: crate::service::Hardware::NotStarted,
         outputs: Default::default(),
+        group_outputs: Default::default(),
         inputs: Default::default(),
         input_listeners: Default::default(),
         version: "test",

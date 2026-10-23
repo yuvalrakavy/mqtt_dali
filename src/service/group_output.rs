@@ -17,7 +17,7 @@ use crate::{
 use serde::Serialize;
 use std::time::Duration;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Values {
     pub quality: &'static str,
     pub power_state: Option<bool>,
@@ -27,7 +27,7 @@ pub struct Values {
     pub known_members: usize,
     pub unresolved: Vec<u8>,
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Member {
     pub target: String,
     pub target_generation: String,
@@ -39,7 +39,7 @@ pub struct Member {
     pub actual_level: Option<scenes::Reading>,
     pub status: Option<scenes::Reading>,
 }
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Report {
     pub operation: &'static str,
     pub outcome: &'static str,
@@ -87,17 +87,73 @@ pub(super) struct Request {
     pub action: Action,
     pub context: RequestContext,
     pub deadline: Instant,
-    pub reply: oneshot::Sender<Result<Report, ServiceError>>,
+    pub reply: oneshot::Sender<Result<Reply, ServiceError>>,
     pub started: bool,
     pub bus: u8,
     report: Box<Report>,
     _completion: Option<mqtt_bridge_kit::CommandCompletion>,
     _permit: OwnedSemaphorePermit,
 }
-pub(super) struct Observation {
-    report: Box<Report>,
+/// One owner-accepted group capture, retaining its original mapping and evidence.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Observation {
+    report: Arc<Report>,
+    pub context: RequestContext,
     stamp: output::Stamp,
     pub stale: bool,
+}
+impl Observation {
+    /// Original sampled report. Check staleness and current lifecycle before use.
+    pub fn report(&self) -> &Report {
+        &self.report
+    }
+}
+pub(super) enum Reply {
+    Observed(Observation),
+    Unconfirmed(Box<Report>),
+}
+impl Reply {
+    fn into_report(self) -> Report {
+        match self {
+            Self::Observed(o) => o.report().clone(),
+            Self::Unconfirmed(r) => *r,
+        }
+    }
+}
+
+pub(super) fn retained(
+    model: &Model,
+    mut observations: std::collections::BTreeMap<String, Observation>,
+) -> std::collections::BTreeMap<String, Observation> {
+    let table = routing::generations(model);
+    observations.retain(|target, o| {
+        o.stale |= o.report.revision != model.inventory().revision;
+        table.targets.get(target).map(String::as_str) == o.context.generation()
+            && model
+                .inventory()
+                .buses
+                .iter()
+                .any(|b| b.bus == o.report.bus && b.enabled)
+    });
+    observations
+}
+
+/// Called before polling the HAT (and after physical progress). No new helper
+/// can start a mutation while a cached group still claims current evidence.
+pub(super) fn invalidate(snapshot: &mut Snapshot, hat: &hat::Hat) -> bool {
+    let changing = hat.group_output_mutation_bus();
+    let mut changed = false;
+    for observation in snapshot.group_outputs.values_mut() {
+        if !observation.stale
+            && (changing == Some(observation.report.bus)
+                || observation.report.revision != snapshot.model.inventory().revision
+                || !hat.cached_evidence_current(observation.report.bus, observation.stamp))
+        {
+            observation.stale = true;
+            changed = true;
+        }
+    }
+    changed
 }
 pub(super) struct Outcome {
     pub observation: Observation,
@@ -351,7 +407,8 @@ pub(super) async fn execute(
     });
     Outcome {
         observation: Observation {
-            report: Box::new(report),
+            report: Arc::new(report),
+            context: r.context,
             stamp,
             stale: false,
         },
@@ -363,7 +420,7 @@ pub(super) fn accept(
     snapshot: &Snapshot,
     c: &mut Completion,
     hat: &hat::Hat,
-) -> Result<Report, ServiceError> {
+) -> Result<Observation, ServiceError> {
     if let Some(error) = c.error.take() {
         return Err(error);
     }
@@ -385,17 +442,17 @@ pub(super) fn accept(
             reject("group evidence changed before acceptance")
         });
     }
-    Ok(*o.report)
+    Ok(o)
 }
-pub(super) fn finish(q: Request, result: Result<Report, ServiceError>) {
+pub(super) fn finish(q: Request, result: Result<Observation, ServiceError>) {
     let result = match result {
         Err(e) if q.started => {
-            let mut r = *q.report;
+            let mut r = q.report;
             r.outcome = "unconfirmed";
             r.reason = Some(e.to_string());
-            Ok(r)
+            Ok(Reply::Unconfirmed(r))
         }
-        r => r,
+        r => r.map(Reply::Observed),
     };
     drop(q._permit);
     let _ = q.reply.send(result);
@@ -439,6 +496,18 @@ impl ServiceHandle {
         deadline: Instant,
         completion: Option<mqtt_bridge_kit::CommandCompletion>,
     ) -> Result<Report, ServiceError> {
+        self.group_evidence(target, action, context, deadline, completion)
+            .await
+            .map(Reply::into_report)
+    }
+    pub(super) async fn group_evidence(
+        &self,
+        target: &str,
+        action: Action,
+        context: RequestContext,
+        deadline: Instant,
+        completion: Option<mqtt_bridge_kit::CommandCompletion>,
+    ) -> Result<Reply, ServiceError> {
         let deadline = deadline.min(Instant::now() + Duration::from_secs(15));
         if Instant::now() >= deadline {
             return Err(ServiceError::Expired);

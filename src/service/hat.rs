@@ -750,6 +750,12 @@ impl Hat {
                 .iter()
                 .any(|b| b.bus == bus && b.status == 2)
     }
+    pub(super) fn group_output_mutation_bus(&self) -> Option<u8> {
+        self.physical
+            .as_ref()
+            .filter(|p| p.work.changes_group_values())
+            .map(|p| p.work.bus())
+    }
     pub(super) fn enqueue_discovery(
         &mut self,
         request: super::discovery::Request,
@@ -1085,11 +1091,18 @@ impl Hat {
                 .any(|b| b.bus == observation.bus && b.status == 2);
     }
     pub(super) fn invalidate_output(&self, observation: &mut output::Observation) {
-        if self.stamp(observation.bus) != Some(observation.stamp)
-            || self.closing
-            || self.needs_quiet
-            || self.session.as_ref().is_none_or(|s| {
-                matches!(
+        if !self.cached_evidence_current(observation.bus, observation.stamp) {
+            observation.invalidate("UART or bus observation ordering changed");
+        }
+    }
+    /// Cached samples survive ordinary Writing/Awaiting phases. New operation
+    /// acceptance still requires the stricter evidence_current Ready boundary.
+    pub(super) fn cached_evidence_current(&self, bus: u8, stamp: output::Stamp) -> bool {
+        self.stamp(bus) == Some(stamp)
+            && !self.closing
+            && !self.needs_quiet
+            && self.session.as_ref().is_some_and(|s| {
+                !matches!(
                     s.link.status(),
                     SessionState::Closed
                         | SessionState::ResetRequired
@@ -1097,13 +1110,10 @@ impl Hat {
                         | SessionState::Resynchronizing
                 )
             })
-            || !self
+            && self
                 .observations
                 .iter()
-                .any(|bus| bus.bus == observation.bus && bus.status == 2)
-        {
-            observation.invalidate("UART or bus observation ordering changed");
-        }
+                .any(|value| value.bus == bus && value.status == 2)
     }
     fn cancel_query(&mut self) {
         // A receive fence is still valid across Boot: its returned minimum
