@@ -42,7 +42,8 @@ groups 0..15. Each of the three group slots may be unassigned.
 Unknown instance types show their full raw filter without editable event labels.
 Generic enable/priority/scheme/group settings remain available when complete
 standard readback exists. Feedback and calibrated sensor units remain separate
-capabilities. No physical HAT certification or power-cycle persistence
+capabilities. Basic [indicator feedback](input-feedback.md) has its own protected
+dialog and read/set commands, without altering event settings. No physical HAT certification or power-cycle persistence
 claim follows from local emulator/readback checks.
 
 The saved name, identity, bindings, inventory revision and configuration file

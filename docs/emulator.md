@@ -261,8 +261,9 @@ addressed/unaddressed state, with the existing reply aggregation policy.
 
 Readdress and HAT reboot preserve profile activity because the simulated fixture
 remains powered. This does not model fixture power-cycle/reset persistence,
-timed patterns, configurable brightness/colour/audio, physical LED output or
-managed MQTT/HTTP/browser feedback. Literal model and actual PTY tests verify
+timed patterns, configurable brightness/colour/audio or physical LED output.
+Managed [MQTT/HTTP/browser read/set](input-feedback.md) now uses these profiles
+with fresh support/presence and actual confirmation. Literal model and actual PTY tests verify
 queries, one-send activation/stop/readback, namespace separation, disabled-input
 independence, latches, address/bus isolation and HAT reboot. Intentional faults:
 `v2-feedback-foundation-controls.toml` and its ledger.

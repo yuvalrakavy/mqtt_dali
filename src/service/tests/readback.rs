@@ -2,6 +2,7 @@ use super::*;
 use crate::atx::transactions::RepeatPolicy;
 use crate::emulator::{pty, scenario::Scenario, session::Control};
 use crate::service::input::{self, Evidence};
+mod feedback;
 mod peer;
 mod sensor;
 mod settings;

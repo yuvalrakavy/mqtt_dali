@@ -285,6 +285,7 @@ enum Message {
     Output(output::Request),
     Input(input::readback::Request),
     InputSettings(input::settings::Request),
+    InputFeedback(input::feedback::Request),
     Attach(
         mqtt_bridge_kit::Reporter,
         oneshot::Sender<Result<(), String>>,

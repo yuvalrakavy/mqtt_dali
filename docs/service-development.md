@@ -42,14 +42,21 @@ Do not save settings or put them in current input State. Literal peers assert
 wire command counts before unwrapping a refused result, so an unexpected write
 cannot hide behind a later script failure. Controls: `v2-sensor-settings-controls.toml`.
 
-Pure input feature/feedback plans now live in `dali::input::{features,feedback}`
-with an independent explicit visible-on/off emulator profile. They are not yet
-exposed as managed commands or scalar properties. A later owner must capture a
-bounded same-scope feature enumeration, prove feature32/current capability and
-presence separately, and confirm active state after a single Activate/Stop. A
-silent Active query alone cannot distinguish inactive from missing. Preserve the
-same original context/authority/deadline conventions; no raw-address proxy escape.
-See [feature plans](dali-input-contract.md#feature-enumeration-and-basic-feedback-plans).
+Managed basic feedback uses `input::feedback` and `Work::InputFeedback` in the
+same physical owner. Module and instance routes preserve original context,
+generation/revision, completion, eight-second deadline and permit. Fresh bounded
+same-scope feature enumeration, feature32/capability and closing Type/Status proof
+precede any activation claim. A silent Active query alone cannot distinguish
+inactive from missing; collisions stay unknown. Preflight complete supported
+evidence, send one Activate/Stop even for an equal value, then require complete
+matching actual readback. Final acceptance re-resolves the original action and
+checks current physical stamp/deadline/token. Box fallback reports; mark writes
+started without input-settings' module-wide Notice/value cuts. Indicator work
+does not replace input observations or save config. Shared MQTT/HTTP strict
+read/set commands and frozen browser controls use this path; scalar Desired
+properties remain later work. See [operator/API guide](input-feedback.md),
+[feature plans](dali-input-contract.md#feature-enumeration-and-basic-feedback-plans)
+and `v2-managed-feedback-controls.toml`.
 
 This guide is for bridge contributors and embedders. The service library owns
 durable configuration, runtime routing, optional UART health, individual-output

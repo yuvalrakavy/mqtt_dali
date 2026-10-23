@@ -11,6 +11,7 @@ use std::sync::{
 };
 
 pub const EVENT_CAPACITY: usize = 64;
+pub mod feedback;
 pub mod readback;
 pub mod settings;
 

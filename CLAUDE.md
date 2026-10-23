@@ -319,13 +319,19 @@ setting write and confirm actual requested values. HoldFF is known unsupported,
 null unknown, raw0 one second; numeric report/deadtime/minimumFF stay data. The
 same frozen dialog uses exact display units. Controls:
 `docs/v2-sensor-settings-controls.toml`. Pure `input::{features,feedback}` and an
-explicit independent visible-on/off emulator profile supply the next foundation;
-managed feedback remains subsequent work. Feature Type uses ordinary FE/00..1F,
+explicit independent visible-on/off emulator profile supply the foundation.
+Managed `input::feedback` / `Work::InputFeedback` and protected module/instance
+dialogs expose read/set commands; see `docs/input-feedback.md`. Keep original
+context/revision/token/stamp/deadline and fresh bounded support/presence proof.
+Confirm requested actual active state, including explicit equal-value sends.
+Feedback never cuts input Notice/value evidence or saves config. Scalar bindings
+and parameter settings remain subsequent work. Feature Type uses ordinary FE/00..1F,
 feedback deviceFC/instance20..3F. FE is no-feature/end, FF multiple; bound adjacent
 enumeration and never interpret silent Active as false without fresh support and
 presence. No DT8 enable/repeat for Activate/Stop. Preserve raw unknown capability
 bits. Scenario `feedback` and runtime `feedback_state` use distinct omitted-empty
-keys. Controls: `docs/v2-feedback-foundation-controls.toml`. Addressed
+keys. Controls: `docs/v2-feedback-foundation-controls.toml` and
+`docs/v2-managed-feedback-controls.toml`. Addressed
 discovery is documented in `docs/discovery.md`: one short address per bounded
 operation, captured probe evidence, durable additions only, preserved existing
 lifetimes and original command completion. Output/input address spaces are

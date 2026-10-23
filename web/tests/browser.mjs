@@ -1,4 +1,5 @@
 import { inputSettingsFlow } from './input-settings.mjs';
+import { feedbackFlow } from './feedback.mjs';
 import { scenesFlow } from './scenes.mjs';
 import { reassignmentFlow } from './reassignment.mjs';
 import { restorationFlow } from './restoration.mjs';
@@ -76,6 +77,7 @@ try {
   await page.getByRole('button',{name:'Refresh addressed',exact:true}).click();await until(async()=>!await page.getByRole('button',{name:'Refresh addressed',exact:true}).isDisabled(),'rediscovery did not finish',90000);assert.deepEqual((await inventory()).buses[0].outputs.map(o=>o.name),['KitchenMain','KitchenSide','Light1'],'rediscovery failed to preserve existing names and add the removed address');
   await page.getByRole('link',{name:'Settings',exact:true}).click();const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Download inventory report',exact:true}).click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'dali-inventory-report.json');await page.getByRole('link',{name:'Diagnostics',exact:true}).click();await page.getByRole('heading',{name:'Recent commands',exact:true}).waitFor();await page.screenshot({path:join(artifacts,'desktop-diagnostics.png'),fullPage:true});
   await inputSettingsFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
+  await feedbackFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await clearAddressFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible});
   await restorationFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});
   await reassignmentFlow({page,origin,artifacts,inventory,control,until,commands,noOverflow,dialogVisible,closeDialog});

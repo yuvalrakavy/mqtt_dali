@@ -1,0 +1,81 @@
+# Run serially, restoring each mutation before another build or reader.
+[[control]]
+name = "feedback_mixed_support_preflight_omitted"
+file = "src/service/input/feedback.rs"
+anchor = "if !report\n            .feedback\n            .as_ref()\n            .is_some_and(Values::complete_supported)"
+replacement = "if false && !report\n            .feedback\n            .as_ref()\n            .is_some_and(Values::complete_supported)"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_feedback_literal_evidence)"]
+expect_text = "feedback preflight sent an action without complete support/presence evidence: none"
+
+[[control]]
+name = "feedback_collision_inferred_inactive"
+file = "src/service/input/feedback.rs"
+anchor = "BusReply::NoResponse => Some(false),"
+replacement = "BusReply::NoResponse | BusReply::ReceiveCollision(_) => Some(false),"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_feedback_literal_evidence)"]
+expect_text = "feedback lacked complete actual evidence: active_collision"
+
+[[control]]
+name = "feedback_closing_presence_proof_omitted"
+file = "src/service/input/feedback.rs"
+anchor = "// A silent Active reply is never false without closing presence/type proof.\n    let (present, kind, outcome) = proof(r, query(bus, presence_frame(r)).await?);\n    if !present {"
+replacement = "// A silent Active reply is never false without closing presence/type proof.\n    let (present, kind, outcome) = proof(r, query(bus, presence_frame(r)).await?);\n    if false && !present {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_feedback_literal_evidence)"]
+expect_text = "feedback lacked complete actual evidence: closing_missing"
+
+[[control]]
+name = "feedback_ignored_write_claimed_set"
+file = "src/service/input/feedback.rs"
+anchor = ".is_some_and(|v| v.complete_supported() && v.active == Some(active))"
+replacement = ".is_some_and(|v| v.complete_supported())"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_feedback_literal_evidence)"]
+expect_text = "feedback lacked complete actual evidence: ignored"
+
+[[control]]
+name = "feedback_final_physical_epoch_ignored"
+file = "src/service/input/feedback.rs"
+anchor = "|| !hat.evidence_current(r.bus, o.stamp)"
+replacement = "|| false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_feedback_final_epoch)"]
+expect_text = "retired feedback read epoch reported success"
+
+[[control]]
+name = "feedback_wrongly_revokes_button_activity"
+file = "src/service/hat.rs"
+anchor = "// Indicator changes do not retire native input activity.\n                    request.started = request.action.writing();"
+replacement = "// Indicator changes do not retire native input activity.\n                    self.inputs.cut_for_restore(0,0);\n                    request.started = request.action.writing();"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(managed_feedback_device_and_instance)"]
+expect_text = "feedback revoked a continuing button notice"
+
+[[control]]
+name = "feedback_ui_unsupported_preflight_omitted"
+file = "web/src/feedback.ts"
+anchor = "if(typeof active!=='boolean'||!feedbackWritable(this.values))"
+replacement = "if(false&&(typeof active!=='boolean'||!feedbackWritable(this.values)))"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "unsupported or partial feedback submitted an action"
+
+[[control]]
+name = "feedback_ui_actual_matching_omitted"
+file = "web/src/feedback.ts"
+anchor = "if(v?.active!==active)"
+replacement = "if(false&&v?.active!==active)"
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "feedback actual mismatch was accepted"
+
+[[control]]
+name = "feedback_ui_post_await_authority_omitted"
+file = "web/src/feedback.ts"
+anchor = "this.assert();const row=this.row,address="
+replacement = "const row=this.row,address="
+target = "command"
+argv = ["npm","--prefix","web","test"]
+expect_text = "retired feedback read was accepted"

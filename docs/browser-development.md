@@ -34,6 +34,18 @@ evidence and actual requested values. The real phone/desktop flow edits/reopens/
 restores all three families, checks raw native settings and unchanged inventory,
 and scrolls the actions into view. Controls: `v2-sensor-settings-controls.toml`.
 
+Input module and instance **Feedback** uses `FeedbackScope` and its compact
+modal. Capture the selected row's own token and physical scope, root/revision,
+connection epoch and lifetime. Validate returned scope/type, complete feature/
+capability/active consistency and requested actual state. Unknown or unsupported
+evidence cannot submit an action; do not optimistically flip the indicator.
+Dismiss synchronously and revoke in layout cleanup on navigation. Real phone/
+desktop cases read/toggle/reopen/restore module and multiple instance profiles,
+verify unsupported inputs offer no action and hold entry reads across actual
+dismissal/navigation. Compare native profile/settings/values and saved inventory.
+The generation test varies the selected instance token for an instance, rather
+than only changing its parent's token. Controls: `v2-managed-feedback-controls.toml`.
+
 For bridge contributors: `web/` owns the responsive Preact/TypeScript application.
 Node is needed to change assets, not to run the bridge or compile its embedded
 assets with Cargo. Use Node 24.11 or newer with the exact npm lockfile:

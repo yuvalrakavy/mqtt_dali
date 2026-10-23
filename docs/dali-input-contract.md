@@ -9,8 +9,9 @@ metadata rename use the [inventory contract](inventory-contract.md).
 Enable, priority, event scheme, filter and instance-group configuration are
 available through the managed service and protected browser controls; see
 [input event settings](input-event-settings.md). The button timing codec/model
-below and the Part302–304 sensor parameter plans have managed controls; managed feedback and natural
-emulator stimuli remain pending.
+below and the Part302–304 sensor parameter plans have managed controls. Basic
+module/instance feedback also has [managed commands and browser controls](input-feedback.md).
+Natural emulator stimuli remain pending.
 
 Input short addresses are 0..63, independently of output addresses. Instances
 and input groups are 0..31. Use the validated `Address`, `Instance` and `Group`
@@ -99,7 +100,7 @@ for true and silence for false, so an absent device must be ruled out separately
 This slice supplies pure plans and an [independent emulator model](emulator.md#input-event-settings-model).
 Managed MQTT/HTTP commands and browser controls now use these plans; see
 [event settings](input-event-settings.md). Existing discovery does not configure
-inputs. Managed feedback remains separate work.
+inputs. Basic feedback uses its separate owned operation without input-event cuts.
 
 ## Push-button timing plans
 
@@ -185,9 +186,11 @@ An inactive Active query has no backward byte, so separate fresh feature,
 capability and presence evidence is essential before interpreting it as false.
 
 The [independent visible feedback profile](emulator.md#visible-feedback-profile)
-and literal PTY tests exercise these plans. Managed feedback commands, scalar
-bindings and protected web controls remain pending; these pure modules do not
-authorize raw-address writes. Primary references: IEC62386-103 table2/table5 and
+and literal PTY tests exercise these plans. Managed read/set commands and protected
+web controls now use them with fresh support, closing presence/type proof and
+actual confirmation; see [feedback](input-feedback.md). Scalar bindings and
+parameter settings remain pending. These pure modules do not authorize raw-address
+writes. Primary references: IEC62386-103 table2/table5 and
 11.9.14–15, IEC62386-332 table1 and11.3/11.5, and the
 [Sunricher switch manual, pages2–3](https://www.sunricher.com/media/resources/manual/SR-2422K8-DA2%20instruction.pdf).
 

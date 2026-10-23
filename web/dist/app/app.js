@@ -1478,8 +1478,158 @@ function ut({ row: e, close: t }) {
 		]
 	});
 }
+// src/feedback.ts
+var dt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function ft(e) {
+	let t = () => {
+		throw Error("Feedback evidence is incomplete or invalid. Refresh to inspect again.");
+	};
+	if (!e || typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality)) return t();
+	let { features: n, capability: r, supported: i, active: a } = e;
+	if (n !== null && (!Array.isArray(n) || n.length > 65 || n.some((e, t) => !Number.isInteger(e) || typeof e != "number" || e < 32 || e > 96 || t > 0 && n[t - 1] >= e)) || r !== null && !dt(r) || i !== null && typeof i != "boolean" || a !== null && typeof a != "boolean") return t();
+	let o = null, s = "partial";
+	if (n === null) {
+		if (r !== null || a !== null) return t();
+	} else if (!n.includes(32)) {
+		if (o = !1, s = "complete", r !== null || a !== null) return t();
+	} else if (r === null) {
+		if (a !== null) return t();
+	} else if (r === 0) {
+		if (o = !1, s = "complete", a !== null) return t();
+	} else if (r & 9) o = !0, typeof a == "boolean" && (s = "complete");
+	else if (a !== null) return t();
+	return i !== o || e.quality !== s ? t() : structuredClone(e);
+}
+function pt(e) {
+	return !!e && e.quality === "complete" && e.supported === !0 && e.features?.includes(32) && typeof e.capability == "number" && !!(e.capability & 9) && typeof e.active == "boolean";
+}
+var mt = class {
+	constructor(e, t) {
+		if (this.cancelled = !1, this.values = null, t.kind !== "input" && t.kind !== "instance") throw Error("Select an input module or instance.");
+		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
+	}
+	assert() {
+		let { ui: e, row: t } = this, n = e.currentRows.find((e) => e.key === t.key);
+		if (this.cancelled || e.cancelled || e.signingOut || !e.client.views.ready || e.client.views.epoch !== this.epoch) throw Error("Feedback stopped. Reopen to inspect again.");
+		if (!q(this.initial, e.snapshot, this.initial.inventory.revision, t.bus.bus) || !K(e.snapshot, t.bus) || !n || n.kind !== t.kind || n.item.target !== t.item.target || n.generation !== t.generation || (t.kind === "input" ? n.item.short_address !== t.item.short_address : n.parent?.short_address !== t.parent?.short_address || n.item.number !== t.item.number || n.item.instance_type !== t.item.instance_type)) throw Error("Input configuration changed. Reopen feedback.");
+	}
+	accepted(e, t) {
+		this.assert();
+		let n = this.row, r = n.kind === "input" ? n.item.short_address : n.parent?.short_address, i = n.kind === "instance" ? n.item.number : null;
+		if (e.operation !== t || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== this.initial.inventory.revision || e.bus !== n.bus.bus || e.address !== r || e.instance !== i || e.configuration_changed !== !1 || n.kind === "input" && e.reported_type !== null || n.kind === "instance" && e.feedback !== null && e.reported_type !== n.item.instance_type) throw Error("Feedback result changed. Refresh to inspect again.");
+		let a = e.feedback === null ? null : ft(e.feedback);
+		if (t === "set_input_feedback") {
+			if (e.outcome !== "set" || !pt(a)) throw Error("Feedback was not confirmed. Refresh to inspect again.");
+		} else if (e.outcome === "current") {
+			if (!pt(a)) throw Error("Current feedback evidence is incomplete.");
+		} else if (e.outcome === "unsupported") {
+			if (!a || a.quality !== "complete" || a.supported !== !1) throw Error("Unsupported feedback evidence is incomplete.");
+		} else if (e.outcome === "unavailable") {
+			if (a && a.quality !== "partial") throw Error("Unavailable feedback evidence is inconsistent.");
+		} else if (e.outcome !== "type_mismatch" || a !== null) throw Error("Feedback outcome is invalid.");
+		return a;
+	}
+	async read() {
+		this.assert();
+		let e = await this.ui.client.job(this.row.generation, this.row.item.target, "read_input_feedback", {}), t = this.accepted(e, "read_input_feedback");
+		return this.values = t, structuredClone(t);
+	}
+	async set(e) {
+		if (this.assert(), typeof e != "boolean" || !pt(this.values)) throw Error("Complete supported feedback evidence is required. Refresh first.");
+		let t = await this.ui.client.job(this.row.generation, this.row.item.target, "set_input_feedback", {
+			expected_revision: this.initial.inventory.revision,
+			active: e
+		}), n = this.accepted(t, "set_input_feedback");
+		if (n?.active !== e) throw Error("Feedback does not match the requested state. Refresh to inspect again.");
+		return this.values = n, this.ui.notice = "Feedback verified in hardware.", structuredClone(n);
+	}
+};
+// src/feedback-ui.tsx
+function ht({ row: e, close: t }) {
+	let n = Y(), [r] = H(() => new mt(n, e)), [i, a] = H(null), [o, s] = H(!1), [c, l] = H("");
+	ge(() => () => {
+		r.cancelled = !0;
+	}, [r]);
+	let u = () => {
+		r.cancelled = !0, t();
+	}, d = () => void n.run(async () => {
+		l(""), s(!1);
+		try {
+			let e = await r.read();
+			a(e), s(!0);
+		} catch (e) {
+			throw r.cancelled || l(e.message), e;
+		}
+	});
+	U(() => {
+		d();
+	}, []);
+	let f = () => void n.run(async () => {
+		try {
+			l(""), a(await r.set(i?.active !== !0));
+		} catch (e) {
+			throw r.cancelled || l(e.message), e;
+		}
+	}), p = i?.capability ?? 0;
+	return /* @__PURE__ */ J(Z, {
+		title: `Feedback · ${e.item.name}`,
+		close: u,
+		children: [
+			/* @__PURE__ */ J("p", {
+				class: "hint",
+				children: [
+					r.initial.inventory.name,
+					"/",
+					e.bus.name,
+					" · address ",
+					e.kind === "input" ? e.item.short_address : e.parent?.short_address,
+					e.kind === "instance" ? ` / instance ${e.item.number}` : " · module"
+				]
+			}),
+			c && /* @__PURE__ */ J("p", {
+				class: "error",
+				role: "alert",
+				children: c
+			}),
+			!o && !c && /* @__PURE__ */ J("p", {
+				role: "status",
+				children: "Reading feedback…"
+			}),
+			o && (pt(i) ? /* @__PURE__ */ J("div", {
+				class: "toolbar",
+				children: [
+					/* @__PURE__ */ J("span", { children: [
+						p & 1 ? "Visible indicator" : "",
+						(p & 9) == 9 ? " and " : "",
+						p & 8 ? "Audible feedback" : ""
+					] }),
+					/* @__PURE__ */ J("span", { class: "spacer" }),
+					/* @__PURE__ */ J("button", {
+						class: `power ${i?.active ? "on" : "off"}`,
+						"aria-label": "Feedback active",
+						"aria-pressed": i?.active ?? !1,
+						disabled: !!n.busy,
+						onClick: f,
+						children: i?.active ? "On" : "Off"
+					})
+				]
+			}) : /* @__PURE__ */ J("p", { children: i?.supported === !1 ? "This input does not report supported feedback." : "Feedback is unavailable. Refresh to read it again." })),
+			/* @__PURE__ */ J("div", {
+				class: "dialog-actions",
+				children: [/* @__PURE__ */ J("button", {
+					onClick: u,
+					children: "Close"
+				}), /* @__PURE__ */ J("button", {
+					disabled: !!n.busy,
+					onClick: d,
+					children: "Refresh feedback"
+				})]
+			})
+		]
+	});
+}
 // src/restoration.ts
-var dt = class {
+var gt = class {
 	constructor(e, t) {
 		if (this.candidates = /* @__PURE__ */ new Set(), this.cancelled = !1, t.kind !== "output" && t.kind !== "input") throw Error("Select a saved fixture or input module.");
 		this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.original = structuredClone(t), this.space = t.kind === "output" ? "outputs" : "inputs", this.revision = this.initial.inventory.revision, this.address = t.item.short_address, this.generation = t.generation;
@@ -1531,7 +1681,7 @@ var dt = class {
 			let t = this.ui.currentRows.find((t) => t.key === e.key);
 			if (!this.candidates.has(e.key) || !t || t.kind !== this.original.kind || t.bus.bus !== this.original.bus.bus || t.item.target !== e.item.target || t.generation !== e.generation) throw Error("Identified candidate changed. Review it again.");
 		}
-		return new ft(this, e);
+		return new _t(this, e);
 	}
 	async refresh() {
 		try {
@@ -1545,7 +1695,7 @@ var dt = class {
 			this.ui.notice = `Address restored at ${this.address}. Current-value refresh did not finish; use Refresh addressed or Read current values.`;
 		}
 	}
-}, ft = class {
+}, _t = class {
 	constructor(e, t) {
 		this.scope = e, this.revision = e.revision, this.candidate = t ? structuredClone(t) : void 0;
 	}
@@ -1583,9 +1733,9 @@ var dt = class {
 		if (r && t.currentRows.some((e) => e.key === r.key)) throw Error("Address restored but candidate retirement is not visible. Inspect saved configuration.");
 		await e.refresh();
 	}
-}, pt = class {
+}, vt = class {
 	constructor(e, t) {
-		this.scope = new dt(e, t);
+		this.scope = new gt(e, t);
 	}
 	async run() {
 		let e = this.scope, t = e.ui, n = e.original;
@@ -1607,7 +1757,7 @@ var dt = class {
 	}
 };
 // src/restoration-ui.tsx
-function mt({ scope: e, review: t, choose: n, close: r }) {
+function yt({ scope: e, review: t, choose: n, close: r }) {
 	let i = Y(), a = e.original, o = i.snapshot.identification, s = !!t?.candidate && o?.target === t.candidate.item.target && [
 		"starting",
 		"blinking",
@@ -1730,7 +1880,7 @@ function mt({ scope: e, review: t, choose: n, close: r }) {
 	})] });
 }
 // src/devices.tsx
-function ht({ row: e, close: t }) {
+function bt({ row: e, close: t }) {
 	let n = Y(), r = n.physical(e.key), i = Ae(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
 		"ColorRed",
 		"ColorGreen",
@@ -1856,7 +2006,7 @@ function ht({ row: e, close: t }) {
 		]
 	});
 }
-function gt({ row: e, close: t }) {
+function xt({ row: e, close: t }) {
 	let n = Y(), r = n.physical(e.key);
 	return /* @__PURE__ */ J(Z, {
 		title: `Groups · ${r.item.name}`,
@@ -1886,20 +2036,20 @@ function gt({ row: e, close: t }) {
 		})]
 	});
 }
-function _t({ row: e, recover: t, select: n }) {
+function St({ row: e, recover: t, select: n }) {
 	let r = Y(), i = r.snapshot, a = Ae(i, e), [o, s] = H(null);
 	ge(() => () => {
 		o && (o.scope.cancelled = !0);
 	}, [o]);
 	let c = () => {
 		o && (o.scope.cancelled = !0), s(null);
-	}, [l, u] = H(!1), [d, f] = H(!1), [p, m] = H(!1), [h, g] = H(!1), [_, v] = H(!1), [b, x] = H(null), S = K(i, e.bus) && r.client.views.ready, C = i.identification?.target === e.item.target ? i.identification : null, w = !!C && [
+	}, [l, u] = H(!1), [d, f] = H(!1), [p, m] = H(!1), [h, g] = H(!1), [_, v] = H(!1), [b, x] = H(!1), [S, C] = H(null), w = K(i, e.bus) && r.client.views.ready, T = i.identification?.target === e.item.target ? i.identification : null, E = !!T && [
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(C.phase), T = r.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), E = r.hints.get(e.key), D = e.kind === "output" ? E?.length ? E.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : je(e.item.instance_type), O = Me(a), k = typeof a.Brightness == "number" ? Math.round(a.Brightness * 100) : null;
+	].includes(T.phase), D = r.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), O = r.hints.get(e.key), k = e.kind === "output" ? O?.length ? O.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : je(e.item.instance_type), A = Me(a), j = typeof a.Brightness == "number" ? Math.round(a.Brightness * 100) : null;
 	return /* @__PURE__ */ J("div", {
-		class: `device-row ${e.kind === "output" ? "output-grid" : "input-grid"} ${w ? "identifying" : ""} ${T && Date.now() - T.received < 5e3 ? "active-input" : ""}`,
+		class: `device-row ${e.kind === "output" ? "output-grid" : "input-grid"} ${E ? "identifying" : ""} ${D && Date.now() - D.received < 5e3 ? "active-input" : ""}`,
 		"data-device-key": e.key,
 		children: [
 			/* @__PURE__ */ J("span", {
@@ -1909,14 +2059,14 @@ function _t({ row: e, recover: t, select: n }) {
 			/* @__PURE__ */ J(Ue, { row: e }),
 			/* @__PURE__ */ J("span", {
 				class: "device-type",
-				children: D
+				children: k
 			}),
 			e.kind === "output" ? /* @__PURE__ */ J(y, { children: [
 				/* @__PURE__ */ J("button", {
 					class: `power ${a.PowerState === !0 ? "on" : a.PowerState === !1 ? "off" : "unknown"}`,
 					"aria-label": `Power ${e.item.name}`,
 					"aria-pressed": typeof a.PowerState == "boolean" ? a.PowerState : "mixed",
-					disabled: !S || !!r.busy || w,
+					disabled: !w || !!r.busy || E,
 					onClick: () => void r.run(() => r.apply(e, { PowerState: a.PowerState !== !0 })),
 					children: a.PowerState === !0 ? "On" : a.PowerState === !1 ? "Off" : "?"
 				}),
@@ -1926,100 +2076,107 @@ function _t({ row: e, recover: t, select: n }) {
 						type: "range",
 						min: "0",
 						max: "100",
-						value: b ?? k ?? 0,
+						value: S ?? j ?? 0,
 						"aria-label": `Brightness ${e.item.name}`,
-						disabled: !S || !!r.busy || w || k === null,
-						onInput: (e) => x(e.currentTarget.value),
+						disabled: !w || !!r.busy || E || j === null,
+						onInput: (e) => C(e.currentTarget.value),
 						onChange: (t) => {
 							let n = Number(t.currentTarget.value) / 100;
 							r.run(async () => {
 								try {
 									await r.apply(e, { Brightness: n });
 								} finally {
-									x(null);
+									C(null);
 								}
 							});
 						}
-					}), /* @__PURE__ */ J("output", { children: [b ?? k ?? "—", k === null ? "" : "%"] })]
+					}), /* @__PURE__ */ J("output", { children: [S ?? j ?? "—", j === null ? "" : "%"] })]
 				}),
 				/* @__PURE__ */ J("button", {
 					class: "colour-button",
 					"aria-label": `Colour ${e.item.name}`,
-					disabled: !S || !!r.busy || w,
-					onClick: () => m(!0),
+					disabled: !w || !!r.busy || E,
+					onClick: () => g(!0),
 					children: e.item.color_representation === "temperature" && typeof a.ColorTemperature == "number" ? `${Math.round(a.ColorTemperature)} K` : e.item.color_representation === "xy" ? "xy controls" : e.item.color_representation === "rgbwaf" ? "RGB controls" : "Colour"
 				}),
 				/* @__PURE__ */ J("button", {
-					class: w ? "primary blink" : "blink",
-					"aria-label": `${w ? "Stop blink" : "Blink"} ${e.item.name}`,
-					disabled: !S || !!r.busy || C?.phase === "restoring",
+					class: E ? "primary blink" : "blink",
+					"aria-label": `${E ? "Stop blink" : "Blink"} ${e.item.name}`,
+					disabled: !w || !!r.busy || T?.phase === "restoring",
 					onClick: () => void r.run(() => r.blink(e)),
-					children: C?.phase === "restoring" ? "Restoring…" : w ? "Stop blink" : "Blink"
+					children: T?.phase === "restoring" ? "Restoring…" : E ? "Stop blink" : "Blink"
 				})
 			] }) : /* @__PURE__ */ J(y, { children: [/* @__PURE__ */ J("span", {
 				class: `input-state ${a.Available === !0 ? "" : "muted"}`,
-				children: e.kind === "input" ? `${e.item.instances?.length ?? 0} instances` : O
+				children: e.kind === "input" ? `${e.item.instances?.length ?? 0} instances` : A
 			}), /* @__PURE__ */ J("span", {
 				class: "activity",
-				children: T?.action ?? "No recent action"
+				children: D?.action ?? "No recent action"
 			})] }),
 			/* @__PURE__ */ J("button", {
 				class: "menu-button",
 				"aria-label": `Actions ${e.item.name}`,
-				onClick: () => f(!0),
+				onClick: () => m(!0),
 				children: "⋮"
 			}),
-			d && /* @__PURE__ */ J(Z, {
+			p && /* @__PURE__ */ J(Z, {
 				title: e.item.name,
-				close: () => f(!1),
+				close: () => m(!1),
 				children: /* @__PURE__ */ J("div", {
 					class: "menu-actions",
 					children: [
 						e.kind === "instance" && /* @__PURE__ */ J("button", {
-							disabled: !S || !!r.busy,
+							disabled: !w || !!r.busy,
 							onClick: () => {
-								r.cancelled = !1, f(!1), u(!0);
+								r.cancelled = !1, m(!1), u(!0);
 							},
 							children: "Event settings"
 						}),
-						e.kind !== "input" && /* @__PURE__ */ J("button", {
-							disabled: !S || !!r.busy,
+						e.kind !== "output" && /* @__PURE__ */ J("button", {
+							disabled: !w || !!r.busy,
 							onClick: () => {
-								f(!1), r.run(() => r.read(e));
+								r.cancelled = !1, m(!1), f(!0);
+							},
+							children: "Feedback"
+						}),
+						e.kind !== "input" && /* @__PURE__ */ J("button", {
+							disabled: !w || !!r.busy,
+							onClick: () => {
+								m(!1), r.run(() => r.read(e));
 							},
 							children: "Read current values"
 						}),
 						e.kind === "output" && /* @__PURE__ */ J("button", {
 							onClick: () => {
-								f(!1), g(!0);
+								m(!1), v(!0);
 							},
 							children: "Group membership"
 						}),
 						e.kind === "output" && /* @__PURE__ */ J("button", {
 							onClick: () => {
-								f(!1), m(!0);
+								m(!1), g(!0);
 							},
 							children: "Colour representation and values"
 						}),
 						e.kind !== "instance" && /* @__PURE__ */ J("button", {
-							disabled: !S || !!r.busy,
+							disabled: !w || !!r.busy,
 							onClick: () => {
-								f(!1), t(e);
+								m(!1), t(e);
 							},
 							children: "Restore lost address"
 						}),
 						e.kind !== "instance" && /* @__PURE__ */ J("button", {
 							class: "danger",
-							disabled: !S || !!r.busy,
+							disabled: !w || !!r.busy,
 							onClick: () => {
-								r.cancelled = !1, f(!1), s(new pt(r, e));
+								r.cancelled = !1, m(!1), s(new vt(r, e));
 							},
 							children: "Clear short address"
 						}),
 						e.kind !== "instance" && /* @__PURE__ */ J("button", {
 							class: "danger",
 							onClick: () => {
-								f(!1), v(!0);
+								m(!1), x(!0);
 							},
 							children: "Remove from list"
 						})
@@ -2029,6 +2186,10 @@ function _t({ row: e, recover: t, select: n }) {
 			l && /* @__PURE__ */ J(ut, {
 				row: e,
 				close: () => u(!1)
+			}),
+			d && /* @__PURE__ */ J(ht, {
+				row: e,
+				close: () => f(!1)
 			}),
 			o && /* @__PURE__ */ J(Z, {
 				title: "Clear short address?",
@@ -2057,7 +2218,7 @@ function _t({ row: e, recover: t, select: n }) {
 							onClick: () => void r.run(async () => {
 								await o.run(), s(null);
 							}),
-							children: w ? "Stop blink and clear address" : "Clear address"
+							children: E ? "Stop blink and clear address" : "Clear address"
 						})]
 					})
 				]
@@ -2065,22 +2226,22 @@ function _t({ row: e, recover: t, select: n }) {
 			n && /* @__PURE__ */ J("div", {
 				class: "row-error",
 				children: /* @__PURE__ */ J("button", {
-					disabled: !S || !!r.busy,
+					disabled: !w || !!r.busy,
 					onClick: n,
 					children: "Use this fixture"
 				})
 			}),
-			p && /* @__PURE__ */ J(ht, {
-				row: e,
-				close: () => m(!1)
-			}),
-			h && /* @__PURE__ */ J(gt, {
+			h && /* @__PURE__ */ J(bt, {
 				row: e,
 				close: () => g(!1)
 			}),
-			_ && /* @__PURE__ */ J(Z, {
+			_ && /* @__PURE__ */ J(xt, {
+				row: e,
+				close: () => v(!1)
+			}),
+			b && /* @__PURE__ */ J(Z, {
 				title: `Remove ${e.item.name}?`,
-				close: () => v(!1),
+				close: () => x(!1),
 				children: [/* @__PURE__ */ J("p", { children: [
 					"Remove this ",
 					e.kind === "input" ? "module and all its instances" : "fixture",
@@ -2088,32 +2249,32 @@ function _t({ row: e, recover: t, select: n }) {
 				] }), /* @__PURE__ */ J("div", {
 					class: "dialog-actions",
 					children: [/* @__PURE__ */ J("button", {
-						onClick: () => v(!1),
+						onClick: () => x(!1),
 						children: "Cancel"
 					}), /* @__PURE__ */ J("button", {
 						class: "danger",
 						disabled: !!r.busy,
 						onClick: () => void r.run(async () => {
-							await r.remove(e), v(!1);
+							await r.remove(e), x(!1);
 						}),
 						children: "Remove from list"
 					})]
 				})]
 			}),
-			C?.phase === "interrupted" && /* @__PURE__ */ J("p", {
+			T?.phase === "interrupted" && /* @__PURE__ */ J("p", {
 				class: "hint row-error",
 				children: "Identification interrupted. Restoration was not confirmed."
 			})
 		]
 	});
 }
-function vt({ bus: e }) {
+function Ct({ bus: e }) {
 	let t = Y(), [n, r] = H(""), [i, a] = H(null), [o, s] = H(null);
 	U(() => () => {
 		i && (i.cancelled = !0);
 	}, [i]);
 	let c = (e) => {
-		t.cancelled = !1, s(null), r(""), a(new dt(t, e));
+		t.cancelled = !1, s(null), r(""), a(new gt(t, e));
 	}, l = (e) => i?.candidates.has(e.key) ? () => {
 		try {
 			s(i.review(e));
@@ -2143,7 +2304,7 @@ function vt({ bus: e }) {
 			]
 		}),
 		/* @__PURE__ */ J(Ve, {}),
-		i && /* @__PURE__ */ J(mt, {
+		i && /* @__PURE__ */ J(yt, {
 			scope: i,
 			review: o,
 			choose: s,
@@ -2205,7 +2366,7 @@ function vt({ bus: e }) {
 						/* @__PURE__ */ J("span", {})
 					]
 				}),
-				f.map((e) => /* @__PURE__ */ J(_t, {
+				f.map((e) => /* @__PURE__ */ J(St, {
 					row: e,
 					recover: c,
 					select: l(e)
@@ -2237,7 +2398,7 @@ function vt({ bus: e }) {
 						/* @__PURE__ */ J("span", {})
 					]
 				}),
-				p.map((e) => /* @__PURE__ */ J(_t, {
+				p.map((e) => /* @__PURE__ */ J(St, {
 					row: e,
 					recover: c,
 					select: l(e)
@@ -2271,7 +2432,7 @@ function vt({ bus: e }) {
 	] });
 }
 // src/groups.tsx
-function yt({ bus: e }) {
+function wt({ bus: e }) {
 	let t = Y(), [n, r] = H(0), [i, a] = H(""), [o, s] = H("add"), [c, l] = H(null), [u, d] = H(null), [f, p] = H(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = K(t.snapshot, e) && t.client.views.ready;
 	function v() {
 		let e = h.map((e) => ({
@@ -2526,24 +2687,24 @@ function yt({ bus: e }) {
 	})] });
 }
 // src/scene-settings.ts
-var bt = () => ({
+var Tt = () => ({
 	level: { kind: "mask" },
 	color: { kind: "mask" }
-}), xt = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
-function St(e) {
-	if (!e || !e.level || !e.color || e.level.kind !== "mask" && !(e.level.kind === "value" && xt(e.level.value, 0, 254))) return !1;
-	let t = e.color, n = (e, t, n) => e === null || xt(e, t, n);
+}), Et = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
+function Dt(e) {
+	if (!e || !e.level || !e.color || e.level.kind !== "mask" && !(e.level.kind === "value" && Et(e.level.value, 0, 254))) return !1;
+	let t = e.color, n = (e, t, n) => e === null || Et(e, t, n);
 	return t.kind === "mask" || t.kind === "temperature" && n(t.value, 1, 65534) || t.kind === "xy" && n(t.x, 0, 65534) && n(t.y, 0, 65534) || t.kind === "rgbwaf" && Array.isArray(t.channels) && t.channels.length === 6 && t.channels.every((e) => n(e, 0, 254)) && n(t.control, 0, 191);
 }
-function Ct(e) {
+function Ot(e) {
 	if (!e) return "Unmanaged";
 	let t = e.level.kind === "mask" ? "Keep brightness" : e.level.value === 0 ? "Off" : `${+(e.level.value * 100 / 254).toFixed(1)}%`, n = e.color;
 	return n.kind === "mask" ? e.level.kind === "mask" ? "Leave unchanged" : t : `${t} · ${n.kind === "temperature" ? n.value === null ? "Tc MASK" : `${Math.round(1e6 / n.value)} K` : n.kind === "xy" ? "CIE xy" : "RGBWAF"}`;
 }
-var wt = class {
+var kt = class {
 	constructor(e) {
 		this.fields = {}, this.dirty = !1, this.error = "", this.original = structuredClone(e);
-		let t = e ?? bt();
+		let t = e ?? Tt();
 		this.action = t.level.kind === "mask" ? t.color.kind === "mask" ? "ignore" : "keep" : t.level.value === 0 ? "off" : "brightness", this.family = t.color.kind;
 	}
 	chooseAction(e) {
@@ -2557,16 +2718,16 @@ var wt = class {
 	}
 	text(e) {
 		if (e in this.fields) return this.fields[e];
-		let t = this.original ?? bt(), n = t.color;
+		let t = this.original ?? Tt(), n = t.color;
 		if (e === "brightness") return t.level.kind === "value" ? String(+(t.level.value * 100 / 254).toFixed(3)) : "100";
 		if (e === "temperature") return n.kind === "temperature" && n.value !== null ? String(+(1e6 / n.value).toFixed(3)) : "";
 		if (e === "x" || e === "y") return n.kind === "xy" && n[e] !== null ? String(n[e] / 65536) : "";
 		if (e === "control") return n.kind === "rgbwaf" && n.control !== null ? String(n.control) : "";
-		let r = Tt.indexOf(e);
+		let r = At.indexOf(e);
 		return r >= 0 && n.kind === "rgbwaf" && n.channels[r] !== null ? String(+(n.channels[r] * 100 / 254).toFixed(3)) : "";
 	}
 	setting() {
-		let e = this.original ?? bt(), t = (e, t, n, r, i) => {
+		let e = this.original ?? Tt(), t = (e, t, n, r, i) => {
 			if (!(e in this.fields)) return i;
 			let a = this.fields[e].trim();
 			if (a === "") return null;
@@ -2574,7 +2735,7 @@ var wt = class {
 			if (!Number.isFinite(o) || o < t || o > n) throw Error(`Enter ${e} between ${t} and ${n}, or leave it blank for MASK.`);
 			return r(o);
 		};
-		if (this.action === "ignore") return bt();
+		if (this.action === "ignore") return Tt();
 		let n = { kind: "mask" };
 		if (this.action === "off" && (n = {
 			kind: "value",
@@ -2597,7 +2758,7 @@ var wt = class {
 			y: t("y", 0, 65534 / 65536, (e) => Math.round(e * 65536), i.kind === "xy" ? i.y : null)
 		}), this.family === "rgbwaf" && (r = {
 			kind: "rgbwaf",
-			channels: Tt.map((e, n) => t(e, 0, 100, (e) => Math.round(e * 254 / 100), i.kind === "rgbwaf" ? i.channels[n] : null)),
+			channels: At.map((e, n) => t(e, 0, 100, (e) => Math.round(e * 254 / 100), i.kind === "rgbwaf" ? i.channels[n] : null)),
 			control: t("control", 128, 191, (e) => {
 				if (!Number.isInteger(e)) throw Error("Control must be a whole native byte.");
 				return e;
@@ -2607,7 +2768,7 @@ var wt = class {
 			level: n,
 			color: r
 		};
-		if (!St(a)) throw Error("Scene values are invalid.");
+		if (!Dt(a)) throw Error("Scene values are invalid.");
 		return a;
 	}
 	commit(e) {
@@ -2619,7 +2780,7 @@ var wt = class {
 			this.pending = void 0;
 		}), this.pending) : Promise.resolve();
 	}
-}, Tt = [
+}, At = [
 	"red",
 	"green",
 	"blue",
@@ -2627,12 +2788,12 @@ var wt = class {
 	"amber",
 	"free"
 ];
-function Et(e) {
+function jt(e) {
 	if (!e || e.quality !== "complete" || e.stale) return null;
 	try {
 		let t = (e, t) => {
 			if (e?.kind === "mask" && e.raw === t) return null;
-			if (e?.kind === "value" && xt(e.raw, 0, t - 1)) return e.raw;
+			if (e?.kind === "value" && Et(e.raw, 0, t - 1)) return e.raw;
 			throw Error("Unresolved");
 		}, n = t(e.level, 255), r = n === null ? { kind: "mask" } : {
 			kind: "value",
@@ -2655,7 +2816,7 @@ function Et(e) {
 			else if (n === 128) {
 				if (i = {
 					kind: "rgbwaf",
-					channels: Tt.map((e) => t(o[e], 255)),
+					channels: At.map((e) => t(o[e], 255)),
 					control: t(o.control, 255)
 				}, a = 7, i.control !== null && i.control < 128) return null;
 			} else if (n !== null) return null;
@@ -2664,24 +2825,24 @@ function Et(e) {
 			level: r,
 			color: i
 		};
-		return Object.keys(o).length === a && St(s) ? s : null;
+		return Object.keys(o).length === a && Dt(s) ? s : null;
 	} catch {
 		return null;
 	}
 }
 // src/scene-controller.ts
-function Dt(e, t, n) {
+function Mt(e, t, n) {
 	if (!e || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== t.inventory.revision || e.bus !== n.bus.bus || e.slot !== n.item.slot || !Array.isArray(e.fixtures)) throw Error("Saved scene view changed. Refresh it.");
 	let r = G(t).filter((e) => e.kind === "output" && e.bus.bus === n.bus.bus), i = /* @__PURE__ */ new Map();
 	for (let t of e.fixtures) {
 		let e = r.find((e) => e.item.target === t.fixture);
-		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !St(t.saved)) throw Error("Saved scene view is incomplete or changed.");
+		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !Dt(t.saved)) throw Error("Saved scene view is incomplete or changed.");
 		i.set(e.key, structuredClone(t.saved));
 	}
 	if (i.size !== r.length) throw Error("Saved scene view is incomplete.");
 	return i;
 }
-var Ot = class {
+var Nt = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.slot = n, this.revision = this.initial.inventory.revision;
 		let r = G(this.initial);
@@ -2704,7 +2865,7 @@ var Ot = class {
 	async saved() {
 		if (this.assert(!1), !this.scene) return new Map(this.outputs.map((e) => [e.key, null]));
 		let e = await this.ui.client.job(this.scene.generation, this.scene.item.target, "read_scene_settings");
-		return this.assert(!1), Dt(e, this.initial, this.scene);
+		return this.assert(!1), Mt(e, this.initial, this.scene);
 	}
 	async inspect(e, t = this.slot, n = !1) {
 		this.fixture(e);
@@ -2740,19 +2901,19 @@ var Ot = class {
 		return n;
 	}
 };
-function kt(e) {
+function Pt(e) {
 	return structuredClone(e);
 }
-async function At(e, t, n) {
+async function Ft(e, t, n) {
 	for (let r of t) e.fixture(r.row), n(`Saving scene ${e.slot} · ${r.row.item.name}`), await e.mutate(r.row, r.command, r.command === "set_scene_row" ? { setting: r.after } : { reviewed: r.reviewed });
 }
 // src/scenes.tsx
-function jt({ row: e, visible: t, view: n, makeScope: r }) {
+function It({ row: e, visible: t, view: n, makeScope: r }) {
 	let i = Y(), [a, o] = H(null), [s, c] = H(null), [l, u] = H(-1), [d, f] = H(!1), p = n && n.revision === i.snapshot.inventory.revision && n.epoch === i.client.views.epoch && n.rows.has(e.key), m = p && n ? n.rows.get(e.key) : a?.original ?? null, h = a?.error.startsWith("Saved settings are not confirmed");
 	U(() => () => {
 		s && (s.cancelled = !0);
 	}, [s]), U(() => {
-		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new wt(n.rows.get(e.key))), c(null), u(n.revision));
+		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new kt(n.rows.get(e.key))), c(null), u(n.revision));
 	}, [
 		n,
 		a?.dirty,
@@ -2880,7 +3041,7 @@ function jt({ row: e, visible: t, view: n, makeScope: r }) {
 					}),
 					a.action !== "ignore" && a.family === "temperature" && T("temperature", "Temperature (K)"),
 					a.action !== "ignore" && a.family === "xy" && /* @__PURE__ */ J(y, { children: [T("x", "x"), T("y", "y")] }),
-					a.action !== "ignore" && a.family === "rgbwaf" && /* @__PURE__ */ J(y, { children: [Tt.map((e) => T(e, `${e[0].toUpperCase() + e.slice(1)} (%)`)), /* @__PURE__ */ J("label", {
+					a.action !== "ignore" && a.family === "rgbwaf" && /* @__PURE__ */ J(y, { children: [At.map((e) => T(e, `${e[0].toUpperCase() + e.slice(1)} (%)`)), /* @__PURE__ */ J("label", {
 						class: "scene-field",
 						children: ["RGBWAF control", /* @__PURE__ */ J("select", {
 							"aria-label": `RGBWAF control ${e.item.name}`,
@@ -2936,7 +3097,7 @@ function jt({ row: e, visible: t, view: n, makeScope: r }) {
 				class: "scene-row-foot",
 				children: [/* @__PURE__ */ J("span", {
 					class: "hint",
-					children: [Ct(m), a.dirty ? " · Unsaved draft" : ""]
+					children: [Ot(m), a.dirty ? " · Unsaved draft" : ""]
 				}), /* @__PURE__ */ J("button", {
 					class: "text-button",
 					onClick: () => f(!d),
@@ -2969,11 +3130,11 @@ function jt({ row: e, visible: t, view: n, makeScope: r }) {
 		})]
 	});
 }
-function Mt({ bus: e }) {
+function Lt({ bus: e }) {
 	let t = Y(), [n, r] = H(0), [i, a] = H(""), [o, s] = H(""), [c, l] = H(null), [u, d] = H(""), [f, p] = H(0), [m, h] = H(null), [g, _] = H(null), [v, b] = H(1), [x, S] = H("bus"), [C, w] = H(null), [T, E] = H(""), [D, O] = H(null), k = _e(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), ee = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), N = ee.filter((e) => ke(i, e.item.name)), te = K(t.snapshot, e) && t.client.views.ready, P = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
 	function F() {
 		for (let e of k.current) e.cancelled && k.current.delete(e);
-		let r = new Ot(t, e.bus, n);
+		let r = new Nt(t, e.bus, n);
 		return k.current.add(r), r;
 	}
 	U(() => () => {
@@ -3019,7 +3180,7 @@ function Mt({ bus: e }) {
 		t.assert(), h({
 			title: e,
 			scope: t,
-			changes: kt(n),
+			changes: Pt(n),
 			unresolved: [...r]
 		});
 	}
@@ -3027,7 +3188,7 @@ function Mt({ bus: e }) {
 		t.cancelled = !1, R("Clear selected fixtures", F(), N.map((e) => ({
 			row: e,
 			before: L(e),
-			after: bt(),
+			after: Tt(),
 			command: "set_scene_row"
 		})));
 	}
@@ -3038,7 +3199,7 @@ function Mt({ bus: e }) {
 			for (let a of N) {
 				e.fixture(a), t.progress = `Capturing current output · ${a.item.name}`, t.touch();
 				let o = await e.inspect(a, n, !0);
-				St(o.candidate) ? r.push({
+				Dt(o.candidate) ? r.push({
 					row: a,
 					before: L(a),
 					after: o.candidate,
@@ -3052,7 +3213,7 @@ function Mt({ bus: e }) {
 	}
 	async function re() {
 		t.cancelled = !1;
-		let r = F(), i = new Ot(t, e.bus, v);
+		let r = F(), i = new Nt(t, e.bus, v);
 		k.current.add(i);
 		let a = !1;
 		try {
@@ -3073,7 +3234,7 @@ function Mt({ bus: e }) {
 		if (e) {
 			h(null), t.cancelled = !1;
 			try {
-				await At(e.scope, e.changes, (e) => {
+				await Ft(e.scope, e.changes, (e) => {
 					t.progress = e, t.touch();
 				}), t.notice = "Reviewed scene settings saved and verified.";
 			} finally {
@@ -3093,7 +3254,7 @@ function Mt({ bus: e }) {
 					row: e,
 					slot: a,
 					report: n,
-					candidate: Et(n.stored)
+					candidate: jt(n.stored)
 				});
 			}
 			t.notice = "Native scene reads complete. Review differences and unresolved fixtures.";
@@ -3320,7 +3481,7 @@ function Mt({ bus: e }) {
 				}),
 				/* @__PURE__ */ J("div", {
 					class: "scene-fixtures",
-					children: ee.map((e) => /* @__PURE__ */ J(jt, {
+					children: ee.map((e) => /* @__PURE__ */ J(It, {
 						row: e,
 						visible: ke(i, e.item.name),
 						view: c,
@@ -3349,9 +3510,9 @@ function Mt({ bus: e }) {
 							children: [
 								/* @__PURE__ */ J("h3", { children: e.row.item.name }),
 								/* @__PURE__ */ J("p", { children: [
-									Ct(e.before),
+									Ot(e.before),
 									" → ",
-									Ct(e.after)
+									Ot(e.after)
 								] }),
 								/* @__PURE__ */ J("details", { children: [/* @__PURE__ */ J("summary", { children: "Native before / after" }), /* @__PURE__ */ J("pre", { children: JSON.stringify({
 									before: e.before,
@@ -3411,7 +3572,7 @@ function Mt({ bus: e }) {
 								}[e.report.comparison] ?? "Unresolved" : "Unresolved", e.candidate ? "" : " · native data cannot be adopted"] }),
 								/* @__PURE__ */ J("p", {
 									class: "hint",
-									children: ["Saved: ", Ct(e.report.saved)]
+									children: ["Saved: ", Ot(e.report.saved)]
 								}),
 								/* @__PURE__ */ J("details", { children: [/* @__PURE__ */ J("summary", { children: "Native evidence" }), /* @__PURE__ */ J("pre", { children: JSON.stringify(e.report.stored, null, 2) })] })
 							]
@@ -3485,7 +3646,7 @@ function Mt({ bus: e }) {
 	] });
 }
 // src/reassignment.ts
-var Nt = class {
+var Rt = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.revision = this.initial.inventory.revision, this.spaces = n === "both" ? ["outputs", "inputs"] : [n];
 	}
@@ -3533,7 +3694,7 @@ var Nt = class {
 	}
 };
 // src/reassignment-ui.tsx
-function Pt({ bus: e, settings: t }) {
+function zt({ bus: e, settings: t }) {
 	let n = Y(), [r, i] = H(!1), [a, o] = H(!1), [s, c] = H("outputs"), [l, u] = H(null), d = _e(null);
 	U(() => () => {
 		d.current && (d.current.cancelled = !0);
@@ -3600,7 +3761,7 @@ function Pt({ bus: e, settings: t }) {
 						class: "primary",
 						disabled: !f || !!n.busy,
 						onClick: () => {
-							u(new Nt(n, e.bus, s)), o(!1);
+							u(new Rt(n, e.bus, s)), o(!1);
 						},
 						children: "Review reassignment"
 					})]
@@ -3674,7 +3835,7 @@ function Pt({ bus: e, settings: t }) {
 	] });
 }
 // src/app.tsx
-function Ft({ number: e, bus: t, close: n }) {
+function Bt({ number: e, bus: t, close: n }) {
 	let r = Y(), [i, a] = H(t?.name ?? `Bus${e + 1}`), [o, s] = H(t?.enabled ?? !0);
 	return /* @__PURE__ */ J(Z, {
 		title: `Bus ${e + 1} settings`,
@@ -3723,7 +3884,7 @@ function Ft({ number: e, bus: t, close: n }) {
 		})
 	});
 }
-function It() {
+function Vt() {
 	let e = Y(), [t, n] = H(null), r = e.snapshot;
 	return /* @__PURE__ */ J(y, { children: [
 		/* @__PURE__ */ J("header", {
@@ -3813,14 +3974,14 @@ function It() {
 				}, t);
 			})
 		}),
-		t !== null && /* @__PURE__ */ J(Ft, {
+		t !== null && /* @__PURE__ */ J(Bt, {
 			number: t,
 			bus: r.inventory.buses.find((e) => e.bus === t),
 			close: () => n(null)
 		})
 	] });
 }
-function Lt({ number: e, tab: t }) {
+function Ht({ number: e, tab: t }) {
 	let n = Y(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = H(!1);
 	return /* @__PURE__ */ J(y, { children: [
 		/* @__PURE__ */ J("header", {
@@ -3839,7 +4000,7 @@ function Lt({ number: e, tab: t }) {
 					class: "muted",
 					children: "Discover, identify and name the devices on this bus."
 				})
-			] }), /* @__PURE__ */ J(y, { children: r ? /* @__PURE__ */ J(Pt, {
+			] }), /* @__PURE__ */ J(y, { children: r ? /* @__PURE__ */ J(zt, {
 				bus: r,
 				settings: () => a(!0)
 			}, `${e}-${t}`) : /* @__PURE__ */ J("button", {
@@ -3859,7 +4020,7 @@ function Lt({ number: e, tab: t }) {
 				href: `/buses/${e}${n}`,
 				children: r
 			}))
-		}), t === "/groups" ? /* @__PURE__ */ J(yt, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ J(Mt, { bus: r }, `scenes-${e}`) : /* @__PURE__ */ J(vt, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ J("div", {
+		}), t === "/groups" ? /* @__PURE__ */ J(wt, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ J(Lt, { bus: r }, `scenes-${e}`) : /* @__PURE__ */ J(Ct, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ J("div", {
 			class: "card",
 			children: [
 				/* @__PURE__ */ J("h2", { children: "Set up this bus" }),
@@ -3874,14 +4035,14 @@ function Lt({ number: e, tab: t }) {
 				})
 			]
 		}),
-		i && /* @__PURE__ */ J(Ft, {
+		i && /* @__PURE__ */ J(Bt, {
 			number: e,
 			bus: r,
 			close: () => a(!1)
 		})
 	] });
 }
-function Rt() {
+function Ut() {
 	let e = Y().snapshot;
 	function t() {
 		let t = URL.createObjectURL(new Blob([JSON.stringify(e.inventory, null, 2)], { type: "application/json" })), n = document.createElement("a");
@@ -3934,7 +4095,7 @@ function Rt() {
 		})
 	] });
 }
-function zt() {
+function Wt() {
 	let e = Y(), t = e.snapshot;
 	return /* @__PURE__ */ J(y, { children: [
 		/* @__PURE__ */ J("header", {
@@ -4023,7 +4184,7 @@ function zt() {
 		})
 	] });
 }
-function Bt() {
+function Gt() {
 	let [e] = H(() => new Re()), [, t] = H(0), [n, r] = H(location.pathname), [i, a] = H(!1);
 	U(() => {
 		let n = e.client.subscribe(() => t((e) => e + 1));
@@ -4145,10 +4306,10 @@ function Bt() {
 							role: "status",
 							children: e.notice
 						}),
-						o ? s ? /* @__PURE__ */ J(Lt, {
+						o ? s ? /* @__PURE__ */ J(Ht, {
 							number: Number(s[1]),
 							tab: s[2] ?? ""
-						}, s[1]) : n === "/settings" ? /* @__PURE__ */ J(Rt, {}) : n === "/diagnostics" ? /* @__PURE__ */ J(zt, {}) : n === "/" ? /* @__PURE__ */ J(It, {}) : /* @__PURE__ */ J("div", {
+						}, s[1]) : n === "/settings" ? /* @__PURE__ */ J(Ut, {}) : n === "/diagnostics" ? /* @__PURE__ */ J(Wt, {}) : n === "/" ? /* @__PURE__ */ J(Vt, {}) : /* @__PURE__ */ J("div", {
 							class: "card",
 							children: [/* @__PURE__ */ J("h1", { children: "Page not found" }), /* @__PURE__ */ J(X, {
 								href: "/",
@@ -4174,4 +4335,4 @@ function Bt() {
 		})
 	});
 }
-I(/* @__PURE__ */ J(Bt, {}), document.getElementById("app"));
+I(/* @__PURE__ */ J(Gt, {}), document.getElementById("app"));

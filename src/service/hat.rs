@@ -833,6 +833,13 @@ impl Hat {
     ) {
         self.enqueue_physical(physical::Work::Input(request, route));
     }
+    pub(super) fn enqueue_input_feedback(
+        &mut self,
+        request: input::feedback::Request,
+        route: input::feedback::Route,
+    ) {
+        self.enqueue_physical(physical::Work::InputFeedback(request, route));
+    }
     pub(super) fn enqueue_input_settings(
         &mut self,
         request: input::settings::Request,
@@ -916,6 +923,10 @@ impl Hat {
                 }
                 let physical = self.physical.as_mut().unwrap();
                 physical.stage = physical::Stage::Running;
+                if let physical::Work::InputFeedback(request, _) = &mut physical.work {
+                    // Indicator changes do not retire native input activity.
+                    request.started = request.action.writing();
+                }
                 if let physical::Work::InputSettings(request, route) = &mut physical.work {
                     if request.action.writing() {
                         request.started = true;

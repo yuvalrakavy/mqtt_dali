@@ -29,6 +29,7 @@ impl DeviceDriver for DaliProxy {
                 "repair_scene_row",
                 "assign_group",
                 "configure_input",
+                "set_input_feedback",
                 "adopt_groups",
                 "repair_groups",
                 "restore_unaddressed_address",
@@ -48,6 +49,10 @@ impl DeviceDriver for DaliProxy {
             ]
             .into_iter()
             .map(|name| CommandSpec::new(name, CommandClass::WithReply))
+            .chain(std::iter::once(CommandSpec::new(
+                "read_input_feedback",
+                CommandClass::Read,
+            )))
             .chain(std::iter::once(CommandSpec::new(
                 "read_input_settings",
                 CommandClass::Read,
@@ -228,6 +233,24 @@ impl DeviceDriver for DaliProxy {
             .ok_or_else(|| OpError::Rejected("service is starting".into()))?;
         let change = parse(&snapshot, target, call)?;
         let deadline = Instant::now() + std::time::Duration::from_secs(2);
+        if let Operation::InputFeedback(action) = &change {
+            if !action.writing() {
+                let result = self
+                    .handle
+                    .input_feedback(
+                        target.ok_or_else(|| OpError::Rejected("input target required".into()))?,
+                        action.clone(),
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(8),
+                        None,
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
+        }
         if let Operation::InputSettings(action) = &change {
             if !action.writing() {
                 let result = self
@@ -333,6 +356,22 @@ impl DeviceDriver for DaliProxy {
             .and_then(Reporter::command_completion)
             .ok_or_else(|| OpError::Rejected("active command completion is required".into()))?;
         let change = match change {
+            Operation::InputFeedback(action) => {
+                let result = self
+                    .handle
+                    .input_feedback(
+                        target.ok_or_else(|| OpError::Rejected("input target required".into()))?,
+                        action,
+                        context.clone(),
+                        Instant::now() + Duration::from_secs(8),
+                        Some(completion),
+                    )
+                    .await
+                    .map_err(op_error)?;
+                return serde_json::to_value(result)
+                    .map(Some)
+                    .map_err(|e| OpError::Unusable(e.to_string()));
+            }
             Operation::InputSettings(action) => {
                 let result = self
                     .handle
@@ -764,6 +803,7 @@ struct Assignment {
     expected_revision: u64,
 }
 enum Operation {
+    InputFeedback(input::feedback::Action),
     InputSettings(input::settings::Action),
     Restore(restoration::Action),
     Reassignment(Assignment, discovery::Space),
@@ -784,6 +824,13 @@ impl Operation {
         context: &RequestContext,
     ) -> Result<(), ServiceError> {
         match self {
+            Self::InputFeedback(action) => input::feedback::resolve(
+                snapshot,
+                target.ok_or_else(|| ServiceError::Rejected("input target required".into()))?,
+                action,
+                context,
+            )
+            .map(|_| ()),
             Self::InputSettings(action) => input::settings::resolve(
                 snapshot,
                 target.ok_or_else(|| {
@@ -871,6 +918,7 @@ impl Operation {
     }
     fn budget(&self) -> Duration {
         Duration::from_secs(match self {
+            Self::InputFeedback(_) => 8,
             Self::InputSettings(_) => 8,
             Self::SceneSettings(action) => {
                 if action.writing() {
@@ -1113,6 +1161,19 @@ impl PreparedCommand {
             }
         };
         match operation {
+            Operation::InputFeedback(action) => value(
+                handle
+                    .input_feedback(
+                        target.as_deref().ok_or_else(|| {
+                            ServiceError::Rejected("input target required".into())
+                        })?,
+                        action,
+                        context,
+                        deadline,
+                        None,
+                    )
+                    .await?,
+            ),
             Operation::InputSettings(action) => value(
                 handle
                     .input_settings(
@@ -1301,6 +1362,33 @@ fn parse(
     target: Option<&str>,
     call: &CommandCall,
 ) -> Result<Operation, OpError> {
+    if matches!(
+        call.command.as_str(),
+        "read_input_feedback" | "set_input_feedback"
+    ) {
+        if target.is_none() {
+            return Err(OpError::Rejected("input target required".into()));
+        }
+        if call.command == "read_input_feedback" {
+            if !call.params.is_empty() {
+                return Err(OpError::Rejected(
+                    "read_input_feedback accepts no parameters".into(),
+                ));
+            }
+            return Ok(Operation::InputFeedback(input::feedback::Action::Read));
+        }
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Set {
+            expected_revision: u64,
+            active: bool,
+        }
+        let p: Set = decode(call)?;
+        return Ok(Operation::InputFeedback(input::feedback::Action::Set {
+            expected: p.expected_revision,
+            active: p.active,
+        }));
+    }
     if matches!(
         call.command.as_str(),
         "read_input_settings" | "configure_input"
