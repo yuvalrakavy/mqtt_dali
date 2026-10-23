@@ -237,7 +237,6 @@ fn report(target: &str, route: &Route) -> Report {
 }
 
 async fn query(bus: &Bus<'_>, route: &Route, query: InstanceQuery) -> Result<BusReply, Error> {
-    // WAIT: v2-physical-operation
     bus.query(DaliFrame::Bits24(
         route
             .input
@@ -375,7 +374,6 @@ pub(in crate::service) async fn execute(
         for setting in &route.plans {
             for step in frames::plan(route.input.address, route.input.instance, *setting) {
                 attempted = true;
-                // WAIT: v2-physical-operation
                 bus.command(DaliFrame::Bits24(step.frame), step.repeat)
                     .await?;
             }
