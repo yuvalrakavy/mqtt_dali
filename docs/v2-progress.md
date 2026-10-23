@@ -5,6 +5,46 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
+## P4i3 — push-button timing protocol and independent model
+
+Frozen source `2011e6a`, browser-test compatibility follow-up `2eec299`.
+Design and both final source lenses APPROVE; the model lens also approved the
+follow-up. Reviews were read-only/source-only and same-family. No live HAT,
+Store, deployment, publication or shared dependency change occurred.
+
+`dali::input::button` provides short/double/repeat/stuck values, current/minimum
+queries, exact native durations and DTR0/repeated addressed plans. Static ranges
+and freshly reported device minima are separate checks; invalid minima cannot
+authorize even double0. FF is valid short/stuck data. The independent per-button
+profile shares the existing repeat owner, preserves settings/latches through
+readdress and HAT reboot, and has explicitly limited defaults/invalid-write policy.
+It schedules no gestures. Managed timer commands/UI remain the next slice.
+
+Four literal model cases first failed on missing timing support. All seven
+focused codec/model/UART cases pass; all six intentional controls produce intended
+REDs in85s. Full native acceptance passes **645/645** across eleven binaries
+(66.303s execution / 123.3s command including build/discovery), with only the
+separately owned browser test skipped. Strict scoped Clippy, Pi library/four
+binaries, changed-file format, standalone wait validation, all affected control
+plans and whitespace pass. Logs: `/tmp/dali-button-timing-acceptance`,
+`/tmp/dali-button-timing-controls.log`, `/tmp/dali-button-timing-functional.log`
+and fail-first `/tmp/dali-button-timing-red.log`.
+
+Final reader inspection found the old browser assertion compared a whole native
+settings object with a fixed list of old fields. It now explicitly verifies the
+requested event values while retaining unrelated fields from the initial physical
+snapshot, so timer preservation is checked too. No production browser change.
+The real phone/desktop workflow passes **894 owned commands in72.24s**;
+log `/tmp/dali-button-timing-browser.log`, artifacts
+`/tmp/dali-browser-23633267e9d2a3cc1cc15cf844f12e07`. No second full native run is
+needed after that test-only change.
+
+Contributor/operator example: [button timing plans](dali-input-contract.md#push-button-timing-plans),
+[emulator profile](emulator.md#push-button-timing-profile). Managed timing, sensor
+timers, indication/feedback, semantic stimuli and physical validation remain.
+The existing reader-completeness safeguard covers the browser assertion catch;
+no reusable skill change is needed.
+
 ## P4i2 — managed input event settings and browser controls
 
 Implemented at frozen source `7bab05b`; `c899f02` corrects wait-registry metadata

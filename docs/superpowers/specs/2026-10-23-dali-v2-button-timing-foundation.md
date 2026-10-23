@@ -105,3 +105,14 @@ the final formatted diff through the FE branch, per-instance profile dispatch,
 repeat owner and untouched value-latch paths. All six serial intentional-fault
 controls produce intended REDs in 85s; each production mutation was restored.
 No runtime design change or new ownership/wait mechanism was needed.
+
+## As-built acceptance
+
+Implemented/frozen at `2011e6a`; both final source lenses APPROVE. All645 native
+tests pass (66.303s execution), scoped strict Clippy/Pi/format/wait validation and
+all affected control plans pass. The subsequent browser reader compatibility fix
+at `2eec299` also has model-lens approval: its expected settings now retain initial
+unrelated timer state. Actual phone/desktop browser acceptance passes894 commands
+in72.24s. The UI itself is unchanged. This reader fix justifies the browser run
+despite the original no-browser-change expectation. No runtime source changed
+after the full suite. See P4i3 in `../../v2-progress.md` for logs and remaining work.
