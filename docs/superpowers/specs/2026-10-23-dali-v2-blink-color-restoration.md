@@ -1,6 +1,6 @@
 # Blink active-color restoration and capability-aware controls
 
-Status: implementing the owner-approved active-color restoration (23 October 2026).
+Status: implemented and verified on `e45975d` (23 October 2026).
 Tier T2: extend the existing owned identification operation; no new scheduler,
 transport policy, persisted schema, public message shape or Store implementation.
 The owner also identified the unconditional Color control on ordinary dimmers.
@@ -100,3 +100,12 @@ The review requires captured intents to pass ordinary preflight before pulsing,
 and fresh RGBWAF control queries in post-write read_values rather than reusing
 pre-write discovery control. Both requirements are included in implementation
 and regressions. No unresolved design blocker.
+
+Final acceptance:783 native tests, the complete real phone/desktop TCP-HAT Chrome
+workflow,89 frontend tests, four new and two reanchored named RED controls,
+strict production Clippy, Pi builds, waits, assets, formatting and control plans
+pass. GPT-6 Astra/high final source review APPROVE with no substantive blocker.
+The direct initial unsupported RGBWAF-mode/Primary-N refusal cases remain a
+nonblocking test-coverage gap (source guards inspected). Reviews use the same
+model family; physical HAT/fixture timing remains unverified. See v2-progress.md
+for measured checks and private-demo evidence.

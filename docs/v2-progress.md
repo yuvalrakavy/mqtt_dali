@@ -3055,3 +3055,37 @@ and fixed deadlines; unconfirmed/unsupported captures refuse before pulsing.
 Design review GPT-6.1 Sol/high approves with two implemented requirements:
 preflight captured intents, and query RGBWAF control again after writes. Source-only,
 same-family coverage. Native controls, final checks and source review are ongoing.
+
+Acceptance on frozen `e45975d`: **783/783 native tests pass** across11 binaries
+(one explicitly ignored browser test;111s execution,251s including build/cache).
+The separate complete real Chrome phone/desktop TCP-HAT browser workflow passes
+(148s execution;149s wall). Native Tc/xy/normalized RGBWAF cases include original
+off/dimmed states, pending activation changing family/control mode, exact channel
+selection, missing capture evidence, ignored restoration and paced50ms UART
+responses. Four new controls and two reanchored existing controls each produce
+named RED failures, then restore their source. All89 frontend tests pass.
+
+Scoped strict production Clippy, Pi library/four-bin compile, wait validation
+(zero findings), changed-source formatting, both embedded asset byte checks and
+all affected control plans pass. GPT-6 Astra/high approves `8fb7d04..e45975d`
+with no substantive blocker. Read-only/same-family source review; no independent
+model-family or physical HAT verification. Nonblocking coverage note: direct
+initial unsupported RGBWAF-mode/Primary-N Blink refusal cases are inspected in
+code but are not separate native test cases. Their modes remain unsupported.
+Combined browser runtime/CSP collection covers the bridge page; linked emulator
+functional assertions do not imply independent emulator console collection.
+
+Private demo updated and left running. Actual phone/desktop checks confirm no
+Color entry for dimmers/relays, DT8 entries retained through reload, compact row
+alignment, and Stop restoring native levels/active colors for ordinary, DT8 and
+relay fixtures. An initially-off fixture returns off; all demo fixture levels
+and active colors are restored after checks. No production broker, HAT or Store
+configuration was used or changed. Local UI source commit `158b520` also contains
+the approved password eye icon and American Color spelling.
+
+Implementation lesson: the paced test found that direct MQTT identification and
+prepared HTTP jobs had separate budget call sites. Both now use Operation::budget;
+future timing edits should trace both callers. The design gate's captured-preflight
+and post-write-control requirements prevented inferred restoration success while
+retaining the existing owner and native plans. No new recovery framework, memory
+write or skill change was needed.
