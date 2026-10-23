@@ -1,6 +1,9 @@
 use super::scenario::{Output, Scenario};
 use serde::Serialize;
 #[cfg(test)]
+#[path = "model/energy_tests.rs"]
+mod energy_tests;
+#[cfg(test)]
 #[path = "model/memory_tests.rs"]
 mod memory_tests;
 #[cfg(test)]
@@ -18,6 +21,8 @@ struct Gear {
     #[serde(flatten)]
     config: Output,
     dtr: [u8; 3],
+    #[serde(skip)]
+    memory_state: super::memory::State,
     initialize_until: Option<u64>,
     withdrawn: bool,
     search: u32,
@@ -338,6 +343,7 @@ impl Model {
                             switching_state,
                             config,
                             dtr: [0; 3],
+                            memory_state: super::memory::State::default(),
                             initialize_until: None,
                             withdrawn: false,
                             search: 0xffffff,
@@ -569,10 +575,13 @@ impl Model {
                 | 0xc1
                 | 0xc3
                 | 0xc5
+                | 0xc9
         );
         // DT7's per-gear pair sees addressed traffic even when the existing
         // Part102 repeat guard defers this first frame below.
         for gear in &mut bus.outputs {
+            // Reset write enable even when the repeat guard defers a command.
+            gear.memory_state.observe(frame);
             if special || gear.selected(address) {
                 if let Some(switching) = &mut gear.switching_state {
                     switching.observe(frame);
@@ -589,7 +598,7 @@ impl Model {
         let repeat_required = matches!(address, 0xa5 | 0xa7)
             || ((address <= 0x9f || address >= 0xfc)
                 && address & 1 == 1
-                && matches!(opcode, 0x20..=0x30 | 0x40..=0x80));
+                && matches!(opcode, 0x20..=0x30 | 0x40..=0x81));
         let repeated = bus
             .repeat
             .take()
@@ -622,6 +631,13 @@ impl Model {
                     }
                     0xc5 => {
                         gear.dtr[2] = opcode;
+                        None
+                    }
+                    0xc9 => {
+                        if let Some(profile) = &gear.config.memory {
+                            gear.memory_state
+                                .write(profile, gear.dtr[1], &mut gear.dtr[0], opcode);
+                        }
                         None
                     }
                     0xb1 => {
@@ -903,6 +919,10 @@ impl Model {
                     }
                     None
                 }
+                0x81 => {
+                    gear.memory_state.enable();
+                    None
+                }
                 0x90 => Some(
                     (if gear.config.level > 0 { 4 } else { 0 })
                         | if gear.config.lamp_failure { 2 } else { 0 },
@@ -914,11 +934,10 @@ impl Model {
                         .as_ref()
                         .map_or(8, |profile| profile.version),
                 ),
-                0xc5 => gear
-                    .config
-                    .memory
-                    .as_ref()
-                    .and_then(|profile| profile.read(gear.dtr[1], &mut gear.dtr[0])),
+                0xc5 => gear.config.memory.as_ref().and_then(|profile| {
+                    gear.memory_state
+                        .read(profile, gear.dtr[1], &mut gear.dtr[0])
+                }),
                 0x98 => Some(gear.dtr[0]),
                 0x99 => Some(gear.config.device_type),
                 0x9a => Some(if gear.switching_state.is_some() {

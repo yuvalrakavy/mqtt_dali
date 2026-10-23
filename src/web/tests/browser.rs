@@ -49,6 +49,29 @@ async fn browser_functional_phone_and_desktop() {
         .as_array_mut()
         .unwrap()
         .push(bank);
+    let energy: serde_json::Value =
+        serde_json::from_str(include_str!("../../../examples/emulator/energy-i4.json")).unwrap();
+    for bank in energy["buses"][0]["outputs"][0]["memory"]["banks"]
+        .as_array()
+        .unwrap()
+    {
+        scenario["buses"][0]["outputs"][0]["memory"]["banks"]
+            .as_array_mut()
+            .unwrap()
+            .push(bank.clone());
+    }
+    let mut unknown = energy["buses"][0]["outputs"][0]["memory"]["banks"][0].clone();
+    unknown["bytes"][3] = json!(2);
+    scenario["buses"][0]["outputs"][1]["memory"]["banks"]
+        .as_array_mut()
+        .unwrap()
+        .push(unknown);
+    let mut truncated = energy["buses"][0]["outputs"][0]["memory"]["banks"][2].clone();
+    truncated["bytes"][0] = json!(10);
+    scenario["buses"][0]["outputs"][1]["memory"]["banks"]
+        .as_array_mut()
+        .unwrap()
+        .push(truncated);
     let scenario = serde_json::from_value(scenario).unwrap();
     let tcp_mode = std::env::var_os("DALI_BROWSER_HAT_TCP").is_some();
     let (emulator, tcp, pty_owner) = if tcp_mode {

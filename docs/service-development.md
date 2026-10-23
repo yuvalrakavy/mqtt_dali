@@ -19,6 +19,17 @@ reads. Keep the public raw window at64 bytes, exact IDs as strings and per-field
 unknown/unavailable/invalid semantics. No unlock/latch/write or retained State.
 Controls: `v2-luminaire-controls.toml`.
 
+`Action::Energy` and pure `dali::energy` add checked-bank
+[`read_energy_data`](energy-data.md) to the same owner. Hat admission requires a
+known repeat-terminal profile before native commands. Version1/header proof
+precedes scratch writes; establishFF→AA, verify the latch through capture and
+releaseFF. Re-enable before release. Cleanup stays under the original lifetime
+even on failed evidence; preserve its stream-loss recovery signal when retaining
+the original error. No actual-observation cuts or config writes. Exact scaled
+values are strings; allFF energy mantissas are invalid, while TMASK is temporary.
+Keep input/group refusal, original parsed revision and optional report omission.
+Controls: `v2-energy-controls.toml`.
+
 Common output settings use `output::settings` and concrete `Work::OutputSettings`
 with [checked native plans](gear-settings.md). Shared strict MQTT/HTTP and typed
 read/configure keep original context/revision/deadline/permit through settlement.

@@ -5,6 +5,7 @@ import type {Snapshot,PhysicalRow} from './model.ts';
 import {DeviceInfoScope,decodeMemory,memoryWindow} from './device-info.ts';
 import {readFileSync} from 'node:fs';
 import {luminaireDisplay} from './luminaire.ts';
+import {energyBank,energyDisplay} from './energy.ts';
 function fixture(){
   const ui=new Controller(),epoch='0123456789abcdef0123456789abcdef',target='Bus1.Outputs.Lamp';
   ui.client.views.ready=true;ui.client.views.value={phase:'ready',identity:{controller:'Controller'},hardware:{state:'ready',buses:[{bus:0,status:2}]},states:[],inventory:{name:'Controller',revision:1,inventory_epoch:epoch,buses:[{bus:0,name:'Bus1',enabled:true,outputs:[{name:'Lamp',target,binding_revision:1,short_address:0}]}],identity_ledger:{baseline:[{target,binding_revision:1,location:{kind:'output',bus:0,short_address:0}}],batches:[]}}} as unknown as Snapshot;
@@ -93,5 +94,51 @@ test('luminaire late and lost reads clear previous evidence without renewing sco
     const f=fixture();f.ui.client.job=async()=>luminaire(f);await f.scope.readLuminaire();
     f.ui.client.job=async()=>{if(reason==='cancel')f.scope.cancelled=true;if(reason==='epoch')f.ui.client.views.epoch++;if(reason==='revision')f.ui.snapshot.inventory.revision++;if(reason==='lost')throw new Error('Reply lost');return luminaire(f);};
     await assert.rejects(f.scope.readLuminaire(),undefined,`late ${reason} luminaire read populated dialog`);assert.equal(f.scope.result,null);f.ui.client.close();
+  }
+});
+
+function energy(f:ReturnType<typeof fixture>,bank=202){
+  const scenario=JSON.parse(readFileSync(new URL('../../examples/emulator/energy-i4.json',import.meta.url),'utf8'));
+  const bytes=scenario.buses[0].outputs[0].memory.banks.find((b:any)=>b.bank===bank).bytes;
+  const fields=bank===202?{energy:{status:'value',raw:123456,scale:-3,value:'123.456',unit:'Wh'},power:{status:'value',raw:425,scale:-1,value:'42.5',unit:'W'}}:
+    bank===203?{energy:{status:'value',raw:281474976710653,scale:6,value:'281474976710653000000',unit:'VAh'},power:{status:'value',raw:4294967293,scale:-6,value:'4294.967293',unit:'VA'}}:
+    {energy:{status:'temporarily_unavailable',raw:281474976710654,scale:0,value:null,unit:'Wh'},power:{status:'value',raw:0,scale:-6,value:'0',unit:'W'}};
+  return {...f.report(),operation:'read_energy_data',bank,start:0,count:16,quality:'complete',readings:bytes.map((raw:number,address:number)=>({address,reading:{kind:'value',raw}})),energy:{version:1,format_status:'supported',fields,snapshot:{start:{kind:'value',raw:170},end:{kind:'value',raw:170},release:{kind:'value',raw:255}}}};
+}
+test('energy scope freezes bank and original fixture authority with exact decimals',async()=>{
+  const f=fixture();f.ui.client.job=async(g,t,c,p)=>{f.calls.push({generation:g,target:t,command:c,params:p});return energy(f,203);};
+  const r=await f.scope.readEnergy(203);assert.equal(r.energy!.fields.energy.value,'281474976710653000000');
+  assert.deepEqual(f.calls,[{generation:f.row.generation,target:f.row.item.target,command:'read_energy_data',params:{bank:203}}]);
+  assert.equal(energyDisplay(r.energy!.fields.energy),'281474976710653000000 VAh');f.ui.client.close();
+});
+test('energy three banks preserve signed scales, TMASK and real zero with units',()=>{
+  const f=fixture();for(const bank of [202,203,204])assert.doesNotThrow(()=>decodeMemory(energy(f,bank),'read_energy_data',undefined,energyBank(bank)));
+  const r=decodeMemory(energy(f,204),'read_energy_data',undefined,204);assert.equal(energyDisplay(r.energy!.fields.energy),'Temporarily unavailable');assert.equal(energyDisplay(r.energy!.fields.power),'0 W');
+  for(const bank of [1,201,205,202.5,NaN])assert.throws(()=>energyBank(bank));f.ui.client.close();
+});
+test('energy inconsistent precision, units, masks and snapshot proof are refused',()=>{
+  const f=fixture(),r=energy(f);assert.doesNotThrow(()=>decodeMemory(r,'read_energy_data',undefined,202));
+  for(const [key,patch]of [['energy',{value:123.456}],['energy',{scale:7}],['power',{unit:'Wh'}],['energy',{raw:9007199254740992}],['power',{value:'42.500'}],['energy',{status:'not_implemented'}]]){
+    const wrong=structuredClone(r);Object.assign(wrong.energy.fields[key as 'energy'|'power'],patch);assert.throws(()=>decodeMemory(wrong,'read_energy_data',undefined,202),undefined,`invalid energy field accepted: ${key}`);
+  }
+  for(const [key,raw]of [['start',255],['end',255],['release',170]]){const wrong=structuredClone(r);wrong.energy.snapshot[key as 'start'|'end'|'release'].raw=raw as number;assert.throws(()=>decodeMemory(wrong,'read_energy_data',undefined,202),undefined,`invalid snapshot proof accepted: ${key}`);}
+  assert.throws(()=>decodeMemory(r,'read_energy_data',undefined,203));assert.throws(()=>decodeMemory({...r,count:17},'read_energy_data',undefined,202));f.ui.client.close();
+});
+test('energy unavailable header and unknown version never authorize fields or a snapshot',()=>{
+  const f=fixture(),r=energy(f),unknown=structuredClone(r);unknown.count=4;unknown.quality='partial';unknown.readings=unknown.readings.slice(0,4);unknown.readings[3].reading.raw=2;
+  Object.assign(unknown.energy,{version:2,format_status:'unrecognized',fields:{},snapshot:null});
+  assert.doesNotThrow(()=>decodeMemory(unknown,'read_energy_data',undefined,202));assert.throws(()=>decodeMemory({...unknown,count:16,readings:r.readings},'read_energy_data',undefined,202));
+  const absent={...r,count:1,quality:'unavailable',readings:[{address:0,reading:{kind:'no_response'}}],energy:{version:null,format_status:'unavailable',fields:{},snapshot:null}};
+  assert.doesNotThrow(()=>decodeMemory(absent,'read_energy_data',undefined,202));assert.doesNotThrow(()=>decodeMemory({...absent,quality:'partial',readings:[{address:0,reading:{kind:'value',raw:255}}]},'read_energy_data',undefined,202));f.ui.client.close();
+});
+test('energy missing mantissa bytes retain unavailable fields and diagnostics',()=>{
+  const f=fixture(),r:any=energy(f);r.quality='partial';r.readings[8].reading={kind:'no_response'};Object.assign(r.energy.fields.energy,{status:'unavailable',raw:null,value:null});
+  const d=decodeMemory(r,'read_energy_data',undefined,202);assert.equal(d.energy!.fields.energy.scale,-3);assert.equal(energyDisplay(d.energy!.fields.energy),'Unavailable');f.ui.client.close();
+});
+test('energy late, lost and invalid new reads clear previous evidence',async()=>{
+  for(const reason of ['cancel','epoch','revision','lost','wrong_bank','invalid_bank']){
+    const f=fixture();f.ui.client.job=async()=>energy(f);await f.scope.readEnergy(202);
+    f.ui.client.job=async()=>{if(reason==='cancel')f.scope.cancelled=true;if(reason==='epoch')f.ui.client.views.epoch++;if(reason==='revision')f.ui.snapshot.inventory.revision++;if(reason==='lost')throw new Error('Reply lost');return energy(f,reason==='wrong_bank'?203:202);};
+    await assert.rejects(f.scope.readEnergy(reason==='invalid_bank'?205:202),undefined,`late ${reason} energy read populated dialog`);assert.equal(f.scope.result,null);f.ui.client.close();
   }
 });

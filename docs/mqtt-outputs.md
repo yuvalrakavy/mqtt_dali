@@ -46,6 +46,12 @@ include units and unknown/unavailable/invalid status, with exact identifiers as
 strings. See [luminaire data](luminaire-data.md) for the supported format and
 report. It is a Read command, separate from scalar State.
 
+`read_energy_data` requires integer `bank`202,203 or204 on an individual saved
+output. It returns a captured, verified snapshot with exact decimal strings,
+raw counters/scales, units and explicit unavailable/invalid status. See
+[energy and power](energy-data.md) for parameters, terminal-profile requirement,
+snapshot semantics and the report. It is also a Read command, separate from State.
+
 Common individual fixture settings use explicit `read_output_settings` and
 `configure_output` commands, with original target-generation and expected revision
 for writes. They return readback reports, separate from scalar Desired/State and

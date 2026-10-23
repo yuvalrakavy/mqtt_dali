@@ -76,6 +76,11 @@ reboot/reset preserve profiles. Existing scenarios without profiles still load.
 The ready-to-use `examples/emulator/luminaire-i4.json` includes a Part251 bank1
 profile. Edit its raw array to exercise typed [luminaire reads](luminaire-data.md),
 unknown formats and missing data without a separate emulator data model.
+`examples/emulator/energy-i4.json` adds three [Part252 energy banks](energy-data.md).
+Per-bank `latch:true` opts output banks202–204 into bounded snapshot behavior;
+the editor can configure raw counters, signed scale bytes, TMASK or silence.
+Omitted flags preserve existing read-only profiles. Capture/export does not turn
+temporary frozen values into configuration, and no automatic energy model is added.
 
 Existing strict version-1 files remain valid. Optional capture fields:
 

@@ -308,6 +308,9 @@ impl Scenario {
             for input in &bus.inputs {
                 if let Some(memory) = &input.memory {
                     memory.validate()?;
+                    if memory.banks.iter().any(|bank| bank.latch) {
+                        return Err("input modules do not support output memory latches".into());
+                    }
                 }
                 if let Some(states) = &input.initial_physical {
                     if states.len() != input.instances.len()

@@ -502,7 +502,8 @@ and pure `dali::memory`, with original generation/revision/deadline/stamp checks
 Never change saved name/Origin from physical serials. Use exact-width hex for
 32/64-bit serials, unknown layouts for unrecognized versions and explicit raw
 FF/no-response/collision evidence. Reads reload DTR0 per byte and preserve other
-observations; no worker/cache/write path. The independent emulator has optional
+observations; identity/raw/luminaire reads never write memory and add no worker/cache.
+The independent emulator has optional
 bounded raw-bank profiles. See `docs/device-information.md`,
 `docs/v2-memory-controls.toml` and the frozen protected DeviceInfoScope/dialog.
 
@@ -512,6 +513,16 @@ stay raw prefixes. Public raw reads stay64 bytes. Preserve exact string IDs,
 units and field statuses; ASCII text has no numeric MASK. No metadata inference,
 unlock, latch, write or retained State. See `docs/luminaire-data.md` and
 `docs/v2-luminaire-controls.toml`.
+
+Part252 uses `dali::energy` and `Action::Energy` in the same owner. Checked banks
+202/203/204 and version1/header proof; Hat admission requires known repeat profile.
+VerifyFF→AA, stable latch and releaseFF under original stamp/deadline. Failed
+evidence still releases within that lifetime; retain cleanup stream-loss recovery.
+No55/unbounded memory writes, poller/cache or actual-observation cuts. Exact scaled
+decimal strings; TMASK temporary, allFF invalid. Emulator latch profiles are opt-in,
+output-only, at most16 bytes and separate from persistent bytes. Stable keyed read
+controls preserve expanded state across failed reads. See `docs/energy-data.md`
+and `docs/v2-energy-controls.toml`.
 
 ## Architecture (legacy)
 

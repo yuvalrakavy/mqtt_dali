@@ -5,7 +5,7 @@ use crate::{
         connection::Connection,
         transactions::{TransactionError, Transactions},
     },
-    dali::memory as codec,
+    dali::{energy, memory as codec},
 };
 use serde::Serialize;
 use std::time::Duration;
@@ -14,6 +14,7 @@ use std::time::Duration;
 pub(super) enum Action {
     Identity,
     Luminaire,
+    Energy(energy::Bank),
     Read { bank: u8, window: codec::Window },
 }
 impl Action {
@@ -21,6 +22,7 @@ impl Action {
         match self {
             Self::Identity => "read_identity",
             Self::Luminaire => "read_luminaire_data",
+            Self::Energy(_) => "read_energy_data",
             Self::Read { .. } => "read_memory",
         }
     }
@@ -49,8 +51,22 @@ pub struct Report {
     pub identity: Option<codec::Identity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub luminaire: Option<crate::dali::luminaire::Data>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub energy: Option<EnergyReport>,
     pub reason: Option<String>,
     pub configuration_changed: bool,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct EnergyReport {
+    #[serde(flatten)]
+    pub data: energy::Data,
+    pub snapshot: Option<SnapshotProof>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SnapshotProof {
+    pub start: scenes::Reading,
+    pub end: scenes::Reading,
+    pub release: scenes::Reading,
 }
 #[derive(Clone)]
 pub(super) struct Route {
@@ -123,9 +139,10 @@ pub(super) fn resolve(
             ))
         }
     };
-    if matches!(action, Action::Luminaire) && space != discovery::Space::Outputs {
+    if matches!(action, Action::Luminaire | Action::Energy(_)) && space != discovery::Space::Outputs
+    {
         return Err(reject(
-            "luminaire data requires an individual output fixture",
+            "luminaire/energy data requires an individual output fixture",
         ));
     }
     if !snapshot
@@ -205,6 +222,92 @@ async fn read_pending(
     }
     Ok(())
 }
+async fn latch_read(
+    bus: &commissioning::Bus<'_>,
+    native: codec::Target,
+) -> Result<scenes::Reading, commissioning::Error> {
+    Ok(location(bus, native, 2)
+        .await?
+        .reading
+        .expect("location was queried"))
+}
+async fn latch_write(
+    bus: &commissioning::Bus<'_>,
+    native: codec::Target,
+    latch: energy::Latch,
+) -> Result<scenes::Reading, commissioning::Error> {
+    let codec::Target::Output(address) = native else {
+        return Err(commissioning::Error::Evidence(
+            "energy latch requires an output",
+        ));
+    };
+    bus.command(energy::enable_write_memory(address), true)
+        .await?;
+    bus.command(native.offset(2), false).await?;
+    bus.command(latch.frame(), false).await?;
+    latch_read(bus, native).await
+}
+async fn capture_energy(
+    report: &mut Report,
+    bus: &commissioning::Bus<'_>,
+    native: codec::Target,
+    cleanup_recovery: &mut bool,
+) -> Result<SnapshotProof, commissioning::Error> {
+    // A previous interrupted read may have left AA. Prove a fresh FF→AA
+    // transition rather than treating an old snapshot as a new capture.
+    if report.readings[2].reading.as_ref().and_then(raw) != Some(255) {
+        let baseline = latch_write(bus, native, energy::Latch::Release).await?;
+        if raw(&baseline) != Some(255) {
+            return Err(commissioning::Error::Evidence(
+                "energy latch baseline was not confirmed",
+            ));
+        }
+    }
+    let result: Result<(scenes::Reading, scenes::Reading), commissioning::Error> = async {
+        let start = latch_write(bus, native, energy::Latch::Freeze).await?;
+        if raw(&start) != Some(170) {
+            return Err(commissioning::Error::Evidence(
+                "energy latch was not confirmed",
+            ));
+        }
+        let last = report.readings[0]
+            .reading
+            .as_ref()
+            .and_then(raw)
+            .expect("header checked");
+        extend_capture(report, last.min(15));
+        read_pending(report, bus, native).await?;
+        let end = latch_read(bus, native).await?;
+        if raw(&end) != Some(170) {
+            return Err(commissioning::Error::Evidence(
+                "energy latch changed during capture",
+            ));
+        }
+        Ok((start, end))
+    }
+    .await;
+    // Once AA may have been submitted, release on success and failed evidence.
+    // The same Bus enforces the original stamp/deadline, including cleanup.
+    let release = latch_write(bus, native, energy::Latch::Release).await;
+    *cleanup_recovery |= matches!(
+        &release,
+        Err(commissioning::Error::Transaction(
+            TransactionError::StreamLoss
+        ))
+    );
+    let (start, end) = result?;
+    let release = release?;
+    if raw(&release) != Some(255) {
+        return Err(commissioning::Error::Evidence(
+            "energy latch release was not confirmed",
+        ));
+    }
+    Ok(SnapshotProof {
+        start,
+        end,
+        release,
+    })
+}
 pub(super) async fn execute(
     link: Transactions<Connection>,
     route: Route,
@@ -223,6 +326,7 @@ pub(super) async fn execute(
         Action::Read { bank, window } => (bank, window),
         Action::Identity => (0, codec::Window::new(0, 1).unwrap()),
         Action::Luminaire => (1, codec::Window::new(0, 1).unwrap()),
+        Action::Energy(bank) => (bank.number(), codec::Window::new(0, 1).unwrap()),
     };
     let mut report = Report {
         operation: route.action.name(),
@@ -248,9 +352,17 @@ pub(super) async fn execute(
         identity: None,
         luminaire: matches!(route.action, Action::Luminaire)
             .then(|| crate::dali::luminaire::decode(&[])),
+        energy: match route.action {
+            Action::Energy(bank) => Some(EnergyReport {
+                data: energy::decode(bank, &[]),
+                snapshot: None,
+            }),
+            _ => None,
+        },
         reason: None,
         configuration_changed: false,
     };
+    let mut cleanup_recovery = false;
     let result: Result<(), commissioning::Error> = async {
         if matches!(route.action, Action::Identity) {
             report.version = Some(scenes::Reading::byte(
@@ -259,7 +371,7 @@ pub(super) async fn execute(
             ));
         }
         bus.command(route.native.bank(bank), false).await?;
-        if matches!(route.action, Action::Identity | Action::Luminaire) {
+        if !matches!(route.action, Action::Read { .. }) {
             report.readings[0] = location(&bus, route.native, 0).await?;
             let Some(last) = report.readings[0].reading.as_ref().and_then(raw) else {
                 return Ok(());
@@ -271,14 +383,29 @@ pub(super) async fn execute(
                 ));
                 return Ok(());
             }
-            let end = if matches!(route.action, Action::Identity) {
-                codec::Layout::from_version(report.version.as_ref().and_then(raw)).last_location()
-            } else {
-                0x12
+            let end = match route.action {
+                Action::Identity => {
+                    codec::Layout::from_version(report.version.as_ref().and_then(raw))
+                        .last_location()
+                }
+                Action::Energy(_) => 3,
+                _ => 0x12,
             };
             extend_capture(&mut report, last.min(end));
         }
         read_pending(&mut report, &bus, route.native).await?;
+        if let Action::Energy(bank) = route.action {
+            let data = energy::decode(bank, &captured_bytes(&report));
+            let snapshot = if data.format_status == energy::FormatStatus::Supported {
+                Some(capture_energy(&mut report, &bus, route.native, &mut cleanup_recovery).await?)
+            } else {
+                None
+            };
+            report.energy = Some(EnergyReport {
+                data: energy::decode(bank, &captured_bytes(&report)),
+                snapshot,
+            });
+        }
         if matches!(route.action, Action::Luminaire) {
             use crate::dali::luminaire::{decode, FormatStatus};
             if decode(&captured_bytes(&report)).format_status == FormatStatus::Supported {
@@ -323,15 +450,21 @@ pub(super) async fn execute(
         }) {
             report.quality = "partial";
         }
+        if report.energy.as_ref().is_some_and(|data| {
+            data.data.format_status != energy::FormatStatus::Supported || report.count < 16
+        }) {
+            report.quality = "partial";
+        }
         Ok(())
     }
     .await;
-    let recovery = matches!(
-        &result,
-        Err(commissioning::Error::Transaction(
-            TransactionError::StreamLoss
-        ))
-    );
+    let recovery = cleanup_recovery
+        || matches!(
+            &result,
+            Err(commissioning::Error::Transaction(
+                TransactionError::StreamLoss
+            ))
+        );
     let error = result.err().map(|error| {
         reject(match error {
             commissioning::Error::Transaction(error) => error.to_string(),
@@ -378,6 +511,17 @@ pub(super) fn finish(request: Request, result: Result<Report, ServiceError>) {
     let _ = request.reply.send(result);
 }
 impl ServiceHandle {
+    /// Capture one standard Part252 bank using a verified temporary latch.
+    pub async fn read_energy_data(
+        &self,
+        target: &str,
+        bank: energy::Bank,
+        context: RequestContext,
+        deadline: Instant,
+    ) -> Result<Report, ServiceError> {
+        self.memory(target, Action::Energy(bank), context, deadline, None)
+            .await
+    }
     /// Read a bounded bank range. No memory write or persistent setting is sent.
     pub async fn read_memory(
         &self,

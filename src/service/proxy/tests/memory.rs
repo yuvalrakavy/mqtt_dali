@@ -7,6 +7,10 @@ async fn memory_prepared_job_keeps_admission_revision_before_service_dispatch() 
         ("read_identity", PropertyMap::new()),
         ("read_luminaire_data", PropertyMap::new()),
         (
+            "read_energy_data",
+            PropertyMap::from_iter([("bank".into(), json!(202))]),
+        ),
+        (
             "read_memory",
             PropertyMap::from_iter([
                 ("bank".into(), json!(255)),
@@ -23,7 +27,7 @@ async fn memory_prepared_job_keeps_admission_revision_before_service_dispatch() 
         let broker = FakeBroker::start().await;
         let (service, handle) = fixture.service();
         let running = start(
-            service.with_hat_tcp(address, RepeatPolicy::Unverified),
+            service.with_hat_tcp(address, RepeatPolicy::OneTerminal),
             &handle,
             &broker,
         )

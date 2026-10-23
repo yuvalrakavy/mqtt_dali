@@ -1,0 +1,72 @@
+[[control]]
+name = "energy_decimal_uses_rounded_float"
+file = "src/dali/energy.rs"
+anchor = '(u128::from(raw) * 10_u128.pow(scale as u32)).to_string()'
+replacement = 'format!("{:.0}", raw as f64 * 10_f64.powi(i32::from(scale)))'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(energy_data_maxima)"]
+expect_text = "scaled decimal lost precision"
+
+[[control]]
+name = "energy_all_ff_becomes_tmask"
+file = "src/dali/energy.rs"
+anchor = '(Some(_), Some(raw)) if raw == maximum => Status::Invalid,'
+replacement = '(Some(_), Some(raw)) if raw == maximum => Status::TemporarilyUnavailable,'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(energy_data_tmask)"]
+expect_text = "energy MASK/TMASK semantics were guessed"
+
+[[control]]
+name = "energy_unknown_version_authorizes_latch_and_extension"
+file = "src/service/memory.rs"
+anchor = 'let snapshot = if data.format_status == energy::FormatStatus::Supported {'
+replacement = 'let snapshot = if true {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(energy_managed_mqtt)"]
+expect_text = "energy header/version bound was ignored"
+
+[[control]]
+name = "energy_existing_latch_renews_without_ff_transition"
+file = "src/service/memory.rs"
+anchor = 'if report.readings[2].reading.as_ref().and_then(raw) != Some(255) {'
+replacement = 'if false && report.readings[2].reading.as_ref().and_then(raw) != Some(255) {'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(energy_literal_uart)"]
+expect_text = "energy native snapshot sequence changed: old_latch_holes"
+
+[[control]]
+name = "energy_release_is_fabricated_without_native_command"
+file = "src/service/memory.rs"
+anchor = 'let release = latch_write(bus, native, energy::Latch::Release).await;'
+replacement = 'let release: Result<scenes::Reading, commissioning::Error> = Ok(scenes::Reading::Value { raw: 255 });'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(energy_managed_mqtt)"]
+expect_text = "successful energy read retained latch"
+
+[[control]]
+name = "energy_model_reads_live_payload_while_latched"
+file = "src/emulator/memory.rs"
+anchor = '''            frozen
+                .unwrap_or(&entry.bytes)'''
+replacement = '''            entry.bytes'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(energy_model_latch_requires_pair)"]
+expect_text = "energy read leaked newer live payload"
+
+[[control]]
+name = "energy_unverified_profile_sends_native_prefix"
+file = "src/service/hat.rs"
+anchor = 'if matches!(request.action, super::memory::Action::Energy(_))'
+replacement = 'if false && matches!(request.action, super::memory::Action::Energy(_))'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(energy_managed_mqtt)"]
+expect_text = "unverified energy read did not refuse before native commands"
+
+[[control]]
+name = "energy_ui_accepts_rounded_or_numeric_value"
+file = "web/src/energy.ts"
+anchor = "f.value!==(status==='value'?decimal(raw!,scale!):null)"
+replacement = 'false'
+target = "command"
+argv = ["node","--test","web/src/device-info.test.ts"]
+expect_text = "invalid energy field accepted: energy"

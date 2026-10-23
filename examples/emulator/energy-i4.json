@@ -1,0 +1,16 @@
+{
+  "version":1,
+  "buses":[{
+    "number":0,
+    "outputs":[{
+      "id":"metered-white","short_address":0,"device_type":8,"level":91,"groups":1,
+      "colour":{"active":"temperature","temperature":{"value":300,"coolest":200,"warmest":500,"physical_coolest":150,"physical_warmest":550}},
+      "memory":{"version":8,"banks":[
+        {"bank":202,"latch":true,"bytes":[15,0,255,1,253,0,0,0,1,226,64,255,0,0,1,169]},
+        {"bank":203,"latch":true,"bytes":[15,0,255,1,6,255,255,255,255,255,253,250,255,255,255,253]},
+        {"bank":204,"latch":true,"bytes":[15,0,255,1,0,255,255,255,255,255,254,250,0,0,0,0]}
+      ]}
+    }],
+    "inputs":[{"id":"panel","short_address":0,"instances":[1]}]
+  }]
+}

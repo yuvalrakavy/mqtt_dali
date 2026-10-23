@@ -109,8 +109,9 @@ reboot and reset preserve these profiles under their existing rules.
 
 Local checks cover literal UART, an independent TCP model, generic MQTT, strict
 jobs and real phone/desktop browsers. Physical HAT/fixture validation remains
-pending. Parts252/253 energy and diagnostic data, memory programming and
-manufacturer-specific layouts are separate capabilities.
+pending. [Part252 energy snapshots](energy-data.md) provide changing measurements
+separately from these ratings. Part253 diagnostics, generic memory programming
+and manufacturer-specific layouts are separate capabilities.
 
 Primary reference: [python-dali Part251 definitions](https://github.com/sde1000/python-dali/blob/master/dali/memory/oem.py)
 and [memory value decoding](https://github.com/sde1000/python-dali/blob/master/dali/memory/location.py).

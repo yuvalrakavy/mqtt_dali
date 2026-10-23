@@ -8,8 +8,11 @@ The approved architecture and phase acceptance criteria are in
 Current work: Part252 energy/power captures, following accepted Part251 luminaire
 data. The next design reuses the memory owner, checked standard banks, exact
 decimal values and a verified latch transition/release. Its fresh design review
-APPROVES after TMASK/allFF and fresh-snapshot clarifications. Implementation
-starts with the pure decoder and literal fixtures.
+APPROVES after TMASK/allFF and fresh-snapshot clarifications. The decoder,
+independent emulator latch, strict owned MQTT/HTTP/typed command and protected
+dialog are implemented. Thirty-one focused native cases,110 frontend tests and
+real phone/desktop Chrome47.299s pass. Deliberate-defect/source/full acceptance
+checks are in progress; accepted checkpoint counts below remain the prior slice.
 
 Most recent completed capability: Part251 luminaire identity, ratings and text,
 accepted locally at `7938bab`. The protected demo includes explicit luminaire

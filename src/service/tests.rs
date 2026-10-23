@@ -5,6 +5,7 @@ mod buses;
 mod commissioning;
 mod discovery;
 mod emulator_tcp;
+mod energy;
 mod group_output;
 mod groups;
 mod identification;

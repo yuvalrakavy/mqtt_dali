@@ -2,11 +2,12 @@ import type {Controller} from './controller.ts';
 import {continuation} from './client.ts';
 import {busReady,type PhysicalRow,type Snapshot} from './model.ts';
 import {decodeLuminaire,type LuminaireData} from './luminaire.ts';
+import {decodeEnergy,energyBank,type EnergyBank,type EnergyData} from './energy.ts';
 
 export type MemoryReading={kind:'value';raw:number}|{kind:'no_response'}|{kind:'receive_collision'|'transmit_collision';code:number|null};
 export interface Identity {layout:'legacy'|'modern'|'unknown';gtin:string|null;serial_number:string|null;serial_bits:32|64|null;firmware_version:[number,number]|null;hardware_version:[number,number]|null;last_memory_bank:number|null}
-type Operation='read_identity'|'read_memory'|'read_luminaire_data';
-export interface MemoryReport {operation:Operation;outcome:'observed';target:string;target_generation:string;revision:number;bus:number;address:number;space:'outputs'|'inputs';bank:number;start:number;count:number;quality:'complete'|'partial'|'unavailable';version:MemoryReading|null;readings:{address:number;reading:MemoryReading|null}[];identity:Identity|null;luminaire?:LuminaireData;reason:string|null;configuration_changed:false}
+type Operation='read_identity'|'read_memory'|'read_luminaire_data'|'read_energy_data';
+export interface MemoryReport {operation:Operation;outcome:'observed';target:string;target_generation:string;revision:number;bus:number;address:number;space:'outputs'|'inputs';bank:number;start:number;count:number;quality:'complete'|'partial'|'unavailable';version:MemoryReading|null;readings:{address:number;reading:MemoryReading|null}[];identity:Identity|null;luminaire?:LuminaireData;energy?:EnergyData;reason:string|null;configuration_changed:false}
 const byte=(v:unknown):v is number=>typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=255;
 const invalid=():never=>{throw new Error('Device information is incomplete or invalid. Read again.');};
 export function memoryWindow(bank:number,start:number,count:number){
@@ -22,9 +23,12 @@ function reading(v:any):MemoryReading|null{
   return invalid();
 }
 const numeric=(r:MemoryReading|null)=>r?.kind==='value'?r.raw:null;
-export function decodeMemory(v:any,operation:Operation,window?:{bank:number;start:number;count:number}):MemoryReport{
+export function decodeMemory(v:any,operation:Operation,window?:{bank:number;start:number;count:number},selectedEnergyBank?:EnergyBank):MemoryReport{
   if(!v||v.operation!==operation||v.outcome!=='observed'||v.configuration_changed!==false||!['complete','partial','unavailable'].includes(v.quality)||v.reason!==null&&typeof v.reason!=='string'||!Array.isArray(v.readings))return invalid();
-  if(operation==='read_luminaire_data'){
+  if(operation!=='read_energy_data'&&v.energy!==undefined)return invalid();
+  if(operation==='read_energy_data'){
+    if(v.bank!==selectedEnergyBank||v.start!==0||!Number.isInteger(v.count)||v.count<1||v.count>16||v.space!=='outputs'||v.identity!==null||v.luminaire!==undefined)return invalid();
+  }else if(operation==='read_luminaire_data'){
     if(v.bank!==1||v.start!==0||!Number.isInteger(v.count)||v.count<1||v.count>120||v.space!=='outputs'||v.identity!==null)return invalid();
   }else{memoryWindow(v.bank,v.start,v.count);if(v.luminaire!==undefined)return invalid();}
   if(v.readings.length!==v.count)return invalid();
@@ -36,6 +40,8 @@ export function decodeMemory(v:any,operation:Operation,window?:{bank:number;star
   let quality=bytes.every((b:number|null)=>b!==null)?'complete':bytes.some((b:number|null)=>b!==null)?'partial':'unavailable';
   if(operation==='read_memory'){
     if(!window||v.bank!==window.bank||v.start!==window.start||v.count!==window.count||v.identity!==null||version!==null)return invalid();
+  }else if(operation==='read_energy_data'){
+    if(version!==null||selectedEnergyBank===undefined)return invalid();const parsed=decodeEnergy(v.energy,selectedEnergyBank,bytes);if(parsed.partial)quality='partial';
   }else if(operation==='read_luminaire_data'){
     if(version!==null)return invalid();const parsed=decodeLuminaire(v.luminaire,bytes);if(parsed.partial)quality='partial';
   }else{
@@ -71,12 +77,14 @@ export class DeviceInfoScope {
   }
   read(window?:{bank:number;start:number;count:number}){return this.request(window?'read_memory':'read_identity',window);}
   readLuminaire(){return this.request('read_luminaire_data');}
-  private async request(operation:Operation,window?:{bank:number;start:number;count:number}){
-    this.result=null;this.assert();if(operation==='read_luminaire_data'&&this.row.kind!=='output')throw new Error('Select an individual output fixture for luminaire data.');
+  readEnergy(bank:number){return this.request('read_energy_data',undefined,bank);}
+  private async request(operation:Operation,window?:{bank:number;start:number;count:number},bank?:number){
+    this.result=null;this.assert();if((operation==='read_luminaire_data'||operation==='read_energy_data')&&this.row.kind!=='output')throw new Error('Select an individual output fixture for luminaire/energy data.');
     const frozen=window?memoryWindow(window.bank,window.start,window.count):undefined;
-    const r=await this.ui.client.job(this.row.generation,this.row.item.target,operation,frozen??{});
+    const energy=operation==='read_energy_data'?energyBank(bank!):undefined;
+    const r=await this.ui.client.job(this.row.generation,this.row.item.target,operation,energy===undefined?frozen??{}:{bank:energy});
     this.assert();const row=this.row;
     if(!r||r.target!==row.item.target||r.target_generation!==row.generation||r.revision!==this.initial.inventory.revision||r.bus!==row.bus.bus||r.address!==row.item.short_address||r.space!==(row.kind==='output'?'outputs':'inputs'))return invalid();
-    const result=decodeMemory(r,operation,frozen);this.result=result;return structuredClone(result);
+    const result=decodeMemory(r,operation,frozen,energy);this.result=result;return structuredClone(result);
   }
 }

@@ -68,9 +68,14 @@ impl DeviceDriver for DaliProxy {
                 CommandClass::Read,
             )))
             .chain(
-                ["read_memory", "read_identity", "read_luminaire_data"]
-                    .into_iter()
-                    .map(|name| CommandSpec::new(name, CommandClass::Read)),
+                [
+                    "read_memory",
+                    "read_identity",
+                    "read_luminaire_data",
+                    "read_energy_data",
+                ]
+                .into_iter()
+                .map(|name| CommandSpec::new(name, CommandClass::Read)),
             )
             .chain(std::iter::once(CommandSpec::new(
                 "read_group_color",
@@ -1620,10 +1625,24 @@ fn parse(
 ) -> Result<Operation, OpError> {
     if matches!(
         call.command.as_str(),
-        "read_identity" | "read_memory" | "read_luminaire_data"
+        "read_identity" | "read_memory" | "read_luminaire_data" | "read_energy_data"
     ) {
         if target.is_none() {
             return Err(OpError::Rejected("memory target required".into()));
+        }
+        if call.command == "read_energy_data" {
+            #[derive(serde::Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Parameters {
+                bank: u8,
+            }
+            let params: Parameters = decode(call)?;
+            let bank = crate::dali::energy::Bank::new(params.bank)
+                .map_err(|reason| OpError::Rejected(reason.into()))?;
+            return Ok(Operation::Memory(
+                memory::Action::Energy(bank),
+                snapshot.model.inventory().revision,
+            ));
         }
         if call.command != "read_memory" {
             if !call.params.is_empty() {
