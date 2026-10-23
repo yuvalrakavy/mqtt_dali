@@ -1,0 +1,73 @@
+{
+ "rows": {
+  "fixture_status_bypasses_stale_fence": {
+   "last_real": {
+    "at": "2026-10-23T12:59:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:972003f14c32e0b5",
+     "row": "2f7de8b0e64e4399",
+     "test": null
+    },
+    "path": "command",
+    "secs": 9.9,
+    "sha": "f7c9f0bb9c9384987cbbc41089d427e3cdcec258",
+    "verdict": "RED"
+   }
+  },
+  "fixture_status_gates_on_level": {
+   "last_real": {
+    "at": "2026-10-23T13:00:09Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:972003f14c32e0b5",
+     "row": "04ec58a9a18226ac",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.7,
+    "sha": "f7c9f0bb9c9384987cbbc41089d427e3cdcec258",
+    "verdict": "RED"
+   }
+  },
+  "fixture_status_invents_false_for_unknown": {
+   "last_real": {
+    "at": "2026-10-23T13:00:24Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:972003f14c32e0b5",
+     "row": "5aa344f1207bf58a",
+     "test": null
+    },
+    "path": "command",
+    "secs": 15.2,
+    "sha": "f7c9f0bb9c9384987cbbc41089d427e3cdcec258",
+    "verdict": "RED"
+   }
+  },
+  "fixture_status_model_omits_failure_bit": {
+   "last_real": {
+    "at": "2026-10-23T13:00:42Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:f6f72fc22136624f",
+     "row": "debbe476cb13eef1",
+     "test": null
+    },
+    "path": "command",
+    "secs": 17.6,
+    "sha": "f7c9f0bb9c9384987cbbc41089d427e3cdcec258",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

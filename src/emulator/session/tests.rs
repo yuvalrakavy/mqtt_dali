@@ -665,3 +665,6 @@ fn timer_and_uart_output_overflow_fail_explicitly_instead_of_dropping_bytes() {
         .unwrap_err()
         .contains("UART output queue overflow"));
 }
+
+#[path = "status_tests.rs"]
+mod fixture_status;

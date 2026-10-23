@@ -167,6 +167,27 @@ off reading. A missing fixture stays in Inventory and does not prevent controlli
 another healthy fixture. Available is not a certification that a fixture is
 fault-free. Saved inventory alone never proves physical presence.
 
+Individual output State also includes the fixture's reported status:
+
+| Read-only property | Meaning |
+|---|---|
+| `FixtureStatusRaw` | Native QUERY STATUS byte, 0..255, or null |
+| `FixtureStatusQuality` | `current`, `unobserved`, `unavailable` or `stale` |
+| `GearFailure`, `LampFailure` | Driver-reported gear or lamp fault |
+| `LampOn`, `LimitError`, `FadeRunning`, `ResetState` | Reported operating flags |
+| `MissingShortAddress`, `PowerFailure` | Reported address or power condition |
+
+All eight flags are booleans only when FixtureStatusQuality is current; otherwise
+raw and flags are explicitly null, clearing previous merged values. A valid
+status byte is independently current even when brightness is missing or MASK.
+Status FF means all eight bits are set. These properties are rejected in Desired.
+A reported fault does not make a responding fixture unavailable or change its
+brightness. Check controller availability as well as FixtureStatusQuality before
+acting on retained data. Status is sampled on ordinary output reads/writes,
+refresh and existing polling; no extra polling loop is introduced. No aggregate
+group lamp-failure flag is inferred. See [fixture status](gear-settings.md) for
+the compact row indicator and [emulator controls](emulator-web.md) for simulation.
+
 Colour State additionally reports `ColorRepresentation` (the saved selection),
 `ActiveColorRepresentation` (the sampled native format), `ColorAvailable`,
 `ColorQuality`, `ColorCapabilities` and the nine colour scalar properties above.

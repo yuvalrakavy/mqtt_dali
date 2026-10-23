@@ -1,3 +1,4 @@
+import { FixtureStatus } from './fixture-status-ui.tsx';
 import { InputSettings } from './input-settings-ui.tsx';
 import { OutputSettings } from './output-settings-ui.tsx';
 import { Feedback } from './feedback-ui.tsx';
@@ -47,7 +48,7 @@ function DeviceRow({row,recover,select}:{row:Row;recover:(row:Row)=>void;select?
   const inputState=inputDisplay(state);
   const percent=typeof state.Brightness==='number'?Math.round(state.Brightness*100):null;
   return <div class={`device-row ${row.kind==='output'?'output-grid':'input-grid'} ${blinking?'identifying':''} ${activity&&Date.now()-activity.received<5000?'active-input':''}`} data-device-key={row.key}>
-    <span class="address">{row.parent?`${row.parent.short_address} / ${row.item.number}`:row.item.short_address}</span><NameField row={row}/><span class="device-type">{type}</span>
+    <span class="address">{row.parent?`${row.parent.short_address} / ${row.item.number}`:row.item.short_address}</span>{row.kind==='output'?<div class="fixture-name"><NameField row={row}/><FixtureStatus row={row}/></div>:<NameField row={row}/>}<span class="device-type">{type}</span>
     {row.kind==='output'?<><button class={`power ${state.PowerState===true?'on':state.PowerState===false?'off':'unknown'}`} aria-label={`Power ${row.item.name}`} aria-pressed={typeof state.PowerState==='boolean'?state.PowerState:'mixed'} disabled={!ready||!!ui.busy||blinking} onClick={()=>void ui.run(()=>ui.apply(row,{PowerState:state.PowerState!==true}))}>{state.PowerState===true?'On':state.PowerState===false?'Off':'?'}</button>
       <div class="brightness"><input type="range" min="0" max="100" value={level??percent??0} aria-label={`Brightness ${row.item.name}`} disabled={!ready||!!ui.busy||blinking||percent===null} onInput={e=>setLevel(e.currentTarget.value)} onChange={e=>{const brightness=Number(e.currentTarget.value)/100;void ui.run(async()=>{try{await ui.apply(row,{Brightness:brightness});}finally{setLevel(null);}});}}/><output>{level??percent??'—'}{percent!==null?'%':''}</output></div>
       {hasColor?<button class="colour-button" aria-label={`Color ${row.item.name}`} disabled={!ready||!!ui.busy||blinking} onClick={()=>setColour(true)}>{row.item.color_representation==='temperature'&&typeof state.ColorTemperature==='number'?`${Math.round(state.ColorTemperature)} K`:row.item.color_representation==='xy'?'xy controls':row.item.color_representation==='rgbwaf'?'RGB controls':'Color'}</button>:<span class="colour-button" aria-hidden="true"/>}

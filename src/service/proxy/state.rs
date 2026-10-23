@@ -96,6 +96,7 @@ pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
                 values.insert("PowerState".into(), Value::Bool(power));
                 values.insert("Brightness".into(), Value::from(brightness));
             }
+            project_fixture_status(&mut values, observation, lifecycle(snapshot, bus));
             super::colour::project(
                 &mut values,
                 projection.color_representation,
@@ -215,5 +216,52 @@ impl Watcher {
                 return;
             }
         }
+    }
+}
+
+/// Status is independently readable when actual-level evidence is partial.
+fn project_fixture_status(
+    values: &mut PropertyMap,
+    observation: Option<&output::Observation>,
+    live: bool,
+) {
+    use crate::dali::gear::{QueryReply, QueryValue, Status};
+    let quality = match observation {
+        None => "unobserved",
+        Some(value) if !live || value.quality == output::Quality::Stale => "stale",
+        Some(value) if matches!(value.status, Some(QueryReply::Value(QueryValue::Status(_)))) => {
+            "current"
+        }
+        Some(_) => "unavailable",
+    };
+    let status = observation
+        .filter(|_| quality == "current")
+        .and_then(|value| match value.status {
+            Some(QueryReply::Value(QueryValue::Status(status))) => Some(status),
+            _ => None,
+        });
+    values.insert("FixtureStatusQuality".into(), Value::from(quality));
+    values.insert(
+        "FixtureStatusRaw".into(),
+        status
+            .map(Status::raw)
+            .map(Value::from)
+            .unwrap_or(Value::Null),
+    );
+    // Explicit nulls clear prior merged SDK State when evidence is no longer current.
+    for (name, value) in [
+        ("GearFailure", status.map(Status::gear_failure)),
+        ("LampFailure", status.map(Status::lamp_failure)),
+        ("LampOn", status.map(Status::lamp_on)),
+        ("LimitError", status.map(Status::limit_error)),
+        ("FadeRunning", status.map(Status::fade_running)),
+        ("ResetState", status.map(Status::reset_state)),
+        (
+            "MissingShortAddress",
+            status.map(Status::missing_short_address),
+        ),
+        ("PowerFailure", status.map(Status::power_failure)),
+    ] {
+        values.insert(name.into(), value.map(Value::Bool).unwrap_or(Value::Null));
     }
 }

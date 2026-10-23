@@ -158,3 +158,31 @@ tab, and observes the bridge's output change in that tab. Artifacts are retained
 at the path printed on completion. Without the environment flag it uses the
 existing PTY fixture. This is local Chrome viewport coverage, not physical
 iPhone/Safari or HAT certification.
+
+## Simulate a lamp failure
+
+In **Live installation**, select **Simulate lamp failure** on the chosen output
+card. Its stable emulator ID selects that fixture even if the bridge has renamed
+it. The control sets the native QUERY STATUS lamp-failure bit without changing
+level, color, address, groups, scenes or another fixture. It is a reported fault
+simulation; the model does not simulate electrical or optical failure.
+
+In the bridge tab, use the output's **Actions → Read current values** (or wait
+for its existing polling). A red icon appears beside its name. Open it for all
+status flags and an explicit refresh. Clear the emulator checkbox and read again
+to clear the icon. A failure can be reported while the fixture is on or off.
+
+The fixture editor also has **Initial lamp failure** for draft scenarios and new
+live outputs. The optional output JSON field `lamp_failure` is a strict boolean,
+defaults to false, and is omitted when false. Old version1 scenarios still load.
+HAT reboot retains the fault. **Save current state as scenario** and export retain
+it; Reset restores the saved scenario's setting.
+
+The same HTTP/control-socket action is:
+
+```json
+{"op":"set_lamp_failure","id":"ceiling","failed":true}
+```
+
+Unknown IDs and input-module IDs fail without changing fixtures. Set failed=false
+to clear the bit. The emulator never publishes MQTT or calls the bridge.

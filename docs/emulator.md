@@ -396,3 +396,12 @@ SIGINT/SIGTERM stops under bounded waits, including with unread output. Logging
 uses tracing-init's normal configuration. All tests use private PTYs/sockets and
 no live broker. Run `cargo nextest run --target <host-target>`; safety controls
 are in `v2-emulator-controls.toml`. P2 does not certify DALI or physical firmware.
+
+## Reported lamp failures
+
+Outputs support the optional boolean `lamp_failure` scenario field and strict
+`set_lamp_failure` control by native output ID. It ORs bit0x02 into QUERY STATUS
+while preserving the existing lamp-on bit and all other native values. It survives
+HAT reboot and capture/roundtrip; reset restores the saved scenario. See
+[the emulator UI guide](emulator-web.md#simulate-a-lamp-failure) for both UI controls
+and the control JSON. This simulates reported status rather than light output.

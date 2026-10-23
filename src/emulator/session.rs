@@ -74,6 +74,10 @@ pub enum Control {
         id: String,
         short_address: Option<u8>,
     },
+    SetLampFailure {
+        id: String,
+        failed: bool,
+    },
     BusPower {
         bus: u8,
         powered: bool,
@@ -465,6 +469,7 @@ impl State {
             } => {
                 self.model.set_input_value(&id, instance, bytes)?;
             }
+            Control::SetLampFailure { id, failed } => self.model.set_lamp_failure(&id, failed)?,
             Control::BusPower { bus, powered } => {
                 self.model.set_power(bus, powered)?;
                 self.enqueue(record(bus, if powered { "D24" } else { "D04" }))?;

@@ -55,6 +55,8 @@ pub struct Output {
     pub random_address: Option<u32>,
     #[serde(default)]
     pub level: u8,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub lamp_failure: bool,
     #[serde(default)]
     pub groups: u16,
     #[serde(default = "scenes")]

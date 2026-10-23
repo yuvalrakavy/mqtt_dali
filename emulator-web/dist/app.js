@@ -443,6 +443,7 @@ async function X(e, t) {
 }
 function xe(e, t) {
 	if (!e || typeof e != "object" || typeof e.id != "string" || !e.id) throw Error("Fixture ID is required");
+	if (!t && e.lamp_failure !== void 0 && typeof e.lamp_failure != "boolean") throw Error("lamp_failure must be a boolean");
 	if (t) {
 		if (!Array.isArray(e.instances) || e.instances.length > 32 || e.instances.some((e) => !Number.isInteger(e) || e < 0 || e > 31)) throw Error("Input instances must be an array of native types 0–31");
 		for (let t of [
@@ -688,6 +689,23 @@ function Te() {
 												t.short_address === null ? "unassigned" : t.short_address,
 												" · native ID"
 											] }),
+											/* @__PURE__ */ J("label", {
+												class: "checkbox-field",
+												children: [/* @__PURE__ */ J("input", {
+													type: "checkbox",
+													"aria-label": `Lamp failure ${t.id}`,
+													checked: t.lamp_failure ?? !1,
+													onChange: (e) => void w({
+														op: "set_lamp_failure",
+														id: t.id,
+														failed: e.currentTarget.checked
+													}, "Lamp failure updated; the bridge observes it on its next read")
+												}), "Simulate lamp failure"]
+											}),
+											t.lamp_failure && /* @__PURE__ */ J("span", {
+												class: "tag fault",
+												children: "Lamp failure"
+											}),
 											/* @__PURE__ */ J("div", {
 												class: "level",
 												children: [/* @__PURE__ */ J("strong", { children: [t.level, /* @__PURE__ */ J("small", { children: " / 254" })] }), /* @__PURE__ */ J("progress", {
@@ -1432,6 +1450,14 @@ function Ae({ edit: e, close: t, save: n }) {
 								onInput: (e) => l("groups", Number(e.currentTarget.value))
 							})] })
 						]
+					}),
+					/* @__PURE__ */ J("label", {
+						class: "checkbox-field",
+						children: [/* @__PURE__ */ J("input", {
+							type: "checkbox",
+							checked: r.lamp_failure ?? !1,
+							onChange: (e) => l("lamp_failure", e.currentTarget.checked)
+						}), "Initial lamp failure"]
 					}),
 					/* @__PURE__ */ J("label", { children: ["16 scene levels (255 = no participation)", /* @__PURE__ */ J("input", {
 						value: (r.scenes ?? Array(16).fill(255)).join(","),

@@ -7,3 +7,5 @@
 .input-timer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.input-settings-form .input-timer-grid label{display:grid;gap:5px;min-width:0;font-size:12px}.input-timer-grid input{width:100%;min-width:0;box-sizing:border-box}
 .input-settings-form .switching-threshold-grid label.check-field{display:flex;align-items:center;gap:8px;margin:4px 0}.switching-threshold-grid input[type=checkbox]{width:20px;flex:none}
 @media(max-width:600px){.input-timer-grid.switching-threshold-grid{grid-template-columns:minmax(0,1fr)}}
+
+.fixture-name{display:flex;align-items:center;gap:4px;min-width:0}.fixture-name>.name-cell{flex:1;min-width:0}.fixture-status{flex:0 0 26px;width:26px;min-height:32px;padding:3px;border-color:transparent;background:transparent;color:#7c929e}.fixture-status svg{display:block;width:18px;height:18px;margin:auto}.fixture-status.fault{color:#b63832}.fixture-status.warning{color:#956100}.fixture-status-list{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 18px}.fixture-status-list dt,.fixture-status-list dd{margin:0}.fixture-status-list dd{font-variant-numeric:tabular-nums}

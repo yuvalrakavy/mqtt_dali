@@ -1,0 +1,38 @@
+# Scoped fixture-status safeguards. Every mutation must reach its named assertion.
+[[control]]
+name = "fixture_status_bypasses_stale_fence"
+file = "src/service/proxy/state.rs"
+anchor = 'Some(value) if !live || value.quality == output::Quality::Stale => "stale",'
+replacement = 'Some(value) if !live && value.quality == output::Quality::Stale => "stale",'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(fixture_status_missing_stale)"]
+expect_text = "missing or incorrect fixture status quality"
+
+[[control]]
+name = "fixture_status_gates_on_level"
+file = "src/service/proxy/state.rs"
+anchor = '''let status = observation
+        .filter(|_| quality == "current")'''
+replacement = '''let status = observation
+        .filter(|value| quality == "current" && value.quality == output::Quality::Current)'''
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(fixture_status_remains_current)"]
+expect_text = "assertion `left == right` failed"
+
+[[control]]
+name = "fixture_status_invents_false_for_unknown"
+file = "src/service/proxy/state.rs"
+anchor = 'value.map(Value::Bool).unwrap_or(Value::Null)'
+replacement = 'value.map(Value::Bool).unwrap_or(Value::Bool(false))'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(fixture_status_missing_stale)"]
+expect_text = "unknown fixture status retained or invented"
+
+[[control]]
+name = "fixture_status_model_omits_failure_bit"
+file = "src/emulator/model.rs"
+anchor = 'if gear.config.lamp_failure { 2 } else { 0 }'
+replacement = 'if gear.config.lamp_failure { 0 } else { 0 }'
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--lib","-E","test(fixture_status_literal_queries)"]
+expect_text = "native status omitted lamp failure bit"

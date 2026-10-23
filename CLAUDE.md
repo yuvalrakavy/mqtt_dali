@@ -586,3 +586,11 @@ stops or panics the bridge. tracing-init bounds the rest: starting the file and 
 takes at most 5 s (then the destination is skipped, WARN `log_destination_skipped`), console, file
 and GELF writes never block (a full queue drops lines, WARN `log_lines_dropped`), and dropping the
 guard takes at most about 4 s.
+
+Individual output State also projects eight read-only native fixture status flags,
+FixtureStatusRaw and independent FixtureStatusQuality (unknown/stale values are
+explicit nulls). See docs/mqtt-outputs.md and docs/gear-settings.md. Output rows
+show compact faults/unknown status; the read-only dialog follows SSE observations.
+The independent emulator supports optional output lamp_failure and strict
+set_lamp_failure by native output ID, with live/initial UI checkboxes. See
+docs/emulator-web.md. Never infer optical output from native level or fault bits.

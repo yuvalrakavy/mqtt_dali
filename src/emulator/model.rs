@@ -418,6 +418,16 @@ impl Model {
         }
         Err("fixture ID does not exist".into())
     }
+    pub fn set_lamp_failure(&mut self, id: &str, failed: bool) -> Result<(), String> {
+        let gear = self
+            .buses
+            .iter_mut()
+            .flat_map(|bus| bus.outputs.iter_mut())
+            .find(|gear| gear.config.id == id)
+            .ok_or("output ID does not exist")?;
+        gear.config.lamp_failure = failed;
+        Ok(())
+    }
     pub fn set_power(&mut self, number: u8, powered: bool) -> Result<(), String> {
         let bus = self
             .buses
@@ -890,7 +900,10 @@ impl Model {
                     }
                     None
                 }
-                0x90 => Some(if gear.config.level > 0 { 4 } else { 0 }),
+                0x90 => Some(
+                    (if gear.config.level > 0 { 4 } else { 0 })
+                        | if gear.config.lamp_failure { 2 } else { 0 },
+                ),
                 0x91 => Some(255),
                 0x97 => Some(8),
                 0x98 => Some(gear.dtr[0]),
@@ -964,3 +977,6 @@ mod sensor_settings_tests;
 mod switching_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod status_tests;

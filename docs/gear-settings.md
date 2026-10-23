@@ -23,6 +23,20 @@ An uncertain or failed save clears actionable values until explicit Refresh;
 it never silently resends the patch. Names, bindings, groups and saved bridge
 configuration are unchanged. No automatic reset or fixture-mode change is sent.
 
+## Fixture status
+
+Each output row shows a compact red warning for a reported lamp or gear failure,
+or amber for a limit, missing-address or power-failure condition. A neutral question
+icon means status is unknown, unavailable or stale. A current reading with none
+of these conditions has no icon. Lamp-on, fade-running and reset flags remain
+informational. Input rows do not show fixture fault indicators.
+
+Select the icon to see all eight flags, the native status byte and its freshness.
+**Read current values** refreshes through the normal output read. The open dialog
+follows current observations, including when a fault clears or a bus disconnects.
+A clear reading means no fault was reported; it does not measure illumination.
+Use [MQTT status fields](mqtt-outputs.md) for automation without the web UI.
+
 ## MQTT, HTTP and typed service
 
 Generic MQTT consumers use `read_output_settings` with an individual output target
