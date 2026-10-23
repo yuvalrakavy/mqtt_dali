@@ -5,20 +5,76 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
-Current work: device identity and bounded read-only memory-bank access for output
-fixtures and input modules. Native encoding, independent emulator profiles and
-owner/command plumbing are in progress; the protected device-information dialog
-and acceptance checks follow. Spec:
-`superpowers/specs/2026-10-23-dali-v2-identity-memory.md`.
+Current work: typed Part251 luminaire data, using the accepted memory owner.
+The design adds OEM identity/ratings/text to explicit read reports and the device
+information dialog. Its fresh design review APPROVES with a distribution-mask
+clarification applied; implementation follows the fail-first phases in
+`superpowers/specs/2026-10-23-dali-v2-luminaire-data.md`.
 
-Most recent completed capability: DT8 hardware group color, accepted locally.
-The slice reuses native group operations and individual DT8 readback, adds optional
-group representation selection and mixed color State, and extends the protected
-Groups screen. Remaining bridge capabilities are listed below and in the support
-matrix. Split-address RGB/RGBW composition
+Most recent completed capability: read-only device identity and memory-bank access,
+accepted locally at `9a466c7`. The protected demo now includes Device information on
+fixtures and input modules. Remaining bridge capabilities are listed below and
+in the support matrix. Split-address RGB/RGBW composition
 belongs to Home equipment/Store integration under the approved architecture §9;
 the bridge already supplies its individual and group brightness bindings.
-Implementation spec: `superpowers/specs/2026-10-23-dali-v2-group-color.md`.
+Implementation spec: `superpowers/specs/2026-10-23-dali-v2-identity-memory.md`.
+
+## P4 — device identity and read-only memory
+
+Implementation `41c2b0f`, wait registration `a335ccd` and admission fix `9a466c7` add
+strict `read_identity`/`read_memory` MQTT Read commands, authenticated jobs and typed
+service APIs. One existing Memory Work/owner/permit selects DTR1 and reloads DTR0
+per location under a15s original deadline. Original generation, parsed command
+revision, final physical stamp and caller-reply checks remain. Reads preserve
+saved names/Origins/configuration, native settings/levels/colors/groups/scenes
+and existing output/group/input/feedback observations. No worker/cache/retry or
+memory write. Output and input short-address spaces remain independent.
+
+Raw FF/zero, silence, collision directions/codes and unvisited locations remain
+distinct. Public ranges stay1–64 bytes within locations0–254, banks0–255.
+Bank0 uses observed version1's 32-bit legacy serial or modern8–254's 64-bit layout;
+unknown versions read common bytes and never guess serial/hardware. Serial is
+fixed-width uppercase hex; GTIN is a padded decimal string. Truncated/reserved
+headers and all-FF multi-byte fields remain explicit unknown/partial evidence.
+Optional independent emulator profiles preserve old scenarios and capture/reset/
+reboot behavior. The existing scenario editor configures raw bytes and holes.
+Guide: [device information](device-information.md).
+
+The compact protected Device information dialog supports identity refresh and
+advanced bounded raw reads on output/input-module action menus. Frozen scopes,
+strict report decoding and synchronous retirement prevent old results populating
+another item. Failed/new invalid reads clear previous evidence. Input instances
+do not offer the module action. Phone/desktop layout and menu/dialog scrolling
+use the existing interface.
+
+Final acceptance: **811/811 native tests** across eleven binaries;
+**99/99 frontend tests**; scoped real Chrome phone/desktop workflow9.913s and complete linked workflow154.708s
+(browser run separately from the native suite). Eleven focused memory cases cover
+both terminal policies, literal nonzero-offset UART/collisions, independent TCP
+profiles, exact serials, unknown/truncated/reserved/absent identity, strict generic
+MQTT/HTTP reads, preserved state/configuration and original revision/deadline/epoch.
+Six deliberate controls and an extra physical-epoch defect each returned their
+named RED. The queued-job test first failed against the original implementation;
+both identity/raw reads reject stale admission and fresh reads succeed after fix.
+
+Fresh depth review found one P2: queued protected jobs renewed the inventory
+revision despite a continuing fixture generation. Parse now carries revision into
+the common service; existing final checks remain. The scoped confirming review
+of `9a466c7` APPROVES. Reviews are same-family/source-only; root ran runtime checks.
+Strict Clippy, Pi library/four binaries, wait lint0, changed formatting, both asset
+reproductions, affected control plans and whitespace pass.
+
+The private demo was rebuilt/restarted at its existing endpoints. Phone/desktop
+fixture/module reads keep absent profile data unknown. All five fixtures, exact
+saved bytes, brightness, colors/modes, addresses, groups, scenes, settings and
+faults are retained. Demo processes and read-only progress pane remain live.
+No physical HAT, home broker, Store data, main merge, push/publication or release.
+
+Evidence: `/tmp/dali-memory-{focused,fixed-focused,prepared-red,browser2,web-test}.log`,
+`/tmp/dali-memory-final-*.log`, `/tmp/dali-memory-mutation-results.json`,
+`/tmp/dali-memory-mutation-*.log`, `/tmp/dali-memory-plans-fixed.log`,
+`/tmp/dali-memory-demo-{preflight,restart,check}.log` and
+`/tmp/dali-browser-9ecc8e73ca7b7e0c7d41e400657d3633` (complete workflows).
 
 ## P4 — DT8 hardware group color
 
@@ -3139,7 +3195,7 @@ no verification. Physical hardware validation remains outstanding.
 | P1 UART | Implemented and verified locally | Physical firmware transcripts remain a hardware-validation item; conservative unverified policy is the default |
 | P2 ATX emulator | Core, persistent TCP connector/listener, configurable web UI and linked browser tabs implemented and verified locally | P4 extensions and physical validation remain explicit |
 | P3 BridgeKit/service | Codec, lifecycle, inventory, persistence, fencing, managed service/UART and canonical daemon implemented | Capability paths; local shared dependency publication before portable clones/releases |
-| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual and group DT8 control with durable representation selection implemented | Retained DT7 metadata/presentation, specialist settings/diagnostics, feedback parameters/source routing, remaining color modes/settings, identity/memory, data Parts 251–253 and DT1 emergency |
+| P4 capabilities | Quiet recovery, native/scalar individual and group outputs, managed fixture settings/status, DT7 protocol/relay settings and virtual scene capture, named inputs/events/settings/button timing/base sensor parameters/feedback, individual/group DT8 control and read-only identity/memory implemented | Part251 luminaire data next; retained DT7 metadata/presentation, specialist settings/diagnostics, feedback parameters/source routing, remaining color modes/settings, data Parts252–253 and DT1 emergency |
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
