@@ -37,13 +37,32 @@ expiry precision check was corrected only in the test; final acceptance passed.
 The foundation correction is confirmed locally. Opt-in BridgeKit request-lifetime
 enforcement is now complete: DALI uses a 180-second ceiling, while other bridges
 retain their defaults and public SDK structs remain unchanged. Shared color
-components/equipment and split-address composition now pass the focused integration
-checks and actual MQTT/TCP-emulator path at Store `896ab2213`. Both guard
-mutations detected their faults. Final review found same-channel request cleanup
-and an old-template HA-provider ordering issue; their regression fixes are being
-checked. Next are native input components and opaque
-hardware scenes in presets.
+components/equipment and split-address composition are now ready locally after
+the final review corrections at Store `170e3d777`. Next are native input components
+and opaque hardware scenes in presets.
 No household migration or physical hardware validation has occurred.
+
+## 24 October — Shared color ready locally
+
+The color slice is complete locally. Native DT8 representations and independent
+RGB/RGBW output/group bindings pass the actual MQTT/TCP-emulator path. The final
+correction passes **30/30 color tests**, **5/5 native migration tests**, strict
+workspace Clippy, **15 lint rules**, and four practical inventory phases with
+unchanged replays (four buses, 256 outputs and 48 four-button panels).
+
+The final review fixed two real issues: cleanup could erase a newer same-channel
+request, and an old Store artifact needed HA components installed before current
+DALI definitions. Both now have regressions. The re-anchored cleanup control again
+fails under deliberate guard removal; both controls have no stale anchors and the
+sources are restored. The confirming reader approves Store `170e3d777`; reviews
+were same-family. Earlier 108 compatibility checks and native/split emulator
+acceptance are carried from `896ab2213`.
+
+P8 remains in progress: native input components/actions and feedback, DT7 on/off
+Home compatibility, opaque hardware scenes, scene-first mixed presets and combined
+acceptance. The native input design review is complete and its missing-component
+test has failed as expected before implementation. Physical HAT validation and
+PanelScript presentation remain outside this local completion claim.
 
 ## 24 October — Store color binding checks pass
 
@@ -103,11 +122,12 @@ P8 can become **ready locally** once all of these boundaries are complete:
   original request expiry through retries, renames and process restarts.
 - [x] Opt-in bridge-side three-minute request lifetime, preserving other bridges'
   defaults and the separate v1 runtime.
-- [ ] Shared representation-specific color components/equipment: one DT8 binding
+- [x] Shared representation-specific color components/equipment: one DT8 binding
   and three/four independent RGB/RGBW channel bindings, including DALI groups.
   Preserve color independently of power/master brightness and avoid double scaling
   or readback feedback loops. Preserve existing object identities/bindings when
-  refining capabilities; verify ordinary dimmer/on-off compatibility too.
+  refining capabilities; ordinary dimmer compatibility is covered.
+- [ ] DT7 switching projection and matching on/off Home binding compatibility.
 - [ ] Native input components and bindings: decoded button events, maintained
   switches, occupancy and supported sensor observations. Start unknown without
   fresh data and use the native classifications without another gesture recognizer.
@@ -3692,7 +3712,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress: foundation and request lifetime complete; 108 color/binding checks and linked emulator path pass; final review corrections under test | Finish color review; native input components, opaque hardware scenes and scene-first mixed presets; combined acceptance |
+| P8 Store integration | In progress: foundation, command lifetime and color complete; native input work started | Native input components, DT7 on/off Home compatibility, opaque hardware scenes and scene-first mixed presets; combined acceptance |
 | P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
