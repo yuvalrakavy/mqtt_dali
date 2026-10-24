@@ -42,6 +42,24 @@ the final review corrections at Store `170e3d777`. Next are native input compone
 and opaque hardware scenes in presets.
 No household migration or physical hardware validation has occurred.
 
+## 24 October — Native inputs in final review
+
+The native input implementation and controls are frozen at Store `d8af66168`.
+**116/116** DALI v2 and existing gesture/keypad compatibility checks pass. Actual
+private MQTT → bridge → TCP HAT emulator acceptance passes: one-bit switches,
+occupancy/movement, exact sensor readings, one Home action per native click,
+repeated equal actions, and independent module/instance indicator feedback.
+All four new controls and the re-anchored color cleanup control produce their
+expected assertion failures when the corresponding guard is removed. Sources
+are restored; the control tables report no stale anchors.
+
+Two fresh source reviews found two input corrections: predecessor cached readings
+and feedback need complete projection on unchanged inventory replay, and partial
+raw/resolution updates need effective-pair validation. Four focused regressions
+reproduce both findings with assertion failures. The correction run is underway;
+native inputs are not marked complete until it and the confirming review pass.
+No additional broad Rust/UI rerun is needed for this SDL-only correction.
+
 ## 24 October — Shared color ready locally
 
 The color slice is complete locally. Native DT8 representations and independent
@@ -139,7 +157,8 @@ P8 can become **ready locally** once all of these boundaries are complete:
   plus relevant upgrade and existing-driver compatibility checks, contributor
   documentation and final scoped review.
 
-The next implementation slice is shared color components and equipment. PanelScript
+The current implementation slice is native input integration, followed by DT7 on/off
+binding compatibility and opaque scenes in mixed presets. PanelScript
 touch-panel design is outside this effort. Physical HAT/fixture acceptance and P9
 release/deployment preparation remain separate; locally ready does not mean deployed
 or hardware validated.
@@ -3712,7 +3731,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress: foundation, command lifetime and color complete; native input work started | Native input components, DT7 on/off Home compatibility, opaque hardware scenes and scene-first mixed presets; combined acceptance |
+| P8 Store integration | In progress: foundation, command lifetime and color complete; native inputs in final review | DT7 on/off Home compatibility, opaque hardware scenes and scene-first mixed presets; combined acceptance |
 | P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
