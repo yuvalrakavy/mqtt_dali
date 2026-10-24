@@ -6,14 +6,14 @@ The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
 Most recent verified milestone: compact current identity snapshots replace
-unbounded rename history. Native868/868 and frontend125/125 pass. The complete
+unbounded rename history. **868/868 native tests** and **125/125 frontend tests** pass. The complete
 linked phone/desktop TCP Chrome workflow passes in172.294s. Five compact-identity
 mutation controls fail for their expected behavioral assertions. Strict v2
 production Clippy, all-bin Pi compile checks, changed-file formatting, asset
 consistency and whitespace checks pass. Physical hardware validation remains
 pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
-0438fea and c52ef8b. The compact slice is frozen at787c011 plus its review fix;
-one final confirming read of that correction remains.
+0438fea and c52ef8b. The compact slice is accepted locally at787c011 plus5c601e0;
+the final confirming source review approves both corrections.
 
 Current work: the owner-approved compact identity correction, followed by P8
 Store integration in `/Users/yuval/Documents/Projects/Store-t3`, branch
@@ -23,7 +23,7 @@ installation. It exposed unbounded history. The owner approved replacing it with
 current identity snapshots; all shared runtime limits remain unchanged.
 No household migration or physical hardware validation has occurred.
 
-## Compact identity correction — final confirming review
+## Compact identity correction — accepted locally
 
 Bridge wire schema2 now publishes only current Origin/projection/intent-barrier
 records, including parent Origin for input instances. Names remain public names.
@@ -46,7 +46,8 @@ schema downgrade hole and a missing positive fresh-intent case. The downgrade
 regression was behavioral RED, then fixed; fresh intent after revocation is
 positively tested and its conditional ratcheting mutant is RED. Current legacy
 adversarial fixtures explicitly remain on schema1 so the new refusal cannot make
-them pass vacuously. One confirming review remains. Logs `/tmp/dali-compact-{affected2,native-final,web,controls,production-clippy,pi,browser}.log`.
+them pass vacuously. The confirming delta review finds both findings addressed, with no serious
+unresolved defect (`/tmp/dali-compact-confirm.md`). Logs `/tmp/dali-compact-{affected2,native-final,web,controls,production-clippy,pi,browser}.log`.
 
 Two required fresh design readers (Astra/high and Sol/high, same GPT family)
 identified and resolved raw-file comparison, retained-vs-memory durability,

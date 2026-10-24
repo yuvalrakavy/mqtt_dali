@@ -127,8 +127,9 @@ outside this slice; changed Rust files are formatted. No physical validation.
 Depth/test source review found a schema2-to-newer-schema1 downgrade in the example
 consumer and missing fresh-intent-after-barrier coverage. Add behavioral RED and
 refuse downgrade; keep explicit old-wire tests on schema1; prove fresh intent
-survives ordinary moves and the conditional over-revocation mutant fails. One
-confirming delta read follows. Reports /tmp/dali-compact-code-depth.md and
+survives ordinary moves and the conditional over-revocation mutant fails. The
+confirming delta read approves both corrections without an unresolved serious
+defect; report /tmp/dali-compact-confirm.md. Reports /tmp/dali-compact-code-depth.md and
 /tmp/dali-compact-test-review.md; these are same-GPT-family source reviews, not an
 independently executed mutation campaign. Actual guard mutations were executed
 by the parent through the registered negative-control driver.
