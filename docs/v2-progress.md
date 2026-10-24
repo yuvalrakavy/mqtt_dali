@@ -38,9 +38,34 @@ The foundation correction is confirmed locally. Opt-in BridgeKit request-lifetim
 enforcement is now complete: DALI uses a 180-second ceiling, while other bridges
 retain their defaults and public SDK structs remain unchanged. Shared color
 components/equipment and split-address composition are now ready locally after
-the final review corrections at Store `170e3d777`. Next are native input components
-and opaque hardware scenes in presets.
+the final review corrections at Store `170e3d777`. Native input components and DT7 Home
+bindings are also complete locally. Opaque hardware scenes and preset ordering
+remain.
 No household migration or physical hardware validation has occurred.
+
+## 24 October — Native inputs and DT7 ready locally
+
+Native input integration is complete locally at Store `d47ef94ed`, with final
+acceptance recorded at `705a3b3c5`. The two review corrections pass **58/58 affected
+input/color checks**, **4/4 budget-scope checks** and **15 lint rules**. The fresh
+confirming reader approves. The earlier **116/116** DALI/gesture/keypad result is
+carried for unaffected paths. Actual MQTT/TCP-HAT input acceptance passes again.
+
+All four practical inventory phases and their identical replays pass with **240
+populated predecessor input caches** each: four buses, 256 outputs (255 after
+removal), 48 four-button panels. Raw readings, sensor values and independent
+indicator feedback populate completely without new intent or renewed deadlines.
+The existing bounded inventory allowance covers the cached field writes.
+
+DT7 individual and group bindings through the existing Home `OnOffLight` also
+pass actual MQTT/TCP-emulator acceptance: confirmed native on/off levels 254/0,
+with an ordinary dimmer still reaching level 64. The guide documents selecting
+`BindMap="PowerState"` after creation and before binding; shared legacy equipment
+behavior is unchanged. Physical HAT/fixture validation remains pending.
+
+Remaining P8 work: opaque hardware-scene equipment/recall, scene-first mixed
+presets with individual overrides, and combined preset acceptance. PanelScript
+presentation is outside scope. P8 remains in progress.
 
 ## 24 October — Native inputs in final review
 
@@ -145,8 +170,8 @@ P8 can become **ready locally** once all of these boundaries are complete:
   Preserve color independently of power/master brightness and avoid double scaling
   or readback feedback loops. Preserve existing object identities/bindings when
   refining capabilities; ordinary dimmer compatibility is covered.
-- [ ] DT7 switching projection and matching on/off Home binding compatibility.
-- [ ] Native input components and bindings: decoded button events, maintained
+- [x] DT7 switching projection and matching on/off Home binding compatibility.
+- [x] Native input components and bindings: decoded button events, maintained
   switches, occupancy and supported sensor observations. Start unknown without
   fresh data and use the native classifications without another gesture recognizer.
 - [ ] Opaque DALI scene targets, generic HardwareScene equipment and shared recall
@@ -157,8 +182,8 @@ P8 can become **ready locally** once all of these boundaries are complete:
   plus relevant upgrade and existing-driver compatibility checks, contributor
   documentation and final scoped review.
 
-The current implementation slice is native input integration, followed by DT7 on/off
-binding compatibility and opaque scenes in mixed presets. PanelScript
+The current implementation slice is opaque hardware scenes and ordered mixed
+presets. PanelScript
 touch-panel design is outside this effort. Physical HAT/fixture acceptance and P9
 release/deployment preparation remain separate; locally ready does not mean deployed
 or hardware validated.
@@ -3731,7 +3756,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress: foundation, command lifetime and color complete; native inputs in final review | DT7 on/off Home compatibility, opaque hardware scenes and scene-first mixed presets; combined acceptance |
+| P8 Store integration | In progress: foundation, command lifetime, color, native inputs and DT7 complete | Opaque hardware scenes and scene-first mixed presets; combined acceptance |
 | P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
