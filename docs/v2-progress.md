@@ -99,9 +99,23 @@ teardown to model a previous crashed publisher. It never touches household data.
 
 Earlier carried checks include57 real-broker kit cases plus the corrected orphan
 readiness1/1, literal naming9 existing +5 shared unit cases, and the actual compact
-MQTT/parser probe1/1 with the unchanged10000-entry map cap. The current foundation
-has not yet completed its final source review and derived pre-merge gate; it is
-not merged or deployed. Lint, documentation and that final review are in progress.
+MQTT/parser probe1/1 with the unchanged10000-entry map cap. The foundation is frozen locally in Store at0aa7fd54e; strict workspace Clippy
+and all data lint rules pass. It is not merged or deployed. The derived gate runs
+beside two fresh same-family source readers. Round1 found reused-name request
+collisions, large-BLOB guard mistakes, cache invalidation across Root/client
+changes, and stale availability after bus enable changes. Corrections and new
+regressions are prepared outside the gated checkout; they are not tested or
+accepted yet. Owner policy: discard old commands on reused-name conflicts while
+preserving fixture IDs/Home bindings, and discard commands that cannot take
+effect within a few minutes (implementation uses a maximum180 seconds; retries
+and renames retain the original deadline).
+
+An actual maximum I4 producer fixture (4 buses,256 outputs,64 full groups, no
+rename history) is298581 bytes and13147 aggregate map entries. That exceeds the
+shared10000-entry parser budget despite fitting the512KiB wire cap. A direct
+runtime reproduction and the scope decision for that bounded current-topology
+case remain pending. The owner has been asked whether to raise the shared map
+budget or add a DALI-specific execution budget. No shared limit has changed.
 
 Shared color components/split-address RGB equipment, input actions, opaque
 hardware-scene/preset integration and release preparation remain. Preset ordering
@@ -3511,7 +3525,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress in Store-t3:43 focused cases,8 native migration cases and2 actual broker/restart scenarios pass; real Home bindings preserved; no household migration | Final foundation source review/gate, shared color/input/scene components and scene-first preset ordering |
+| P8 Store integration | In progress in Store-t3:43 focused cases,8 native migration cases and2 actual broker/restart scenarios pass; real Home bindings preserved; no household migration | Review corrections and parser-budget scope decision, shared color/input/scene components and scene-first preset ordering |
 | P9 release/docs | Pending; Pi compile checks pass locally | Release cross-link/build, portable shared dependency publication, deployment/rollback guides and physical acceptance |
 
 No v2 release, production installation, live Store migration, push or merge has
