@@ -50,6 +50,84 @@ fn rename(name: &str) -> Vec<Edit> {
     }]
 }
 
+#[tokio::test]
+async fn legacy_history_upgrade_preserves_disk_basis_through_save_and_uncertain_recovery() {
+    use crate::inventory::{Batch, Ledger, Transition};
+    let fixture = Fixture::new();
+    let first = fixture.open().await;
+    let mut model = first.snapshot().model.as_ref().clone();
+    assert!(first.close(deadline()).await);
+    let baseline = model.projections();
+    let mut batches = Vec::new();
+    for index in 0..65 {
+        let before = model.projections()[0].clone();
+        model = model
+            .edit(model.inventory().revision, &rename(&format!("Lamp{index}")))
+            .unwrap();
+        batches.push(Batch {
+            revision: model.inventory().revision,
+            transitions: vec![Transition {
+                from: Some(before),
+                to: Some(model.projections()[0].clone()),
+            }],
+        });
+    }
+    let mut legacy = model.inventory().clone();
+    legacy.identity_ledger = Some(Ledger {
+        baseline,
+        batches,
+        checkpoint: None,
+    });
+    let raw = serde_json::to_vec(&legacy).unwrap();
+    fs::write(&fixture.paths.current, &raw).unwrap();
+    let store = fixture.open().await;
+    assert!(store.snapshot().model.ledger().checkpoint.is_some());
+    assert_eq!(
+        fs::read(&fixture.paths.current).unwrap(),
+        raw,
+        "startup rewrote the disk comparison basis"
+    );
+    let revision = legacy.revision;
+    assert_eq!(
+        store.edit(revision, rename("Kitchen"), deadline()).await,
+        Outcome::Committed {
+            revision: revision + 1,
+            changed: true
+        }
+    );
+    assert!(fixture.disk().identity_ledger.unwrap().checkpoint.is_some());
+    assert!(store.close(deadline()).await);
+
+    let fail = Arc::new(AtomicBool::new(true));
+    let guard = fail.clone();
+    let hooks = Hooks {
+        callback: Some(Arc::new(move |step| {
+            if step == Step::DirectorySync(Stage::Mapping) && guard.swap(false, Ordering::SeqCst) {
+                Err("injected post-checkpoint directory sync failure".into())
+            } else {
+                Ok(())
+            }
+        })),
+    };
+    let store = ConfigStore::open_with(fixture.paths.clone(), "Unused".into(), deadline(), hooks)
+        .await
+        .unwrap();
+    assert!(matches!(
+        store.edit(revision + 1, rename("Hall"), deadline()).await,
+        Outcome::Uncertain(_)
+    ));
+    assert!(matches!(
+        store.recover(deadline()).await,
+        Outcome::Committed { .. }
+    ));
+    assert_eq!(
+        store.snapshot().model.inventory().buses[0].outputs[0].name,
+        "Hall"
+    );
+    assert_eq!(fs::read(&fixture.paths.legacy).unwrap(), fixture.legacy);
+    assert!(store.close(deadline()).await);
+}
+
 use super::disk::{Hooks, Stage, Step};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 

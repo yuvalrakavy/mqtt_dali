@@ -281,7 +281,7 @@ fn an_old_schema_two_document_gets_a_complete_named_baseline_without_changing_it
         ]
     );
     let state: Value = serde_json::from_slice(&model.state_bytes().unwrap()).unwrap();
-    assert_eq!(state["Inventory"]["schema_version"], 1);
+    assert_eq!(state["Inventory"]["schema_version"], 2);
     assert_eq!(
         state["Inventory"]["inventory_epoch"],
         inventory.inventory_epoch
@@ -512,6 +512,7 @@ fn a_present_incomplete_ledger_and_impossible_group_dependency_never_fall_back_t
     invalid.identity_ledger = Some(Ledger {
         baseline: vec![],
         batches: vec![],
+        checkpoint: None,
     });
     assert!(
         Model::new(invalid).is_err(),

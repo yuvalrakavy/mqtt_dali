@@ -14,28 +14,71 @@ Clippy, Pi library/four-bin compile checks, wait lint, formatting, both asset
 checks, affected control plans and whitespace checks also pass. Physical
 hardware validation remains pending.
 
-Current work: P8 Store integration design on claimed lane
-`/Users/yuval/Documents/Projects/Store-t3`, branch `feat/dali-v2-store`, based on
-Store `3c168f3ce`. Its isolated server is running on gRPC10300 with broker1886;
-startup loads no household stores. No Store implementation or live migration
-has occurred. The owner confirmed that preset hardware
-scenes run first, then individual light values override them. Shared components,
-split-address RGB/RGBW composition, identity-preserving Store migration and
-release preparation remain to be done.
+Current work: the owner-approved compact identity correction, followed by P8
+Store integration in `/Users/yuval/Documents/Projects/Store-t3`, branch
+`feat/dali-v2-store`, based on Store `3c168f3ce`. The old synthetic324KB test
+contained two fixtures, one group and1200 past renames, not a large real
+installation. It exposed unbounded history. The owner approved replacing it with
+current identity snapshots; all shared runtime limits remain unchanged.
+No household migration or physical hardware validation has occurred.
 
-Three temporary design probes pass: the existing string parser accepts a
-512KiB JSON document; a real512KiB external MQTT message reaches that parser;
-and shared triggers fire once per event without replay on rebinding. No new
-parser or trigger delivery mechanism is needed. The earlier scratch-fixture
-failures are not accepted evidence: constructing a large Blob inside Rhai hits
-its100,000-element limit, which the real external MQTT probe avoids. Logs:
-`/tmp/dali-p8-primitives-final.log` (2/2) and `/tmp/dali-p8-wire-run.log` (1/1).
-These are design probes, separate from the accepted bridge test totals.
+## Compact identity correction — verification in progress
 
-The refreshed private bridge/emulator demo preserves all5 current fixtures and
-the exact saved bridge configuration. Remaining capability extensions and
-physical checks are listed in the support matrix. The bridge remains usable
-by any MQTT consumer, independently of Store.
+Bridge wire schema2 now publishes only current Origin/projection/intent-barrier
+records, including parent Origin for input instances. Names remain public names.
+Saved configuration checkpoints its current identities when diagnostic history
+exceeds32 batches or32KiB, then discards that tail. Existing v2 ledgers are read
+without changing epoch/revisions or private scene references. The raw loaded
+Inventory remains the atomic writer's comparison basis until ordinary save.
+
+Focused checks pass:74/74 inventory/writer/consumer cases, including1200 real
+Model edits and offline/restart continuity, color-change-and-back revocation,
+checkpoint parent replacement, byte/count bounds and actual worker upgrade/save/
+uncertain recovery. The complete native suite passes866/866 (one opt-in browser
+case skipped there); frontend125/125. Four new mutation controls each fail for
+the expected behavioral reason (22.1s total). Strict v2 production Clippy and all
+Pi-target library/bin compile checks pass; all-bin strict Clippy also encounters
+four pre-existing legacy harness warnings. Full linked phone/desktop TCP-browser
+verification is running; final review/acceptance remain before calling this slice
+complete. Logs `/tmp/dali-compact-{affected2,native-final,web,controls,production-clippy,pi,browser}.log`.
+
+Two required fresh design readers (Astra/high and Sol/high, same GPT family)
+identified and resolved raw-file comparison, retained-vs-memory durability,
+adoption metadata and explicit parent-Origin issues. Reports are in
+`/tmp/dali-compact-identity-design-{a,b}.md`; independent-family coverage is absent.
+Design `superpowers/specs/2026-10-24-dali-v2-compact-identity.md` supersedes the
+unbounded-history requirement. The512KiB State and4MiB config caps stay in force.
+
+## P8 — Store foundation: compact snapshots
+
+Store request context now captures optional stable target-identity as well as
+mapping generation, and retains it through adoption/retarget. The new identity
+regression is behavioral RED then GREEN; all8 focused generation/identity cases
+pass. Existing drivers keep the default unfenced/no-identity behavior. The
+foundation spec and independent literal fixtures now use wire schema2 snapshots;
+actual DALI inventory creation remains behavioral RED before its implementation.
+The actual private MQTT/parser compact-snapshot probe is being verified with the
+unchanged10000-entry map cap. No budget choice remains pending.
+
+Earlier foundation checks remain valid: literal Names (3 behavior,9 existing and5
+shared unit cases);57 carried real-broker cases plus the corrected orphan1/1
+Config-readiness regression; payload/conflict/exact-expiry retarget1/1; and1/1
+DALI directory conversion/class-path check. Sparse512KiB parser and actual MQTT
+probes, shared-trigger checks and the captured-basis atomic topology probe are
+design evidence, not full Store integration acceptance.
+
+Inventory application, state caching/base controls, identity-preserving persisted
+migration, shared representation components/split-address RGB, input actions,
+opaque scene/preset integration and release preparation remain. Owner preset
+ordering stays hardware-scene-first, then individual overrides. The private demo
+preserves its five fixtures and exact configuration. The bridge serves generic
+MQTT consumers, independently of Store.
+
+Workflow: focused Store generation tests use only the base template. Avoid broad
+keeper-triggered preparation of29 templates and unrelated repository formatting.
+Earlier formatter/template-generator noise was individually verified and restored;
+only intended source changes remain (new rebakes can recreate the base one-line
+config difference, which must be restored before commit).
 
 ## P4 — combined emergency operations and retained type capabilities
 
@@ -3439,7 +3482,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | Design in claimed Store-t3 lane, branch feat/dali-v2-store; isolated server/broker running, three design probes pass; no implementation or live migration | Identity-preserving migration, generation-aware MQTT requests, shared color/input/scene components and scene-first preset ordering |
+| P8 | Store integration | In progress in Store-t3: compact snapshot correction and identity metadata checks; naming/generation/cleanup/retarget checks pass; no household migration | Inventory application, persisted migration, shared color/input/scene components and scene-first preset ordering |
 | P9 release/docs | Pending; Pi compile checks pass locally | Release cross-link/build, portable shared dependency publication, deployment/rollback guides and physical acceptance |
 
 No v2 release, production installation, live Store migration, push or merge has

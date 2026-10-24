@@ -1,11 +1,7 @@
 use super::*;
 use std::collections::BTreeSet;
 
-#[derive(Debug, Clone)]
-pub(super) struct Tracked {
-    pub projection: Projection,
-    pub origin: Origin,
-}
+pub(super) type Tracked = IdentityRecord;
 pub(super) type Records = BTreeMap<String, Tracked>;
 
 fn qualified(bus: &str, namespace: Namespace, name: &str, path: &str) -> Result<String, String> {
@@ -225,6 +221,7 @@ pub(super) fn baseline(inventory: &Inventory) -> Result<Ledger, String> {
     Ok(Ledger {
         baseline: project(inventory, &origins)?,
         batches: vec![],
+        checkpoint: None,
     })
 }
 
@@ -340,7 +337,17 @@ fn valid_records(records: &Records) -> Result<(), String> {
             }
         }
     }
-    input_parents(records)?;
+    let parents = input_parents(records)?;
+    for record in records.values() {
+        if record.parent_origin.as_ref() != parents.get(&record.origin)
+            || record
+                .parent_origin
+                .as_ref()
+                .is_some_and(|parent| parent.revision > record.origin.revision)
+        {
+            return Err("input instance changed parent lifetime".into());
+        }
+    }
     Ok(())
 }
 
@@ -377,6 +384,23 @@ fn input_parents(records: &Records) -> Result<BTreeMap<Origin, Origin>, String> 
 
 pub(super) fn replay(ledger: &Ledger, revision: u64) -> Result<Records, String> {
     let mut records = Records::new();
+    let mut previous = 1;
+    if let Some(checkpoint) = &ledger.checkpoint {
+        if !ledger.baseline.is_empty() || checkpoint.revision == 0 || checkpoint.revision > revision
+        {
+            return Err("invalid identity checkpoint basis".into());
+        }
+        previous = checkpoint.revision;
+        for record in &checkpoint.records {
+            validate_identity(record, checkpoint.revision)?;
+            if records
+                .insert(record.projection.target.clone(), record.clone())
+                .is_some()
+            {
+                return Err("duplicate checkpoint target".into());
+            }
+        }
+    }
     for projection in &ledger.baseline {
         if projection.binding_revision != 1 {
             return Err("baseline binding revision must be 1".into());
@@ -387,13 +411,17 @@ pub(super) fn replay(ledger: &Ledger, revision: u64) -> Result<Records, String> 
                 target: projection.target.clone(),
                 revision: 1,
             },
+            intent_revision: 1,
+            parent_origin: None,
         };
         if records.insert(projection.target.clone(), record).is_some() {
             return Err("duplicate baseline target".into());
         }
     }
+    if ledger.checkpoint.is_none() {
+        initialize_parents(&mut records, 1)?;
+    }
     valid_records(&records)?;
-    let mut previous = 1;
     for batch in &ledger.batches {
         let parents = input_parents(&records)?;
         if batch.revision <= previous || batch.revision > revision || batch.transitions.is_empty() {
@@ -429,24 +457,33 @@ pub(super) fn replay(ledger: &Ledger, revision: u64) -> Result<Records, String> 
         }
         let mut carried = BTreeMap::new();
         for source in sources {
-            carried.insert(source.clone(), records.remove(source).unwrap().origin);
+            carried.insert(source.clone(), records.remove(source).unwrap());
         }
         for edge in &batch.transitions {
             if let Some(to) = &edge.to {
-                let origin = edge
-                    .from
-                    .as_ref()
-                    .map(|from| carried[&from.target].clone())
+                let before = edge.from.as_ref().map(|from| &carried[&from.target]);
+                let origin = before
+                    .map(|old| old.origin.clone())
                     .unwrap_or_else(|| Origin {
                         target: to.target.clone(),
                         revision: batch.revision,
                     });
+                let intent_revision = before.map_or(batch.revision, |old| {
+                    if revokes_intent(&old.projection, to) {
+                        batch.revision
+                    } else {
+                        old.intent_revision
+                    }
+                });
+                let parent_origin = before.and_then(|old| old.parent_origin.clone());
                 if records
                     .insert(
                         to.target.clone(),
                         Tracked {
                             projection: to.clone(),
                             origin,
+                            intent_revision,
+                            parent_origin,
                         },
                     )
                     .is_some()
@@ -455,6 +492,7 @@ pub(super) fn replay(ledger: &Ledger, revision: u64) -> Result<Records, String> 
                 }
             }
         }
+        initialize_parents(&mut records, batch.revision)?;
         valid_records(&records)?;
         for (child, parent) in input_parents(&records)? {
             if parents.get(&child).is_some_and(|old| *old != parent) {
@@ -463,6 +501,56 @@ pub(super) fn replay(ledger: &Ledger, revision: u64) -> Result<Records, String> 
         }
     }
     Ok(records)
+}
+
+fn initialize_parents(records: &mut Records, creation_revision: u64) -> Result<(), String> {
+    let parents = input_parents(records)?;
+    for record in records.values_mut() {
+        if record.origin.revision == creation_revision {
+            record.parent_origin = parents.get(&record.origin).cloned();
+        }
+    }
+    Ok(())
+}
+
+fn revokes_intent(from: &Projection, to: &Projection) -> bool {
+    from.members != to.members
+        || from.instance_type != to.instance_type
+        || from.color_representation != to.color_representation
+        || (from.target == to.target && from.location == to.location)
+}
+
+fn validate_identity(record: &IdentityRecord, revision: u64) -> Result<(), String> {
+    shape(&record.projection)?;
+    let birth = Target::parse(&record.origin.target).map_err(|e| e.to_string())?;
+    let current = Target::parse(&record.projection.target).map_err(|e| e.to_string())?;
+    if record.origin.revision == 0
+        || record.origin.revision > record.intent_revision
+        || record.intent_revision > record.projection.binding_revision
+        || record.projection.binding_revision > revision
+        || birth.namespace() != current.namespace()
+        || birth.instance().is_some() != current.instance().is_some()
+    {
+        return Err("invalid compact identity origin or intent revision".into());
+    }
+    Ok(())
+}
+
+pub(super) fn compact(ledger: &mut Ledger, revision: u64, records: &Records) -> Result<(), String> {
+    if ledger.batches.len() > MAX_HISTORY_BATCHES
+        || serde_json::to_vec(&ledger.batches)
+            .map_err(|e| e.to_string())?
+            .len()
+            > MAX_HISTORY_BYTES
+    {
+        ledger.checkpoint = Some(Checkpoint {
+            revision,
+            records: records.values().cloned().collect(),
+        });
+        ledger.baseline.clear();
+        ledger.batches.clear();
+    }
+    Ok(())
 }
 
 pub(super) fn match_current(inventory: &Inventory, records: &Records) -> Result<(), String> {

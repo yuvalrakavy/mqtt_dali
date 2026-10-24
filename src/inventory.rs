@@ -7,6 +7,9 @@ mod edit;
 mod ledger;
 
 pub const MAX_STATE_BYTES: usize = 512 * 1024;
+/// Diagnostic transition tail only; consumers use the current identity snapshot.
+pub const MAX_HISTORY_BATCHES: usize = 32;
+pub const MAX_HISTORY_BYTES: usize = 32 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -67,11 +70,41 @@ pub struct Batch {
     pub revision: u64,
     pub transitions: Vec<Transition>,
 }
+/// Compact lifetime and cumulative request-continuity evidence for one live item.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct IdentityRecord {
+    pub origin: Origin,
+    pub projection: Projection,
+    pub intent_revision: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_origin: Option<Origin>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Checkpoint {
+    pub revision: u64,
+    pub records: Vec<IdentityRecord>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ledger {
     pub baseline: Vec<Projection>,
     pub batches: Vec<Batch>,
+    #[serde(
+        default,
+        deserialize_with = "present_checkpoint",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub checkpoint: Option<Checkpoint>,
+}
+
+fn present_checkpoint<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Checkpoint>, D::Error> {
+    Checkpoint::deserialize(deserializer).map(Some)
 }
 
 #[derive(Debug, Clone)]
@@ -210,18 +243,19 @@ impl Model {
     }
     pub fn new(inventory: Inventory) -> Result<Self, String> {
         crate::config::validate_structure(&inventory)?;
-        let ledger = match &inventory.identity_ledger {
+        let mut ledger = match &inventory.identity_ledger {
             Some(ledger) => ledger.clone(),
             None => ledger::baseline(&inventory)?,
         };
         let records = ledger::replay(&ledger, inventory.revision)?;
         ledger::match_current(&inventory, &records)?;
         validate_scene_rows(&inventory, &records)?;
+        ledger::compact(&mut ledger, inventory.revision, &records)?;
         let projections = records
             .values()
             .map(|r| r.projection.clone())
             .collect::<Vec<_>>();
-        let state = state_bytes(&inventory, &ledger, &projections)?;
+        let state = state_bytes(&inventory, &records, &projections)?;
         Ok(Self {
             inventory,
             ledger,
@@ -252,16 +286,18 @@ impl Model {
 
 fn state_bytes(
     inventory: &Inventory,
-    ledger: &Ledger,
+    records: &ledger::Records,
     projections: &[Projection],
 ) -> Result<Vec<u8>, String> {
     let mut snapshot = serde_json::to_value(inventory).map_err(|e| e.to_string())?;
-    snapshot["schema_version"] = 1.into();
+    snapshot["schema_version"] = 2.into();
     snapshot
         .as_object_mut()
         .unwrap()
         .remove("revision_high_water");
-    snapshot["identity_ledger"] = serde_json::to_value(ledger).map_err(|e| e.to_string())?;
+    snapshot.as_object_mut().unwrap().remove("identity_ledger");
+    snapshot["identity_snapshot"] =
+        serde_json::to_value(records.values().collect::<Vec<_>>()).map_err(|e| e.to_string())?;
     let by_location: BTreeMap<_, _> = projections.iter().map(|p| (p.location, p)).collect();
     for (bus_index, bus) in inventory.buses.iter().enumerate() {
         for (index, output) in bus.outputs.iter().enumerate() {

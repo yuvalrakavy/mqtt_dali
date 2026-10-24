@@ -1,6 +1,6 @@
 //! Example consumer algorithm. Shares wire record types, never producer replay,
 //! mutation or configuration validation. No Store or hardware dependency.
-use mqtt_dali::inventory::{Ledger, Location, Origin, Projection};
+use mqtt_dali::inventory::{IdentityRecord, Ledger, Location, Origin, Projection};
 use mqtt_dali::targets::{Namespace, Target};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -20,6 +20,8 @@ pub enum Acceptance {
 pub struct Device {
     pub id: u64,
     pub record: Projection,
+    pub intent_revision: u64,
+    pub parent_origin: Option<Origin>,
     pub intent: Option<Value>,
     pub observed: Option<Value>,
 }
@@ -147,7 +149,9 @@ impl Consumer {
         }
         let envelope: Value = serde_json::from_slice(state).map_err(|e| e.to_string())?;
         let document = envelope.get("Inventory").ok_or("no complete inventory")?;
-        if document["schema_version"].as_u64() != Some(1) || envelope.get("assumed").is_some() {
+        if !matches!(document["schema_version"].as_u64(), Some(1 | 2))
+            || envelope.get("assumed").is_some()
+        {
             return Err("not a supported observed inventory".into());
         }
         let epoch = document["inventory_epoch"].as_str().ok_or("no epoch")?;
@@ -174,6 +178,9 @@ impl Consumer {
             } else {
                 Err("equal revision changed contents".into())
             };
+        }
+        if document["schema_version"] == 2 {
+            return self.accept_snapshot(document, epoch, revision);
         }
         let ledger: Ledger = serde_json::from_value(document["identity_ledger"].clone())
             .map_err(|e| e.to_string())?;
@@ -209,6 +216,10 @@ impl Consumer {
             }
         }
         validate_active(&active)?;
+        let mut barriers: BTreeMap<Origin, u64> = active
+            .values()
+            .map(|(origin, _)| (origin.clone(), 1))
+            .collect();
         let mut last = 1;
         let mut safe_intent_migration: BTreeSet<_> = self.devices.keys().cloned().collect();
         for batch in &ledger.batches {
@@ -246,13 +257,15 @@ impl Consumer {
                         {
                             return Err("address-space conversion is not continuity".into());
                         }
-                        if batch.revision > self.revision
-                            && (from.members != to.members
-                                || from.instance_type != to.instance_type
-                                || from.color_representation != to.color_representation
-                                || (from.target == to.target && from.location == to.location))
+                        if from.members != to.members
+                            || from.instance_type != to.instance_type
+                            || from.color_representation != to.color_representation
+                            || (from.target == to.target && from.location == to.location)
                         {
-                            safe_intent_migration.remove(&departures[&from.target]);
+                            barriers.insert(departures[&from.target].clone(), batch.revision);
+                            if batch.revision > self.revision {
+                                safe_intent_migration.remove(&departures[&from.target]);
+                            }
                         }
                     }
                 }
@@ -269,6 +282,7 @@ impl Consumer {
                             revision: batch.revision,
                         },
                     };
+                    barriers.entry(origin.clone()).or_insert(batch.revision);
                     if active
                         .insert(to.target.clone(), (origin, to.clone()))
                         .is_some()
@@ -285,6 +299,7 @@ impl Consumer {
             }
         }
         verify_current(document, &active)?;
+        let parents = input_ancestors(&active)?;
         // Commit consumer changes only after the complete document validates.
         let mut accepted = self.clone();
         let previous = accepted.devices.clone();
@@ -294,6 +309,8 @@ impl Consumer {
                 Some(old) => Device {
                     id: old.id,
                     record: record.clone(),
+                    intent_revision: barriers[&origin],
+                    parent_origin: parents.get(&origin).cloned(),
                     observed: if old.record.target == record.target
                         && old.record.binding_revision == record.binding_revision
                     {
@@ -314,6 +331,8 @@ impl Consumer {
                     Device {
                         id: accepted.next_id,
                         record,
+                        intent_revision: barriers[&origin],
+                        parent_origin: parents.get(&origin).cloned(),
                         intent: None,
                         observed: None,
                     }
@@ -331,6 +350,130 @@ impl Consumer {
         accepted.revision = revision;
         accepted.ledger = Some(ledger);
         accepted.document = Some(document.clone());
+        accepted.reconcile_observations();
+        *self = accepted;
+        Ok(Acceptance::Applied)
+    }
+}
+
+impl Consumer {
+    fn accept_snapshot(
+        &mut self,
+        document: &Value,
+        epoch: &str,
+        revision: u64,
+    ) -> Result<Acceptance, String> {
+        if document.get("identity_ledger").is_some() {
+            return Err("schema2 contains obsolete history".into());
+        }
+        let records: Vec<IdentityRecord> =
+            serde_json::from_value(document["identity_snapshot"].clone())
+                .map_err(|e| e.to_string())?;
+        let mut active = BTreeMap::new();
+        let mut identities = BTreeMap::new();
+        for identity in records {
+            let origin = &identity.origin;
+            let record = &identity.projection;
+            let birth = Target::parse(&origin.target).map_err(|e| e.to_string())?;
+            let target = Target::parse(&record.target).map_err(|e| e.to_string())?;
+            if origin.revision == 0
+                || origin.revision > identity.intent_revision
+                || identity.intent_revision > record.binding_revision
+                || record.binding_revision > revision
+                || birth.namespace() != target.namespace()
+                || birth.instance().is_some() != target.instance().is_some()
+                || active
+                    .insert(record.target.clone(), (origin.clone(), record.clone()))
+                    .is_some()
+                || identities.insert(origin.clone(), identity).is_some()
+            {
+                return Err("invalid compact lifetime or binding revisions".into());
+            }
+        }
+        validate_active(&active)?;
+        let parents = input_ancestors(&active)?;
+        for identity in identities.values() {
+            if identity.parent_origin.as_ref() != parents.get(&identity.origin)
+                || identity
+                    .parent_origin
+                    .as_ref()
+                    .is_some_and(|parent| parent.revision > identity.origin.revision)
+            {
+                return Err("compact input parent identity mismatch".into());
+            }
+            let record = &identity.projection;
+            if let Some(old) = self.devices.get(&identity.origin) {
+                if std::mem::discriminant(&old.record.location)
+                    != std::mem::discriminant(&record.location)
+                    || old.parent_origin != identity.parent_origin
+                    || identity.intent_revision < old.intent_revision
+                    || record.binding_revision < old.record.binding_revision
+                {
+                    return Err("continuing identity changed kind/parent or regressed".into());
+                }
+                if record.binding_revision == old.record.binding_revision {
+                    if record != &old.record || identity.intent_revision != old.intent_revision {
+                        return Err("unchanged binding has changed content".into());
+                    }
+                } else if record.binding_revision <= self.revision {
+                    return Err("changed mapping predates accepted inventory".into());
+                }
+                if (record.members != old.record.members
+                    || record.instance_type != old.record.instance_type
+                    || record.color_representation != old.record.color_representation)
+                    && identity.intent_revision <= self.revision
+                {
+                    return Err("contract changed without intent revocation".into());
+                }
+            } else if !self.epoch.is_empty() && identity.origin.revision <= self.revision {
+                return Err("retired or unknown historical identity resurrected".into());
+            }
+        }
+        verify_current(document, &active)?;
+        let mut accepted = self.clone();
+        accepted.devices.clear();
+        for (origin, identity) in identities {
+            let record = identity.projection;
+            let old = self.devices.get(&origin);
+            let id = match old {
+                Some(old) => old.id,
+                None => {
+                    accepted.next_id += 1;
+                    accepted.next_id
+                }
+            };
+            let unchanged = old.is_some_and(|old| {
+                old.record.target == record.target
+                    && old.record.binding_revision == record.binding_revision
+            });
+            let intent = old
+                .filter(|old| old.record.binding_revision >= identity.intent_revision)
+                .and_then(|old| old.intent.clone());
+            let observed = old
+                .filter(|_| unchanged)
+                .and_then(|old| old.observed.clone());
+            accepted.devices.insert(
+                origin,
+                Device {
+                    id,
+                    record,
+                    intent_revision: identity.intent_revision,
+                    parent_origin: identity.parent_origin,
+                    intent,
+                    observed,
+                },
+            );
+        }
+        accepted.retired.extend(
+            self.devices
+                .iter()
+                .filter(|(origin, _)| !accepted.devices.contains_key(origin))
+                .map(|(_, device)| device.id),
+        );
+        accepted.epoch = epoch.into();
+        accepted.revision = revision;
+        accepted.document = Some(document.clone());
+        accepted.ledger = None;
         accepted.reconcile_observations();
         *self = accepted;
         Ok(Acceptance::Applied)

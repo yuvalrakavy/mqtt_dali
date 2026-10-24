@@ -1,0 +1,101 @@
+{
+  "Inventory": {
+    "schema_version": 2,
+    "inventory_epoch": "0123456789abcdef0123456789abcdef",
+    "revision": 2,
+    "name": "HouseController",
+    "buses": [
+      {
+        "bus": 0,
+        "name": "Bus1",
+        "enabled": true,
+        "outputs": [
+          {
+            "name": "Kitchen",
+            "short_address": 0,
+            "target": "Bus1.Outputs.Kitchen",
+            "binding_revision": 2
+          },
+          {
+            "name": "Light2",
+            "short_address": 1,
+            "target": "Bus1.Outputs.Light2",
+            "binding_revision": 1
+          }
+        ],
+        "groups": [
+          {
+            "name": "All",
+            "group_address": 0,
+            "members": [
+              0,
+              1
+            ],
+            "target": "Bus1.Groups.All",
+            "binding_revision": 1
+          }
+        ]
+      }
+    ],
+    "identity_snapshot": [
+      {
+        "origin": {
+          "target": "Bus1.Groups.All",
+          "revision": 1
+        },
+        "projection": {
+          "target": "Bus1.Groups.All",
+          "binding_revision": 1,
+          "location": {
+            "kind": "group",
+            "bus": 0,
+            "group_address": 0
+          },
+          "members": [
+            {
+              "target": "Bus1.Outputs.Light1",
+              "revision": 1
+            },
+            {
+              "target": "Bus1.Outputs.Light2",
+              "revision": 1
+            }
+          ]
+        },
+        "intent_revision": 1
+      },
+      {
+        "origin": {
+          "target": "Bus1.Outputs.Light1",
+          "revision": 1
+        },
+        "projection": {
+          "target": "Bus1.Outputs.Kitchen",
+          "binding_revision": 2,
+          "location": {
+            "kind": "output",
+            "bus": 0,
+            "short_address": 0
+          }
+        },
+        "intent_revision": 1
+      },
+      {
+        "origin": {
+          "target": "Bus1.Outputs.Light2",
+          "revision": 1
+        },
+        "projection": {
+          "target": "Bus1.Outputs.Light2",
+          "binding_revision": 1,
+          "location": {
+            "kind": "output",
+            "bus": 0,
+            "short_address": 1
+          }
+        },
+        "intent_revision": 1
+      }
+    ]
+  }
+}

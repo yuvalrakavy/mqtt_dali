@@ -1,0 +1,73 @@
+{
+ "rows": {
+  "checkpoint_accepts_a_replacement_parent_for_an_old_button": {
+   "last_real": {
+    "at": "2026-10-24T07:57:54Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:7a109959ddfd1816",
+     "row": "58fcd1bd190191a2",
+     "test": null
+    },
+    "path": "command",
+    "secs": 4.9,
+    "sha": "645d0bff0e4985e815ec3b24c456f31871ad1982",
+    "verdict": "RED"
+   }
+  },
+  "compaction_forgets_prior_intent_revocation": {
+   "last_real": {
+    "at": "2026-10-24T07:57:49Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:61744b3490109b41",
+     "row": "bbd32524016d13c4",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.9,
+    "sha": "645d0bff0e4985e815ec3b24c456f31871ad1982",
+    "verdict": "RED"
+   }
+  },
+  "diagnostic_history_has_no_batch_bound": {
+   "last_real": {
+    "at": "2026-10-24T07:57:37Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:8aa5c5dae98f8898",
+     "row": "2fbb75102855fb17",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.3,
+    "sha": "645d0bff0e4985e815ec3b24c456f31871ad1982",
+    "verdict": "RED"
+   }
+  },
+  "diagnostic_history_has_no_byte_bound": {
+   "last_real": {
+    "at": "2026-10-24T07:57:43Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:8aa5c5dae98f8898",
+     "row": "41ec56d44587ab1b",
+     "test": null
+    },
+    "path": "command",
+    "secs": 6.0,
+    "sha": "645d0bff0e4985e815ec3b24c456f31871ad1982",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

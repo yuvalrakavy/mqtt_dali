@@ -228,7 +228,7 @@ fn scene_metadata_historical_reader_rejects_foreign_fields_after_scene_removal()
             Model::new(inventory).is_err(),
             "producer accepted foreign metadata in retired scene history"
         );
-        let mut public: Value = serde_json::from_slice(&removed.state_bytes().unwrap()).unwrap();
+        let mut public: Value = serde_json::from_slice(&legacy_state(&removed)).unwrap();
         contaminate_scene_history(&mut public["Inventory"], field, data);
         assert!(
             Consumer::default()

@@ -19,6 +19,20 @@ fn model() -> Model {
     .unwrap();
     Model::new(inventory).unwrap()
 }
+// Legacy schema1 compatibility/adversarial tests explicitly construct the old wire
+// envelope. All normal bridge and current-snapshot tests call Model::state_bytes.
+fn legacy_state(model: &Model) -> Vec<u8> {
+    let mut envelope: Value = serde_json::from_slice(&model.state_bytes().unwrap()).unwrap();
+    let document = &mut envelope["Inventory"];
+    document["schema_version"] = json!(1);
+    document
+        .as_object_mut()
+        .unwrap()
+        .remove("identity_snapshot");
+    document["identity_ledger"] = serde_json::to_value(model.ledger()).unwrap();
+    serde_json::to_vec(&envelope).unwrap()
+}
+
 fn renamed(model: &Model, address: u8, name: &str) -> Model {
     model
         .edit(
@@ -507,7 +521,7 @@ fn input_expansion_consumer_keeps_parent_child_and_intent_continuity() {
 fn group_color_consumer_preserves_identity_and_retires_old_contract_values() {
     let initial = model();
     let target = "Bus1.Groups.All";
-    let mut selected: Value = serde_json::from_slice(&initial.state_bytes().unwrap()).unwrap();
+    let mut selected: Value = serde_json::from_slice(&legacy_state(&initial)).unwrap();
     let inventory = &mut selected["Inventory"];
     inventory["revision"] = json!(2);
     inventory["buses"][0]["groups"][0]["binding_revision"] = json!(2);
@@ -525,7 +539,7 @@ fn group_color_consumer_preserves_identity_and_retires_old_contract_values() {
     inventory["identity_ledger"]["batches"] =
         json!([{"revision":2,"transitions":[{"from":from,"to":to}]}]);
     let mut consumer = Consumer::default();
-    consumer.accept(&initial.state_bytes().unwrap()).unwrap();
+    consumer.accept(&legacy_state(&initial)).unwrap();
     let id = consumer.by_target(target).unwrap().id;
     let output = consumer
         .by_target("Bus1.Outputs.Light1")
@@ -574,7 +588,7 @@ fn group_color_consumer_preserves_identity_and_retires_old_contract_values() {
 }
 
 fn color_document() -> Value {
-    let mut value: Value = serde_json::from_slice(&model().state_bytes().unwrap()).unwrap();
+    let mut value: Value = serde_json::from_slice(&legacy_state(&model())).unwrap();
     let current = &mut value["Inventory"];
     current["revision"] = json!(2);
     current["buses"][0]["outputs"][0]["binding_revision"] = json!(2);
@@ -832,7 +846,7 @@ fn input_consumer_rejects_partial_parent_rename_or_replacement_before_mutation()
         (renamed, "split input parent rename"),
         (replacement, "parent-only replacement"),
     ] {
-        let mut value: Value = serde_json::from_slice(&next.state_bytes().unwrap()).unwrap();
+        let mut value: Value = serde_json::from_slice(&legacy_state(&next)).unwrap();
         value["Inventory"]["identity_ledger"]["batches"][0]["transitions"]
             .as_array_mut()
             .unwrap()
@@ -848,7 +862,7 @@ fn input_consumer_rejects_partial_parent_rename_or_replacement_before_mutation()
                 json!(1);
         }
         let mut consumer = Consumer::default();
-        consumer.accept(&first.state_bytes().unwrap()).unwrap();
+        consumer.accept(&legacy_state(&first)).unwrap();
         let id = consumer
             .by_target("Bus1.Inputs.Panel.Instances.Key")
             .unwrap()
@@ -878,7 +892,7 @@ fn input_consumer_rejects_partial_parent_rename_or_replacement_before_mutation()
             }],
         )
         .unwrap();
-    let mut value: Value = serde_json::from_slice(&renamed.state_bytes().unwrap()).unwrap();
+    let mut value: Value = serde_json::from_slice(&legacy_state(&renamed)).unwrap();
     let transitions = value["Inventory"]["identity_ledger"]["batches"][0]["transitions"]
         .as_array_mut()
         .unwrap();
@@ -895,7 +909,7 @@ fn input_consumer_rejects_partial_parent_rename_or_replacement_before_mutation()
     value["Inventory"]["revision"] = json!(3);
     value["Inventory"]["buses"][0]["inputs"][0]["instances"][0]["binding_revision"] = json!(3);
     let mut consumer = Consumer::default();
-    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    consumer.accept(&legacy_state(&first)).unwrap();
     assert!(
         consumer
             .accept(&serde_json::to_vec(&value).unwrap())
@@ -1245,7 +1259,7 @@ fn a_consumer_rejects_split_bus_history_before_changing_any_identity() {
             }],
         )
         .unwrap();
-    let mut invalid: Value = serde_json::from_slice(&renamed.state_bytes().unwrap()).unwrap();
+    let mut invalid: Value = serde_json::from_slice(&legacy_state(&renamed)).unwrap();
     invalid["Inventory"]["revision"] = 3.into();
     let batches = invalid["Inventory"]["identity_ledger"]["batches"]
         .as_array_mut()
@@ -1265,7 +1279,7 @@ fn a_consumer_rejects_split_bus_history_before_changing_any_identity() {
         item["binding_revision"] = 3.into();
     }
     let mut consumer = Consumer::default();
-    consumer.accept(&initial.state_bytes().unwrap()).unwrap();
+    consumer.accept(&legacy_state(&initial)).unwrap();
     let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
     assert!(
         consumer
@@ -1276,14 +1290,14 @@ fn a_consumer_rejects_split_bus_history_before_changing_any_identity() {
     assert_eq!(consumer.revision, 1);
     assert_eq!(consumer.by_target("Bus1.Outputs.Light1").unwrap().id, id);
     // The complete ancestor rename remains valid.
-    consumer.accept(&renamed.state_bytes().unwrap()).unwrap();
+    consumer.accept(&legacy_state(&renamed)).unwrap();
     assert_eq!(consumer.by_target("Upper.Outputs.Light1").unwrap().id, id);
 }
 
 #[test]
 fn a_consumer_validates_required_metadata_even_for_empty_buses() {
     let fixture: Value =
-        serde_json::from_str(include_str!("fixtures/inventory-v1-rename.json")).unwrap();
+        serde_json::from_str(include_str!("fixtures/inventory-v2-rename.json")).unwrap();
     let initial = model();
     let empty = json!({"bus":1,"name":"Unused","enabled":false,"outputs":[],"groups":[]});
     for case in 0..15 {
@@ -1443,14 +1457,11 @@ fn a_consumer_rejects_partial_rewritten_or_new_epoch_documents_without_mutating_
                     .unwrap()
                     .pop();
             }
-            1 => invalid["Inventory"]["identity_ledger"]["batches"] = json!([]),
+            1 => invalid["Inventory"]["identity_snapshot"] = json!([]),
             2 => {
                 invalid["Inventory"]["inventory_epoch"] = "fedcba9876543210fedcba9876543210".into()
             }
-            3 => {
-                invalid["Inventory"]["identity_ledger"]["batches"][0]["transitions"][0]["from"]
-                    ["binding_revision"] = 99.into()
-            }
+            3 => invalid["Inventory"]["identity_snapshot"][0]["origin"]["revision"] = 0.into(),
             _ => invalid["Inventory"]["revision"] = 2.into(),
         }
         assert!(
@@ -1523,7 +1534,7 @@ fn atomic_swaps_retain_fixture_ids_and_explicit_removal_retires_only_that_device
 
 #[test]
 fn a_literal_wire_document_matches_the_producer_and_an_independent_consumers_rename() {
-    let literal = include_bytes!("fixtures/inventory-v1-rename.json");
+    let literal = include_bytes!("fixtures/inventory-v2-rename.json");
     let initial = model();
     let mut consumer = Consumer::default();
     consumer.accept(&initial.state_bytes().unwrap()).unwrap();

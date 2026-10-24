@@ -12,6 +12,12 @@ commands during extremely rare DALI bus outages; do not restart the abandoned
 target-deferral effort. If progress stalls for an extended period, explain the
 problem, attempted approaches and alternatives promptly so the owner can steer.
 
+The wire schema2 inventory publishes current identity records, without rename
+history. Saved ledgers checkpoint their current Origin/intent/parent facts and
+retain at most32 transition batches/32KiB of diagnostic tail. Preserve the raw
+loaded Inventory as the config writer comparison basis until an ordinary save.
+See `docs/inventory-contract.md` and the compact identity specification.
+
 ## Build Commands
 
 The `feat/dali-v2` worktree is developing the approved migration in phases. Current
@@ -181,7 +187,7 @@ job watch notifications occur after dropping the book lock. Snapshots replace
 the complete state array, with unknown/stale values preserved as such. See
 `docs/v2-web-observation-controls.toml`. Browser views unwrap `inventory.Inventory`
 and use SSE alone as view authority; HTTP job replies never replace newer views.
-Retain original dirty item authority and stable ledger Origin keys across renames.
+Retain original dirty item authority and stable snapshot Origin keys across renames.
 Rebuild and byte-check committed assets; run the opt-in real-browser test for UI
 changes and `docs/v2-browser-controls.toml` for browser authority/route guards.
 
@@ -258,7 +264,8 @@ recall. Named-slot metadata now uses the existing durable inventory/ledger and
 shared MQTT/HTTP jobs. Creation requires controller authority; rename/describe/
 removal require the original scene authority. Description preserves its token;
 removal/recreation replaces its lifetime. Metadata removal never clears hardware.
-Scene history remains after removal: do not erase it for an older reader.
+Current scene identity snapshots distinguish removal/recreation without retaining
+every past transition; see the compact identity design and inventory contract.
 Stored reads and native bus/group recall use `service::scenes` under the same
 physical owner, original context/deadline and final stamp acceptance. Discover
 capabilities before selecting stored reports; stored data never becomes actual

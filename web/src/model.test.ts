@@ -1,6 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { glob, rowOrigins, itemGeneration, inputDisplay, Draft, Views, rows } from './model.ts';
+import { glob, rowOrigins, snapshotOrigins, itemGeneration, inputDisplay, Draft, Views, rows } from './model.ts';
+test('compact snapshots preserve draft keys after arbitrarily many offline renames and reject replacements',()=>{
+  const epoch='0123456789abcdef0123456789abcdef',origin={target:'Bus.Outputs.Light1',revision:1};
+  const initial={origin,projection:{target:origin.target,binding_revision:1,location:{kind:'output',bus:0,short_address:0}},intent_revision:1};
+  const next={...initial,projection:{...initial.projection,target:'Bus.Outputs.Kitchen',binding_revision:1201}};
+  const first=snapshotOrigins([initial],epoch,1),later=snapshotOrigins([next],epoch,1201);
+  assert.equal(later.get(next.projection.target),first.get(origin.target));
+  const replacement={...next,origin:{target:next.projection.target,revision:1202},intent_revision:1202,projection:{...next.projection,binding_revision:1202}};
+  assert.notEqual(snapshotOrigins([replacement],epoch,1202).get(replacement.projection.target),later.get(next.projection.target));
+  assert.throws(()=>snapshotOrigins([next,next],epoch,1201),/Duplicate/);
+  const snapshot:any={inventory:{inventory_epoch:epoch,revision:1201,buses:[{bus:0,name:'Bus',enabled:true,outputs:[{name:'Kitchen',short_address:0,target:next.projection.target,binding_revision:1201}]}],identity_snapshot:[next]}};
+  assert.equal(rows(snapshot)[0].key,later.get(next.projection.target),'actual row rendering still requires rename history');
+});
 test('query input display preserves full-resolution raw bits and does not invent sensor units',()=>{
   assert.equal(inputDisplay({InputValueRaw:'FEDCBA9876543210',ValueResolution:64}),'0xFEDCBA9876543210 / 64 bit','queried sensor value lost exact raw bits');
   assert.equal(inputDisplay({InputValueRaw:'0FFF',ValueResolution:12,Position:1}),'100% · 0x0FFF / 12 bit');

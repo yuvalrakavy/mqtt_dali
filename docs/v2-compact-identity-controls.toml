@@ -1,0 +1,39 @@
+[[control]]
+name = "diagnostic_history_has_no_batch_bound"
+guard = "diagnostic history batch bound"
+file = "src/inventory/ledger.rs"
+anchor = "ledger.batches.len() > MAX_HISTORY_BATCHES"
+replacement = "false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","compact_identity","-E","test(twelve_hundred_real_edits_have_bounded_storage_and_preserve_offline_bindings)"]
+expect_text = "diagnostic history exceeded its batch budget"
+
+[[control]]
+name = "diagnostic_history_has_no_byte_bound"
+guard = "diagnostic history byte bound"
+file = "src/inventory/ledger.rs"
+anchor = "serde_json::to_vec(&ledger.batches)\n            .map_err(|e| e.to_string())?\n            .len()\n            > MAX_HISTORY_BYTES"
+replacement = "false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","compact_identity","-E","test(diagnostic_history_is_bounded_by_bytes_as_well_as_batch_count)"]
+expect_text = "assertion failed: serde_json::to_vec"
+
+[[control]]
+name = "compaction_forgets_prior_intent_revocation"
+guard = "cumulative intent revocation"
+file = "src/inventory/ledger.rs"
+anchor = "if revokes_intent(&old.projection, to) {"
+replacement = "if false {"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","compact_identity","-E","test(incompatible_change_and_back_remains_revoked_after_compaction_and_restart)"]
+expect_text = "forgotten color change resurrected incompatible control intent"
+
+[[control]]
+name = "checkpoint_accepts_a_replacement_parent_for_an_old_button"
+guard = "captured input parent identity"
+file = "src/inventory/ledger.rs"
+anchor = "record.parent_origin.as_ref() != parents.get(&record.origin)"
+replacement = "false"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","compact_identity","-E","test(a_checkpoint_cannot_reparent_an_existing_button_to_a_replacement_module)"]
+expect_text = "checkpoint attached old button to replacement parent"

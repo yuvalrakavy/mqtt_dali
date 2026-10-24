@@ -117,7 +117,7 @@ function j(t) {
 	};
 }
 function M(t, n, r, i, a, o, s, c, l, u) {
-	var d, p, h, v, S, C, w, E, D, O, k, A, j, M, N, P, I, L, R, z, B = n.type;
+	var d, p, h, v, S, C, w, E, D, O, k, A, j, M, N, P, I, re, L, R, z = n.type;
 	if (n.constructor !== void 0) return null;
 	if (128 & r.__u && (l = 32 & r.__u, d = r.__c.__z)) {
 		if (n.__u |= l, p = o = [], d.nodeType == 8) for (h = 1, v = d.nextSibling; v; v = v.nextSibling) {
@@ -131,11 +131,11 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 		c = o[0];
 	}
 	(d = e.__b) && d(n);
-	n: if (typeof B == "function") {
+	n: if (typeof z == "function") {
 		S = s.length;
 		try {
-			if (O = n.props, k = (d = B.prototype) && d.render, A = (d = B.contextType) && i[d.__c], j = d ? A ? A.props.value : d.__ : i, r.__c ? 2 & (C = n.__c = r.__c).__g && (C.__g |= 1) : (k ? n.__c = C = new B(O, j) : (n.__c = C = new b(O, j), C.constructor = B, C.render = ne), A && A.sub(C), C.state || (C.state = {}), C.__n = i, C.__g |= 8, C.__h = [], C.__k = []), k && (C.__s || (C.__s = C.state), B.getDerivedStateFromProps && (C.__s == C.state && (C.__s = g({}, C.__s)), g(C.__s, B.getDerivedStateFromProps(O, C.__s)))), w = C.props, E = C.state, C.__v = n, r.__c) {
-				if (k && !B.getDerivedStateFromProps && O !== w && C.componentWillReceiveProps && C.componentWillReceiveProps(O, j), n.__v == r.__v && !(8 & C.__g) || !(4 & C.__g) && C.shouldComponentUpdate && !1 === C.shouldComponentUpdate(O, C.__s, j)) {
+			if (O = n.props, k = (d = z.prototype) && d.render, A = (d = z.contextType) && i[d.__c], j = d ? A ? A.props.value : d.__ : i, r.__c ? 2 & (C = n.__c = r.__c).__g && (C.__g |= 1) : (k ? n.__c = C = new z(O, j) : (n.__c = C = new b(O, j), C.constructor = z, C.render = ne), A && A.sub(C), C.state || (C.state = {}), C.__n = i, C.__g |= 8, C.__h = [], C.__k = []), k && (C.__s || (C.__s = C.state), z.getDerivedStateFromProps && (C.__s == C.state && (C.__s = g({}, C.__s)), g(C.__s, z.getDerivedStateFromProps(O, C.__s)))), w = C.props, E = C.state, C.__v = n, r.__c) {
+				if (k && !z.getDerivedStateFromProps && O !== w && C.componentWillReceiveProps && C.componentWillReceiveProps(O, j), n.__v == r.__v && !(8 & C.__g) || !(4 & C.__g) && C.shouldComponentUpdate && !1 === C.shouldComponentUpdate(O, C.__s, j)) {
 					n.__v != r.__v && (C.props = O, C.state = C.__s, C.__g &= -9), n.__e = r.__e, n.__k = r.__k, n.__k.some(function(e) {
 						e && (e.__ = n);
 					}), f.push.apply(C.__h, C.__k), C.__k = [], C.__h.length && s.push(C), c = x(r);
@@ -144,7 +144,7 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 				C.componentWillUpdate && C.componentWillUpdate(O, C.__s, j), k && C.componentDidUpdate && C.__h.push(function() {
 					C.componentDidUpdate(w, E, D);
 				});
-			} else k && !B.getDerivedStateFromProps && C.componentWillMount && C.componentWillMount(), k && C.componentDidMount && C.__h.push(C.componentDidMount);
+			} else k && !z.getDerivedStateFromProps && C.componentWillMount && C.componentWillMount(), k && C.componentDidMount && C.__h.push(C.componentDidMount);
 			if (C.context = j, C.props = O, C.__P = t, C.__g &= -5, M = e.__r, N = 0, k) C.state = C.__s, C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), f.push.apply(C.__h, C.__k), C.__k = [];
 			else do
 				C.__g &= -9, M && M(n), d = C.render(C.props, C.state, C.context), C.state = C.__s;
@@ -156,22 +156,22 @@ function M(t, n, r, i, a, o, s, c, l, u) {
 			if (s.length = S, n.__v = null, l || o) {
 				if (t.then) {
 					if (I = 0, n.__u |= l ? 160 : 128, o) {
-						for (~(R = o.indexOf(c || void 0)) || (R = o.length); (z = o[R - 1]) && z.nodeType == 8;) R--;
-						for (; R < o.length; R++) if (z = o[R]) {
-							if (o[R] = null, z.nodeType == 8) {
-								if (z.data.startsWith("$s")) I++ || (L = z);
-								else if (I && z.data.startsWith("/$s") && !--I) {
-									c = z;
+						for (~(L = o.indexOf(c || void 0)) || (L = o.length); (R = o[L - 1]) && R.nodeType == 8;) L--;
+						for (; L < o.length; L++) if (R = o[L]) {
+							if (o[L] = null, R.nodeType == 8) {
+								if (R.data.startsWith("$s")) I++ || (re = R);
+								else if (I && R.data.startsWith("/$s") && !--I) {
+									c = R;
 									break;
 								}
 							} else if (!I) break;
 						}
 					}
-					if (!L) {
+					if (!re) {
 						for (; c && c.nodeType == 8 && c.nextSibling;) c = c.nextSibling;
-						L = c;
+						re = c;
 					}
-					n.__c.__z || (n.__c.__z = L), n.__e = c;
+					n.__c.__z || (n.__c.__z = re), n.__e = c;
 				} else o && o.some(_);
 			} else n.__e = r.__e;
 			n.__k || (n.__k = r.__k || []), t.then || ee(n), e.__e(t, n, r);
@@ -241,7 +241,7 @@ function I(t, n) {
 	var r, i, a, o;
 	e.__ && e.__(t, n), n.nodeType == 9 && (n = n.documentElement), i = (r = t && 32 & t.__u) ? null : n.__k, n.__k = v(y, { children: [t] }), a = [], o = [], M(n, n.__k, i || d, d, n.namespaceURI, i ? null : n.firstChild ? h.call(n.childNodes) : null, a, i ? i.__e : n.firstChild, r, o), N(a, n.__k, o), n.__k.props.children = null;
 }
-function L(e) {
+function re(e) {
 	function t(e) {
 		var n, r;
 		return this.getChildContext || (n = /* @__PURE__ */ new Set(), (r = {})[t.__c] = this, this.getChildContext = function() {
@@ -281,32 +281,32 @@ e = { __e: function(e, t, n, r) {
 	return e.__v.__b - t.__v.__b;
 }, o = Symbol(), s = /(PointerCapture)$|Capture$/i, c = 0, l = {}, u = 0;
 // node_modules/preact/hooks/dist/hooks.mjs
-var R, z, B, re, ie = Object.is, ae = 0, oe = [], se = [], V = e, ce = V.__b, le = V.__r, ue = V.diffed, de = V.__c, fe = V.unmount, pe = V.__;
-function me(e, t) {
-	V.__h && V.__h(z, e, ae || t), ae = 0;
-	var n = z.__H || (z.__H = {
+var L, R, z, ie, ae = Object.is, oe = 0, se = [], ce = [], B = e, le = B.__b, ue = B.__r, de = B.diffed, fe = B.__c, pe = B.unmount, me = B.__;
+function he(e, t) {
+	B.__h && B.__h(R, e, oe || t), oe = 0;
+	var n = R.__H || (R.__H = {
 		__: [],
 		__h: []
 	});
 	return e >= n.__.length && n.__.push({}), n.__[e];
 }
-function H(e) {
-	return ae = 1, he(De, e);
+function V(e) {
+	return oe = 1, ge(Oe, e);
 }
-function he(e, t, n) {
-	var r = me(R++, 2);
-	if (r.t = e, !r.__c && (r.__ = [n ? n(t) : De(void 0, t), function(e) {
+function ge(e, t, n) {
+	var r = he(L++, 2);
+	if (r.t = e, !r.__c && (r.__ = [n ? n(t) : Oe(void 0, t), function(e) {
 		var t = r.__N ? r.__N[0] : r.__[0], n = r.t(t, e);
-		ie(t, n) || (r.__N = [n, r.__[1]], r.__c.setState({}));
-	}], r.__c = z, !z.__f)) {
-		z.__f = !0;
-		var i = z.shouldComponentUpdate;
-		z.shouldComponentUpdate = function(e, t, n) {
+		ae(t, n) || (r.__N = [n, r.__[1]], r.__c.setState({}));
+	}], r.__c = R, !R.__f)) {
+		R.__f = !0;
+		var i = R.shouldComponentUpdate;
+		R.shouldComponentUpdate = function(e, t, n) {
 			var r = this.__H;
 			if (!r) return !0;
 			var a = !1, o = this.props != e;
 			if (r.__.some(function(e) {
-				e.__N && (a = !0, ie(e.__[0], e.__N[0]) || (o = !0));
+				e.__N && (a = !0, ae(e.__[0], e.__N[0]) || (o = !0));
 			}), i) {
 				var s = i.call(this, e, t, n);
 				return a ? s || o : s;
@@ -316,75 +316,75 @@ function he(e, t, n) {
 	}
 	return r.__;
 }
-function U(e, t) {
-	var n = me(R++, 3);
-	!V.__s && Ee(n.__H, t) && (n.__P = !0, n.__ = e, n.u = t, z.__H.__h.push(n));
+function H(e, t) {
+	var n = he(L++, 3);
+	!B.__s && De(n.__H, t) && (n.__P = !0, n.__ = e, n.u = t, R.__H.__h.push(n));
 }
-function ge(e, t) {
-	var n = me(R++, 4);
-	!V.__s && Ee(n.__H, t) && (n.__P = !1, n.__ = e, n.u = t, z.__h.push(n));
+function _e(e, t) {
+	var n = he(L++, 4);
+	!B.__s && De(n.__H, t) && (n.__P = !1, n.__ = e, n.u = t, R.__h.push(n));
 }
-function _e(e) {
-	return ae = 5, ve(function() {
+function ve(e) {
+	return oe = 5, ye(function() {
 		return { current: e };
 	}, []);
 }
-function ve(e, t) {
-	var n = me(R++, 7);
-	return Ee(n.__H, t) && (n.__ = e(), n.__H = t), n.__;
+function ye(e, t) {
+	var n = he(L++, 7);
+	return De(n.__H, t) && (n.__ = e(), n.__H = t), n.__;
 }
-function ye(e) {
-	var t = z.context[e.__c], n = me(R++, 9);
-	return n.c = e, t ? (n.__ ?? (n.__ = !0, t.sub(z)), t.props.value) : e.__;
+function be(e) {
+	var t = R.context[e.__c], n = he(L++, 9);
+	return n.c = e, t ? (n.__ ?? (n.__ = !0, t.sub(R)), t.props.value) : e.__;
 }
-function be() {
+function xe() {
 	var e;
 	do {
-		for (; e = se.shift();) try {
-			we(e);
+		for (; e = ce.shift();) try {
+			Te(e);
 		} catch (t) {
-			V.__e(t, { __: (e = e.__P) && e.__v });
+			B.__e(t, { __: (e = e.__P) && e.__v });
 		}
-		for (; e = oe.shift();) {
+		for (; e = se.shift();) {
 			var t = e.__H;
 			if (e.__P && t) try {
-				t.__h.some(we), t.__h.some(Te), t.__h = [];
+				t.__h.some(Te), t.__h.some(Ee), t.__h = [];
 			} catch (n) {
-				t.__h = [], V.__e(n, e.__v);
+				t.__h = [], B.__e(n, e.__v);
 			}
 		}
-	} while (se.length);
+	} while (ce.length);
 }
-V.__b = function(e) {
-	z = null, ce && ce(e);
-}, V.__ = function(e, t) {
-	e && t.__k && t.__k.__m && (e.__m = t.__k.__m), pe && pe(e, t);
-}, V.__r = function(e) {
-	le && le(e), R = 0;
-	var t = (z = e.__c).__H;
-	t && (B == z ? z.__h = [] : (t.__h.some(we), t.__h.some(Te), R = 0), t.__h = [], t.__.some(function(e) {
+B.__b = function(e) {
+	R = null, le && le(e);
+}, B.__ = function(e, t) {
+	e && t.__k && t.__k.__m && (e.__m = t.__k.__m), me && me(e, t);
+}, B.__r = function(e) {
+	ue && ue(e), L = 0;
+	var t = (R = e.__c).__H;
+	t && (z == R ? R.__h = [] : (t.__h.some(Te), t.__h.some(Ee), L = 0), t.__h = [], t.__.some(function(e) {
 		e.__N && (e.__ = e.__N), e.u = e.__N = void 0;
-	})), B = z;
-}, V.diffed = function(e) {
-	ue && ue(e);
+	})), z = R;
+}, B.diffed = function(e) {
+	de && de(e);
 	var t = e.__c;
-	t && t.__H && (t.__H.__h.length && Ce(oe.push(t)), t.__H.__.some(function(e) {
+	t && t.__H && (t.__H.__h.length && we(se.push(t)), t.__H.__.some(function(e) {
 		e.u && (e.__H = e.u);
-	})), B = z = null;
-}, V.__c = function(e, t) {
+	})), z = R = null;
+}, B.__c = function(e, t) {
 	t.some(function(e) {
 		try {
-			e.__h.some(we), e.__h = e.__h.filter(function(e) {
-				return !e.__ || Te(e);
+			e.__h.some(Te), e.__h = e.__h.filter(function(e) {
+				return !e.__ || Ee(e);
 			});
 		} catch (n) {
 			t.some(function(e) {
 				e.__h && (e.__h = []);
-			}), t = [], V.__e(n, e.__v);
+			}), t = [], B.__e(n, e.__v);
 		}
-	}), de && de(e, t);
-}, V.unmount = function(e) {
-	fe && fe(e);
+	}), fe && fe(e, t);
+}, B.unmount = function(e) {
+	pe && pe(e);
 	var t, n, r = e.__c;
 	r && r.__H && (r.__H.__.some(function(r) {
 		try {
@@ -393,41 +393,41 @@ V.__b = function(e) {
 					for (n = e.__; n && (!n.__c || !n.__c.__P);) n = n.__;
 					n = n && n.__c;
 				}
-				r.__P = n, Ce(se.push(r));
-			} else we(r);
+				r.__P = n, we(ce.push(r));
+			} else Te(r);
 		} catch (e) {
 			t = e;
 		}
-	}), r.__H = void 0, t && V.__e(t, r.__v));
+	}), r.__H = void 0, t && B.__e(t, r.__v));
 };
-var xe = typeof requestAnimationFrame == "function";
-function Se(e) {
-	var t, n = function() {
-		clearTimeout(r), xe && cancelAnimationFrame(t), setTimeout(e);
-	}, r = setTimeout(n, 35);
-	xe && (t = requestAnimationFrame(n));
-}
+var Se = typeof requestAnimationFrame == "function";
 function Ce(e) {
-	e != 1 && re == V.requestAnimationFrame || ((re = V.requestAnimationFrame) || Se)(be);
+	var t, n = function() {
+		clearTimeout(r), Se && cancelAnimationFrame(t), setTimeout(e);
+	}, r = setTimeout(n, 35);
+	Se && (t = requestAnimationFrame(n));
 }
 function we(e) {
-	var t = z, n = e.__c;
-	typeof n == "function" && (e.__c = void 0, n()), z = t;
+	e != 1 && ie == B.requestAnimationFrame || ((ie = B.requestAnimationFrame) || Ce)(xe);
 }
 function Te(e) {
-	var t = z;
-	e.__c = e.__(), z = t;
+	var t = R, n = e.__c;
+	typeof n == "function" && (e.__c = void 0, n()), R = t;
 }
-function Ee(e, t) {
-	return !e || e.length != t.length || t.some(function(t, n) {
-		return !ie(t, e[n]);
-	});
+function Ee(e) {
+	var t = R;
+	e.__c = e.__(), R = t;
 }
 function De(e, t) {
+	return !e || e.length != t.length || t.some(function(t, n) {
+		return !ae(t, e[n]);
+	});
+}
+function Oe(e, t) {
 	return typeof t == "function" ? t(e) : t;
 }
 // src/model.ts
-function Oe(e, t) {
+function U(e, t) {
 	if (!/^[a-f0-9]{32}$/.test(e) || !Number.isSafeInteger(t) || t < 1) throw Error("Invalid inventory authority; refresh the controller.");
 	return `${e}.${t}`;
 }
@@ -465,8 +465,8 @@ function ke(e, t) {
 }
 function Ae(e) {
 	let t = e.inventory;
-	Oe(t.inventory_epoch, t.revision);
-	let n = ke(t.identity_ledger, t.inventory_epoch), r = [];
+	U(t.inventory_epoch, t.revision);
+	let n = t.identity_snapshot === void 0 ? ke(t.identity_ledger, t.inventory_epoch) : je(t.identity_snapshot, t.inventory_epoch, t.revision), r = [];
 	for (let e of t.buses) {
 		let i = (i, a, o) => {
 			let s = n.get(a.target);
@@ -477,7 +477,7 @@ function Ae(e) {
 				bus: e,
 				item: a,
 				parent: o,
-				generation: Oe(t.inventory_epoch, a.binding_revision)
+				generation: U(t.inventory_epoch, a.binding_revision)
 			});
 		};
 		for (let t of e.outputs) i("output", t);
@@ -490,7 +490,7 @@ function Ae(e) {
 				kind: "scene",
 				bus: e,
 				item: i,
-				generation: Oe(t.inventory_epoch, i.binding_revision)
+				generation: U(t.inventory_epoch, i.binding_revision)
 			});
 		}
 		for (let t of e.inputs ?? []) {
@@ -500,7 +500,19 @@ function Ae(e) {
 	}
 	return r;
 }
-function je(e, t) {
+function je(e, t, n) {
+	if (!Array.isArray(e)) throw Error("Missing inventory identity snapshot");
+	let r = /* @__PURE__ */ new Map(), i = /* @__PURE__ */ new Set();
+	for (let a of e) {
+		let { origin: e, projection: o, intent_revision: s } = a;
+		if (U(t, e.revision), U(t, o.binding_revision), !Number.isSafeInteger(s) || e.revision > s || s > o.binding_revision || o.binding_revision > n) throw Error("Invalid inventory identity revision");
+		let c = `${t}:${e.revision}:${e.target}`;
+		if (i.has(c) || r.has(o.target)) throw Error("Duplicate inventory identity");
+		i.add(c), r.set(o.target, c);
+	}
+	return r;
+}
+function Me(e, t) {
 	if (!e) return !0;
 	let n = e.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".");
 	return RegExp(`^${n}$`, "iu").test(t);
@@ -508,19 +520,19 @@ function je(e, t) {
 function W(e, t) {
 	return e.phase === "ready" && t.enabled && e.hardware.state === "ready" && !!e.hardware.buses?.some((e) => e.bus === t.bus && e.status === 2);
 }
-function Me(e, t) {
+function Ne(e, t) {
 	return e.states.find((e) => e.target === t.item.target && e.generation === t.generation)?.values ?? {};
 }
-var Ne = (e) => ({
+var Pe = (e) => ({
 	1: "Part 301 · button",
 	2: "Part 302 · input",
 	3: "Part 303 · occupancy",
 	4: "Part 304 · light sensor"
 })[e ?? 0] ?? `Type ${e ?? "unknown"}`;
-function Pe(e) {
+function Fe(e) {
 	return typeof e.Status == "boolean" ? e.Status ? "Pressed" : "Released" : typeof e.InputState == "boolean" ? e.InputState ? "On" : "Off" : typeof e.Occupied == "boolean" ? e.Occupied ? "Occupied" : "Vacant" : typeof e.InputValueRaw == "string" ? `${typeof e.Position == "number" ? `${Math.round(e.Position * 100)}% · ` : ""}0x${e.InputValueRaw} / ${e.ValueResolution} bit` : typeof e.PositionRaw == "number" ? `${e.PositionRaw} raw` : typeof e.LightLevelRaw == "number" ? `${e.LightLevelRaw} raw` : "Unknown";
 }
-var Fe = class {
+var Ie = class {
 	constructor(e, t, n) {
 		this.error = "", this.text = this.saved = e, this.baseline = {
 			target: t,
@@ -542,7 +554,7 @@ var Fe = class {
 			this.pending = void 0;
 		}), this.pending) : (this.error = "A name is required.", Promise.reject(Error(this.error)));
 	}
-}, Ie = class {
+}, Le = class {
 	constructor() {
 		this.epoch = 0, this.value = null, this.jobBook = [], this.ready = !1;
 	}
@@ -560,7 +572,7 @@ var Fe = class {
 	}
 };
 // src/client.ts
-function Le(e) {
+function Re(e) {
 	let t = {
 		...e,
 		inventory: e.inventory.Inventory
@@ -571,13 +583,13 @@ function G(e, t, n, r) {
 	let i = e.inventory.buses.find((e) => e.bus === r), a = t.inventory.buses.find((e) => e.bus === r);
 	return e.inventory.inventory_epoch === t.inventory.inventory_epoch && t.inventory.revision === n && !!i && !!a && i.name === a.name && a.enabled;
 }
-var Re = class extends Error {
+var ze = class extends Error {
 	constructor(e, t) {
 		super(t), this.status = e;
 	}
-}, ze = class {
+}, Be = class {
 	constructor() {
-		this.views = new Ie(), this.csrf = "", this.error = "", this.events = [], this.lost = 0, this.stopped = !1, this.session = 0, this.activeAt = 0, this.requests = /* @__PURE__ */ new Set(), this.sleepers = /* @__PURE__ */ new Map(), this.listeners = /* @__PURE__ */ new Set();
+		this.views = new Le(), this.csrf = "", this.error = "", this.events = [], this.lost = 0, this.stopped = !1, this.session = 0, this.activeAt = 0, this.requests = /* @__PURE__ */ new Set(), this.sleepers = /* @__PURE__ */ new Map(), this.listeners = /* @__PURE__ */ new Set();
 	}
 	subscribe(e) {
 		return this.listeners.add(e), () => this.listeners.delete(e);
@@ -615,10 +627,10 @@ var Re = class extends Error {
 				body: t === void 0 ? void 0 : JSON.stringify(t)
 			});
 			if (n !== this.session || this.stopped) throw Error("Session ended.");
-			if (i.status === 401) throw this.expired(), new Re(401, "Sign in required.");
+			if (i.status === 401) throw this.expired(), new ze(401, "Sign in required.");
 			let a = i.status === 204 ? null : await i.json();
 			if (n !== this.session || this.stopped) throw Error("Session ended.");
-			if (!i.ok) throw new Re(i.status, a?.error ?? "The controller refused this request.");
+			if (!i.ok) throw new ze(i.status, a?.error ?? "The controller refused this request.");
 			return a;
 		} finally {
 			clearTimeout(i), this.requests.delete(r);
@@ -637,7 +649,7 @@ var Re = class extends Error {
 		let r = () => !this.stopped && this.session === t && this.views.epoch === e && this.source === n;
 		n.addEventListener("snapshot", (t) => {
 			if (r()) try {
-				this.views.snapshot(e, Le(JSON.parse(t.data))), this.error = "", this.notify();
+				this.views.snapshot(e, Re(JSON.parse(t.data))), this.error = "", this.notify();
 			} catch {
 				this.error = "Invalid controller snapshot.", this.views.ready = !1, this.notify();
 			}
@@ -726,9 +738,9 @@ var Re = class extends Error {
 		for (let [e, t] of this.sleepers) clearTimeout(e), t(/* @__PURE__ */ Error("Session ended."));
 		this.sleepers.clear(), this.views.clear(), this.csrf = "", this.events = [], this.notify();
 	}
-}, Be = class {
+}, Ve = class {
 	constructor() {
-		this.client = new ze(), this.drafts = /* @__PURE__ */ new Map(), this.hints = /* @__PURE__ */ new Map(), this.error = "", this.notice = "", this.busy = 0, this.progress = "", this.cancelled = !1, this.signingOut = !1, this.edits = Promise.resolve();
+		this.client = new Be(), this.drafts = /* @__PURE__ */ new Map(), this.hints = /* @__PURE__ */ new Map(), this.error = "", this.notice = "", this.busy = 0, this.progress = "", this.cancelled = !1, this.signingOut = !1, this.edits = Promise.resolve();
 	}
 	touch() {
 		this.client.notify();
@@ -838,7 +850,7 @@ var Re = class extends Error {
 	}
 	async configureBus(e, t, n) {
 		let r = this.snapshot;
-		await this.metadata("configure_bus", null, Oe(r.inventory.inventory_epoch, r.inventory.revision), {
+		await this.metadata("configure_bus", null, U(r.inventory.inventory_epoch, r.inventory.revision), {
 			bus: e,
 			name: t,
 			enabled: n
@@ -865,7 +877,7 @@ var Re = class extends Error {
 		let n = this.snapshot.inventory.revision, r = this.snapshot, i = async (t, i) => {
 			if (this.cancelled) return null;
 			if (!G(r, this.snapshot, n, e.bus)) throw Error("Bus configuration changed during discovery. Review before starting again.");
-			let a = await this.client.job(Oe(r.inventory.inventory_epoch, n), null, t, {
+			let a = await this.client.job(U(r.inventory.inventory_epoch, n), null, t, {
 				...i,
 				expected_revision: n
 			});
@@ -905,7 +917,7 @@ var Re = class extends Error {
 	}
 	async createGroup(e, t, n) {
 		let r = this.snapshot;
-		await this.metadata("create_group", null, Oe(r.inventory.inventory_epoch, r.inventory.revision), {
+		await this.metadata("create_group", null, U(r.inventory.inventory_epoch, r.inventory.revision), {
 			bus: e.bus,
 			group: t,
 			name: n
@@ -927,7 +939,7 @@ var Re = class extends Error {
 		let r = this.current(e.key);
 		return this.metadata(t, r.item.target, r.generation, { reviewed_mask: n });
 	}
-}, Ve = 0;
+}, He = 0;
 Array.isArray;
 function K(t, n, r, i, a, o) {
 	n || (n = {});
@@ -944,20 +956,20 @@ function K(t, n, r, i, a, o) {
 		__e: null,
 		__c: null,
 		constructor: void 0,
-		__v: --Ve,
+		__v: --He,
 		__i: -1,
 		__u: 0
 	};
 	return (a || o) && (u.__source = a, u.__self = o), e.vnode && e.vnode(u), u;
 }
 // src/ui.tsx
-var He = L(null);
+var Ue = re(null);
 function q() {
-	let e = ye(He);
+	let e = be(Ue);
 	if (!e) throw Error("Controller is unavailable.");
 	return e;
 }
-function Ue() {
+function We() {
 	let e = q();
 	return e.progress ? /* @__PURE__ */ K("div", {
 		class: "progress",
@@ -971,22 +983,22 @@ function Ue() {
 		})]
 	}) : null;
 }
-function We(e) {
+function Ge(e) {
 	history.pushState(null, "", e), dispatchEvent(new PopStateEvent("popstate"));
 }
-function Ge(e) {
+function Ke(e) {
 	return /* @__PURE__ */ K("a", {
 		href: e.href,
 		class: e.class,
 		onClick: (t) => {
-			t.metaKey || t.ctrlKey || t.shiftKey || t.altKey || (t.preventDefault(), We(e.href));
+			t.metaKey || t.ctrlKey || t.shiftKey || t.altKey || (t.preventDefault(), Ge(e.href));
 		},
 		children: e.children
 	});
 }
 function J(e) {
-	let t = q(), n = _e(null);
-	return U(() => (n.current?.showModal(), () => n.current?.close()), []), /* @__PURE__ */ K("dialog", {
+	let t = q(), n = ve(null);
+	return H(() => (n.current?.showModal(), () => n.current?.close()), []), /* @__PURE__ */ K("dialog", {
 		ref: n,
 		onCancel: (t) => {
 			t.preventDefault(), e.close();
@@ -1013,11 +1025,11 @@ function J(e) {
 		})
 	});
 }
-function Ke({ row: e }) {
+function qe({ row: e }) {
 	let t = q(), n = t.drafts.get(e.key), r = () => {
 		let n = t.drafts.get(e.key);
 		n && (n.commit((n, r) => t.rename(e.key, n, r)).catch(() => {}).finally(() => t.touch()), t.touch());
-	}, i = _e(null);
+	}, i = ve(null);
 	return /* @__PURE__ */ K("div", {
 		class: "name-cell",
 		children: [
@@ -1034,7 +1046,7 @@ function Ke({ row: e }) {
 					spellcheck: !1,
 					onInput: (n) => {
 						let r = t.drafts.get(e.key);
-						r || (r = new Fe(e.item.name, e.item.target, e.generation), t.drafts.set(e.key, r)), r.text = n.currentTarget.value, r.error = "", t.touch();
+						r || (r = new Ie(e.item.name, e.item.target, e.generation), t.drafts.set(e.key, r)), r.text = n.currentTarget.value, r.error = "", t.touch();
 					},
 					onBlur: r,
 					onKeyDown: (n) => {
@@ -1074,7 +1086,7 @@ function Ke({ row: e }) {
 	});
 }
 // src/fixture-status.ts
-var qe = [
+var Je = [
 	["GearFailure", "Gear failure"],
 	["LampFailure", "Lamp failure"],
 	["LampOn", "Lamp on"],
@@ -1084,13 +1096,13 @@ var qe = [
 	["MissingShortAddress", "Missing short address"],
 	["PowerFailure", "Power failure"]
 ];
-function Je(e) {
+function Ye(e) {
 	let t = e.FixtureStatusQuality, n = typeof t == "string" && [
 		"unobserved",
 		"current",
 		"unavailable",
 		"stale"
-	].includes(t) ? t : "unobserved", r = e.FixtureStatusRaw, i = n === "current" && typeof r == "number" && Number.isInteger(r) && r >= 0 && r <= 255 && qe.every(([t]) => typeof e[t] == "boolean"), a = i ? qe.filter(([t]) => [
+	].includes(t) ? t : "unobserved", r = e.FixtureStatusRaw, i = n === "current" && typeof r == "number" && Number.isInteger(r) && r >= 0 && r <= 255 && Je.every(([t]) => typeof e[t] == "boolean"), a = i ? Je.filter(([t]) => [
 		"GearFailure",
 		"LampFailure",
 		"LimitError",
@@ -1102,7 +1114,7 @@ function Je(e) {
 		raw: i ? r : null,
 		severity: o,
 		faults: a,
-		flags: qe.map(([t, n]) => ({
+		flags: Je.map(([t, n]) => ({
 			key: t,
 			label: n,
 			value: i ? e[t] : null
@@ -1111,8 +1123,8 @@ function Je(e) {
 	};
 }
 // src/fixture-status-ui.tsx
-function Ye({ row: e }) {
-	let t = q(), [n, r] = H(!1), i = t.physical(e.key), a = Je(Me(t.snapshot, i)), o = t.client.views.ready && W(t.snapshot, i.bus);
+function Xe({ row: e }) {
+	let t = q(), [n, r] = V(!1), i = t.physical(e.key), a = Ye(Ne(t.snapshot, i)), o = t.client.views.ready && W(t.snapshot, i.bus);
 	return /* @__PURE__ */ K(y, { children: [a.severity !== "clear" && /* @__PURE__ */ K("button", {
 		type: "button",
 		class: `fixture-status ${a.severity}`,
@@ -1172,7 +1184,7 @@ function Ye({ row: e }) {
 	})] });
 }
 // src/luminaire.ts
-var Xe = [
+var Ze = [
 	["manufacturer_gtin", "Luminaire GTIN"],
 	["luminaire_id", "Luminaire ID"],
 	["manufacture_year", "Manufacture year (YY)"],
@@ -1187,7 +1199,7 @@ var Xe = [
 	["light_distribution", "Light distribution"],
 	["oem_color", "OEM color text"],
 	["identification", "Identification text"]
-], Ze = {
+], Qe = {
 	manufacturer_gtin: null,
 	luminaire_id: null,
 	manufacture_year: null,
@@ -1202,7 +1214,7 @@ var Xe = [
 	light_distribution: null,
 	oem_color: null,
 	identification: null
-}, Qe = {
+}, $e = {
 	manufacture_year: [0, 99],
 	manufacture_week: [1, 53],
 	input_power_nominal: [0, 65534],
@@ -1215,20 +1227,20 @@ var Xe = [
 }, Y = () => {
 	throw Error("Luminaire data is incomplete or invalid. Read again.");
 };
-function $e(e, t) {
+function et(e, t) {
 	if (!t || ![
 		"value",
 		"unknown",
 		"unavailable",
 		"invalid"
 	].includes(t.status)) return Y();
-	let n = e === "cct" && t.status === "value" && t.value === "part_209" ? null : Ze[e];
+	let n = e === "cct" && t.status === "value" && t.value === "part_209" ? null : Qe[e];
 	if (t.unit !== n) return Y();
 	if (t.status !== "value") return t.value === null ? void 0 : Y();
 	let r = t.value;
 	if (e !== "cct" || r !== "part_209") {
-		if (e in Qe) {
-			let [t, n] = Qe[e];
+		if (e in $e) {
+			let [t, n] = $e[e];
 			return typeof r != "number" || !Number.isInteger(r) || r < t || r > n ? Y() : void 0;
 		}
 		if (typeof r != "string") return Y();
@@ -1248,7 +1260,7 @@ function $e(e, t) {
 		} else if (r.length > (e === "oem_color" ? 24 : 60) || [...r].some((e) => e.charCodeAt(0) === 0 || e.charCodeAt(0) > 127)) return Y();
 	}
 }
-function et(e, t) {
+function tt(e, t) {
 	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || t.length < 1 || t.length > 120) return Y();
 	let n = t[0];
 	if (n === null || n === 255) return t.length !== 1 || e.format_id !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 ? Y() : {
@@ -1258,15 +1270,15 @@ function et(e, t) {
 	let r = t[17] ?? null, i = t[18] ?? null, a = r === null || i === null ? null : r << 8 | i, o = a === 3 ? "supported" : a === null ? "unavailable" : "unrecognized";
 	if (e.format_id !== a || e.format_status !== o || t.length !== Math.min(n, a === 3 ? 119 : 18) + 1) return Y();
 	if (a === 3) {
-		if (Object.keys(e.fields).length !== Xe.length) return Y();
-		for (let [t] of Xe) $e(t, e.fields[t]);
+		if (Object.keys(e.fields).length !== Ze.length) return Y();
+		for (let [t] of Ze) et(t, e.fields[t]);
 	} else if (Object.keys(e.fields).length !== 0) return Y();
 	return {
 		data: structuredClone(e),
 		partial: a !== 3 || n < 119
 	};
 }
-function tt(e, t) {
+function nt(e, t) {
 	return t.status === "value" ? e === "cct" && t.value === "part_209" ? "Variable (Part 209 indication)" : e === "light_distribution" ? {
 		not_specified: "Not specified",
 		type_i: "Type I",
@@ -1277,55 +1289,55 @@ function tt(e, t) {
 	}[String(t.value)] : (e === "manufacture_year" ? String(t.value).padStart(2, "0") : t.value === "" ? "Not specified" : String(t.value)) + (t.unit ? ` ${t.unit}` : "") : t.status === "invalid" ? "Invalid data" : t.status === "unavailable" ? "Unavailable" : "Unknown";
 }
 // src/energy.ts
-function nt(e) {
+function rt(e) {
 	if (e !== 202 && e !== 203 && e !== 204) throw Error("Choose energy bank 202, 203 or 204.");
 	return e;
 }
-var rt = () => {
+var it = () => {
 	throw Error("Energy data is incomplete or invalid. Read again.");
-}, it = (e, t) => {
+}, at = (e, t) => {
 	let n = BigInt(e);
 	if (t >= 0) return (n * 10n ** BigInt(t)).toString();
 	let r = -t, i = 10n ** BigInt(r), a = n % i;
 	return a === 0n ? (n / i).toString() : `${n / i}.${a.toString().padStart(r, "0").replace(/0+$/, "")}`;
 };
-function at(e, t, n, r, i) {
+function ot(e, t, n, r, i) {
 	let a = t[n] ?? null, o = a === null ? null : a >= 128 ? a - 256 : a, s = t.slice(n + 1, n + r + 1), c = s.length === r && s.every((e) => e !== null) ? s.reduce((e, t) => e * 256 + t, 0) : null, l = 2 ** (r * 8) - 1, u = o !== null && (o < -6 || o > 6) ? "invalid" : o === null || c === null ? "unavailable" : c === l - 1 ? "temporarily_unavailable" : c === l ? "invalid" : "value";
-	if (!e || e.status !== u || e.raw !== c || e.scale !== o || e.unit !== i || e.value !== (u === "value" ? it(c, o) : null)) return rt();
+	if (!e || e.status !== u || e.raw !== c || e.scale !== o || e.unit !== i || e.value !== (u === "value" ? at(c, o) : null)) return it();
 }
-function ot(e, t, n) {
-	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || n.length < 1 || n.length > 16) return rt();
+function st(e, t, n) {
+	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || n.length < 1 || n.length > 16) return it();
 	let r = n[0];
-	if (r === null || r === 255) return n.length !== 1 || e.version !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 || e.snapshot !== null ? rt() : {
+	if (r === null || r === 255) return n.length !== 1 || e.version !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 || e.snapshot !== null ? it() : {
 		data: structuredClone(e),
 		partial: r === 255
 	};
 	let i = n[3] ?? null, a = i === 1 ? "supported" : i === null ? "unavailable" : "unrecognized";
-	if (e.version !== i || e.format_status !== a || n.length !== Math.min(r, i === 1 ? 15 : 3) + 1) return rt();
+	if (e.version !== i || e.format_status !== a || n.length !== Math.min(r, i === 1 ? 15 : 3) + 1) return it();
 	if (i === 1) {
-		if (Object.keys(e.fields).length !== 2) return rt();
-		at(e.fields.energy, n, 4, 6, t === 203 ? "VAh" : "Wh"), at(e.fields.power, n, 11, 4, t === 203 ? "VA" : "W");
+		if (Object.keys(e.fields).length !== 2) return it();
+		ot(e.fields.energy, n, 4, 6, t === 203 ? "VAh" : "Wh"), ot(e.fields.power, n, 11, 4, t === 203 ? "VA" : "W");
 		let r = e.snapshot;
-		if (!r || Object.keys(r).length !== 3) return rt();
+		if (!r || Object.keys(r).length !== 3) return it();
 		for (let [e, t] of [
 			["start", 170],
 			["end", 170],
 			["release", 255]
 		]) {
 			let n = r[e];
-			if (!n || n.kind !== "value" || n.raw !== t || Object.keys(n).length !== 2) return rt();
+			if (!n || n.kind !== "value" || n.raw !== t || Object.keys(n).length !== 2) return it();
 		}
-	} else if (Object.keys(e.fields).length !== 0 || e.snapshot !== null) return rt();
+	} else if (Object.keys(e.fields).length !== 0 || e.snapshot !== null) return it();
 	return {
 		data: structuredClone(e),
 		partial: i !== 1 || r < 15
 	};
 }
-function st(e) {
+function ct(e) {
 	return e.status === "value" ? `${e.value} ${e.unit}` : e.status === "temporarily_unavailable" ? "Temporarily unavailable" : e.status === "invalid" ? "Invalid data" : "Unavailable";
 }
 // src/diagnostics.ts
-function ct(e) {
+function lt(e) {
 	if (e !== 205 && e !== 206 && e !== 207) throw Error("Choose diagnostic bank205,206 or207.");
 	return e;
 }
@@ -1339,27 +1351,27 @@ var X = (e, t, n, r, i = "count", a = 0, o = "invalid", s = 2 ** (r * 8) - 3) =>
 	maximum: s,
 	mask: o,
 	kind: "number"
-}), lt = (e, t, n, r = "read_protected") => ({
+}), ut = (e, t, n, r = "read_protected") => ({
 	...X(e, t, n, 1, null, 0, r, 1),
 	kind: "boolean"
-}), ut = (e, t, n, r) => ({
+}), dt = (e, t, n, r) => ({
 	...X(e, t, n, 1, "°C", 0, r),
 	kind: "temperature"
-}), dt = (e, t, n) => [lt(e, t, n), X(`${e}_counter`, `${t} count`, n + 1, 1, "count", 0, "read_protected")], ft = {
+}), ft = (e, t, n) => [ut(e, t, n), X(`${e}_counter`, `${t} count`, n + 1, 1, "count", 0, "read_protected")], pt = {
 	205: [
 		X("operating_time", "Driver operating time", 4, 4, "s"),
 		X("start_counter", "Driver starts", 8, 3),
 		X("supply_voltage", "Supply voltage", 11, 2, "Vrms", -1, "read_protected"),
 		X("supply_frequency", "Supply frequency", 13, 1, "Hz", 0, "read_protected"),
 		X("power_factor", "Power factor", 14, 1, null, -2, "read_protected", 100),
-		lt("overall_failure", "Driver failure", 15, "invalid"),
+		ut("overall_failure", "Driver failure", 15, "invalid"),
 		X("overall_failure_counter", "Driver failure count", 16, 1),
-		...dt("undervoltage", "Undervoltage", 17),
-		...dt("overvoltage", "Overvoltage", 19),
-		...dt("power_limit", "Power limitation", 21),
-		...dt("thermal_derating", "Thermal derating", 23),
-		...dt("thermal_shutdown", "Thermal shutdown", 25),
-		ut("temperature", "Driver temperature", 27, "invalid"),
+		...ft("undervoltage", "Undervoltage", 17),
+		...ft("overvoltage", "Overvoltage", 19),
+		...ft("power_limit", "Power limitation", 21),
+		...ft("thermal_derating", "Thermal derating", 23),
+		...ft("thermal_shutdown", "Thermal shutdown", 25),
+		dt("temperature", "Driver temperature", 27, "invalid"),
 		X("output_current_percent", "Output current", 28, 1, "%", 0, "invalid", 100)
 	],
 	206: [
@@ -1369,77 +1381,77 @@ var X = (e, t, n, r, i = "count", a = 0, o = "invalid", s = 2 ** (r * 8) - 3) =>
 		X("on_time", "Light-source on time", 14, 4, "s"),
 		X("voltage", "Light-source voltage", 18, 2, "V", -1),
 		X("current", "Light-source current", 20, 2, "A", -3),
-		lt("overall_failure", "Light-source failure", 22, "invalid"),
+		ut("overall_failure", "Light-source failure", 22, "invalid"),
 		X("overall_failure_counter", "Light-source failure count", 23, 1),
-		...dt("short_circuit", "Short circuit", 24),
-		...dt("open_circuit", "Open circuit", 26),
-		...dt("thermal_derating", "Thermal derating", 28),
-		...dt("thermal_shutdown", "Thermal shutdown", 30),
-		ut("temperature", "Light-source temperature", 32, "read_protected")
+		...ft("short_circuit", "Short circuit", 24),
+		...ft("open_circuit", "Open circuit", 26),
+		...ft("thermal_derating", "Thermal derating", 28),
+		...ft("thermal_shutdown", "Thermal shutdown", 30),
+		dt("temperature", "Light-source temperature", 32, "read_protected")
 	],
 	207: [
 		X("rated_life", "Rated median useful life", 4, 1, "h", 3, "unknown"),
-		ut("reference_temperature", "Reference driver temperature", 5, "unknown"),
+		dt("reference_temperature", "Reference driver temperature", 5, "unknown"),
 		X("rated_starts", "Rated light-source starts", 6, 2, "count", 2, "unknown")
 	]
-}, pt = (e) => ft[e].map(({ key: e, label: t }) => ({
+}, mt = (e) => pt[e].map(({ key: e, label: t }) => ({
 	key: e,
 	label: t
-})), mt = () => {
+})), ht = () => {
 	throw Error("Diagnostic data is incomplete or invalid. Read again.");
 };
-function ht(e, t) {
+function gt(e, t) {
 	let n = BigInt(e);
 	if (t >= 0) return (n * 10n ** BigInt(t)).toString();
 	let r = -t, i = 10n ** BigInt(r), a = n % i;
 	return a === 0n ? (n / i).toString() : `${n / i}.${a.toString().padStart(r, "0").replace(/0+$/, "")}`;
 }
-function gt(e, t) {
+function _t(e, t) {
 	let n = t.slice(e.start, e.start + e.width), r = n.length === e.width && n.every((e) => e !== null) ? n.reduce((e, t) => e * 256 + t, 0) : null, i = 2 ** (e.width * 8) - 1, a = r === null ? "unavailable" : r === i - 1 ? "temporarily_unavailable" : r === i ? e.mask : r > e.maximum ? "invalid" : "value";
 	return {
 		status: a,
 		raw: r,
-		value: a === "value" ? e.kind === "boolean" ? r === 1 : e.kind === "temperature" ? String(r - 60) : ht(r, e.scale) : null,
+		value: a === "value" ? e.kind === "boolean" ? r === 1 : e.kind === "temperature" ? String(r - 60) : gt(r, e.scale) : null,
 		unit: e.unit
 	};
 }
-function _t(e, t, n) {
-	ct(t);
+function vt(e, t, n) {
+	lt(t);
 	let r = t === 205 ? 28 : t === 206 ? 32 : 7;
-	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || n.length < 1 || n.length > r + 1 || n.some((e) => e !== null && (!Number.isInteger(e) || e < 0 || e > 255))) return mt();
+	if (!e || !e.fields || typeof e.fields != "object" || Array.isArray(e.fields) || n.length < 1 || n.length > r + 1 || n.some((e) => e !== null && (!Number.isInteger(e) || e < 0 || e > 255))) return ht();
 	let i = n[0];
-	if (i === null || i === 255) return n.length !== 1 || e.version !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 || e.snapshot !== null ? mt() : {
+	if (i === null || i === 255) return n.length !== 1 || e.version !== null || e.format_status !== "unavailable" || Object.keys(e.fields).length !== 0 || e.snapshot !== null ? ht() : {
 		data: structuredClone(e),
 		partial: i === 255
 	};
 	let a = n[3] ?? null, o = a === 1 ? "supported" : a === null ? "unavailable" : "unrecognized";
-	if (e.version !== a || e.format_status !== o || n.length !== Math.min(i, a === 1 ? r : 3) + 1) return mt();
+	if (e.version !== a || e.format_status !== o || n.length !== Math.min(i, a === 1 ? r : 3) + 1) return ht();
 	if (a === 1) {
-		let r = ft[t];
-		if (Object.keys(e.fields).length !== r.length) return mt();
+		let r = pt[t];
+		if (Object.keys(e.fields).length !== r.length) return ht();
 		for (let t of r) {
-			let r = e.fields[t.key], i = gt(t, n);
-			if (!r || r.status !== i.status || r.raw !== i.raw || r.value !== i.value || r.unit !== i.unit) return mt();
+			let r = e.fields[t.key], i = _t(t, n);
+			if (!r || r.status !== i.status || r.raw !== i.raw || r.value !== i.value || r.unit !== i.unit) return ht();
 		}
 		if (t !== 207) {
 			let t = e.snapshot;
-			if (!t || Object.keys(t).length !== 3) return mt();
+			if (!t || Object.keys(t).length !== 3) return ht();
 			for (let [e, n] of [
 				["start", 170],
 				["end", 170],
 				["release", 255]
 			]) {
 				let r = t[e];
-				if (!r || r.kind !== "value" || r.raw !== n || Object.keys(r).length !== 2) return mt();
+				if (!r || r.kind !== "value" || r.raw !== n || Object.keys(r).length !== 2) return ht();
 			}
-		} else if (e.snapshot !== null) return mt();
-	} else if (Object.keys(e.fields).length !== 0 || e.snapshot !== null) return mt();
+		} else if (e.snapshot !== null) return ht();
+	} else if (Object.keys(e.fields).length !== 0 || e.snapshot !== null) return ht();
 	return {
 		data: structuredClone(e),
 		partial: a !== 1 || i < r
 	};
 }
-function vt(e) {
+function yt(e) {
 	return e.status === "value" ? typeof e.value == "boolean" ? e.value ? "Yes" : "No" : `${e.value}${e.unit ? " " + e.unit : ""}` : {
 		temporarily_unavailable: "Temporarily unavailable",
 		read_protected: "Read protected",
@@ -1449,22 +1461,22 @@ function vt(e) {
 	}[e.status];
 }
 // src/device-info.ts
-var yt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255, Z = () => {
+var bt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255, Z = () => {
 	throw Error("Device information is incomplete or invalid. Read again.");
 };
-function bt(e, t, n) {
-	if (!yt(e) || !yt(t) || !Number.isInteger(n) || n < 1 || n > 64 || t + n > 255) throw Error("Choose bank 0–255 and 1–64 bytes within locations 0–254.");
+function xt(e, t, n) {
+	if (!bt(e) || !bt(t) || !Number.isInteger(n) || n < 1 || n > 64 || t + n > 255) throw Error("Choose bank 0–255 and 1–64 bytes within locations 0–254.");
 	return {
 		bank: e,
 		start: t,
 		count: n
 	};
 }
-function xt(e) {
-	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? Z() : e.kind === "value" && yt(e.raw) && Object.keys(e).length === 2 || e.kind === "no_response" && Object.keys(e).length === 1 || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || yt(e.code)) && Object.keys(e).length === 2 ? e : Z();
+function St(e) {
+	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? Z() : e.kind === "value" && bt(e.raw) && Object.keys(e).length === 2 || e.kind === "no_response" && Object.keys(e).length === 1 || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || bt(e.code)) && Object.keys(e).length === 2 ? e : Z();
 }
-var St = (e) => e?.kind === "value" ? e.raw : null;
-function Ct(e, t, n, r, i) {
+var Ct = (e) => e?.kind === "value" ? e.raw : null;
+function wt(e, t, n, r, i) {
 	if (!e || e.operation !== t || e.outcome !== "observed" || e.configuration_changed !== !1 || ![
 		"complete",
 		"partial",
@@ -1476,26 +1488,26 @@ function Ct(e, t, n, r, i) {
 		if (e.bank !== r || e.start !== 0 || !Number.isInteger(e.count) || e.count < 1 || e.count > 16 || e.space !== "outputs" || e.identity !== null || e.luminaire !== void 0) return Z();
 	} else if (t === "read_luminaire_data") {
 		if (e.bank !== 1 || e.start !== 0 || !Number.isInteger(e.count) || e.count < 1 || e.count > 120 || e.space !== "outputs" || e.identity !== null) return Z();
-	} else if (bt(e.bank, e.start, e.count), e.luminaire !== void 0) return Z();
+	} else if (xt(e.bank, e.start, e.count), e.luminaire !== void 0) return Z();
 	if (e.readings.length !== e.count) return Z();
 	let a = e.readings.map((t, n) => !t || t.address !== e.start + n ? Z() : {
 		address: t.address,
-		reading: xt(t.reading)
-	}), o = xt(e.version), s = a.map((e) => St(e.reading)), c = s.every((e) => e !== null) ? "complete" : s.some((e) => e !== null) ? "partial" : "unavailable";
+		reading: St(t.reading)
+	}), o = St(e.version), s = a.map((e) => Ct(e.reading)), c = s.every((e) => e !== null) ? "complete" : s.some((e) => e !== null) ? "partial" : "unavailable";
 	if (t === "read_memory") {
 		if (!n || e.bank !== n.bank || e.start !== n.start || e.count !== n.count || e.identity !== null || o !== null) return Z();
 	} else if (t === "read_diagnostics") {
 		if (o !== null || i === void 0) return Z();
-		_t(e.diagnostics, i, s).partial && (c = "partial");
+		vt(e.diagnostics, i, s).partial && (c = "partial");
 	} else if (t === "read_energy_data") {
 		if (o !== null || r === void 0) return Z();
-		ot(e.energy, r, s).partial && (c = "partial");
+		st(e.energy, r, s).partial && (c = "partial");
 	} else if (t === "read_luminaire_data") {
 		if (o !== null) return Z();
-		et(e.luminaire, s).partial && (c = "partial");
+		tt(e.luminaire, s).partial && (c = "partial");
 	} else {
 		if (e.bank !== 0 || e.start !== 0 || e.count > 27) return Z();
-		let t = St(o), n = t === 1 ? "legacy" : t !== null && t >= 8 && t <= 254 ? "modern" : "unknown", r = n === "legacy" ? 14 : n === "modern" ? 26 : 10, i = s[0];
+		let t = Ct(o), n = t === 1 ? "legacy" : t !== null && t >= 8 && t <= 254 ? "modern" : "unknown", r = n === "legacy" ? 14 : n === "modern" ? 26 : 10, i = s[0];
 		if (i === null || i === 255) {
 			if (e.count !== 1 || e.identity !== null) return Z();
 			i === 255 && (c = "partial");
@@ -1503,14 +1515,14 @@ function Ct(e, t, n, r, i) {
 			if (e.count !== Math.min(i, r) + 1) return Z();
 			(n === "unknown" || i < r) && (c = "partial");
 			let t = e.identity, a = n === "legacy" ? 32 : n === "modern" ? 64 : null;
-			if (!t || t.layout !== n || t.serial_bits !== a || t.gtin !== null && (typeof t.gtin != "string" || !/^\d{14}$/.test(t.gtin)) || t.serial_number !== null && (a === null || typeof t.serial_number != "string" || !RegExp(`^[0-9A-F]{${a / 4}}$`).test(t.serial_number)) || t.last_memory_bank !== null && !yt(t.last_memory_bank)) return Z();
-			for (let e of ["firmware_version", "hardware_version"]) if (t[e] !== null && (!Array.isArray(t[e]) || t[e].length !== 2 || !t[e].every(yt))) return Z();
+			if (!t || t.layout !== n || t.serial_bits !== a || t.gtin !== null && (typeof t.gtin != "string" || !/^\d{14}$/.test(t.gtin)) || t.serial_number !== null && (a === null || typeof t.serial_number != "string" || !RegExp(`^[0-9A-F]{${a / 4}}$`).test(t.serial_number)) || t.last_memory_bank !== null && !bt(t.last_memory_bank)) return Z();
+			for (let e of ["firmware_version", "hardware_version"]) if (t[e] !== null && (!Array.isArray(t[e]) || t[e].length !== 2 || !t[e].every(bt))) return Z();
 			if (n !== "modern" && t.hardware_version !== null) return Z();
 		}
 	}
 	return e.quality === c ? structuredClone(e) : Z();
 }
-var wt = class {
+var Tt = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.result = null, t.kind !== "output" && t.kind !== "input") throw Error("Select an individual fixture or input module.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -1534,25 +1546,25 @@ var wt = class {
 	}
 	async request(e, t, n) {
 		if (this.result = null, this.assert(), (e === "read_luminaire_data" || e === "read_energy_data" || e === "read_diagnostics") && this.row.kind !== "output") throw Error("Select an individual output fixture for luminaire, energy or diagnostic data.");
-		let r = t ? bt(t.bank, t.start, t.count) : void 0, i = e === "read_energy_data" ? nt(n) : void 0, a = e === "read_diagnostics" ? ct(n) : void 0, o = await this.ui.client.job(this.row.generation, this.row.item.target, e, i === void 0 && a === void 0 ? r ?? {} : { bank: i ?? a });
+		let r = t ? xt(t.bank, t.start, t.count) : void 0, i = e === "read_energy_data" ? rt(n) : void 0, a = e === "read_diagnostics" ? lt(n) : void 0, o = await this.ui.client.job(this.row.generation, this.row.item.target, e, i === void 0 && a === void 0 ? r ?? {} : { bank: i ?? a });
 		this.assert();
 		let s = this.row;
 		if (!o || o.target !== s.item.target || o.target_generation !== s.generation || o.revision !== this.initial.inventory.revision || o.bus !== s.bus.bus || o.address !== s.item.short_address || o.space !== (s.kind === "output" ? "outputs" : "inputs")) return Z();
-		let c = Ct(o, e, r, i, a);
+		let c = wt(o, e, r, i, a);
 		return this.result = c, structuredClone(c);
 	}
-}, Tt = {
+}, Et = {
 	202: "Active input",
 	203: "Apparent input",
 	204: "Load-side active"
-}, Et = {
+}, Dt = {
 	205: "Driver",
 	206: "Light source",
 	207: "Luminaire maintenance"
-}, Dt = (e) => e.toString(16).toUpperCase().padStart(2, "0"), Ot = (e) => e === null ? "Not read" : e.kind === "value" ? `0x${Dt(e.raw)} (${e.raw})` : e.kind === "no_response" ? "No response" : e.kind === "receive_collision" ? "Receive collision" : "Transmit collision";
-function kt({ row: e, close: t }) {
-	let n = q(), [r] = H(() => new wt(n, e)), [i, a] = H(null), [o, s] = H(""), [c, l] = H("0"), [u, d] = H("0"), [f, p] = H("16"), [m, h] = H("202"), [g, _] = H("205");
-	ge(() => () => {
+}, Ot = (e) => e.toString(16).toUpperCase().padStart(2, "0"), kt = (e) => e === null ? "Not read" : e.kind === "value" ? `0x${Ot(e.raw)} (${e.raw})` : e.kind === "no_response" ? "No response" : e.kind === "receive_collision" ? "Receive collision" : "Transmit collision";
+function At({ row: e, close: t }) {
+	let n = q(), [r] = V(() => new Tt(n, e)), [i, a] = V(null), [o, s] = V(""), [c, l] = V("0"), [u, d] = V("0"), [f, p] = V("16"), [m, h] = V("202"), [g, _] = V("205");
+	_e(() => () => {
 		r.cancelled = !0;
 	}, [r]);
 	let v = () => {
@@ -1560,13 +1572,13 @@ function kt({ row: e, close: t }) {
 	}, b = (e = "identity") => void n.run(async () => {
 		a(null), s("");
 		try {
-			let t = (e) => e.trim() === "" ? NaN : Number(e), n = e === "memory" ? bt(t(c), t(u), t(f)) : void 0, i = e === "luminaire" ? await r.readLuminaire() : e === "energy" ? await r.readEnergy(t(m)) : e === "diagnostics" ? await r.readDiagnostics(t(g)) : await r.read(n);
+			let t = (e) => e.trim() === "" ? NaN : Number(e), n = e === "memory" ? xt(t(c), t(u), t(f)) : void 0, i = e === "luminaire" ? await r.readLuminaire() : e === "energy" ? await r.readEnergy(t(m)) : e === "diagnostics" ? await r.readDiagnostics(t(g)) : await r.read(n);
 			r.cancelled || a(i);
 		} catch (e) {
 			throw r.cancelled || s(e.message), e;
 		}
 	});
-	U(() => {
+	H(() => {
 		b();
 	}, []);
 	let x = i?.identity, S = (e) => e ? e.join(".") : "Unknown";
@@ -1618,7 +1630,7 @@ function kt({ row: e, close: t }) {
 							/* @__PURE__ */ K("dt", { children: "Identity layout" }),
 							/* @__PURE__ */ K("dd", { children: x?.layout ?? "Unknown" }),
 							/* @__PURE__ */ K("dt", { children: "DALI version byte" }),
-							/* @__PURE__ */ K("dd", { children: Ot(i.version) }),
+							/* @__PURE__ */ K("dd", { children: kt(i.version) }),
 							/* @__PURE__ */ K("dt", { children: "Last memory bank" }),
 							/* @__PURE__ */ K("dd", { children: x?.last_memory_bank ?? "Unknown" })
 						]
@@ -1633,9 +1645,9 @@ function kt({ row: e, close: t }) {
 							children: "Manufacturer-supplied luminaire data. These readings do not change saved names or bindings."
 						}), i.luminaire.format_status === "supported" ? /* @__PURE__ */ K("dl", {
 							class: "device-information",
-							children: Xe.map(([e, t]) => /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("dt", { children: t }, `${e}-label`), /* @__PURE__ */ K("dd", {
+							children: Ze.map(([e, t]) => /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("dt", { children: t }, `${e}-label`), /* @__PURE__ */ K("dd", {
 								"data-luminaire-field": e,
-								children: tt(e, i.luminaire.fields[e])
+								children: nt(e, i.luminaire.fields[e])
 							}, `${e}-value`)] }))
 						}) : /* @__PURE__ */ K("p", {
 							class: "hint",
@@ -1646,7 +1658,7 @@ function kt({ row: e, close: t }) {
 						"aria-label": "Energy data",
 						children: [/* @__PURE__ */ K("p", {
 							class: "hint",
-							children: [Tt[i.bank], " · Captured energy and power."]
+							children: [Et[i.bank], " · Captured energy and power."]
 						}), i.energy.format_status === "supported" ? /* @__PURE__ */ K(y, { children: [
 							/* @__PURE__ */ K("p", {
 								class: "hint",
@@ -1656,7 +1668,7 @@ function kt({ row: e, close: t }) {
 								class: "device-information",
 								children: ["energy", "power"].map((e) => /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("dt", { children: e === "energy" ? "Energy" : "Power" }, `${e}-label`), /* @__PURE__ */ K("dd", {
 									"data-energy-field": e,
-									children: st(i.energy.fields[e])
+									children: ct(i.energy.fields[e])
 								}, `${e}-value`)] }))
 							}),
 							/* @__PURE__ */ K("details", { children: [/* @__PURE__ */ K("summary", { children: "Counter details" }), /* @__PURE__ */ K("dl", {
@@ -1676,7 +1688,7 @@ function kt({ row: e, close: t }) {
 						"aria-label": "Diagnostic data",
 						children: [/* @__PURE__ */ K("p", {
 							class: "hint",
-							children: [Et[i.bank], " · Captured diagnostic and maintenance data."]
+							children: [Dt[i.bank], " · Captured diagnostic and maintenance data."]
 						}), i.diagnostics.format_status === "supported" ? /* @__PURE__ */ K(y, { children: [
 							/* @__PURE__ */ K("p", {
 								class: "hint",
@@ -1684,14 +1696,14 @@ function kt({ row: e, close: t }) {
 							}),
 							/* @__PURE__ */ K("dl", {
 								class: "device-information",
-								children: pt(i.bank).map(({ key: e, label: t }) => /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("dt", { children: t }, `${e}-label`), /* @__PURE__ */ K("dd", {
+								children: mt(i.bank).map(({ key: e, label: t }) => /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("dt", { children: t }, `${e}-label`), /* @__PURE__ */ K("dd", {
 									"data-diagnostic-field": e,
-									children: vt(i.diagnostics.fields[e])
+									children: yt(i.diagnostics.fields[e])
 								}, `${e}-value`)] }))
 							}),
 							/* @__PURE__ */ K("details", { children: [/* @__PURE__ */ K("summary", { children: "Raw diagnostic values" }), /* @__PURE__ */ K("dl", {
 								class: "device-information",
-								children: pt(i.bank).map(({ key: e, label: t }) => /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("dt", { children: t }, `${e}-raw-label`), /* @__PURE__ */ K("dd", { children: i.diagnostics.fields[e].raw ?? "Unavailable" }, `${e}-raw`)] }))
+								children: mt(i.bank).map(({ key: e, label: t }) => /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("dt", { children: t }, `${e}-raw-label`), /* @__PURE__ */ K("dd", { children: i.diagnostics.fields[e].raw ?? "Unavailable" }, `${e}-raw`)] }))
 							})] })
 						] }) : /* @__PURE__ */ K("p", {
 							class: "hint",
@@ -1706,7 +1718,7 @@ function kt({ row: e, close: t }) {
 							" bytes"
 						] }), /* @__PURE__ */ K("table", {
 							class: "memory-readings",
-							children: [/* @__PURE__ */ K("thead", { children: /* @__PURE__ */ K("tr", { children: [/* @__PURE__ */ K("th", { children: "Location" }), /* @__PURE__ */ K("th", { children: "Reading" })] }) }), /* @__PURE__ */ K("tbody", { children: i.readings.map((e) => /* @__PURE__ */ K("tr", { children: [/* @__PURE__ */ K("td", { children: ["0x", Dt(e.address)] }), /* @__PURE__ */ K("td", { children: Ot(e.reading) })] }, e.address)) })]
+							children: [/* @__PURE__ */ K("thead", { children: /* @__PURE__ */ K("tr", { children: [/* @__PURE__ */ K("th", { children: "Location" }), /* @__PURE__ */ K("th", { children: "Reading" })] }) }), /* @__PURE__ */ K("tbody", { children: i.readings.map((e) => /* @__PURE__ */ K("tr", { children: [/* @__PURE__ */ K("td", { children: ["0x", Ot(e.address)] }), /* @__PURE__ */ K("td", { children: kt(e.reading) })] }, e.address)) })]
 						})]
 					})
 				]
@@ -1782,7 +1794,7 @@ function kt({ row: e, close: t }) {
 							"aria-label": "Energy bank",
 							value: m,
 							onChange: (e) => h(e.currentTarget.value),
-							children: Object.entries(Tt).map(([e, t]) => /* @__PURE__ */ K("option", {
+							children: Object.entries(Et).map(([e, t]) => /* @__PURE__ */ K("option", {
 								value: e,
 								children: t
 							}, e))
@@ -1808,7 +1820,7 @@ function kt({ row: e, close: t }) {
 							"aria-label": "Diagnostic bank",
 							value: g,
 							onChange: (e) => _(e.currentTarget.value),
-							children: Object.entries(Et).map(([e, t]) => /* @__PURE__ */ K("option", {
+							children: Object.entries(Dt).map(([e, t]) => /* @__PURE__ */ K("option", {
 								value: e,
 								children: t
 							}, e))
@@ -1844,50 +1856,50 @@ function kt({ row: e, close: t }) {
 	});
 }
 // src/button-timing.ts
-var At = [
+var jt = [
 	"short",
 	"double",
 	"repeat",
 	"stuck"
-], jt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function Mt(e) {
-	return jt(e.short) && jt(e.short_min) && e.short_min >= 10 && e.short >= e.short_min && jt(e.double) && jt(e.double_min) && e.double_min >= 10 && e.double_min <= 100 && (e.double === 0 || e.double >= e.double_min && e.double <= 100) && jt(e.repeat) && e.repeat >= 5 && e.repeat <= 100 && jt(e.stuck) && e.stuck >= 5;
-}
+], Mt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
 function Nt(e) {
+	return Mt(e.short) && Mt(e.short_min) && e.short_min >= 10 && e.short >= e.short_min && Mt(e.double) && Mt(e.double_min) && e.double_min >= 10 && e.double_min <= 100 && (e.double === 0 || e.double >= e.double_min && e.double <= 100) && Mt(e.repeat) && e.repeat >= 5 && e.repeat <= 100 && Mt(e.stuck) && e.stuck >= 5;
+}
+function Pt(e) {
 	if (e == null) return null;
 	if (typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality) || [
-		...At,
+		...jt,
 		"short_min",
 		"double_min"
-	].some((t) => e[t] !== null && !jt(e[t])) || e.quality === "complete" && !Mt(e)) throw Error("Button timing evidence is incomplete or invalid. Inspect again.");
+	].some((t) => e[t] !== null && !Mt(e[t])) || e.quality === "complete" && !Nt(e)) throw Error("Button timing evidence is incomplete or invalid. Inspect again.");
 	return structuredClone(e);
 }
-function Pt(e, t) {
-	if (!t || t.quality !== "complete" || !Mt(t)) throw Error("Complete button timing evidence is required. Inspect again.");
-	if (!Object.keys(e).length || Object.keys(e).some((e) => !At.includes(e))) throw Error("Change at least one known button timer.");
-	if (!Mt({
+function Ft(e, t) {
+	if (!t || t.quality !== "complete" || !Nt(t)) throw Error("Complete button timing evidence is required. Inspect again.");
+	if (!Object.keys(e).length || Object.keys(e).some((e) => !jt.includes(e))) throw Error("Change at least one known button timer.");
+	if (!Nt({
 		...t,
 		...e
 	})) throw Error("Button timing must use whole native steps within the range and device minimum.");
 }
-function Ft(e, t) {
-	return !!t && t.quality === "complete" && Mt(t) && At.every((n) => e[n] === void 0 || e[n] === t[n]);
+function It(e, t) {
+	return !!t && t.quality === "complete" && Nt(t) && jt.every((n) => e[n] === void 0 || e[n] === t[n]);
 }
-var It = (e, t) => t * (e === "stuck" ? 1 : 20), Lt = (e, t) => t.trim() === "" ? NaN : Number(t) / (e === "stuck" ? 1 : 20);
-function Rt(e, t) {
+var Lt = (e, t) => t * (e === "stuck" ? 1 : 20), Rt = (e, t) => t.trim() === "" ? NaN : Number(t) / (e === "stuck" ? 1 : 20);
+function zt(e, t) {
 	let n = {};
-	for (let r of At) e[r] !== t[r] && (n[r] = t[r] ?? NaN);
+	for (let r of jt) e[r] !== t[r] && (n[r] = t[r] ?? NaN);
 	return n;
 }
 // src/sensor-settings.ts
-var zt = [
+var Bt = [
 	"report",
 	"deadtime",
 	"hold",
 	"hysteresis",
 	"hysteresis_min"
-], Bt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function Vt(e) {
+], Vt = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function Ht(e) {
 	return e === 2 ? ["report", "deadtime"] : e === 3 ? [
 		"report",
 		"deadtime",
@@ -1899,40 +1911,40 @@ function Vt(e) {
 		"hysteresis_min"
 	] : [];
 }
-function Ht(e, t) {
-	return Bt(e.report) && Bt(e.deadtime) && (t === 2 || t === 3 && Bt(e.hold) && e.hold_supported === (e.hold !== 255) || t === 4 && Bt(e.hysteresis) && e.hysteresis <= 25 && Bt(e.hysteresis_min));
-}
 function Ut(e, t) {
+	return Vt(e.report) && Vt(e.deadtime) && (t === 2 || t === 3 && Vt(e.hold) && e.hold_supported === (e.hold !== 255) || t === 4 && Vt(e.hysteresis) && e.hysteresis <= 25 && Vt(e.hysteresis_min));
+}
+function Wt(e, t) {
 	if (e == null) return null;
-	let n = Vt(t);
-	if (!n.length || typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality) || zt.some((t) => e[t] !== null && !Bt(e[t])) || zt.some((t) => !n.includes(t) && e[t] !== null) || (t === 3 ? e.hold_supported !== (e.hold === null ? null : e.hold !== 255) : e.hold_supported !== null) || e.quality === "complete" && !Ht(e, t)) throw Error("Sensor settings evidence is incomplete or invalid. Inspect again.");
+	let n = Ht(t);
+	if (!n.length || typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality) || Bt.some((t) => e[t] !== null && !Vt(e[t])) || Bt.some((t) => !n.includes(t) && e[t] !== null) || (t === 3 ? e.hold_supported !== (e.hold === null ? null : e.hold !== 255) : e.hold_supported !== null) || e.quality === "complete" && !Ut(e, t)) throw Error("Sensor settings evidence is incomplete or invalid. Inspect again.");
 	return structuredClone(e);
 }
-function Wt(e, t, n) {
-	if (!t || t.quality !== "complete" || !Ht(t, n)) throw Error("Complete sensor settings evidence is required. Inspect again.");
-	let r = Object.keys(e);
-	if (!r.length || r.some((e) => !Vt(n).includes(e))) throw Error("Choose known settings for this sensor type.");
-	if (e.hold !== void 0 && t.hold_supported !== !0) throw Error("This sensor does not support hold time.");
-	if (r.some((t) => !Bt(e[t]) || t === "hold" && e[t] === 255 || t === "hysteresis" && e[t] > 25)) throw Error("Sensor values must use valid native steps and ranges. Hold time is 1s or a 10s increment.");
-}
 function Gt(e, t, n) {
-	return !!t && t.quality === "complete" && Ht(t, n) && zt.every((n) => e[n] === void 0 || e[n] === t[n] && (n !== "hold" || t.hold_supported === !0));
+	if (!t || t.quality !== "complete" || !Ut(t, n)) throw Error("Complete sensor settings evidence is required. Inspect again.");
+	let r = Object.keys(e);
+	if (!r.length || r.some((e) => !Ht(n).includes(e))) throw Error("Choose known settings for this sensor type.");
+	if (e.hold !== void 0 && t.hold_supported !== !0) throw Error("This sensor does not support hold time.");
+	if (r.some((t) => !Vt(e[t]) || t === "hold" && e[t] === 255 || t === "hysteresis" && e[t] > 25)) throw Error("Sensor values must use valid native steps and ranges. Hold time is 1s or a 10s increment.");
 }
-function Kt(e, t) {
-	return e === "deadtime" ? t * 50 : e === "hold" ? t === 0 ? 1 : t * 10 : t;
+function Kt(e, t, n) {
+	return !!t && t.quality === "complete" && Ut(t, n) && Bt.every((n) => e[n] === void 0 || e[n] === t[n] && (n !== "hold" || t.hold_supported === !0));
 }
 function qt(e, t) {
+	return e === "deadtime" ? t * 50 : e === "hold" ? t === 0 ? 1 : t * 10 : t;
+}
+function Jt(e, t) {
 	if (t.trim() === "") return NaN;
 	let n = Number(t);
 	return e === "deadtime" ? n / 50 : e === "hold" ? n === 1 ? 0 : n >= 10 ? n / 10 : NaN : n;
 }
-function Jt(e, t) {
+function Yt(e, t) {
 	let n = {};
-	for (let r of zt) e[r] !== t[r] && (n[r] = t[r] ?? NaN);
+	for (let r of Bt) e[r] !== t[r] && (n[r] = t[r] ?? NaN);
 	return n;
 }
 // src/input-settings.ts
-var Yt = {
+var Xt = {
 	1: [
 		"Released",
 		"Pressed",
@@ -1952,7 +1964,7 @@ var Yt = {
 		"No movement"
 	],
 	4: ["Light level changed"]
-}, Xt = class {
+}, Zt = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.values = null, t.kind !== "instance") throw Error("Select an input instance.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -1977,8 +1989,8 @@ var Yt = {
 		if (!Array.isArray(r.filter_bytes) || r.filter_bytes.length !== 3 || r.filter_bytes.some((e, t) => t < r.filter_width / 8 ? e !== (r.event_filter >>> 8 * t & 255) : e !== null)) throw Error("Input filter evidence is incomplete. Inspect again.");
 		return {
 			...structuredClone(r),
-			button_timers: Nt(r.button_timers),
-			sensor_settings: Ut(r.sensor_settings, n.item.instance_type ?? -1)
+			button_timers: Pt(r.button_timers),
+			sensor_settings: Wt(r.sensor_settings, n.item.instance_type ?? -1)
 		};
 	}
 	async read() {
@@ -1991,9 +2003,9 @@ var Yt = {
 		let t = structuredClone(e);
 		if (t.button_timers) {
 			if (this.row.item.instance_type !== 1) throw Error("Button timing requires a button instance.");
-			Pt(t.button_timers, this.values.button_timers);
+			Ft(t.button_timers, this.values.button_timers);
 		}
-		t.sensor_settings && Wt(t.sensor_settings, this.values.sensor_settings, this.row.item.instance_type ?? -1);
+		t.sensor_settings && Gt(t.sensor_settings, this.values.sensor_settings, this.row.item.instance_type ?? -1);
 		let n = await this.ui.client.job(this.row.generation, this.row.item.target, "configure_input", {
 			expected_revision: this.initial.inventory.revision,
 			settings: t
@@ -2005,12 +2017,12 @@ var Yt = {
 			"event_filter"
 		]) if (t[e] !== void 0 && t[e] !== r[e]) throw Error("Input settings do not match the requested values. Inspect again.");
 		if (t.groups && JSON.stringify(t.groups.map((e) => e ?? 255)) !== JSON.stringify(r.groups)) throw Error("Input groups do not match the requested values. Inspect again.");
-		if (t.button_timers && !Ft(t.button_timers, r.button_timers)) throw Error("Button timing does not match the requested values. Inspect again.");
-		if (t.sensor_settings && !Gt(t.sensor_settings, r.sensor_settings, this.row.item.instance_type ?? -1)) throw Error("Sensor settings do not match the requested values. Inspect again.");
+		if (t.button_timers && !It(t.button_timers, r.button_timers)) throw Error("Button timing does not match the requested values. Inspect again.");
+		if (t.sensor_settings && !Kt(t.sensor_settings, r.sensor_settings, this.row.item.instance_type ?? -1)) throw Error("Sensor settings do not match the requested values. Inspect again.");
 		return this.values = r, this.ui.notice = "Input event settings verified in hardware.", structuredClone(r);
 	}
 };
-function Zt(e, t) {
+function Qt(e, t) {
 	let n = {};
 	for (let r of [
 		"enabled",
@@ -2019,19 +2031,19 @@ function Zt(e, t) {
 		"event_filter"
 	]) e[r] !== t[r] && Object.assign(n, { [r]: t[r] });
 	if (JSON.stringify(e.groups) !== JSON.stringify(t.groups) && (n.groups = t.groups.map((e) => e === 255 ? null : e)), e.button_timers && t.button_timers) {
-		let r = Rt(e.button_timers, t.button_timers);
+		let r = zt(e.button_timers, t.button_timers);
 		Object.keys(r).length && (n.button_timers = r);
 	}
 	if (e.sensor_settings && t.sensor_settings) {
-		let r = Jt(e.sensor_settings, t.sensor_settings);
+		let r = Yt(e.sensor_settings, t.sensor_settings);
 		Object.keys(r).length && (n.sensor_settings = r);
 	}
 	return n;
 }
 // src/input-settings-ui.tsx
-function Qt({ row: e, close: t }) {
-	let n = q(), [r] = H(() => new Xt(n, e)), [i, a] = H(null), [o, s] = H(""), [c, l] = H({}), [u, d] = H({});
-	ge(() => () => {
+function $t({ row: e, close: t }) {
+	let n = q(), [r] = V(() => new Zt(n, e)), [i, a] = V(null), [o, s] = V(""), [c, l] = V({}), [u, d] = V({});
+	_e(() => () => {
 		r.cancelled = !0;
 	}, [r]);
 	let f = () => {
@@ -2045,7 +2057,7 @@ function Qt({ row: e, close: t }) {
 			throw r.cancelled || s(e.message), e;
 		}
 	});
-	U(() => {
+	H(() => {
 		p();
 	}, []);
 	let m = (e) => a((t) => t ? {
@@ -2057,7 +2069,7 @@ function Qt({ row: e, close: t }) {
 			[e]: t
 		})), m((n) => ({ button_timers: n.button_timers ? {
 			...n.button_timers,
-			[e]: Lt(e, t)
+			[e]: Rt(e, t)
 		} : n.button_timers }));
 	}, g = (e, t) => {
 		d((n) => ({
@@ -2065,16 +2077,16 @@ function Qt({ row: e, close: t }) {
 			[e]: t
 		})), m((n) => ({ sensor_settings: n.sensor_settings ? {
 			...n.sensor_settings,
-			[e]: qt(e, t)
+			[e]: Jt(e, t)
 		} : n.sensor_settings }));
 	}, _ = () => void n.run(async () => {
 		try {
 			if (!i || !r.values) return;
-			await r.save(Zt(r.values, i)), f();
+			await r.save(Qt(r.values, i)), f();
 		} catch (e) {
 			throw r.cancelled || s(e.message), e;
 		}
-	}), v = Yt[e.item.instance_type ?? -1];
+	}), v = Xt[e.item.instance_type ?? -1];
 	return /* @__PURE__ */ K(J, {
 		title: `Event settings · ${e.item.name}`,
 		close: f,
@@ -2179,7 +2191,7 @@ function Qt({ row: e, close: t }) {
 					})] }))] }),
 					e.item.instance_type === 1 && /* @__PURE__ */ K("fieldset", { children: [/* @__PURE__ */ K("legend", { children: "Button timing" }), r.values?.button_timers?.quality === "complete" && i.button_timers ? /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("div", {
 						class: "input-timer-grid",
-						children: At.map((e) => {
+						children: jt.map((e) => {
 							let t = i.button_timers, n = e === "short" ? t.short_min * 20 : e === "double" ? 0 : e === "repeat" ? 100 : 5, r = {
 								short: "Short press (ms)",
 								double: "Double press (ms)",
@@ -2193,7 +2205,7 @@ function Qt({ row: e, close: t }) {
 								min: n,
 								max: e === "short" ? 5100 : e === "stuck" ? 255 : 2e3,
 								step: e === "stuck" ? 1 : 20,
-								value: c[e] ?? (Number.isFinite(a) ? It(e, a) : ""),
+								value: c[e] ?? (Number.isFinite(a) ? Lt(e, a) : ""),
 								onInput: (t) => h(e, t.currentTarget.value)
 							})] });
 						})
@@ -2210,9 +2222,9 @@ function Qt({ row: e, close: t }) {
 						class: "hint",
 						children: "Button timing is unavailable or incomplete. Basic event settings remain available."
 					})] }),
-					Vt(e.item.instance_type ?? -1).length > 0 && /* @__PURE__ */ K("fieldset", { children: [/* @__PURE__ */ K("legend", { children: "Sensor settings" }), r.values?.sensor_settings?.quality === "complete" && i.sensor_settings ? /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("div", {
+					Ht(e.item.instance_type ?? -1).length > 0 && /* @__PURE__ */ K("fieldset", { children: [/* @__PURE__ */ K("legend", { children: "Sensor settings" }), r.values?.sensor_settings?.quality === "complete" && i.sensor_settings ? /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("div", {
 						class: "input-timer-grid",
-						children: Vt(e.item.instance_type).map((e) => {
+						children: Ht(e.item.instance_type).map((e) => {
 							let t = i.sensor_settings;
 							if (e === "hold" && !t.hold_supported) return /* @__PURE__ */ K("p", {
 								class: "hint",
@@ -2232,7 +2244,7 @@ function Qt({ row: e, close: t }) {
 								min: +(e === "hold"),
 								max: e === "deadtime" ? 12750 : e === "hold" ? 2540 : e === "hysteresis" ? 25 : 255,
 								step: e === "deadtime" ? 50 : 1,
-								value: u[e] ?? (Number.isFinite(r) ? Kt(e, r) : ""),
+								value: u[e] ?? (Number.isFinite(r) ? qt(e, r) : ""),
 								onInput: (t) => g(e, t.currentTarget.value)
 							})] });
 						})
@@ -2273,12 +2285,12 @@ function Qt({ row: e, close: t }) {
 	});
 }
 // src/output-settings.ts
-var $t = [
+var en = [
 	"upward_on",
 	"upward_off",
 	"downward_on",
 	"downward_off"
-], en = [
+], tn = [
 	"minimum_level",
 	"maximum_level",
 	"power_on_level",
@@ -2287,39 +2299,39 @@ var $t = [
 	"fade_rate"
 ], Q = () => {
 	throw Error("Output settings evidence is incomplete or inconsistent. Refresh to inspect again.");
-}, tn = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
-function nn(e) {
+}, nn = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
+function rn(e) {
 	return (e * 100 / 254).toFixed(1);
 }
-function rn(e) {
+function an(e) {
 	let t = e.trim() === "" ? NaN : Number(e);
 	return Number.isFinite(t) && t >= 0 && t <= 100 ? Math.round(t * 254 / 100) : NaN;
 }
-var an = Array.from({ length: 16 }, (e, t) => ({
+var on = Array.from({ length: 16 }, (e, t) => ({
 	code: t,
 	label: t === 0 ? "Use other fade settings (code 0)" : `${(.5 * 2 ** (t / 2)).toFixed(t < 4 ? 2 : 1)} s`
-})), on = Array.from({ length: 15 }, (e, t) => ({
+})), sn = Array.from({ length: 15 }, (e, t) => ({
 	code: t + 1,
 	label: `${(506 / 2 ** ((t + 1) / 2)).toFixed(1)} steps/s`
 }));
-function sn(e) {
+function cn(e) {
 	return e.physical_minimum === null ? null : e.switching_support === !0 && e.switching?.adjustable_thresholds === !0 ? 1 : e.physical_minimum;
 }
-function cn(e, t) {
+function ln(e, t) {
 	return t?.switching_support === !0 && t.switching?.adjustable_thresholds === !0 && t.switching[e] !== null;
 }
-function ln(e) {
+function un(e) {
 	if (!e || typeof e != "object" || Array.isArray(e)) return Q();
 	for (let t of [
 		"physical_minimum",
 		"minimum_level",
 		"maximum_level"
-	]) if (e[t] !== null && !tn(e[t], 1, 254)) return Q();
+	]) if (e[t] !== null && !nn(e[t], 1, 254)) return Q();
 	for (let t of [
 		"power_on_level",
 		"system_failure_level",
 		"fade_raw"
-	]) if (e[t] !== null && !tn(e[t], 0, 255)) return Q();
+	]) if (e[t] !== null && !nn(e[t], 0, 255)) return Q();
 	let t = e.fade_raw === null ? null : e.fade_raw >> 4, n = e.fade_raw === null || !(e.fade_raw & 15) ? null : e.fade_raw & 15;
 	if (e.fade_time !== t || e.fade_rate !== n || e.switching_support !== void 0 && e.switching_support !== null && typeof e.switching_support != "boolean") return Q();
 	if (e.switching_support === !0) {
@@ -2330,58 +2342,58 @@ function ln(e) {
 			"switch_status_raw",
 			"gear_type_raw",
 			"extended_version_raw",
-			...$t
-		]) if (t[e] !== null && !tn(t[e], +!!e.startsWith("upward_"), 255)) return Q();
+			...en
+		]) if (t[e] !== null && !nn(t[e], +!!e.startsWith("upward_"), 255)) return Q();
 		if (t.adjustable_thresholds !== (t.features_raw === null ? null : !!(t.features_raw & 8)) || t.physical_selection !== (t.features_raw === null ? null : !!(t.features_raw & 128))) return Q();
 		let n = [
 			"features_raw",
 			"switch_status_raw",
 			"gear_type_raw",
 			"extended_version_raw",
-			...$t
+			...en
 		].every((e) => t[e] !== null);
 		if (t.quality !== (n ? "complete" : "partial")) return Q();
 	} else if (e.switching !== void 0) return Q();
-	let r = sn(e), i = e.physical_minimum !== null && r !== null && e.minimum_level !== null && e.maximum_level !== null && r <= e.minimum_level && e.minimum_level <= e.maximum_level && e.power_on_level !== null && e.system_failure_level !== null && e.fade_raw !== null && n !== null;
+	let r = cn(e), i = e.physical_minimum !== null && r !== null && e.minimum_level !== null && e.maximum_level !== null && r <= e.minimum_level && e.minimum_level <= e.maximum_level && e.power_on_level !== null && e.system_failure_level !== null && e.fade_raw !== null && n !== null;
 	return e.quality === (i ? "complete" : "partial") ? structuredClone(e) : Q();
 }
-function un(e, t) {
-	return t ? e === "minimum_level" || e === "maximum_level" ? t.physical_minimum !== null && sn(t) !== null && t.minimum_level !== null && t.maximum_level !== null && sn(t) <= t.minimum_level && t.minimum_level <= t.maximum_level : e === "fade_time" || e === "fade_rate" ? t.fade_raw !== null : t[e] !== null : !1;
-}
 function dn(e, t) {
+	return t ? e === "minimum_level" || e === "maximum_level" ? t.physical_minimum !== null && cn(t) !== null && t.minimum_level !== null && t.maximum_level !== null && cn(t) <= t.minimum_level && t.minimum_level <= t.maximum_level : e === "fade_time" || e === "fade_rate" ? t.fade_raw !== null : t[e] !== null : !1;
+}
+function fn(e, t) {
 	if (!e || typeof e != "object" || Array.isArray(e) || !Object.keys(e).length) throw Error("Change at least one output setting.");
 	for (let [n, r] of Object.entries(e)) if (n === "switching") {
 		if (!r || typeof r != "object" || Array.isArray(r) || !Object.keys(r).length) throw Error("Change at least one relay threshold.");
-		for (let [e, n] of Object.entries(r)) if (!$t.includes(e) || !cn(e, t) || !tn(n, +!!e.startsWith("upward_"), 255)) throw Error("Fresh adjustable relay evidence and valid thresholds are required.");
+		for (let [e, n] of Object.entries(r)) if (!en.includes(e) || !ln(e, t) || !nn(n, +!!e.startsWith("upward_"), 255)) throw Error("Fresh adjustable relay evidence and valid thresholds are required.");
 	} else {
-		if (!en.includes(n) || !un(n, t)) throw Error("Fresh supported setting evidence is required. Refresh first.");
-		if (!tn(r, +(n === "minimum_level" || n === "maximum_level" || n === "fade_rate"), n === "minimum_level" || n === "maximum_level" ? 254 : n === "fade_time" || n === "fade_rate" ? 15 : 255)) throw Error("Enter valid brightness levels and native fade choices.");
+		if (!tn.includes(n) || !dn(n, t)) throw Error("Fresh supported setting evidence is required. Refresh first.");
+		if (!nn(r, +(n === "minimum_level" || n === "maximum_level" || n === "fade_rate"), n === "minimum_level" || n === "maximum_level" ? 254 : n === "fade_time" || n === "fade_rate" ? 15 : 255)) throw Error("Enter valid brightness levels and native fade choices.");
 	}
 	if (e.minimum_level !== void 0 || e.maximum_level !== void 0) {
 		let n = e.minimum_level ?? t.minimum_level, r = e.maximum_level ?? t.maximum_level;
-		if (n < sn(t) || n > r) throw Error("Minimum must meet the physical minimum or supported virtual minimum and not exceed maximum.");
+		if (n < cn(t) || n > r) throw Error("Minimum must meet the physical minimum or supported virtual minimum and not exceed maximum.");
 	}
 }
-function fn(e, t) {
+function pn(e, t) {
 	let n = {};
-	for (let r of en) e[r] !== t[r] && Object.assign(n, { [r]: t[r] });
+	for (let r of tn) e[r] !== t[r] && Object.assign(n, { [r]: t[r] });
 	if (e.switching && t.switching) {
 		let r = {};
-		for (let n of $t) e.switching[n] !== t.switching[n] && Object.assign(r, { [n]: t.switching[n] });
+		for (let n of en) e.switching[n] !== t.switching[n] && Object.assign(r, { [n]: t.switching[n] });
 		Object.keys(r).length && (n.switching = r);
 	}
 	return n;
 }
-function pn(e, t = !1) {
-	return !e || typeof e != "object" || Array.isArray(e) ? Q() : e.kind === "value" ? !tn(e.raw, 0, 255) || t && e.raw === 255 ? Q() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? Q() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || tn(e.code, 0, 255)) ? null : Q();
+function mn(e, t = !1) {
+	return !e || typeof e != "object" || Array.isArray(e) ? Q() : e.kind === "value" ? !nn(e.raw, 0, 255) || t && e.raw === 255 ? Q() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? Q() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || nn(e.code, 0, 255)) ? null : Q();
 }
-function mn(e, t) {
+function hn(e, t) {
 	if (t.switching_support === void 0 && e.device_type === void 0) return;
-	let n = pn(e.device_type), r = n === null || n === 255 ? null : n === 7;
+	let n = mn(e.device_type), r = n === null || n === 255 ? null : n === 7;
 	if (n === 255) {
 		let t = -1;
 		for (let n = 0; n < 9; n++) {
-			let i = pn(e[`device_type_${n}`]);
+			let i = mn(e[`device_type_${n}`]);
 			if (i === 254) {
 				r = n >= 2 ? !1 : null;
 				break;
@@ -2405,11 +2417,11 @@ function mn(e, t) {
 		downward_on: "switching_downward_on",
 		downward_off: "switching_downward_off"
 	})) {
-		let i = pn(e[r]);
+		let i = mn(e[r]);
 		if (n.startsWith("upward_") && i === 0 && (i = null), t.switching[n] !== i) return Q();
 	}
 }
-var hn = class {
+var gn = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.values = null, this.result = null, t.kind !== "output") throw Error("Select an individual output.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -2443,13 +2455,13 @@ var hn = class {
 			"system_failure_level",
 			"fade_time_rate",
 			"closing_status"
-		]) i[t] = pn(e.readings[t], [
+		]) i[t] = mn(e.readings[t], [
 			"actual_level",
 			"physical_minimum",
 			"minimum_level",
 			"maximum_level"
 		].includes(t));
-		let a = i.status !== null && i.closing_status !== null, o = e.settings === null ? null : ln(e.settings);
+		let a = i.status !== null && i.closing_status !== null, o = e.settings === null ? null : un(e.settings);
 		if (o !== null !== a) return Q();
 		if (o) {
 			for (let e of [
@@ -2459,11 +2471,11 @@ var hn = class {
 				"power_on_level",
 				"system_failure_level"
 			]) {
-				let t = e === "power_on_level" || e === "system_failure_level" || tn(i[e], 1, 254) ? i[e] : null;
+				let t = e === "power_on_level" || e === "system_failure_level" || nn(i[e], 1, 254) ? i[e] : null;
 				if (o[e] !== t) return Q();
 			}
 			if (o.fade_raw !== i.fade_time_rate) return Q();
-			mn(e.readings, o);
+			hn(e.readings, o);
 		}
 		if (t === "configure_output") {
 			if (e.outcome !== "configured" || o === null) throw Error("Output settings were not confirmed. Refresh to inspect again.");
@@ -2483,20 +2495,20 @@ var hn = class {
 	async save(e) {
 		if (this.assert(), this.identifying()) throw Error("Stop Blink before changing fixture settings.");
 		let t = structuredClone(e);
-		dn(t, this.values), this.values = null, this.result = null;
+		fn(t, this.values), this.values = null, this.result = null;
 		let n = await this.ui.client.job(this.row.generation, this.row.item.target, "configure_output", {
 			expected_revision: this.initial.inventory.revision,
 			settings: t
 		}), r = this.accepted(n, "configure_output");
-		for (let e of en) if (t[e] !== void 0 && r.settings?.[e] !== t[e]) throw Error("Output settings do not match requested values. Refresh to inspect again.");
-		for (let e of $t) if (t.switching?.[e] !== void 0 && r.settings?.switching?.[e] !== t.switching[e]) throw Error("Relay thresholds do not match requested values. Refresh to inspect again.");
+		for (let e of tn) if (t[e] !== void 0 && r.settings?.[e] !== t[e]) throw Error("Output settings do not match requested values. Refresh to inspect again.");
+		for (let e of en) if (t.switching?.[e] !== void 0 && r.settings?.switching?.[e] !== t.switching[e]) throw Error("Relay thresholds do not match requested values. Refresh to inspect again.");
 		return this.values = r.settings, this.result = r, this.ui.notice = "Fixture settings verified in hardware.", structuredClone(r);
 	}
 };
 // src/output-settings-ui.tsx
-function gn({ row: e, close: t }) {
-	let n = q(), [r] = H(() => new hn(n, e)), [i, a] = H(null), [o, s] = H(null), [c, l] = H(""), [u, d] = H({}), [f, p] = H({}), [m, h] = H({});
-	ge(() => () => {
+function _n({ row: e, close: t }) {
+	let n = q(), [r] = V(() => new gn(n, e)), [i, a] = V(null), [o, s] = V(null), [c, l] = V(""), [u, d] = V({}), [f, p] = V({}), [m, h] = V({});
+	_e(() => () => {
 		r.cancelled = !0;
 	}, [r]);
 	let g = () => {
@@ -2510,7 +2522,7 @@ function gn({ row: e, close: t }) {
 			throw r.cancelled || l(e.message), e;
 		}
 	});
-	U(() => {
+	H(() => {
 		_();
 	}, []);
 	let v = (e, t) => a((n) => n ? {
@@ -2518,9 +2530,9 @@ function gn({ row: e, close: t }) {
 		[e]: t
 	} : null), b = () => {
 		if (!i || !r.values) return;
-		let e = fn(r.values, i);
+		let e = pn(r.values, i);
 		try {
-			dn(e, r.values);
+			fn(e, r.values);
 		} catch (e) {
 			l(e.message);
 			return;
@@ -2540,15 +2552,15 @@ function gn({ row: e, close: t }) {
 		max: "100",
 		step: "0.1",
 		"aria-label": t,
-		value: u[e] ?? (i?.[e] !== null && Number.isFinite(i?.[e]) ? nn(i[e]) : ""),
+		value: u[e] ?? (i?.[e] !== null && Number.isFinite(i?.[e]) ? rn(i[e]) : ""),
 		placeholder: "Unknown",
-		disabled: !un(e, r.values),
+		disabled: !dn(e, r.values),
 		onInput: (t) => {
 			let n = t.currentTarget.value;
 			d((t) => ({
 				...t,
 				[e]: n
-			})), v(e, rn(n)), (e === "power_on_level" || e === "system_failure_level") && p((t) => ({
+			})), v(e, an(n)), (e === "power_on_level" || e === "system_failure_level") && p((t) => ({
 				...t,
 				[e]: "level"
 			}));
@@ -2563,7 +2575,7 @@ function gn({ row: e, close: t }) {
 				/* @__PURE__ */ K("select", {
 					"aria-label": `${t} mode`,
 					value: o,
-					disabled: !un(e, r.values),
+					disabled: !dn(e, r.values),
 					onChange: (t) => {
 						let n = t.currentTarget.value;
 						p((t) => ({
@@ -2647,7 +2659,7 @@ function gn({ row: e, close: t }) {
 						class: "hint",
 						children: [
 							"Physical minimum: ",
-							i.physical_minimum === null ? "unknown" : `${nn(i.physical_minimum)}%`,
+							i.physical_minimum === null ? "unknown" : `${rn(i.physical_minimum)}%`,
 							". ",
 							w ? "These limits control a virtual level. Changing limits can operate the relay contact." : "Limits can change a light that is already on. An off light stays off."
 						]
@@ -2661,25 +2673,25 @@ function gn({ row: e, close: t }) {
 						children: [/* @__PURE__ */ K("label", { children: ["Fade time", /* @__PURE__ */ K("select", {
 							"aria-label": "Fade time",
 							value: i.fade_time ?? "",
-							disabled: !un("fade_time", r.values),
+							disabled: !dn("fade_time", r.values),
 							onChange: (e) => v("fade_time", Number(e.currentTarget.value)),
 							children: [i.fade_time === null && /* @__PURE__ */ K("option", {
 								value: "",
 								children: "Unknown"
-							}), an.map((e) => /* @__PURE__ */ K("option", {
+							}), on.map((e) => /* @__PURE__ */ K("option", {
 								value: e.code,
 								children: e.label
 							}))]
 						})] }), /* @__PURE__ */ K("label", { children: ["Dimming rate", /* @__PURE__ */ K("select", {
 							"aria-label": "Dimming rate",
 							value: i.fade_rate ?? "",
-							disabled: !un("fade_rate", r.values),
+							disabled: !dn("fade_rate", r.values),
 							onChange: (e) => v("fade_rate", Number(e.currentTarget.value)),
 							children: [i.fade_rate === null && /* @__PURE__ */ K("option", {
 								value: "",
 								disabled: !0,
 								children: i.fade_raw === null ? "Unknown" : "Unknown (reserved code 0)"
-							}), on.map((e) => /* @__PURE__ */ K("option", {
+							}), sn.map((e) => /* @__PURE__ */ K("option", {
 								value: e.code,
 								children: e.label
 							}))]
@@ -2697,7 +2709,7 @@ function gn({ row: e, close: t }) {
 						}),
 						/* @__PURE__ */ K("div", {
 							class: "input-timer-grid switching-threshold-grid",
-							children: $t.map((e) => {
+							children: en.map((e) => {
 								let t = i?.switching?.[e], n = t === 255, o = +!!e.startsWith("upward_"), s = T[e], c = (t) => a((n) => n?.switching ? {
 									...n,
 									switching: {
@@ -2716,7 +2728,7 @@ function gn({ row: e, close: t }) {
 										"aria-label": s,
 										value: m[e] ?? (t !== null && !n && Number.isFinite(t) ? String(t) : ""),
 										placeholder: n ? "Disabled" : "Unknown",
-										disabled: n || !cn(e, r.values),
+										disabled: n || !ln(e, r.values),
 										onInput: (t) => {
 											let n = t.currentTarget.value;
 											h((t) => ({
@@ -2733,7 +2745,7 @@ function gn({ row: e, close: t }) {
 											type: "checkbox",
 											"aria-label": `Disable ${s.toLowerCase()}`,
 											checked: n,
-											disabled: !cn(e, r.values),
+											disabled: !ln(e, r.values),
 											onChange: (t) => {
 												let n = t.currentTarget.checked, r = m[e], i = r === void 0 ? o : r.trim() === "" ? NaN : Number(r);
 												c(n ? 255 : Number.isInteger(i) && i >= o && i <= 254 ? i : NaN);
@@ -2756,7 +2768,7 @@ function gn({ row: e, close: t }) {
 			}),
 			o && /* @__PURE__ */ K("details", { children: [
 				/* @__PURE__ */ K("summary", { children: "Fixture diagnostics" }),
-				/* @__PURE__ */ K("p", { children: w ? `Actual contact: ${o.actual_level === 254 ? "On" : o.actual_level === 0 ? "Off" : "unknown"}` : `Actual brightness: ${o.actual_level === null ? "unknown" : `${nn(o.actual_level)}%`}` }),
+				/* @__PURE__ */ K("p", { children: w ? `Actual contact: ${o.actual_level === 254 ? "On" : o.actual_level === 0 ? "Off" : "unknown"}` : `Actual brightness: ${o.actual_level === null ? "unknown" : `${rn(o.actual_level)}%`}` }),
 				/* @__PURE__ */ K("p", { children: ["Reported version byte: ", o.version === null ? "unknown" : `0x${o.version.toString(16).toUpperCase().padStart(2, "0")}`] }),
 				/* @__PURE__ */ K("p", { children: ["Active status flags: ", o.status === null ? "unknown" : C.filter((e, t) => o.status & 1 << t).join(", ") || "none"] }),
 				w && i?.switching && /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("p", { children: [
@@ -2800,7 +2812,7 @@ function gn({ row: e, close: t }) {
 	});
 }
 // src/emergency.ts
-var _n = [
+var vn = [
 	"rest",
 	"normal",
 	"emergency",
@@ -2809,7 +2821,7 @@ var _n = [
 	"duration_test",
 	"hardwired_inhibit",
 	"hardwired_switch_on"
-], vn = [
+], yn = [
 	"integral",
 	"maintained",
 	"switched_maintained",
@@ -2818,7 +2830,7 @@ var _n = [
 	"hardwired_inhibit",
 	"physical_selection",
 	"relight_in_rest"
-], yn = [
+], bn = [
 	"circuit_failure",
 	"battery_duration_failure",
 	"battery_failure",
@@ -2827,7 +2839,7 @@ var _n = [
 	"duration_max_delay_exceeded",
 	"function_test_failed",
 	"duration_test_failed"
-], bn = [
+], xn = [
 	"inhibited",
 	"function_done_valid",
 	"duration_done_valid",
@@ -2836,7 +2848,7 @@ var _n = [
 	"duration_pending",
 	"identification_active",
 	"physically_selected"
-], xn = [
+], Sn = [
 	{
 		key: "emergency_level",
 		label: "Emergency level (native 1–254)",
@@ -2886,26 +2898,26 @@ var _n = [
 		max: 983010,
 		step: 15
 	}
-], Sn = (e, t = 0, n = 255) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n, Cn = (e) => typeof e == "object" && !!e && !Array.isArray(e), wn = () => {
+], Cn = (e, t = 0, n = 255) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n, wn = (e) => typeof e == "object" && !!e && !Array.isArray(e), Tn = () => {
 	throw Error("Emergency evidence is incomplete or inconsistent. Refresh to inspect again.");
-}, Tn = (e, t) => {
+}, En = (e, t) => {
 	if (e === t) return !0;
-	if (!Cn(e) || !Cn(t)) return !1;
+	if (!wn(e) || !wn(t)) return !1;
 	let n = Object.keys(e).sort();
-	return n.join("\0") === Object.keys(t).sort().join("\0") && n.every((n) => Tn(e[n], t[n]));
+	return n.join("\0") === Object.keys(t).sort().join("\0") && n.every((n) => En(e[n], t[n]));
 };
-function En(e) {
-	if (!Cn(e)) return wn();
-	let t = Object.keys(e).sort().join(",");
-	return e.kind === "value" && t === "kind,raw" && Sn(e.raw) ? e.raw : e.kind === "no_response" && t === "kind" || ["receive_collision", "transmit_collision"].includes(e.kind) && t === "code,kind" && (e.code === null || Sn(e.code)) ? null : wn();
-}
 function Dn(e) {
-	let t = En(e.device_type);
+	if (!wn(e)) return Tn();
+	let t = Object.keys(e).sort().join(",");
+	return e.kind === "value" && t === "kind,raw" && Cn(e.raw) ? e.raw : e.kind === "no_response" && t === "kind" || ["receive_collision", "transmit_collision"].includes(e.kind) && t === "code,kind" && (e.code === null || Cn(e.code)) ? null : Tn();
+}
+function On(e) {
+	let t = Dn(e.device_type);
 	if (t === null || t === 254) return null;
 	if (t !== 255) return t === 1;
 	let n = -1, r = 0;
 	for (let t = 0; t < 9; t++) {
-		let i = En(e[`next_device_type_${t}`]);
+		let i = Dn(e[`next_device_type_${t}`]);
 		if (i === 254) return r >= 2 ? !1 : null;
 		if (i === null || i === 255 || i <= n) return null;
 		if (i >= 1) return i === 1;
@@ -2913,7 +2925,7 @@ function Dn(e) {
 	}
 	return null;
 }
-var On = [
+var kn = [
 	[
 		"battery_charge",
 		"raw",
@@ -3017,17 +3029,17 @@ var On = [
 		"number"
 	]
 ];
-function kn(e) {
-	if (!Cn(e)) return wn();
-	for (let t of Object.values(e)) En(t);
-	let t = Dn(e);
-	if (En(e.presence) === null || t !== !0) return {
+function An(e) {
+	if (!wn(e)) return Tn();
+	for (let t of Object.values(e)) Dn(t);
+	let t = On(e);
+	if (Dn(e.presence) === null || t !== !0) return {
 		support: t,
 		observed: null
 	};
 	let n = {};
-	for (let [t, r, i, a] of On) {
-		let o = En(e[t]), s = "value", c = o === null ? null : o * i;
+	for (let [t, r, i, a] of kn) {
+		let o = Dn(e[t]), s = "value", c = o === null ? null : o * i;
 		o === null ? s = "unavailable" : o === 255 && ["battery", "level"].includes(a) ? (s = "unknown", c = null) : a === "level" && o === 0 || a === "weeks" && o !== null && o > 97 ? (s = "invalid", c = null) : a === "timeout" && o === 0 && (c = 15), n[t] = {
 			raw: o,
 			status: s,
@@ -3037,7 +3049,7 @@ function kn(e) {
 		};
 	}
 	for (let t of ["next_function_test_minutes", "next_duration_test_minutes"]) {
-		let r = En(e[t + "_high"]), i = En(e[t + "_low"]), a = r === null || i === null ? null : r * 256 + i;
+		let r = Dn(e[t + "_high"]), i = Dn(e[t + "_low"]), a = r === null || i === null ? null : r * 256 + i;
 		n[t] = {
 			raw: a,
 			status: a === null ? "unavailable" : a === 65535 ? "unknown" : "value",
@@ -3046,7 +3058,7 @@ function kn(e) {
 			at_least: !1
 		};
 	}
-	if (En(e.closing_presence) === null) return {
+	if (Dn(e.closing_presence) === null) return {
 		support: t,
 		observed: null
 	};
@@ -3055,42 +3067,42 @@ function kn(e) {
 		support: t,
 		observed: {
 			fields: n,
-			mode: r("mode_raw", _n),
-			features: r("features_raw", vn),
-			failures: r("failures_raw", yn),
-			status: r("status_raw", bn),
-			quality: Object.values(e).every((e) => En(e) !== null) ? "complete" : "partial"
+			mode: r("mode_raw", vn),
+			features: r("features_raw", yn),
+			failures: r("failures_raw", bn),
+			status: r("status_raw", xn),
+			quality: Object.values(e).every((e) => Dn(e) !== null) ? "complete" : "partial"
 		}
 	};
 }
-function An(e) {
-	if (!Cn(e) || e.configuration_changed !== !1 || !Cn(e.readings)) return wn();
-	let t = kn(e.readings);
-	if (e.support !== t.support || !Tn(e.observed, t.observed)) return wn();
+function jn(e) {
+	if (!wn(e) || e.configuration_changed !== !1 || !wn(e.readings)) return Tn();
+	let t = An(e.readings);
+	if (e.support !== t.support || !En(e.observed, t.observed)) return Tn();
 	if (e.before === null) {
-		if (e.before_readings !== null) return wn();
-	} else if (!Cn(e.before_readings) || !Tn(e.before, kn(e.before_readings).observed)) return wn();
+		if (e.before_readings !== null) return Tn();
+	} else if (!wn(e.before_readings) || !En(e.before, An(e.before_readings).observed)) return Tn();
 	return structuredClone(e);
 }
-var $ = (e, t) => e?.fields[t]?.status === "value" ? e.fields[t].value : null, jn = (e, t) => $(e, t === "function_delay_minutes" ? "next_function_test_minutes" : t === "duration_delay_minutes" ? "next_duration_test_minutes" : t);
-function Mn(e, t) {
-	return !t || !xn.some((t) => t.key === e) ? !1 : e === "emergency_level" ? t.features.adjustable_level === !0 && [
+var $ = (e, t) => e?.fields[t]?.status === "value" ? e.fields[t].value : null, Mn = (e, t) => $(e, t === "function_delay_minutes" ? "next_function_test_minutes" : t === "duration_delay_minutes" ? "next_duration_test_minutes" : t);
+function Nn(e, t) {
+	return !t || !Sn.some((t) => t.key === e) ? !1 : e === "emergency_level" ? t.features.adjustable_level === !0 && [
 		"emergency_level",
 		"minimum_level",
 		"maximum_level"
-	].every((e) => $(t, e) !== null) && $(t, "minimum_level") <= $(t, "maximum_level") : e.includes("interval") || e.includes("delay") ? t.features.automatic_tests === !0 && (e.includes("delay") || jn(t, e) !== null) : jn(t, e) !== null;
+	].every((e) => $(t, e) !== null) && $(t, "minimum_level") <= $(t, "maximum_level") : e.includes("interval") || e.includes("delay") ? t.features.automatic_tests === !0 && (e.includes("delay") || Mn(t, e) !== null) : Mn(t, e) !== null;
 }
-function Nn(e, t) {
-	if (!Cn(e) || !Object.keys(e).length) throw Error("Change at least one emergency setting.");
+function Pn(e, t) {
+	if (!wn(e) || !Object.keys(e).length) throw Error("Change at least one emergency setting.");
 	for (let [n, r] of Object.entries(e)) {
-		let e = xn.find((e) => e.key === n);
-		if (!e || !Mn(n, t) || !Sn(r, e.min, e.max) || r % e.step !== 0) throw Error("Fresh supported emergency settings and valid native unit multiples are required.");
+		let e = Sn.find((e) => e.key === n);
+		if (!e || !Nn(n, t) || !Cn(r, e.min, e.max) || r % e.step !== 0) throw Error("Fresh supported emergency settings and valid native unit multiples are required.");
 		if (n === "test_execution_timeout_minutes" && r !== 15 && (r < 1440 || r % 1440 != 0)) throw Error("Timeout must be 15 minutes or whole days.");
 		if (n === "emergency_level" && (r < $(t, "minimum_level") || r > $(t, "maximum_level"))) throw Error("Emergency level must meet the fresh manufacturer limits.");
 	}
 	for (let [t, n] of [["function_test_interval_days", "function_delay_minutes"], ["duration_test_interval_weeks", "duration_delay_minutes"]]) if ((e[t] !== void 0 && e[t] > 0) != (e[n] !== void 0)) throw Error("A positive interval requires its explicit initial delay; delay-only and disabled pairs are invalid.");
 }
-var Pn = class {
+var Fn = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.result = null, this.values = null, t.kind !== "output") throw Error("Select an individual output.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -3111,10 +3123,10 @@ var Pn = class {
 	accept(e, t) {
 		this.assert();
 		let { row: n, initial: r } = this;
-		if (!e || e.operation !== t || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== r.inventory.revision || e.bus !== n.bus.bus || e.address !== n.item.short_address) return wn();
+		if (!e || e.operation !== t || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== r.inventory.revision || e.bus !== n.bus.bus || e.address !== n.item.short_address) return Tn();
 		let i = t === "read_emergency" ? "observed" : t === "configure_emergency" ? "applied" : "request_sent";
 		if (e.outcome !== i) throw Error("Emergency operation is unconfirmed. Refresh to inspect the fixture before trying again.");
-		return An(e);
+		return jn(e);
 	}
 	async perform(e, t) {
 		return this.assert(), this.values = null, this.result = null, this.accept(await this.ui.client.job(this.row.generation, this.row.item.target, e, t), e);
@@ -3128,12 +3140,12 @@ var Pn = class {
 	async save(e) {
 		if (this.assert(), this.identifying()) throw Error("Stop Blink before emergency operations.");
 		let t = structuredClone(e);
-		Nn(t, this.values);
+		Pn(t, this.values);
 		let n = await this.perform("configure_emergency", {
 			expected_revision: this.initial.inventory.revision,
 			settings: t
 		});
-		for (let [e, r] of Object.entries(t)) if (jn(n.observed, e) !== r) throw Error("Emergency settings do not match the requested readback. Refresh to inspect again.");
+		for (let [e, r] of Object.entries(t)) if (Mn(n.observed, e) !== r) throw Error("Emergency settings do not match the requested readback. Refresh to inspect again.");
 		return this.retain(n);
 	}
 	async test(e) {
@@ -3148,14 +3160,14 @@ var Pn = class {
 			...e === null ? {} : { test: e }
 		}));
 	}
-}, Fn = (e) => e.replace(/_/g, " "), In = (e) => Object.values(e).every((e) => e === null) ? "Unavailable" : Object.entries(e).filter(([, e]) => e === !0).map(([e]) => Fn(e)).join(", ") || "None reported";
-function Ln(e, t) {
+}, In = (e) => e.replace(/_/g, " "), Ln = (e) => Object.values(e).every((e) => e === null) ? "Unavailable" : Object.entries(e).filter(([, e]) => e === !0).map(([e]) => In(e)).join(", ") || "None reported";
+function Rn(e, t) {
 	let n = e.fields[t];
-	return n.status === "value" ? `${n.at_least ? "At least " : ""}${n.value}${n.unit === "raw" ? "" : ` ${n.unit}`}` : Fn(n.status);
+	return n.status === "value" ? `${n.at_least ? "At least " : ""}${n.value}${n.unit === "raw" ? "" : ` ${n.unit}`}` : In(n.status);
 }
-function Rn({ row: e, close: t }) {
-	let n = q(), [r] = H(() => new Pn(n, e)), [i, a] = H(null), [o, s] = H({}), [c, l] = H(""), [u, d] = H(!1);
-	ge(() => () => {
+function zn({ row: e, close: t }) {
+	let n = q(), [r] = V(() => new Fn(n, e)), [i, a] = V(null), [o, s] = V({}), [c, l] = V(""), [u, d] = V(!1);
+	_e(() => () => {
 		r.cancelled = !0;
 	}, [r]);
 	let f = () => {
@@ -3168,7 +3180,7 @@ function Rn({ row: e, close: t }) {
 			throw r.cancelled || l(e.message), e;
 		}
 	});
-	U(() => {
+	H(() => {
 		p();
 	}, []);
 	let m = () => {
@@ -3178,8 +3190,8 @@ function Rn({ row: e, close: t }) {
 				if (!n.trim()) throw Error("Enter numeric emergency settings.");
 				e[t] = Number(n);
 			}
-			for (let [t, n] of [["function_test_interval_days", "function_delay_minutes"], ["duration_test_interval_weeks", "duration_delay_minutes"]]) e[n] !== void 0 && e[t] === void 0 && (e[t] = jn(r.values, t) ?? NaN), e[t] === 0 ? delete e[n] : e[t] !== void 0 && e[n] === void 0 && (e[n] = jn(r.values, n) ?? NaN);
-			Nn(e, r.values);
+			for (let [t, n] of [["function_test_interval_days", "function_delay_minutes"], ["duration_test_interval_weeks", "duration_delay_minutes"]]) e[n] !== void 0 && e[t] === void 0 && (e[t] = Mn(r.values, t) ?? NaN), e[t] === 0 ? delete e[n] : e[t] !== void 0 && e[n] === void 0 && (e[n] = Mn(r.values, n) ?? NaN);
+			Pn(e, r.values);
 		} catch (e) {
 			l(e.message);
 			return;
@@ -3249,15 +3261,15 @@ function Rn({ row: e, close: t }) {
 					/* @__PURE__ */ K("dt", { children: "Battery charge" }),
 					/* @__PURE__ */ K("dd", { children: v === null ? "Unknown" : `${(v * 100 / 254).toFixed(1)}%` }),
 					/* @__PURE__ */ K("dt", { children: "Mode" }),
-					/* @__PURE__ */ K("dd", { children: In(_.mode) }),
+					/* @__PURE__ */ K("dd", { children: Ln(_.mode) }),
 					/* @__PURE__ */ K("dt", { children: "Faults" }),
-					/* @__PURE__ */ K("dd", { children: In(_.failures) }),
+					/* @__PURE__ */ K("dd", { children: Ln(_.failures) }),
 					/* @__PURE__ */ K("dt", { children: "Test status" }),
-					/* @__PURE__ */ K("dd", { children: In(_.status) }),
+					/* @__PURE__ */ K("dd", { children: Ln(_.status) }),
 					/* @__PURE__ */ K("dt", { children: "Last duration result" }),
-					/* @__PURE__ */ K("dd", { children: _.status.duration_done_valid === !0 ? Ln(_, "last_duration_seconds") : "Unavailable (no valid native result)" }),
+					/* @__PURE__ */ K("dd", { children: _.status.duration_done_valid === !0 ? Rn(_, "last_duration_seconds") : "Unavailable (no valid native result)" }),
 					/* @__PURE__ */ K("dt", { children: "Rated duration" }),
-					/* @__PURE__ */ K("dd", { children: Ln(_, "rated_duration_seconds") })
+					/* @__PURE__ */ K("dd", { children: Rn(_, "rated_duration_seconds") })
 				] }), /* @__PURE__ */ K("p", {
 					class: "hint",
 					children: "These are explicit native readings. A completed command confirms the request, not completion of the battery test."
@@ -3305,15 +3317,15 @@ function Rn({ row: e, close: t }) {
 					children: [
 						/* @__PURE__ */ K("div", {
 							class: "input-timer-grid",
-							children: xn.map((e) => /* @__PURE__ */ K("label", { children: [e.label, /* @__PURE__ */ K("input", {
+							children: Sn.map((e) => /* @__PURE__ */ K("label", { children: [e.label, /* @__PURE__ */ K("input", {
 								"aria-label": e.label,
 								type: "number",
 								min: e.min,
 								max: e.max,
 								step: e.step,
 								placeholder: "Unknown",
-								value: o[e.key] ?? String(jn(_, e.key) ?? ""),
-								disabled: !Mn(e.key, r.values),
+								value: o[e.key] ?? String(Mn(_, e.key) ?? ""),
+								disabled: !Nn(e.key, r.values),
 								onInput: (t) => s((n) => ({
 									...n,
 									[e.key]: t.currentTarget.value
@@ -3359,14 +3371,14 @@ function Rn({ row: e, close: t }) {
 	});
 }
 // src/feedback.ts
-var zn = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function Bn(e) {
+var Bn = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function Vn(e) {
 	let t = () => {
 		throw Error("Feedback evidence is incomplete or invalid. Refresh to inspect again.");
 	};
 	if (!e || typeof e != "object" || Array.isArray(e) || !["complete", "partial"].includes(e.quality)) return t();
 	let { features: n, capability: r, supported: i, active: a } = e;
-	if (n !== null && (!Array.isArray(n) || n.length > 65 || n.some((e, t) => !Number.isInteger(e) || typeof e != "number" || e < 32 || e > 96 || t > 0 && n[t - 1] >= e)) || r !== null && !zn(r) || i !== null && typeof i != "boolean" || a !== null && typeof a != "boolean") return t();
+	if (n !== null && (!Array.isArray(n) || n.length > 65 || n.some((e, t) => !Number.isInteger(e) || typeof e != "number" || e < 32 || e > 96 || t > 0 && n[t - 1] >= e)) || r !== null && !Bn(r) || i !== null && typeof i != "boolean" || a !== null && typeof a != "boolean") return t();
 	let o = null, s = "partial";
 	if (n === null) {
 		if (r !== null || a !== null) return t();
@@ -3380,10 +3392,10 @@ function Bn(e) {
 	else if (a !== null) return t();
 	return i !== o || e.quality !== s ? t() : structuredClone(e);
 }
-function Vn(e) {
+function Hn(e) {
 	return !!e && e.quality === "complete" && e.supported === !0 && e.features?.includes(32) && typeof e.capability == "number" && !!(e.capability & 9) && typeof e.active == "boolean";
 }
-var Hn = class {
+var Un = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.values = null, t.kind !== "input" && t.kind !== "instance") throw Error("Select an input module or instance.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -3397,11 +3409,11 @@ var Hn = class {
 		this.assert();
 		let n = this.row, r = n.kind === "input" ? n.item.short_address : n.parent?.short_address, i = n.kind === "instance" ? n.item.number : null;
 		if (e.operation !== t || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== this.initial.inventory.revision || e.bus !== n.bus.bus || e.address !== r || e.instance !== i || e.configuration_changed !== !1 || n.kind === "input" && e.reported_type !== null || n.kind === "instance" && e.feedback !== null && e.reported_type !== n.item.instance_type) throw Error("Feedback result changed. Refresh to inspect again.");
-		let a = e.feedback === null ? null : Bn(e.feedback);
+		let a = e.feedback === null ? null : Vn(e.feedback);
 		if (t === "set_input_feedback") {
-			if (e.outcome !== "set" || !Vn(a)) throw Error("Feedback was not confirmed. Refresh to inspect again.");
+			if (e.outcome !== "set" || !Hn(a)) throw Error("Feedback was not confirmed. Refresh to inspect again.");
 		} else if (e.outcome === "current") {
-			if (!Vn(a)) throw Error("Current feedback evidence is incomplete.");
+			if (!Hn(a)) throw Error("Current feedback evidence is incomplete.");
 		} else if (e.outcome === "unsupported") {
 			if (!a || a.quality !== "complete" || a.supported !== !1) throw Error("Unsupported feedback evidence is incomplete.");
 		} else if (e.outcome === "unavailable") {
@@ -3415,7 +3427,7 @@ var Hn = class {
 		return this.values = t, structuredClone(t);
 	}
 	async set(e) {
-		if (this.assert(), typeof e != "boolean" || !Vn(this.values)) throw Error("Complete supported feedback evidence is required. Refresh first.");
+		if (this.assert(), typeof e != "boolean" || !Hn(this.values)) throw Error("Complete supported feedback evidence is required. Refresh first.");
 		this.values = null;
 		let t = await this.ui.client.job(this.row.generation, this.row.item.target, "set_input_feedback", {
 			expected_revision: this.initial.inventory.revision,
@@ -3426,9 +3438,9 @@ var Hn = class {
 	}
 };
 // src/feedback-ui.tsx
-function Un({ row: e, close: t }) {
-	let n = q(), [r] = H(() => new Hn(n, e)), [i, a] = H(null), [o, s] = H(!1), [c, l] = H("");
-	ge(() => () => {
+function Wn({ row: e, close: t }) {
+	let n = q(), [r] = V(() => new Un(n, e)), [i, a] = V(null), [o, s] = V(!1), [c, l] = V("");
+	_e(() => () => {
 		r.cancelled = !0;
 	}, [r]);
 	let u = () => {
@@ -3442,7 +3454,7 @@ function Un({ row: e, close: t }) {
 			throw r.cancelled || l(e.message), e;
 		}
 	});
-	U(() => {
+	H(() => {
 		d();
 	}, []);
 	let f = () => void n.run(async () => {
@@ -3478,7 +3490,7 @@ function Un({ row: e, close: t }) {
 				role: "status",
 				children: "Reading feedback…"
 			}),
-			o && (Vn(i) ? /* @__PURE__ */ K("div", {
+			o && (Hn(i) ? /* @__PURE__ */ K("div", {
 				class: "toolbar",
 				children: [
 					/* @__PURE__ */ K("span", { children: [
@@ -3512,7 +3524,7 @@ function Un({ row: e, close: t }) {
 	});
 }
 // src/restoration.ts
-var Wn = class {
+var Gn = class {
 	constructor(e, t) {
 		if (this.candidates = /* @__PURE__ */ new Set(), this.cancelled = !1, t.kind !== "output" && t.kind !== "input") throw Error("Select a saved fixture or input module.");
 		this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.original = structuredClone(t), this.space = t.kind === "output" ? "outputs" : "inputs", this.revision = this.initial.inventory.revision, this.address = t.item.short_address, this.generation = t.generation;
@@ -3532,7 +3544,7 @@ var Wn = class {
 	}
 	async controller(e, t) {
 		this.assert();
-		let n = await this.ui.client.job(Oe(this.initial.inventory.inventory_epoch, this.revision), null, e, {
+		let n = await this.ui.client.job(U(this.initial.inventory.inventory_epoch, this.revision), null, e, {
 			...t,
 			bus: this.original.bus.bus,
 			expected_revision: this.revision
@@ -3564,7 +3576,7 @@ var Wn = class {
 			let t = this.ui.currentRows.find((t) => t.key === e.key);
 			if (!this.candidates.has(e.key) || !t || t.kind !== this.original.kind || t.bus.bus !== this.original.bus.bus || t.item.target !== e.item.target || t.generation !== e.generation) throw Error("Identified candidate changed. Review it again.");
 		}
-		return new Gn(this, e);
+		return new Kn(this, e);
 	}
 	async refresh() {
 		try {
@@ -3578,7 +3590,7 @@ var Wn = class {
 			this.ui.notice = `Address restored at ${this.address}. Current-value refresh did not finish; use Refresh addressed or Read current values.`;
 		}
 	}
-}, Gn = class {
+}, Kn = class {
 	constructor(e, t) {
 		this.scope = e, this.revision = e.revision, this.candidate = t ? structuredClone(t) : void 0;
 	}
@@ -3607,7 +3619,7 @@ var Wn = class {
 				candidate: r.item.target,
 				candidate_generation: r.generation
 			} : {}
-		}), c = r?.item.short_address ?? n.item.short_address, l = r ? Oe(e.initial.inventory.inventory_epoch, s.revision) : n.generation;
+		}), c = r?.item.short_address ?? n.item.short_address, l = r ? U(e.initial.inventory.inventory_epoch, s.revision) : n.generation;
 		if (s.operation !== o || s.target !== n.item.target || s.target_generation !== n.generation || s.current_generation !== l || s.bus !== n.bus.bus || s.previous_address !== n.item.short_address || s.address !== c || r && (s.candidate !== r.item.target || s.candidate_generation !== r.generation || s.source_address !== r.item.short_address)) throw Error("Address restoration result changed. Inspect hardware before retrying.");
 		if (await e.accept(s.revision, {
 			address: c,
@@ -3616,9 +3628,9 @@ var Wn = class {
 		if (r && t.currentRows.some((e) => e.key === r.key)) throw Error("Address restored but candidate retirement is not visible. Inspect saved configuration.");
 		await e.refresh();
 	}
-}, Kn = class {
+}, qn = class {
 	constructor(e, t) {
-		this.scope = new Wn(e, t);
+		this.scope = new Gn(e, t);
 	}
 	async run() {
 		let e = this.scope, t = e.ui, n = e.original;
@@ -3640,7 +3652,7 @@ var Wn = class {
 	}
 };
 // src/restoration-ui.tsx
-function qn({ scope: e, review: t, choose: n, close: r }) {
+function Jn({ scope: e, review: t, choose: n, close: r }) {
 	let i = q(), a = e.original, o = i.snapshot.identification, s = !!t?.candidate && o?.target === t.candidate.item.target && [
 		"starting",
 		"blinking",
@@ -3763,15 +3775,15 @@ function qn({ scope: e, review: t, choose: n, close: r }) {
 	})] });
 }
 // src/devices.tsx
-function Jn({ row: e, close: t }) {
-	let n = q(), r = n.physical(e.key), i = Me(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
+function Yn({ row: e, close: t }) {
+	let n = q(), r = n.physical(e.key), i = Ne(n.snapshot, r), a = r.item.color_representation ?? "", o = i.ColorCapabilities, s = o?.supported_representations, c = o?.temperature_limits, l = a === "temperature" ? ["ColorTemperature"] : a === "xy" ? ["ColorX", "ColorY"] : a === "rgbwaf" ? [
 		"ColorRed",
 		"ColorGreen",
 		"ColorBlue",
 		"ColorWhite",
 		"ColorAmber",
 		"ColorFree"
-	] : [], [u, d] = H({}), f = (e) => ({
+	] : [], [u, d] = V({}), f = (e) => ({
 		ColorTemperature: "Temperature (K)",
 		ColorX: "x",
 		ColorY: "y",
@@ -3889,7 +3901,7 @@ function Jn({ row: e, close: t }) {
 		]
 	});
 }
-function Yn({ row: e, close: t }) {
+function Xn({ row: e, close: t }) {
 	let n = q(), r = n.physical(e.key);
 	return /* @__PURE__ */ K(J, {
 		title: `Groups · ${r.item.name}`,
@@ -3919,18 +3931,18 @@ function Yn({ row: e, close: t }) {
 		})]
 	});
 }
-function Xn({ row: e, recover: t, select: n }) {
-	let r = q(), i = r.snapshot, a = Me(i, e), [o, s] = H(null);
-	ge(() => () => {
+function Zn({ row: e, recover: t, select: n }) {
+	let r = q(), i = r.snapshot, a = Ne(i, e), [o, s] = V(null);
+	_e(() => () => {
 		o && (o.scope.cancelled = !0);
 	}, [o]);
 	let c = () => {
 		o && (o.scope.cancelled = !0), s(null);
-	}, [l, u] = H(!1), [d, f] = H(!1), [p, m] = H(!1), [h, g] = H(!1), [_, v] = H(!1), [b, x] = H(!1), [S, C] = H(!1), [w, T] = H(!1), [E, D] = H(!1), [O, k] = H(null), A = W(i, e.bus) && r.client.views.ready, j = i.identification?.target === e.item.target ? i.identification : null, M = !!j && [
+	}, [l, u] = V(!1), [d, f] = V(!1), [p, m] = V(!1), [h, g] = V(!1), [_, v] = V(!1), [b, x] = V(!1), [S, C] = V(!1), [w, T] = V(!1), [E, D] = V(!1), [O, k] = V(null), A = W(i, e.bus) && r.client.views.ready, j = i.identification?.target === e.item.target ? i.identification : null, M = !!j && [
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(j.phase), ee = r.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), N = a.SwitchingSupported === !0, te = a.EmergencySupported === !0, P = r.hints.get(e.key), F = e.kind === "output" ? N ? "DT7 relay" : te ? "DT1 emergency" : P?.length ? P.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Ne(e.item.instance_type), ne = a.ColorCapabilities?.dt8, I = e.kind === "output" && (ne === !0 || ne !== !1 && P?.includes(8) === !0), L = Pe(a), R = typeof a.Brightness == "number" ? Math.round(a.Brightness * 100) : null;
+	].includes(j.phase), ee = r.client.events.find((t) => t.target === e.item.target && t.generation === e.generation), N = a.SwitchingSupported === !0, te = a.EmergencySupported === !0, P = r.hints.get(e.key), F = e.kind === "output" ? N ? "DT7 relay" : te ? "DT1 emergency" : P?.length ? P.map((e) => `DT${e}`).join(", ") : "Output" : e.kind === "input" ? "Input module" : Pe(e.item.instance_type), ne = a.ColorCapabilities?.dt8, I = e.kind === "output" && (ne === !0 || ne !== !1 && P?.includes(8) === !0), re = Fe(a), L = typeof a.Brightness == "number" ? Math.round(a.Brightness * 100) : null;
 	return /* @__PURE__ */ K("div", {
 		class: `device-row ${e.kind === "output" ? "output-grid" : "input-grid"} ${M ? "identifying" : ""} ${ee && Date.now() - ee.received < 5e3 ? "active-input" : ""}`,
 		"data-device-key": e.key,
@@ -3941,8 +3953,8 @@ function Xn({ row: e, recover: t, select: n }) {
 			}),
 			e.kind === "output" ? /* @__PURE__ */ K("div", {
 				class: "fixture-name",
-				children: [/* @__PURE__ */ K(Ke, { row: e }), /* @__PURE__ */ K(Ye, { row: e })]
-			}) : /* @__PURE__ */ K(Ke, { row: e }),
+				children: [/* @__PURE__ */ K(qe, { row: e }), /* @__PURE__ */ K(Xe, { row: e })]
+			}) : /* @__PURE__ */ K(qe, { row: e }),
 			/* @__PURE__ */ K("span", {
 				class: "device-type",
 				children: F
@@ -3965,9 +3977,9 @@ function Xn({ row: e, recover: t, select: n }) {
 						type: "range",
 						min: "0",
 						max: "100",
-						value: O ?? R ?? 0,
+						value: O ?? L ?? 0,
 						"aria-label": `Brightness ${e.item.name}`,
-						disabled: !A || !!r.busy || M || R === null,
+						disabled: !A || !!r.busy || M || L === null,
 						onInput: (e) => k(e.currentTarget.value),
 						onChange: (t) => {
 							let n = Number(t.currentTarget.value) / 100;
@@ -3979,7 +3991,7 @@ function Xn({ row: e, recover: t, select: n }) {
 								}
 							});
 						}
-					}), /* @__PURE__ */ K("output", { children: [O ?? R ?? "—", R === null ? "" : "%"] })] })
+					}), /* @__PURE__ */ K("output", { children: [O ?? L ?? "—", L === null ? "" : "%"] })] })
 				}),
 				I ? /* @__PURE__ */ K("button", {
 					class: "colour-button",
@@ -4000,7 +4012,7 @@ function Xn({ row: e, recover: t, select: n }) {
 				})
 			] }) : /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K("span", {
 				class: `input-state ${a.Available === !0 ? "" : "muted"}`,
-				children: e.kind === "input" ? `${e.item.instances?.length ?? 0} instances` : L
+				children: e.kind === "input" ? `${e.item.instances?.length ?? 0} instances` : re
 			}), /* @__PURE__ */ K("span", {
 				class: "activity",
 				children: ee?.action ?? "No recent action"
@@ -4082,7 +4094,7 @@ function Xn({ row: e, recover: t, select: n }) {
 							class: "danger",
 							disabled: !A || !!r.busy,
 							onClick: () => {
-								r.cancelled = !1, x(!1), s(new Kn(r, e));
+								r.cancelled = !1, x(!1), s(new qn(r, e));
 							},
 							children: "Clear short address"
 						}),
@@ -4096,23 +4108,23 @@ function Xn({ row: e, recover: t, select: n }) {
 					]
 				})
 			}),
-			l && /* @__PURE__ */ K(Qt, {
+			l && /* @__PURE__ */ K($t, {
 				row: e,
 				close: () => u(!1)
 			}),
-			d && /* @__PURE__ */ K(gn, {
+			d && /* @__PURE__ */ K(_n, {
 				row: e,
 				close: () => f(!1)
 			}),
-			p && /* @__PURE__ */ K(Rn, {
+			p && /* @__PURE__ */ K(zn, {
 				row: e,
 				close: () => m(!1)
 			}),
-			h && /* @__PURE__ */ K(kt, {
+			h && /* @__PURE__ */ K(At, {
 				row: e,
 				close: () => g(!1)
 			}),
-			_ && /* @__PURE__ */ K(Un, {
+			_ && /* @__PURE__ */ K(Wn, {
 				row: e,
 				close: () => v(!1)
 			}),
@@ -4156,11 +4168,11 @@ function Xn({ row: e, recover: t, select: n }) {
 					children: "Use this fixture"
 				})
 			}),
-			S && I && /* @__PURE__ */ K(Jn, {
+			S && I && /* @__PURE__ */ K(Yn, {
 				row: e,
 				close: () => C(!1)
 			}),
-			w && /* @__PURE__ */ K(Yn, {
+			w && /* @__PURE__ */ K(Xn, {
 				row: e,
 				close: () => T(!1)
 			}),
@@ -4193,20 +4205,20 @@ function Xn({ row: e, recover: t, select: n }) {
 		]
 	});
 }
-function Zn({ bus: e }) {
-	let t = q(), [n, r] = H(""), [i, a] = H(null), [o, s] = H(null);
-	U(() => () => {
+function Qn({ bus: e }) {
+	let t = q(), [n, r] = V(""), [i, a] = V(null), [o, s] = V(null);
+	H(() => () => {
 		i && (i.cancelled = !0);
 	}, [i]);
 	let c = (e) => {
-		t.cancelled = !1, s(null), r(""), a(new Wn(t, e));
+		t.cancelled = !1, s(null), r(""), a(new Gn(t, e));
 	}, l = (e) => i?.candidates.has(e.key) ? () => {
 		try {
 			s(i.review(e));
 		} catch (e) {
 			t.error = e.message, t.touch();
 		}
-	} : void 0, u = t.currentRows.filter((t) => t.kind !== "scene" && t.bus.bus === e.bus), d = (e) => je(n, e.item.name) || !!t.drafts.get(e.key)?.dirty || !!t.drafts.get(e.key)?.error, f = u.filter((e) => e.kind === "output" && d(e)), p = u.filter((e) => (e.kind === "input" || e.kind === "instance") && d(e)), m = W(t.snapshot, e) && t.client.views.ready, h = [...t.drafts].filter(([e, n]) => n.dirty && !t.currentRows.some((t) => t.key === e));
+	} : void 0, u = t.currentRows.filter((t) => t.kind !== "scene" && t.bus.bus === e.bus), d = (e) => Me(n, e.item.name) || !!t.drafts.get(e.key)?.dirty || !!t.drafts.get(e.key)?.error, f = u.filter((e) => e.kind === "output" && d(e)), p = u.filter((e) => (e.kind === "input" || e.kind === "instance") && d(e)), m = W(t.snapshot, e) && t.client.views.ready, h = [...t.drafts].filter(([e, n]) => n.dirty && !t.currentRows.some((t) => t.key === e));
 	return /* @__PURE__ */ K(y, { children: [
 		/* @__PURE__ */ K("div", {
 			class: "toolbar discovery",
@@ -4228,8 +4240,8 @@ function Zn({ bus: e }) {
 				})
 			]
 		}),
-		/* @__PURE__ */ K(Ue, {}),
-		i && /* @__PURE__ */ K(qn, {
+		/* @__PURE__ */ K(We, {}),
+		i && /* @__PURE__ */ K(Jn, {
 			scope: i,
 			review: o,
 			choose: s,
@@ -4291,7 +4303,7 @@ function Zn({ bus: e }) {
 						/* @__PURE__ */ K("span", {})
 					]
 				}),
-				f.map((e) => /* @__PURE__ */ K(Xn, {
+				f.map((e) => /* @__PURE__ */ K(Zn, {
 					row: e,
 					recover: c,
 					select: l(e)
@@ -4323,7 +4335,7 @@ function Zn({ bus: e }) {
 						/* @__PURE__ */ K("span", {})
 					]
 				}),
-				p.map((e) => /* @__PURE__ */ K(Xn, {
+				p.map((e) => /* @__PURE__ */ K(Zn, {
 					row: e,
 					recover: c,
 					select: l(e)
@@ -4357,19 +4369,19 @@ function Zn({ bus: e }) {
 	] });
 }
 // src/group-output.ts
-var Qn = () => {
+var $n = () => {
 	throw Error("Group evidence is incomplete or inconsistent. Refresh to inspect again.");
-}, $n = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
-function er(e, t = !1) {
-	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? Qn() : e.kind === "value" ? !$n(e.raw) || t && e.raw === 255 ? Qn() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? Qn() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || $n(e.code)) ? null : Qn();
+}, er = (e) => typeof e == "number" && Number.isInteger(e) && e >= 0 && e <= 255;
+function tr(e, t = !1) {
+	return e === null ? null : !e || typeof e != "object" || Array.isArray(e) ? $n() : e.kind === "value" ? !er(e.raw) || t && e.raw === 255 ? $n() : e.raw : e.kind === "mask" ? !t || e.raw !== 255 ? $n() : null : e.kind === "no_response" || ["receive_collision", "transmit_collision"].includes(e.kind) && (e.code === null || er(e.code)) ? null : $n();
 }
-function tr(e) {
+function nr(e) {
 	if (!e || typeof e != "object" || Array.isArray(e) || Object.keys(e).some((e) => e !== "power" && e !== "brightness") || !Object.keys(e).length) throw Error("Specify group power or a level.");
 	if ("power" in e && typeof e.power != "boolean" || "brightness" in e && (typeof e.brightness != "number" || !Number.isFinite(e.brightness) || e.brightness < 0 || e.brightness > 1)) throw Error("Group power must be boolean and level must be between 0 and 1.");
 	if (e.power === !1 && typeof e.brightness == "number" && e.brightness > 0 || e.power === !0 && e.brightness === 0) throw Error("Group power and level contradict each other.");
 	return structuredClone(e);
 }
-var nr = class {
+var rr = class {
 	constructor(e, t) {
 		if (this.cancelled = !1, this.result = null, t.kind !== "group") throw Error("Select a saved hardware group.");
 		this.ui = e, this.row = structuredClone(t), this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch;
@@ -4389,18 +4401,18 @@ var nr = class {
 	accepted(e, t) {
 		this.assert();
 		let { row: n, initial: r } = this;
-		if (!e || e.operation !== t || e.outcome !== (t === "read_group_output" ? "observed" : "sent") || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== r.inventory.revision || e.bus !== n.bus.bus || e.group !== n.item.group_address || e.coverage !== "saved_inventory" || e.configuration_changed !== !1) return Qn();
+		if (!e || e.operation !== t || e.outcome !== (t === "read_group_output" ? "observed" : "sent") || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== r.inventory.revision || e.bus !== n.bus.bus || e.group !== n.item.group_address || e.coverage !== "saved_inventory" || e.configuration_changed !== !1) return $n();
 		let i = this.initial.inventory.buses.find((e) => e.bus === n.bus.bus).outputs;
-		if (!Array.isArray(e.members) || e.members.length !== i.length || !e.values) return Qn();
+		if (!Array.isArray(e.members) || e.members.length !== i.length || !e.values) return $n();
 		let a = /* @__PURE__ */ new Set(), o = [], s = [], c = !1, l = 0, u = !0, d = !0;
 		for (let t of e.members) {
 			let e = i.find((e) => e.short_address === t.address);
-			if (!e || a.has(t.address) || t.target !== e.target || t.target_generation !== `${r.inventory.inventory_epoch}.${e.binding_revision}` || t.expected_member !== (n.item.members?.includes(t.address) ?? !1)) return Qn();
+			if (!e || a.has(t.address) || t.target !== e.target || t.target_generation !== `${r.inventory.inventory_epoch}.${e.binding_revision}` || t.expected_member !== (n.item.members?.includes(t.address) ?? !1)) return $n();
 			a.add(t.address);
-			let f = er(t.membership_low), p = er(t.membership_high), m = er(t.actual_level, !0), h = er(t.status);
+			let f = tr(t.membership_low), p = tr(t.membership_high), m = tr(t.actual_level, !0), h = tr(t.status);
 			c || (c = f !== null || p !== null || m !== null || h !== null || t.actual_level?.kind === "mask");
 			let g = f === null || p === null ? null : !!((f | p << 8) & 1 << n.item.group_address);
-			if (t.member !== g) return Qn();
+			if (t.member !== g) return $n();
 			u && (u = g !== null), d && (d = g === t.expected_member), g === null ? s.push(t.address) : g && (l++, m === null || h === null ? s.push(t.address) : o.push(m));
 		}
 		let f, p = null, m = null, h = null, g = null;
@@ -4414,7 +4426,7 @@ var nr = class {
 			known_members: l,
 			unresolved: s
 		};
-		return Object.entries(v).some(([e, t]) => JSON.stringify(_[e]) !== JSON.stringify(t)) || e.membership_matches !== (u ? d : null) ? Qn() : {
+		return Object.entries(v).some(([e, t]) => JSON.stringify(_[e]) !== JSON.stringify(t)) || e.membership_matches !== (u ? d : null) ? $n() : {
 			values: structuredClone(v),
 			membership_matches: e.membership_matches
 		};
@@ -4426,7 +4438,7 @@ var nr = class {
 	}
 	async set(e) {
 		this.assert();
-		let t = tr(e);
+		let t = nr(e);
 		this.result = null;
 		let n = await this.ui.client.job(this.row.generation, this.row.item.target, "set_group_output", {
 			expected_revision: this.initial.inventory.revision,
@@ -4436,14 +4448,14 @@ var nr = class {
 	}
 };
 // src/group-output-ui.tsx
-function rr({ row: e }) {
-	let t = q(), n = _e(null), [r, i] = H(null), [a, o] = H(50);
-	ge(() => () => {
+function ir({ row: e }) {
+	let t = q(), n = ve(null), [r, i] = V(null), [a, o] = V(50);
+	_e(() => () => {
 		n.current && (n.current.cancelled = !0);
 	}, []);
 	let s = (r) => void t.run(async () => {
 		n.current && (n.current.cancelled = !0), t.cancelled = !1;
-		let a = new nr(t, e);
+		let a = new rr(t, e);
 		n.current = a, i(null);
 		let o = r ? await a.set(r) : await a.read();
 		i(o);
@@ -4526,14 +4538,14 @@ function rr({ row: e }) {
 	});
 }
 // src/group-color.ts
-var ir = [
+var ar = [
 	"ColorRed",
 	"ColorGreen",
 	"ColorBlue",
 	"ColorWhite",
 	"ColorAmber",
 	"ColorFree"
-], ar = (e) => ({
+], or = (e) => ({
 	ColorTemperature: "Temperature (K)",
 	ColorX: "x",
 	ColorY: "y",
@@ -4544,32 +4556,32 @@ var ir = [
 	ColorAmber: "Amber (%)",
 	ColorFree: "Free color (%)"
 })[e] ?? e;
-function or(e, t) {
-	return e === "temperature" ? ["ColorTemperature"] : e === "xy" ? ["ColorX", "ColorY"] : e === "rgbwaf" && Array.isArray(t) ? ir.filter((e) => t.includes(e.slice(5).toLowerCase())) : [];
+function sr(e, t) {
+	return e === "temperature" ? ["ColorTemperature"] : e === "xy" ? ["ColorX", "ColorY"] : e === "rgbwaf" && Array.isArray(t) ? ar.filter((e) => t.includes(e.slice(5).toLowerCase())) : [];
 }
-function sr(e, t, n) {
+function cr(e, t, n) {
 	let r = e[t];
 	return typeof r == "number" ? String(Math.round(r * (n === "rgbwaf" ? 100 : 1) * 1e4) / 1e4) : e[`${t}Mixed`] === !0 ? "Mixed" : "Unknown";
 }
-function cr(e, t, n) {
+function lr(e, t, n) {
 	let r = {};
 	for (let i of t) {
 		let t = e[i];
 		if (t === void 0 || t.trim() === "") continue;
 		let a = Number(t), o = n === "xy" ? 65534 / 65536 : n === "rgbwaf" ? 100 : 1e6, s = n === "temperature" ? 1e6 / 65534 : 0;
-		if (!Number.isFinite(a) || a < s || a > o) throw Error(`Enter a valid ${ar(i)} value.`);
+		if (!Number.isFinite(a) || a < s || a > o) throw Error(`Enter a valid ${or(i)} value.`);
 		r[i] = n === "rgbwaf" ? a / 100 : a;
 	}
 	if (!Object.keys(r).length) throw Error("Change at least one color value.");
 	return r;
 }
 // src/group-color-ui.tsx
-function lr({ row: e }) {
-	let t = q(), n = t.physical(e.key), r = Me(t.snapshot, n), [i, a] = H(!1), [o, s] = H({}), c = n.item.color_representation ?? "", l = r.ColorCapabilities, u = l?.supported_representations?.filter((e) => [
+function ur({ row: e }) {
+	let t = q(), n = t.physical(e.key), r = Ne(t.snapshot, n), [i, a] = V(!1), [o, s] = V({}), c = n.item.color_representation ?? "", l = r.ColorCapabilities, u = l?.supported_representations?.filter((e) => [
 		"temperature",
 		"xy",
 		"rgbwaf"
-	].includes(e)), d = or(c, l?.common_rgbwaf_assignments), f = t.snapshot.identification, p = f && [
+	].includes(e)), d = sr(c, l?.common_rgbwaf_assignments), f = t.snapshot.identification, p = f && [
 		"starting",
 		"blinking",
 		"restoring"
@@ -4655,14 +4667,14 @@ function lr({ row: e }) {
 					/* @__PURE__ */ K("div", {
 						class: "colour-fields",
 						children: d.map((e) => {
-							let t = sr(r, e, c);
+							let t = cr(r, e, c);
 							return /* @__PURE__ */ K("label", {
 								class: "field",
 								children: [
-									ar(e),
+									or(e),
 									/* @__PURE__ */ K("input", {
 										type: "number",
-										"aria-label": ar(e),
+										"aria-label": or(e),
 										min: +(c === "temperature"),
 										max: c === "rgbwaf" ? 100 : c === "xy" ? 65534 / 65536 : void 0,
 										step: "any",
@@ -4692,7 +4704,7 @@ function lr({ row: e }) {
 							class: "primary",
 							disabled: !h,
 							onClick: () => void t.run(async () => {
-								await t.groupColor(n, cr(o, d, c)), a(!1);
+								await t.groupColor(n, lr(o, d, c)), a(!1);
 							}),
 							children: "Apply group color"
 						})]
@@ -4703,15 +4715,15 @@ function lr({ row: e }) {
 	});
 }
 // src/groups.tsx
-function ur({ bus: e }) {
-	let t = q(), [n, r] = H(0), [i, a] = H(""), [o, s] = H("add"), [c, l] = H(null), [u, d] = H(null), [f, p] = H(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = W(t.snapshot, e) && t.client.views.ready;
+function dr({ bus: e }) {
+	let t = q(), [n, r] = V(0), [i, a] = V(""), [o, s] = V("add"), [c, l] = V(null), [u, d] = V(null), [f, p] = V(""), m = e.groups?.find((e) => e.group_address === n), h = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), g = t.currentRows.find((t) => t.kind === "group" && t.bus.bus === e.bus && t.item.group_address === n), _ = W(t.snapshot, e) && t.client.views.ready;
 	function v() {
 		let e = h.map((e) => ({
 			key: e.key,
 			generation: e.generation,
 			name: e.item.name,
 			before: m?.members?.includes(e.item.short_address) ?? !1,
-			after: o === "add" && (m?.members?.includes(e.item.short_address) ?? !1) || je(i, e.item.name)
+			after: o === "add" && (m?.members?.includes(e.item.short_address) ?? !1) || Me(i, e.item.name)
 		})).filter((e) => e.before !== e.after);
 		l({
 			changes: e,
@@ -4772,7 +4784,7 @@ function ur({ bus: e }) {
 			revision: t.snapshot.inventory.revision
 		} : n) ?? null), t.notice = n === "adopt_groups" ? "Hardware membership adopted." : "Saved membership repaired and re-read.";
 	}
-	return /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K(Ue, {}), /* @__PURE__ */ K("div", {
+	return /* @__PURE__ */ K(y, { children: [/* @__PURE__ */ K(We, {}), /* @__PURE__ */ K("div", {
 		class: "groups-layout",
 		children: [/* @__PURE__ */ K("aside", {
 			class: "slots",
@@ -4798,7 +4810,7 @@ function ur({ bus: e }) {
 			m && g ? /* @__PURE__ */ K(y, { children: [
 				/* @__PURE__ */ K("div", {
 					class: "card group-title",
-					children: [/* @__PURE__ */ K(Ke, { row: g }), /* @__PURE__ */ K("span", {
+					children: [/* @__PURE__ */ K(qe, { row: g }), /* @__PURE__ */ K("span", {
 						class: "hint",
 						children: [
 							m.members?.length ?? 0,
@@ -4807,8 +4819,8 @@ function ur({ bus: e }) {
 						]
 					})]
 				}),
-				/* @__PURE__ */ K(rr, { row: g }, g.key + ":" + g.generation),
-				/* @__PURE__ */ K(lr, { row: g }, "color:" + g.key + ":" + g.generation),
+				/* @__PURE__ */ K(ir, { row: g }, g.key + ":" + g.generation),
+				/* @__PURE__ */ K(ur, { row: g }, "color:" + g.key + ":" + g.generation),
 				/* @__PURE__ */ K("div", {
 					class: "toolbar pattern",
 					children: [
@@ -4960,24 +4972,24 @@ function ur({ bus: e }) {
 	})] });
 }
 // src/scene-settings.ts
-var dr = () => ({
+var fr = () => ({
 	level: { kind: "mask" },
 	color: { kind: "mask" }
-}), fr = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
-function pr(e) {
-	if (!e || !e.level || !e.color || e.level.kind !== "mask" && !(e.level.kind === "value" && fr(e.level.value, 0, 254))) return !1;
-	let t = e.color, n = (e, t, n) => e === null || fr(e, t, n);
+}), pr = (e, t, n) => typeof e == "number" && Number.isInteger(e) && e >= t && e <= n;
+function mr(e) {
+	if (!e || !e.level || !e.color || e.level.kind !== "mask" && !(e.level.kind === "value" && pr(e.level.value, 0, 254))) return !1;
+	let t = e.color, n = (e, t, n) => e === null || pr(e, t, n);
 	return t.kind === "mask" || t.kind === "temperature" && n(t.value, 1, 65534) || t.kind === "xy" && n(t.x, 0, 65534) && n(t.y, 0, 65534) || t.kind === "rgbwaf" && Array.isArray(t.channels) && t.channels.length === 6 && t.channels.every((e) => n(e, 0, 254)) && n(t.control, 0, 191);
 }
-function mr(e) {
+function hr(e) {
 	if (!e) return "Unmanaged";
 	let t = e.level.kind === "mask" ? "Keep brightness" : e.level.value === 0 ? "Off" : `${+(e.level.value * 100 / 254).toFixed(1)}%`, n = e.color;
 	return n.kind === "mask" ? e.level.kind === "mask" ? "Leave unchanged" : t : `${t} · ${n.kind === "temperature" ? n.value === null ? "Tc MASK" : `${Math.round(1e6 / n.value)} K` : n.kind === "xy" ? "CIE xy" : "RGBWAF"}`;
 }
-var hr = class {
+var gr = class {
 	constructor(e) {
 		this.fields = {}, this.dirty = !1, this.error = "", this.original = structuredClone(e);
-		let t = e ?? dr();
+		let t = e ?? fr();
 		this.action = t.level.kind === "mask" ? t.color.kind === "mask" ? "ignore" : "keep" : t.level.value === 0 ? "off" : "brightness", this.family = t.color.kind;
 	}
 	chooseAction(e) {
@@ -4991,16 +5003,16 @@ var hr = class {
 	}
 	text(e) {
 		if (e in this.fields) return this.fields[e];
-		let t = this.original ?? dr(), n = t.color;
+		let t = this.original ?? fr(), n = t.color;
 		if (e === "brightness") return t.level.kind === "value" ? String(+(t.level.value * 100 / 254).toFixed(3)) : "100";
 		if (e === "temperature") return n.kind === "temperature" && n.value !== null ? String(+(1e6 / n.value).toFixed(3)) : "";
 		if (e === "x" || e === "y") return n.kind === "xy" && n[e] !== null ? String(n[e] / 65536) : "";
 		if (e === "control") return n.kind === "rgbwaf" && n.control !== null ? String(n.control) : "";
-		let r = gr.indexOf(e);
+		let r = _r.indexOf(e);
 		return r >= 0 && n.kind === "rgbwaf" && n.channels[r] !== null ? String(+(n.channels[r] * 100 / 254).toFixed(3)) : "";
 	}
 	setting() {
-		let e = this.original ?? dr(), t = (e, t, n, r, i) => {
+		let e = this.original ?? fr(), t = (e, t, n, r, i) => {
 			if (!(e in this.fields)) return i;
 			let a = this.fields[e].trim();
 			if (a === "") return null;
@@ -5008,7 +5020,7 @@ var hr = class {
 			if (!Number.isFinite(o) || o < t || o > n) throw Error(`Enter ${e} between ${t} and ${n}, or leave it blank for MASK.`);
 			return r(o);
 		};
-		if (this.action === "ignore") return dr();
+		if (this.action === "ignore") return fr();
 		let n = { kind: "mask" };
 		if (this.action === "off" && (n = {
 			kind: "value",
@@ -5031,7 +5043,7 @@ var hr = class {
 			y: t("y", 0, 65534 / 65536, (e) => Math.round(e * 65536), i.kind === "xy" ? i.y : null)
 		}), this.family === "rgbwaf" && (r = {
 			kind: "rgbwaf",
-			channels: gr.map((e, n) => t(e, 0, 100, (e) => Math.round(e * 254 / 100), i.kind === "rgbwaf" ? i.channels[n] : null)),
+			channels: _r.map((e, n) => t(e, 0, 100, (e) => Math.round(e * 254 / 100), i.kind === "rgbwaf" ? i.channels[n] : null)),
 			control: t("control", 128, 191, (e) => {
 				if (!Number.isInteger(e)) throw Error("Control must be a whole native byte.");
 				return e;
@@ -5041,7 +5053,7 @@ var hr = class {
 			level: n,
 			color: r
 		};
-		if (!pr(a)) throw Error("Scene values are invalid.");
+		if (!mr(a)) throw Error("Scene values are invalid.");
 		return a;
 	}
 	commit(e) {
@@ -5053,7 +5065,7 @@ var hr = class {
 			this.pending = void 0;
 		}), this.pending) : Promise.resolve();
 	}
-}, gr = [
+}, _r = [
 	"red",
 	"green",
 	"blue",
@@ -5061,12 +5073,12 @@ var hr = class {
 	"amber",
 	"free"
 ];
-function _r(e) {
+function vr(e) {
 	if (!e || e.quality !== "complete" || e.stale) return null;
 	try {
 		let t = (e, t) => {
 			if (e?.kind === "mask" && e.raw === t) return null;
-			if (e?.kind === "value" && fr(e.raw, 0, t - 1)) return e.raw;
+			if (e?.kind === "value" && pr(e.raw, 0, t - 1)) return e.raw;
 			throw Error("Unresolved");
 		}, n = t(e.level, 255), r = n === null ? { kind: "mask" } : {
 			kind: "value",
@@ -5089,7 +5101,7 @@ function _r(e) {
 			else if (n === 128) {
 				if (i = {
 					kind: "rgbwaf",
-					channels: gr.map((e) => t(o[e], 255)),
+					channels: _r.map((e) => t(o[e], 255)),
 					control: t(o.control, 255)
 				}, a = 7, i.control !== null && i.control < 128) return null;
 			} else if (n !== null) return null;
@@ -5098,24 +5110,24 @@ function _r(e) {
 			level: r,
 			color: i
 		};
-		return Object.keys(o).length === a && pr(s) ? s : null;
+		return Object.keys(o).length === a && mr(s) ? s : null;
 	} catch {
 		return null;
 	}
 }
 // src/scene-controller.ts
-function vr(e, t, n) {
+function yr(e, t, n) {
 	if (!e || e.target !== n.item.target || e.target_generation !== n.generation || e.revision !== t.inventory.revision || e.bus !== n.bus.bus || e.slot !== n.item.slot || !Array.isArray(e.fixtures)) throw Error("Saved scene view changed. Refresh it.");
 	let r = Ae(t).filter((e) => e.kind === "output" && e.bus.bus === n.bus.bus), i = /* @__PURE__ */ new Map();
 	for (let t of e.fixtures) {
 		let e = r.find((e) => e.item.target === t.fixture);
-		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !pr(t.saved)) throw Error("Saved scene view is incomplete or changed.");
+		if (!e || e.generation !== t.fixture_generation || i.has(e.key) || t.saved !== null && !mr(t.saved)) throw Error("Saved scene view is incomplete or changed.");
 		i.set(e.key, structuredClone(t.saved));
 	}
 	if (i.size !== r.length) throw Error("Saved scene view is incomplete.");
 	return i;
 }
-var yr = class {
+var br = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.slot = n, this.revision = this.initial.inventory.revision;
 		let r = Ae(this.initial);
@@ -5138,7 +5150,7 @@ var yr = class {
 	async saved() {
 		if (this.assert(!1), !this.scene) return new Map(this.outputs.map((e) => [e.key, null]));
 		let e = await this.ui.client.job(this.scene.generation, this.scene.item.target, "read_scene_settings");
-		return this.assert(!1), vr(e, this.initial, this.scene);
+		return this.assert(!1), yr(e, this.initial, this.scene);
 	}
 	async inspect(e, t = this.slot, n = !1) {
 		this.fixture(e);
@@ -5174,19 +5186,19 @@ var yr = class {
 		return n;
 	}
 };
-function br(e) {
+function xr(e) {
 	return structuredClone(e);
 }
-async function xr(e, t, n) {
+async function Sr(e, t, n) {
 	for (let r of t) e.fixture(r.row), n(`Saving scene ${e.slot} · ${r.row.item.name}`), await e.mutate(r.row, r.command, r.command === "set_scene_row" ? { setting: r.after } : { reviewed: r.reviewed });
 }
 // src/scenes.tsx
-function Sr({ row: e, visible: t, view: n, makeScope: r }) {
-	let i = q(), [a, o] = H(null), [s, c] = H(null), [l, u] = H(-1), [d, f] = H(!1), p = n && n.revision === i.snapshot.inventory.revision && n.epoch === i.client.views.epoch && n.rows.has(e.key), m = p && n ? n.rows.get(e.key) : a?.original ?? null, h = a?.error.startsWith("Saved settings are not confirmed");
-	U(() => () => {
+function Cr({ row: e, visible: t, view: n, makeScope: r }) {
+	let i = q(), [a, o] = V(null), [s, c] = V(null), [l, u] = V(-1), [d, f] = V(!1), p = n && n.revision === i.snapshot.inventory.revision && n.epoch === i.client.views.epoch && n.rows.has(e.key), m = p && n ? n.rows.get(e.key) : a?.original ?? null, h = a?.error.startsWith("Saved settings are not confirmed");
+	H(() => () => {
 		s && (s.cancelled = !0);
-	}, [s]), U(() => {
-		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new hr(n.rows.get(e.key))), c(null), u(n.revision));
+	}, [s]), H(() => {
+		!p || !n || a && (a.dirty || a.pending) || l === n.revision && a || (o(new gr(n.rows.get(e.key))), c(null), u(n.revision));
 	}, [
 		n,
 		a?.dirty,
@@ -5200,7 +5212,7 @@ function Sr({ row: e, visible: t, view: n, makeScope: r }) {
 		"starting",
 		"blinking",
 		"restoring"
-	].includes(b.phase), S = Me(i.snapshot, e).ColorCapabilities, C = Me(i.snapshot, e).SwitchingSupported === !0;
+	].includes(b.phase), S = Ne(i.snapshot, e).ColorCapabilities, C = Ne(i.snapshot, e).SwitchingSupported === !0;
 	function w() {
 		a && s && a.dirty && (a.commit(async (t) => {
 			if (i.busy) throw Error("Wait for the current operation, then save this draft.");
@@ -5314,7 +5326,7 @@ function Sr({ row: e, visible: t, view: n, makeScope: r }) {
 					}),
 					a.action !== "ignore" && a.family === "temperature" && E("temperature", "Temperature (K)"),
 					a.action !== "ignore" && a.family === "xy" && /* @__PURE__ */ K(y, { children: [E("x", "x"), E("y", "y")] }),
-					a.action !== "ignore" && a.family === "rgbwaf" && /* @__PURE__ */ K(y, { children: [gr.map((e) => E(e, `${e[0].toUpperCase() + e.slice(1)} (%)`)), /* @__PURE__ */ K("label", {
+					a.action !== "ignore" && a.family === "rgbwaf" && /* @__PURE__ */ K(y, { children: [_r.map((e) => E(e, `${e[0].toUpperCase() + e.slice(1)} (%)`)), /* @__PURE__ */ K("label", {
 						class: "scene-field",
 						children: ["RGBWAF control", /* @__PURE__ */ K("select", {
 							"aria-label": `RGBWAF control ${e.item.name}`,
@@ -5370,7 +5382,7 @@ function Sr({ row: e, visible: t, view: n, makeScope: r }) {
 				class: "scene-row-foot",
 				children: [/* @__PURE__ */ K("span", {
 					class: "hint",
-					children: [mr(m), a.dirty ? " · Unsaved draft" : ""]
+					children: [hr(m), a.dirty ? " · Unsaved draft" : ""]
 				}), /* @__PURE__ */ K("button", {
 					class: "text-button",
 					onClick: () => f(!d),
@@ -5403,17 +5415,17 @@ function Sr({ row: e, visible: t, view: n, makeScope: r }) {
 		})]
 	});
 }
-function Cr({ bus: e }) {
-	let t = q(), [n, r] = H(0), [i, a] = H(""), [o, s] = H(""), [c, l] = H(null), [u, d] = H(""), [f, p] = H(0), [m, h] = H(null), [g, _] = H(null), [v, b] = H(1), [x, S] = H("bus"), [C, w] = H(null), [T, E] = H(""), [D, O] = H(null), k = _e(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), ee = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), N = ee.filter((e) => je(i, e.item.name)), te = W(t.snapshot, e) && t.client.views.ready, P = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
+function wr({ bus: e }) {
+	let t = q(), [n, r] = V(0), [i, a] = V(""), [o, s] = V(""), [c, l] = V(null), [u, d] = V(""), [f, p] = V(0), [m, h] = V(null), [g, _] = V(null), [v, b] = V(1), [x, S] = V("bus"), [C, w] = V(null), [T, E] = V(""), [D, O] = V(null), k = ve(/* @__PURE__ */ new Set()), A = t.snapshot.inventory.revision, j = t.client.views.epoch, M = t.currentRows.find((t) => t.kind === "scene" && t.bus.bus === e.bus && t.item.slot === n), ee = t.currentRows.filter((t) => t.kind === "output" && t.bus.bus === e.bus), N = ee.filter((e) => Me(i, e.item.name)), te = W(t.snapshot, e) && t.client.views.ready, P = !!c && c.revision === A && c.epoch === j && c.key === M?.key;
 	function F() {
 		for (let e of k.current) e.cancelled && k.current.delete(e);
-		let r = new yr(t, e.bus, n);
+		let r = new br(t, e.bus, n);
 		return k.current.add(r), r;
 	}
-	U(() => () => {
+	H(() => () => {
 		for (let e of k.current) e.cancelled = !0;
 		k.current.clear();
-	}, [n]), U(() => {
+	}, [n]), H(() => {
 		let e = F(), n = !0;
 		return d(""), l(null), t.client.views.ready && e.saved().then((t) => {
 			n && l({
@@ -5445,56 +5457,56 @@ function Cr({ bus: e }) {
 		for (let e of g ?? []) e.scope.cancelled = !0;
 		_(null);
 	}
-	function L(e) {
+	function re(e) {
 		if (!P || !c?.rows.has(e.key)) throw Error("Wait for complete saved settings.");
 		return c.rows.get(e.key);
 	}
-	function R(e, t, n, r = []) {
+	function L(e, t, n, r = []) {
 		t.assert(), h({
 			title: e,
 			scope: t,
-			changes: br(n),
+			changes: xr(n),
 			unresolved: [...r]
 		});
 	}
-	function z() {
-		t.cancelled = !1, R("Clear selected fixtures", F(), N.map((e) => ({
+	function R() {
+		t.cancelled = !1, L("Clear selected fixtures", F(), N.map((e) => ({
 			row: e,
-			before: L(e),
-			after: dr(),
+			before: re(e),
+			after: fr(),
 			command: "set_scene_row"
 		})));
 	}
-	async function B() {
+	async function z() {
 		t.cancelled = !1;
 		let e = F(), r = [], i = [], a = !1;
 		try {
 			for (let a of N) {
 				e.fixture(a), t.progress = `Capturing current output · ${a.item.name}`, t.touch();
 				let o = await e.inspect(a, n, !0);
-				pr(o.candidate) ? r.push({
+				mr(o.candidate) ? r.push({
 					row: a,
-					before: L(a),
+					before: re(a),
 					after: o.candidate,
 					command: "set_scene_row"
 				}) : i.push(a.item.name);
 			}
-			R("Review captured output", e, r, i), a = !0;
+			L("Review captured output", e, r, i), a = !0;
 		} finally {
 			a || (e.cancelled = !0), t.progress = "", t.touch();
 		}
 	}
-	async function re() {
+	async function ie() {
 		t.cancelled = !1;
-		let r = F(), i = new yr(t, e.bus, v);
+		let r = F(), i = new br(t, e.bus, v);
 		k.current.add(i);
 		let a = !1;
 		try {
 			if (!i.scene) throw Error("Choose a named source scene.");
 			let e = await i.saved();
-			r.assert(), i.assert(), R(`Copy saved scene ${v} → ${n}`, r, N.filter((t) => e.get(t.key) !== null).map((t) => ({
+			r.assert(), i.assert(), L(`Copy saved scene ${v} → ${n}`, r, N.filter((t) => e.get(t.key) !== null).map((t) => ({
 				row: t,
-				before: L(t),
+				before: re(t),
 				after: e.get(t.key),
 				command: "set_scene_row"
 			}))), a = !0;
@@ -5502,12 +5514,12 @@ function Cr({ bus: e }) {
 			i.cancelled = !0, a || (r.cancelled = !0);
 		}
 	}
-	async function ie() {
+	async function ae() {
 		let e = m;
 		if (e) {
 			h(null), t.cancelled = !1;
 			try {
-				await xr(e.scope, e.changes, (e) => {
+				await Sr(e.scope, e.changes, (e) => {
 					t.progress = e, t.touch();
 				}), t.notice = "Reviewed scene settings saved and verified.";
 			} finally {
@@ -5515,7 +5527,7 @@ function Cr({ bus: e }) {
 			}
 		}
 	}
-	async function ae(e) {
+	async function oe(e) {
 		t.cancelled = !1;
 		let r = F(), i = [];
 		try {
@@ -5527,7 +5539,7 @@ function Cr({ bus: e }) {
 					row: e,
 					slot: a,
 					report: n,
-					candidate: _r(n.stored)
+					candidate: vr(n.stored)
 				});
 			}
 			t.notice = "Native scene reads complete. Review differences and unresolved fixtures.";
@@ -5535,25 +5547,25 @@ function Cr({ bus: e }) {
 			i.length && !r.cancelled && r.epoch === t.client.views.epoch && r.revision === t.snapshot.inventory.revision ? _(i) : r.cancelled = !0, t.progress = "", t.touch();
 		}
 	}
-	function oe(e) {
+	function se(e) {
 		if (!g) return;
 		t.cancelled = !1;
-		let r = g.filter((e) => e.slot === n && je(i, e.row.item.name)), a = F();
+		let r = g.filter((e) => e.slot === n && Me(i, e.row.item.name)), a = F();
 		for (let e of r) if (e.scope.assert(), e.scope.revision !== a.revision) throw Error("Verification is stale. Verify again.");
 		let o = r.filter((t) => t.candidate && (e === "adopt_scene_row" || t.report.saved !== null) && t.report.comparison !== "matching").map((t) => ({
 			row: t.row,
-			before: L(t.row),
+			before: re(t.row),
 			after: e === "adopt_scene_row" ? t.candidate : t.report.saved,
 			reviewed: t.report.stored,
 			command: e
 		}));
-		I(), R(e === "adopt_scene_row" ? "Adopt reviewed native settings" : "Repair saved settings", a, o);
+		I(), L(e === "adopt_scene_row" ? "Adopt reviewed native settings" : "Repair saved settings", a, o);
 	}
-	async function se() {
+	async function ce() {
 		let r = F();
 		try {
 			r.assert(!1);
-			let i = await t.client.job(Oe(r.initial.inventory.inventory_epoch, r.revision), null, "create_scene", {
+			let i = await t.client.job(U(r.initial.inventory.inventory_epoch, r.revision), null, "create_scene", {
 				bus: e.bus,
 				slot: n,
 				name: o || `Scene${n + 1}`,
@@ -5565,7 +5577,7 @@ function Cr({ bus: e }) {
 			r.cancelled = !0;
 		}
 	}
-	async function V() {
+	async function B() {
 		t.cancelled = !1;
 		let e = F();
 		try {
@@ -5574,9 +5586,9 @@ function Cr({ bus: e }) {
 			e.cancelled = !0;
 		}
 	}
-	let ce = !te || !P || !M || !!t.busy || !N.length;
+	let le = !te || !P || !M || !!t.busy || !N.length;
 	return /* @__PURE__ */ K(y, { children: [
-		/* @__PURE__ */ K(Ue, {}),
+		/* @__PURE__ */ K(We, {}),
 		/* @__PURE__ */ K("div", {
 			class: "scene-mobile-slot",
 			children: /* @__PURE__ */ K("label", { children: ["Scene", /* @__PURE__ */ K("select", {
@@ -5607,14 +5619,14 @@ function Cr({ bus: e }) {
 					class: "section-heading",
 					children: [/* @__PURE__ */ K("h2", { children: ["Scene ", n] }), /* @__PURE__ */ K("button", {
 						disabled: !te || !!t.busy,
-						onClick: () => void t.run(() => ae(!0)),
+						onClick: () => void t.run(() => oe(!0)),
 						children: "Verify all 16"
 					})]
 				}),
 				M ? /* @__PURE__ */ K("div", {
 					class: "card group-title",
 					children: [
-						/* @__PURE__ */ K(Ke, { row: M }),
+						/* @__PURE__ */ K(qe, { row: M }),
 						/* @__PURE__ */ K("span", {
 							class: "hint",
 							children: ["Slot ", n]
@@ -5645,7 +5657,7 @@ function Cr({ bus: e }) {
 							}), /* @__PURE__ */ K("button", {
 								class: "primary",
 								disabled: !!t.busy || !t.client.views.ready,
-								onClick: () => void t.run(se),
+								onClick: () => void t.run(ce),
 								children: "Create scene"
 							})]
 						})
@@ -5657,7 +5669,7 @@ function Cr({ bus: e }) {
 						/* @__PURE__ */ K("button", {
 							class: "primary",
 							disabled: !te || !M || !!t.busy,
-							onClick: () => void t.run(V),
+							onClick: () => void t.run(B),
 							children: "Recall"
 						}),
 						/* @__PURE__ */ K("select", {
@@ -5679,7 +5691,7 @@ function Cr({ bus: e }) {
 						}),
 						/* @__PURE__ */ K("button", {
 							disabled: !te || !!t.busy,
-							onClick: () => void t.run(() => ae(!1)),
+							onClick: () => void t.run(() => oe(!1)),
 							children: "Verify scene"
 						})
 					]
@@ -5706,13 +5718,13 @@ function Cr({ bus: e }) {
 					class: "toolbar scene-tools",
 					children: [
 						/* @__PURE__ */ K("button", {
-							disabled: ce,
-							onClick: () => void t.run(B),
+							disabled: le,
+							onClick: () => void t.run(z),
 							children: "Capture current"
 						}),
 						/* @__PURE__ */ K("button", {
-							disabled: ce,
-							onClick: () => void t.run(async () => z()),
+							disabled: le,
+							onClick: () => void t.run(async () => R()),
 							children: "Clear selected"
 						}),
 						/* @__PURE__ */ K("select", {
@@ -5730,8 +5742,8 @@ function Cr({ bus: e }) {
 							}))
 						}),
 						/* @__PURE__ */ K("button", {
-							disabled: ce || v === n,
-							onClick: () => void t.run(re),
+							disabled: le || v === n,
+							onClick: () => void t.run(ie),
 							children: "Copy saved"
 						})
 					]
@@ -5754,9 +5766,9 @@ function Cr({ bus: e }) {
 				}),
 				/* @__PURE__ */ K("div", {
 					class: "scene-fixtures",
-					children: ee.map((e) => /* @__PURE__ */ K(Sr, {
+					children: ee.map((e) => /* @__PURE__ */ K(Cr, {
 						row: e,
-						visible: je(i, e.item.name),
+						visible: Me(i, e.item.name),
 						view: c,
 						makeScope: F
 					}, `${n}:${e.key}`))
@@ -5783,9 +5795,9 @@ function Cr({ bus: e }) {
 							children: [
 								/* @__PURE__ */ K("h3", { children: e.row.item.name }),
 								/* @__PURE__ */ K("p", { children: [
-									mr(e.before),
+									hr(e.before),
 									" → ",
-									mr(e.after)
+									hr(e.after)
 								] }),
 								/* @__PURE__ */ K("details", { children: [/* @__PURE__ */ K("summary", { children: "Native before / after" }), /* @__PURE__ */ K("pre", { children: JSON.stringify({
 									before: e.before,
@@ -5811,7 +5823,7 @@ function Cr({ bus: e }) {
 							}), /* @__PURE__ */ K("button", {
 								class: "primary",
 								disabled: !!t.busy || !m.changes.length,
-								onClick: () => void t.run(ie),
+								onClick: () => void t.run(ae),
 								children: "Apply reviewed settings"
 							})]
 						})
@@ -5845,7 +5857,7 @@ function Cr({ bus: e }) {
 								}[e.report.comparison] ?? "Unresolved" : "Unresolved", e.candidate ? "" : " · native data cannot be adopted"] }),
 								/* @__PURE__ */ K("p", {
 									class: "hint",
-									children: ["Saved: ", mr(e.report.saved)]
+									children: ["Saved: ", hr(e.report.saved)]
 								}),
 								/* @__PURE__ */ K("details", { children: [/* @__PURE__ */ K("summary", { children: "Native evidence" }), /* @__PURE__ */ K("pre", { children: JSON.stringify(e.report.stored, null, 2) })] })
 							]
@@ -5854,11 +5866,11 @@ function Cr({ bus: e }) {
 							class: "dialog-actions",
 							children: [/* @__PURE__ */ K("button", {
 								disabled: !M || !!t.busy || !P,
-								onClick: () => void t.run(async () => oe("adopt_scene_row")),
+								onClick: () => void t.run(async () => se("adopt_scene_row")),
 								children: "Review adoption"
 							}), /* @__PURE__ */ K("button", {
 								disabled: !M || !!t.busy || !P,
-								onClick: () => void t.run(async () => oe("repair_scene_row")),
+								onClick: () => void t.run(async () => se("repair_scene_row")),
 								children: "Review repair"
 							})]
 						})
@@ -5919,7 +5931,7 @@ function Cr({ bus: e }) {
 	] });
 }
 // src/reassignment.ts
-var wr = class {
+var Tr = class {
 	constructor(e, t, n) {
 		this.cancelled = !1, this.ui = e, this.initial = structuredClone(e.snapshot), this.epoch = e.client.views.epoch, this.bus = t, this.revision = this.initial.inventory.revision, this.spaces = n === "both" ? ["outputs", "inputs"] : [n];
 	}
@@ -5930,7 +5942,7 @@ var wr = class {
 	}
 	async perform(e, t, n) {
 		this.assert();
-		let r = await this.ui.client.job(Oe(this.initial.inventory.inventory_epoch, this.revision), null, e, {
+		let r = await this.ui.client.job(U(this.initial.inventory.inventory_epoch, this.revision), null, e, {
 			bus: this.bus,
 			...e.startsWith("assign_next_") ? {} : { space: t },
 			...n === void 0 ? {} : { address: n },
@@ -5967,9 +5979,9 @@ var wr = class {
 	}
 };
 // src/reassignment-ui.tsx
-function Tr({ bus: e, settings: t }) {
-	let n = q(), [r, i] = H(!1), [a, o] = H(!1), [s, c] = H("outputs"), [l, u] = H(null), d = _e(null);
-	U(() => () => {
+function Er({ bus: e, settings: t }) {
+	let n = q(), [r, i] = V(!1), [a, o] = V(!1), [s, c] = V("outputs"), [l, u] = V(null), d = ve(null);
+	H(() => () => {
 		d.current && (d.current.cancelled = !0);
 	}, []);
 	let f = n.client.views.ready && W(n.snapshot, e), p = l ? Ae(l.initial).filter((e) => e.bus.bus === l.bus && (e.kind === "output" ? l.spaces.includes("outputs") : (e.kind === "input" || e.kind === "instance") && l.spaces.includes("inputs"))) : [];
@@ -6034,7 +6046,7 @@ function Tr({ bus: e, settings: t }) {
 						class: "primary",
 						disabled: !f || !!n.busy,
 						onClick: () => {
-							u(new wr(n, e.bus, s)), o(!1);
+							u(new Tr(n, e.bus, s)), o(!1);
 						},
 						children: "Review reassignment"
 					})]
@@ -6108,8 +6120,8 @@ function Tr({ bus: e, settings: t }) {
 	] });
 }
 // src/app.tsx
-function Er({ number: e, bus: t, close: n }) {
-	let r = q(), [i, a] = H(t?.name ?? `Bus${e + 1}`), [o, s] = H(t?.enabled ?? !0);
+function Dr({ number: e, bus: t, close: n }) {
+	let r = q(), [i, a] = V(t?.name ?? `Bus${e + 1}`), [o, s] = V(t?.enabled ?? !0);
 	return /* @__PURE__ */ K(J, {
 		title: `Bus ${e + 1} settings`,
 		close: n,
@@ -6157,8 +6169,8 @@ function Er({ number: e, bus: t, close: n }) {
 		})
 	});
 }
-function Dr() {
-	let e = q(), [t, n] = H(null), r = e.snapshot;
+function Or() {
+	let e = q(), [t, n] = V(null), r = e.snapshot;
 	return /* @__PURE__ */ K(y, { children: [
 		/* @__PURE__ */ K("header", {
 			class: "page-heading",
@@ -6234,7 +6246,7 @@ function Dr() {
 						}),
 						/* @__PURE__ */ K("div", {
 							class: "toolbar",
-							children: [i && /* @__PURE__ */ K(Ge, {
+							children: [i && /* @__PURE__ */ K(Ke, {
 								class: "button primary",
 								href: `/buses/${t}`,
 								children: "Open bus"
@@ -6247,15 +6259,15 @@ function Dr() {
 				}, t);
 			})
 		}),
-		t !== null && /* @__PURE__ */ K(Er, {
+		t !== null && /* @__PURE__ */ K(Dr, {
 			number: t,
 			bus: r.inventory.buses.find((e) => e.bus === t),
 			close: () => n(null)
 		})
 	] });
 }
-function Or({ number: e, tab: t }) {
-	let n = q(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = H(!1);
+function kr({ number: e, tab: t }) {
+	let n = q(), r = n.snapshot.inventory.buses.find((t) => t.bus === e), [i, a] = V(!1);
 	return /* @__PURE__ */ K(y, { children: [
 		/* @__PURE__ */ K("header", {
 			class: "page-heading",
@@ -6273,7 +6285,7 @@ function Or({ number: e, tab: t }) {
 					class: "muted",
 					children: "Discover, identify and name the devices on this bus."
 				})
-			] }), /* @__PURE__ */ K(y, { children: r ? /* @__PURE__ */ K(Tr, {
+			] }), /* @__PURE__ */ K(y, { children: r ? /* @__PURE__ */ K(Er, {
 				bus: r,
 				settings: () => a(!0)
 			}, `${e}-${t}`) : /* @__PURE__ */ K("button", {
@@ -6288,12 +6300,12 @@ function Or({ number: e, tab: t }) {
 				["", "Devices"],
 				["/groups", "Groups"],
 				["/scenes", "Scenes"]
-			].map(([n, r]) => /* @__PURE__ */ K(Ge, {
+			].map(([n, r]) => /* @__PURE__ */ K(Ke, {
 				class: t === n ? "selected" : "",
 				href: `/buses/${e}${n}`,
 				children: r
 			}))
-		}), t === "/groups" ? /* @__PURE__ */ K(ur, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ K(Cr, { bus: r }, `scenes-${e}`) : /* @__PURE__ */ K(Zn, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ K("div", {
+		}), t === "/groups" ? /* @__PURE__ */ K(dr, { bus: r }, `groups-${e}`) : t === "/scenes" ? /* @__PURE__ */ K(wr, { bus: r }, `scenes-${e}`) : /* @__PURE__ */ K(Qn, { bus: r }, `devices-${e}`)] }) : /* @__PURE__ */ K("div", {
 			class: "card",
 			children: [
 				/* @__PURE__ */ K("h2", { children: "Set up this bus" }),
@@ -6308,14 +6320,14 @@ function Or({ number: e, tab: t }) {
 				})
 			]
 		}),
-		i && /* @__PURE__ */ K(Er, {
+		i && /* @__PURE__ */ K(Dr, {
 			number: e,
 			bus: r,
 			close: () => a(!1)
 		})
 	] });
 }
-function kr() {
+function Ar() {
 	let e = q().snapshot;
 	function t() {
 		let t = URL.createObjectURL(new Blob([JSON.stringify(e.inventory, null, 2)], { type: "application/json" })), n = document.createElement("a");
@@ -6368,7 +6380,7 @@ function kr() {
 		})
 	] });
 }
-function Ar() {
+function jr() {
 	let e = q(), t = e.snapshot;
 	return /* @__PURE__ */ K(y, { children: [
 		/* @__PURE__ */ K("header", {
@@ -6457,9 +6469,9 @@ function Ar() {
 		})
 	] });
 }
-function jr() {
-	let [e] = H(() => new Be()), [, t] = H(0), [n, r] = H(location.pathname), [i, a] = H(!1);
-	U(() => {
+function Mr() {
+	let [e] = V(() => new Ve()), [, t] = V(0), [n, r] = V(location.pathname), [i, a] = V(!1);
+	H(() => {
 		let n = e.client.subscribe(() => t((e) => e + 1));
 		e.client.start().catch((t) => {
 			e.client.error = t.message, e.touch();
@@ -6472,7 +6484,7 @@ function jr() {
 		};
 	}, []);
 	let o = e.client.snapshot, s = /^\/buses\/([0-3])(\/groups|\/scenes)?$/.exec(n);
-	return /* @__PURE__ */ K(He.Provider, {
+	return /* @__PURE__ */ K(Ue.Provider, {
 		value: e,
 		children: /* @__PURE__ */ K("div", {
 			class: "layout",
@@ -6499,7 +6511,7 @@ function jr() {
 						class: "nav-label",
 						children: "CONTROLLER"
 					}),
-					/* @__PURE__ */ K(Ge, {
+					/* @__PURE__ */ K(Ke, {
 						class: n === "/" ? "selected" : "",
 						href: "/",
 						children: "Overview"
@@ -6508,7 +6520,7 @@ function jr() {
 						class: "nav-label",
 						children: "DALI BUSES"
 					}),
-					o?.inventory.buses.map((e) => /* @__PURE__ */ K(Ge, {
+					o?.inventory.buses.map((e) => /* @__PURE__ */ K(Ke, {
 						class: s && Number(s[1]) === e.bus ? "selected" : "",
 						href: `/buses/${e.bus}`,
 						children: [/* @__PURE__ */ K("span", { children: e.name }), /* @__PURE__ */ K("span", {
@@ -6519,12 +6531,12 @@ function jr() {
 					/* @__PURE__ */ K("div", {
 						class: "sidebar-bottom",
 						children: [
-							/* @__PURE__ */ K(Ge, {
+							/* @__PURE__ */ K(Ke, {
 								class: n === "/settings" ? "selected" : "",
 								href: "/settings",
 								children: "Settings"
 							}),
-							/* @__PURE__ */ K(Ge, {
+							/* @__PURE__ */ K(Ke, {
 								class: n === "/diagnostics" ? "selected" : "",
 								href: "/diagnostics",
 								children: "Diagnostics"
@@ -6579,12 +6591,12 @@ function jr() {
 							role: "status",
 							children: e.notice
 						}),
-						o ? s ? /* @__PURE__ */ K(Or, {
+						o ? s ? /* @__PURE__ */ K(kr, {
 							number: Number(s[1]),
 							tab: s[2] ?? ""
-						}, s[1]) : n === "/settings" ? /* @__PURE__ */ K(kr, {}) : n === "/diagnostics" ? /* @__PURE__ */ K(Ar, {}) : n === "/" ? /* @__PURE__ */ K(Dr, {}) : /* @__PURE__ */ K("div", {
+						}, s[1]) : n === "/settings" ? /* @__PURE__ */ K(Ar, {}) : n === "/diagnostics" ? /* @__PURE__ */ K(jr, {}) : n === "/" ? /* @__PURE__ */ K(Or, {}) : /* @__PURE__ */ K("div", {
 							class: "card",
-							children: [/* @__PURE__ */ K("h1", { children: "Page not found" }), /* @__PURE__ */ K(Ge, {
+							children: [/* @__PURE__ */ K("h1", { children: "Page not found" }), /* @__PURE__ */ K(Ke, {
 								href: "/",
 								children: "Return to overview"
 							})]
@@ -6608,4 +6620,4 @@ function jr() {
 		})
 	});
 }
-I(/* @__PURE__ */ K(jr, {}), document.getElementById("app"));
+I(/* @__PURE__ */ K(Mr, {}), document.getElementById("app"));

@@ -29,9 +29,9 @@ This catalogue does not expose per-fixture scene settings or active-scene State.
 
 The pure `inventory::Model` validates configuration and produces the complete
 State payload destined for `DALI/State/<controller>/__inventory`. The property
-`Inventory` contains wire schema 1, epoch/revision, controller/buses/items, and
-the complete named identity ledger. This metadata target is not a fixture.
-The literal [rename fixture](../tests/fixtures/inventory-v1-rename.json) is the
+`Inventory` contains wire schema 2, epoch/revision, controller/buses/items, and
+`identity_snapshot`: one compact identity record for each current item. This metadata target is not a fixture.
+The literal [rename fixture](../tests/fixtures/inventory-v2-rename.json) is the
 wire example. The managed `service::DaliService` now publishes it through the
 pinned BridgeKit runtime; real FakeBroker integration tests consume that output.
 The canonical `mqtt_dali` executable runs the managed v2 service;
@@ -75,30 +75,50 @@ is a no-op; changing away and back does not reuse a generation.
 
 Consumers must drop old observations and retire their old contract intent,
 including when a format change and rename occur together. A same-format rename
-still permits ordinary intent continuity. Colour selection is forbidden on group
-or input projections, including past ledger states. Updated readers accept old
+still permits ordinary intent continuity. Output and group projections may select
+color representations independently. Selection is forbidden on input and scene
+projections, including past ledger states. Updated readers accept old
 documents; older strict readers need updating to accept new-field documents.
 Use the service edit/command path so selection and history commit together;
 manually changing a saved setting without its ledger is rejected.
 
-The ledger starts with the epoch baseline and retains every atomic transition
-batch. Before/after edges prove continuity, creation and removal. Consumers replay
-and validate the whole history against current items before accepting a higher
-revision. Sources leave together before destinations arrive, allowing name swaps.
-Never infer lifetime continuity from an address, a reused name or one transient
-MQTT event. An absent ledger in an older schema-2 file means the initial baseline;
-an explicitly null, malformed or incomplete ledger is an error.
+Each current identity record contains the immutable private `origin` (target and
+revision at creation), current `projection`, and `intent_revision`: the last
+change that revoked earlier control intent. Input-instance records also capture
+`parent_origin`. Names remain the public addresses; Origin is reconciliation
+metadata. Ordinary name/address moves preserve Origin and intent_revision.
+Membership, type or representation changes advance the intent barrier, including
+changes away and back. Removal/recreation creates a new Origin even with identical
+name/address text. Group members reference current output Origins.
 
-An offline consumer follows continuity to rename existing device records in
-place. Removal/recreation creates another record; old intent must not follow it.
-Intent owned by that consumer may follow proven rename/address continuity,
-including rename-back, but must not be retokened onto a replacement or another
-epoch. Ignore older documents; accept an identical equal revision as a no-op;
-reject conflicting equal revisions or rewritten accepted history. A new epoch
-requires explicit adoption. The independent example algorithm under
-`tests/support/inventory_consumer.rs` exercises these rules without Store code or
-the producer's replay/mutation implementation. Actual Store ObjectId/binding
-migration remains a separate implementation phase.
+Consumers validate all identity records and exact agreement with current items
+before applying any change. Match continuing records by Origin to preserve device
+IDs and bindings. Require nondecreasing binding/intent revisions, unchanged parent
+Origin, and births newer than the last accepted document for newly seen records.
+An old intent can follow a continuing Origin only when its captured binding
+revision is at least the current intent_revision; State still requires the exact
+current generation. Ignore older documents and accept identical equal revisions
+as no-ops. Conflicting equal revisions and a different epoch require refusal or
+explicit adoption. No consumer acknowledgements or historical replay are needed.
+
+Saved configuration can still read the former baseline/transition ledger. The
+bridge replays it once to recover the exact Origins, parent identities and intent
+barriers, preserving epoch/revision and private scene references. The derived
+ledger checkpoints current identities once its diagnostic tail exceeds32 batches
+or32KiB; it then discards that tail. A subsequent ordinary save persists the compact
+form through the existing atomic writer. Startup preserves the original file as
+its comparison basis. Recent history can be empty after compaction and is never
+published on MQTT. An explicit null/malformed ledger or checkpoint is an error.
+Schema1 MQTT readers need updating to schema2; v2 has not been released. The
+independent example consumer retains explicit schema1 compatibility tests.
+
+For retained-request recovery, a consumer must capture the stable lifetime in its
+original request context (Store uses the optional `target-identity` user property).
+An obsolete topic alone cannot prove identity after it has been reused. Preserve
+original expiry/conflict when retargeting a compatible retained request; reject
+unproved requests. The bridge's execution fence remains target-generation.
+See the [compact identity design](superpowers/specs/2026-10-24-dali-v2-compact-identity.md)
+for the checkpoint and recovery invariants.
 
 Retained State may arrive before its inventory. The independent consumer caches
 the latest observation per target/token until a complete accepted inventory proves
@@ -136,8 +156,8 @@ not establish HAT connectivity.
 
 Limits are deliberate: config at most 4 MiB; the complete serialized Inventory
 State (including its wrapper) at most 512 KiB; each encoded target at most 4096
-bytes. Both initial/imported inventories and changes are preflighted. History is
-never silently pruned. When capacity is exhausted, retain the old document and
+bytes. Both initial/imported inventories and changes are preflighted. Diagnostic history is bounded automatically; current identity records are never
+discarded to make room. When capacity is exhausted, retain the old document and
 report the offending path/size; no partial snapshot or automatic epoch reset.
 
 If an installation cannot pass preflight, stop the daemon and keep backups.

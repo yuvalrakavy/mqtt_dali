@@ -110,8 +110,8 @@ overwrite a newer streamed view. Connection/session epochs fence late callbacks.
 No passive traffic renews user activity; requests, timers and streams stop when
 the client closes. Native action history is bounded and loss is explicit.
 
-Rows replay identity-ledger transitions atomically to retain continuing Origin
-keys across renames. A remove/re-add gets a fresh key. Dirty drafts keep the
+Rows use the compact identity snapshot to retain continuing Origin keys across
+renames, independently of past history. A remove/re-add gets a fresh key. Dirty drafts keep the
 original item target/token; explicit queued commits prepare their controller
 revision once, and conflicts require another user action. Reviewed batches can
 continue only through their own confirmed revisions, original bus and selections.

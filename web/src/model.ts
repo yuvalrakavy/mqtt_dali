@@ -1,10 +1,11 @@
 export interface Projection { target:string; binding_revision:number; location:{kind:string;bus:number;short_address?:number;group_address?:number;instance?:number;slot?:number}; members?:unknown[] }
 export interface Ledger { baseline:Projection[]; batches:{revision:number;transitions:{from?:Projection|null;to?:Projection|null}[]}[] }
+export interface IdentityRecord {origin:{target:string;revision:number};projection:Projection;intent_revision:number;parent_origin?:{target:string;revision:number}}
 export interface IdentityItem { name:string;target:string;binding_revision:number;description?:string }
 export interface Item extends IdentityItem { short_address:number;color_representation?:string;number?:number;instance_type?:number;instances?:Item[];group_address?:number;members?:number[] }
 export interface SceneItem extends IdentityItem { slot:number }
 export interface Bus {bus:number;name:string;enabled:boolean;outputs:Item[];inputs?:Item[];groups?:Item[];scenes?:SceneItem[]}
-export interface Inventory {inventory_epoch:string;revision:number;name:string;description?:string;buses:Bus[];identity_ledger:Ledger}
+export interface Inventory {inventory_epoch:string;revision:number;name:string;description?:string;buses:Bus[];identity_ledger?:Ledger;identity_snapshot?:IdentityRecord[]}
 export interface Snapshot {identity:{controller:string;version:string;build_utc:string};phase:string;hardware:{state:string;buses?:{bus:number;status:number}[]};inventory:Inventory;states:{target:string;generation:string;values:Record<string,unknown>}[];identification?:{target:string;generation:string;phase:string;actual_level:number|null}|null}
 export interface Job {id:string;status:string;command?:string;target?:string|null;result?:any;error?:{code?:string;message?:string}|null}
 export interface PhysicalRow {key:string;kind:'output'|'input'|'instance'|'group';bus:Bus;item:Item;parent?:Item;generation:string}
@@ -38,7 +39,9 @@ export function rowOrigins(ledger:Ledger,epoch:string):Map<string,string> {
 export function rows(snapshot:Snapshot):Row[] {
   const inventory=snapshot.inventory;
   itemGeneration(inventory.inventory_epoch,inventory.revision);
-  const origins=rowOrigins(inventory.identity_ledger,inventory.inventory_epoch);
+  const origins=inventory.identity_snapshot===undefined
+    ?rowOrigins(inventory.identity_ledger!,inventory.inventory_epoch)
+    :snapshotOrigins(inventory.identity_snapshot,inventory.inventory_epoch,inventory.revision);
   const result:Row[]=[];
   for(const bus of inventory.buses) {
     const add=(kind:PhysicalRow['kind'],item:Item,parent?:Item)=>{
@@ -49,6 +52,19 @@ export function rows(snapshot:Snapshot):Row[] {
     for(const item of bus.groups??[])add('group',item);
     for(const item of bus.scenes??[]){const key=origins.get(item.target);if(!key)throw new Error('Saved scene has no identity history');result.push({key,kind:'scene',bus,item,generation:itemGeneration(inventory.inventory_epoch,item.binding_revision)});}
     for(const item of bus.inputs??[]){add('input',item);for(const instance of item.instances??[])add('instance',instance,item);}
+  }
+  return result;
+}
+export function snapshotOrigins(records:IdentityRecord[],epoch:string,revision:number):Map<string,string> {
+  if(!Array.isArray(records))throw new Error('Missing inventory identity snapshot');
+  const result=new Map<string,string>(),keys=new Set<string>();
+  for(const record of records){
+    const {origin,projection,intent_revision}=record;
+    itemGeneration(epoch,origin.revision);itemGeneration(epoch,projection.binding_revision);
+    if(!Number.isSafeInteger(intent_revision)||origin.revision>intent_revision||intent_revision>projection.binding_revision||projection.binding_revision>revision)throw new Error('Invalid inventory identity revision');
+    const key=`${epoch}:${origin.revision}:${origin.target}`;
+    if(keys.has(key)||result.has(projection.target))throw new Error('Duplicate inventory identity');
+    keys.add(key);result.set(projection.target,key);
   }
   return result;
 }

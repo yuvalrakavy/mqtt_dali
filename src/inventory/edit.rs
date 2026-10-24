@@ -80,6 +80,8 @@ pub(super) fn change(model: &Model, expected: u64, edits: &[Edit]) -> Result<Mod
             transitions,
         });
     }
+    let records = ledger::replay(&ledger, revision)?;
+    ledger::compact(&mut ledger, revision, &records)?;
     inventory.identity_ledger = Some(ledger);
     inventory.revision = revision;
     inventory.revision_high_water = Some(revision);
