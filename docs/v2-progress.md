@@ -39,9 +39,44 @@ enforcement is now complete: DALI uses a 180-second ceiling, while other bridges
 retain their defaults and public SDK structs remain unchanged. Shared color
 components/equipment and split-address composition are now ready locally after
 the final review corrections at Store `170e3d777`. Native input components and DT7 Home
-bindings and generic color preset values are also complete locally. Opaque hardware scenes and preset ordering
-remain.
+bindings and generic color preset values are also complete locally. Opaque hardware
+scenes and scene-first preset ordering are now complete locally as described below.
 No household migration or physical hardware validation has occurred.
+
+## 25 October — P8 Store integration ready locally
+
+The approved behavior is implemented: opaque scene recalls complete before
+individual preset overrides. Explicit scene failure reports an error and still
+permits those overrides; an unanswered timeout discards waiting restoration.
+The shared components, native DALI scene receipt route, full/scheduled activation,
+deduplicated aliases and cancellation are complete. Store source `23e8589d5`
+includes the review correction for manual scene recall clearing active presets.
+The final verification/test record is Store `d2f5fee1d`.
+
+**35/35** focused scene/color/latch/shared BridgeKit checks and **15 lint rules**
+pass. **143/143** existing DALI and full/partial/adversarial preset checks pass on
+the unchanged paths. Scheduled blocked scopes and a practical 32-color-light
+preset pass without increasing execution budgets. All **five** guard mutations
+fail their intended behavioral assertions; source restoration and the final
+control anchor check pass.
+
+Actual MQTT -> native bridge -> TCP HAT acceptance passes across two buses:
+DT8 color, split RGB, and relay state return to their saved values; individual
+DALI, DMX and Lutron MQTT commands follow both scene replies. DALI hardware is
+emulated; DMX/Lutron evidence covers their actual Store modules' MQTT output.
+The physical test also retains an equal pending command before scene recall and
+verifies its override afterward without extending its original deadline. Manual
+logical Recall is checked for preset invalidation and exactly one physical call.
+
+Astra/high depth and Sol/medium confirming source review pass after the one
+correction. The independent mutation setup was inconclusive on a cold template
+rebuild; the five behavioral controls were run by the author in the warm owned
+lane. All reviewers are GPT-family. No shared publication pause, native trace API
+or durable queue was added; normal BridgeKit behavior remains compatible.
+
+P8 is ready locally. P9 release packaging, SDK release pinning, deployment/rollback
+documentation and physical HAT/fixture acceptance remain. No household migration,
+main merge or deployment has occurred.
 
 ## 24 October — Color values in presets ready locally
 
@@ -62,9 +97,8 @@ Remaining P8: opaque hardware-scene recall, actual scene-before-override executi
 and combined mixed-protocol acceptance. Scene design review found the ordinary
 same-value override case (current/preset70, scene20): it still must reassert70 even
 without a Store property change. The implementation plan is being revised before
-touching shared publication behavior. The user's explicit failed-scene policy
-question is pending; the recommendation is to report failure and apply the explicit
-individual values. An unanswered recall timeout discards waiting values.
+touching shared publication behavior. The owner confirmed on25October that explicit scene failure is reported while
+individual values still apply. An unanswered recall timeout discards waiting values.
 
 ## 24 October — Native inputs and DT7 ready locally
 
@@ -3781,7 +3815,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress: foundation, command lifetime, color/presets, native inputs and DT7 complete | Opaque hardware scenes and scene-first mixed presets; combined acceptance |
+| P8 Store integration | Ready locally: foundation, lifetime, shared color/presets, native inputs, DT7 and opaque scenes; mixed MQTT/TCP acceptance passes | P9 release work and physical HAT/fixture acceptance |
 | P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
