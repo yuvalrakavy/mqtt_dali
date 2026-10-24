@@ -6,7 +6,9 @@ The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
 Bridge validation carried forward: compact current identity snapshots replace
-unbounded rename history. **868/868 native tests** and **125/125 frontend tests** pass. The complete
+unbounded rename history. The latest command-lifetime slice passes **869/869 native tests**
+(one opt-in browser test skipped) and strict production Clippy; ARMv7 Pi library/bin
+compile checks pass. **125/125 frontend tests** pass from the unchanged UI baseline. The complete
 linked phone/desktop TCP Chrome workflow passes in172.294s. Five compact-identity
 mutation controls fail for their expected behavioral assertions. Strict v2
 production Clippy, all-bin Pi compile checks, changed-file formatting, asset
@@ -32,11 +34,65 @@ An initially stale base test template was refreshed without rebuilding the full
 template catalog. Actual process-restart acceptance passes2/2: rename keeps the
 physical ID and request; replacement changes identity and refuses it. A one-sided
 expiry precision check was corrected only in the test; final acceptance passed.
-The foundation correction is confirmed locally. Next: opt-in bridge request-age
-enforcement, followed by the remaining shared components and preset integration.
-Existing request defaults and public SDK structs remain compatible with other
-bridges; DALI-specific SDK request-age enforcement will be opt-in.
+The foundation correction is confirmed locally. Opt-in BridgeKit request-lifetime
+enforcement is now complete: DALI uses a 180-second ceiling, while other bridges
+retain their defaults and public SDK structs remain unchanged. Next: shared color
+components/equipment and split-address composition, followed by native inputs and
+opaque hardware scenes in presets.
 No household migration or physical hardware validation has occurred.
+
+## 24 October — Command lifetime complete; P8 readiness checklist
+
+The canonical v2 daemon now opts into a three-minute request-lifetime ceiling using
+BridgeKit revision `d83fa224bf04216dcde4be4102b1b2dc98fd7010`. Nonempty property
+Desired messages require MQTT expiry of at most 180 seconds, including live
+deliveries; queued commands and target Desired requests receive a deadline bounded
+by the same ceiling. Shorter deadlines remain shorter. Empty retractions, Config,
+State readback and existing active-operation timeouts keep their existing behavior.
+This limits admission/start time; it does not abort an addressing operation already
+started or prove a publisher's original age from broker remaining expiry.
+
+Bridge commit `cccaf2a` passes 869/869 native tests (one opt-in browser case skipped),
+strict production Clippy and ARMv7 Pi library/bin compile checks. The canonical
+daemon regression failed before the change and passes afterward. The SDK passes
+231 API/example tests, 176 conformance tests, strict all-target Clippy and one actual
+mutation control. Both fixed and factory-created runtimes are tested. Fresh source
+reviews approve the SDK and DALI integration with no serious findings; these are
+same-family reviews. Other bridges retain the default policy and their dependency
+pins. The separate v1 runtime is unchanged. SDK commits are published for the DALI
+pin; there is no bridge release, household migration or hardware-validation claim.
+
+P8 can become **ready locally** once all of these boundaries are complete:
+
+- [x] Inventory sync, stable physical IDs and Home bindings through renames/address
+  moves; replacements refuse old requests; tested persisted upgrade.
+- [x] Bounded histories, 30,000 aggregate map entries, bounded DALI parsing and
+  original request expiry through retries, renames and process restarts.
+- [x] Opt-in bridge-side three-minute request lifetime, preserving other bridges'
+  defaults and the separate v1 runtime.
+- [ ] Shared representation-specific color components/equipment: one DT8 binding
+  and three/four independent RGB/RGBW channel bindings, including DALI groups.
+  Preserve color independently of power/master brightness and avoid double scaling
+  or readback feedback loops. Preserve existing object identities/bindings when
+  refining capabilities; verify ordinary dimmer/on-off compatibility too.
+- [ ] Native input components and bindings: decoded button events, maintained
+  switches, occupancy and supported sensor observations. Start unknown without
+  fresh data and use the native classifications without another gesture recognizer.
+- [ ] Opaque DALI scene targets, generic HardwareScene equipment and shared recall
+  trigger, integrated into mixed-protocol presets. Recording saves participation
+  and references; activation recalls once; there is no automatic inverse recall.
+  Scene recall must take effect before individual-light overrides on the same bus.
+- [ ] End-to-end Home binding/preset tests through actual MQTT and the TCP emulator,
+  plus relevant upgrade and existing-driver compatibility checks, contributor
+  documentation and final scoped review.
+
+The next implementation slice is shared color components and equipment. PanelScript
+touch-panel design is outside this effort. Physical HAT/fixture acceptance and P9
+release/deployment preparation remain separate; locally ready does not mean deployed
+or hardware validated.
+
+Evidence: `/tmp/dali-request-lifetime-{daemon-red,daemon-green,native-final,production-clippy,pi}.log`
+and `/tmp/dali-request-lifetime-{sdk-final2,conformance-info-final,control,clippy}.log`.
 
 ## 24 October — Store foundation correction and lane cleanup
 
@@ -59,9 +115,9 @@ configuration and control files remain, the lane server is still running, and ot
 lanes were untouched. Cargo's missing cache tag was restored after verifying its
 target directory. The next Rust build will be cold.
 
-Next: add opt-in BridgeKit request-age enforcement for DALI while preserving other
-bridges' defaults; then complete shared color/split-address RGB, input and opaque
-scene components, scene-first preset ordering, and release preparation.
+At this checkpoint, opt-in bridge request-age enforcement was next. It is now
+complete, as recorded above. Shared color/split-address RGB, input and opaque scene
+components, scene-first preset ordering, and release preparation remain.
 
 ## Compact identity correction — accepted locally
 
@@ -3603,7 +3659,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress: foundation correction confirmed locally; 8 capacity phases, 135 broader checks, 19 final focused checks, 42 keeper checks and 2 restart scenarios pass | Opt-in bridge-side request-age enforcement, shared color/input/scene components and scene-first preset ordering |
+| P8 Store integration | In progress: foundation and opt-in request lifetime complete locally; identity, migration, bounded-memory and expiry checks pass | Shared color/split-address equipment, native input components, opaque scenes and scene-first presets; end-to-end bindings and scoped compatibility checks |
 | P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
