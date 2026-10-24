@@ -15,6 +15,8 @@ const NAME: &str = "Controller";
 const LEGACY:&[u8]=br#"{"name":"Controller","buses":[{"bus":0,"description":"Bus1","status":"Active","channels":[{"short_address":0,"description":"Light1"}]}]}"#;
 #[path = "support/otel_collector.rs"]
 mod otel;
+#[path = "v2_process/request_lifetime.rs"]
+mod request_lifetime;
 #[path = "v2_process/tcp.rs"]
 mod tcp;
 #[path = "v2_process/web.rs"]

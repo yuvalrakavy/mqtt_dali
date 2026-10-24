@@ -13,6 +13,19 @@ Every write requires that exact token in the MQTT v5 `target-generation` user
 property. A rename retires the old target/token. Do not copy a controller token
 onto a fixture request.
 
+Every nonempty property Desired also requires MQTT v5 message expiry of at most
+180 seconds. Missing or longer expiry is refused as malformed. This applies to
+individual/group output and input-feedback properties, including live delivery;
+the broker may clear RETAIN when forwarding a live packet. For `mosquitto_pub`,
+add `-V mqttv5 -D publish message-expiry-interval 180` alongside the generation
+property. A shorter expiry is preserved. Empty property retractions need no expiry.
+
+Target-level Desired and Commands may omit expiry: their queue lifetime is capped
+at180 seconds from MQTT receipt. This limit does not abort an already-started job;
+normal operation timeouts still apply. Publishers should set the initial expiry
+at or below180 seconds too; broker remaining TTL does not reveal publication age.
+Configuration and State are not subject to this command policy.
+
 | Topic | JSON payload | Effect |
 |---|---|---|
 | `DALI/Desired/Controller/Bus1.Outputs.Light1/PowerState` | `true` or `false` | Recall configured maximum or turn off |

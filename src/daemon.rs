@@ -104,7 +104,10 @@ pub fn run() -> ExitCode {
         env!("CARGO_PKG_VERSION"),
         build_info::BUILT_TIME_UTC
     );
-    let mut bridge = Bridge::new("DALI").app_name("mqtt_dali").version(&version);
+    let mut bridge = Bridge::new("DALI")
+        .app_name("mqtt_dali")
+        .version(&version)
+        .request_lifetime_limit(std::time::Duration::from_secs(180));
     for (key, help) in &declared {
         if key != "web-password" {
             bridge = bridge.option(key, help);
