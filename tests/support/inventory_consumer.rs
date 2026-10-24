@@ -182,6 +182,13 @@ impl Consumer {
         if document["schema_version"] == 2 {
             return self.accept_snapshot(document, epoch, revision);
         }
+        if self
+            .document
+            .as_ref()
+            .is_some_and(|previous| previous["schema_version"] == 2)
+        {
+            return Err("inventory schema downgrade is not continuity".into());
+        }
         let ledger: Ledger = serde_json::from_value(document["identity_ledger"].clone())
             .map_err(|e| e.to_string())?;
         if let Some(before) = &self.ledger {

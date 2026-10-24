@@ -114,3 +114,26 @@ Design gate: two source-only GPT-family reviews (A Astra/high, B Sol/high),
 reports /tmp/dali-compact-identity-design-{a,b}.md. All concrete findings addressed
 above: raw writer basis, retained-vs-memory durability, adoption metadata, explicit
 parent Origin. No cross-family review available. Owner implementation go already given.
+
+
+## Implementation verification (2026-10-24)
+
+Frozen implementation787c011 plus confirming correction.868/868 native,
+125/125 frontend, actual linked phone/desktop TCP browser1/1 (172.294s),
+strict v2 production Clippy, all-bin Pi check and five meaningful negative
+controls pass locally. Existing whole-legacy strict Clippy/formatter issues are
+outside this slice; changed Rust files are formatted. No physical validation.
+
+Depth/test source review found a schema2-to-newer-schema1 downgrade in the example
+consumer and missing fresh-intent-after-barrier coverage. Add behavioral RED and
+refuse downgrade; keep explicit old-wire tests on schema1; prove fresh intent
+survives ordinary moves and the conditional over-revocation mutant fails. One
+confirming delta read follows. Reports /tmp/dali-compact-code-depth.md and
+/tmp/dali-compact-test-review.md; these are same-GPT-family source reviews, not an
+independently executed mutation campaign. Actual guard mutations were executed
+by the parent through the registered negative-control driver.
+
+Store's optional identity hook and adoption propagation pass8 focused tests;
+its actual MQTT callback parses the reviewed compact fixture at the unchanged
+runtime map10000 cap (1/1). Store tree creation/migration remain unfinished P8
+work; the snapshot correction does not claim those completed.

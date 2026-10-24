@@ -210,3 +210,68 @@ fn diagnostic_history_is_bounded_by_bytes_as_well_as_batch_count() {
         "byte budget never checkpointed a short, large transition tail"
     );
 }
+
+#[test]
+fn a_current_snapshot_cannot_downgrade_to_rewritten_legacy_history() {
+    let original = initial();
+    let next = rename(original.clone(), "Kitchen");
+    let mut consumer = Consumer::default();
+    consumer.accept(&next.state_bytes().unwrap()).unwrap();
+    let id = consumer.by_target("Bus1.Outputs.Kitchen").unwrap().id;
+    let mut old: Value = serde_json::from_slice(&original.state_bytes().unwrap()).unwrap();
+    old["Inventory"]["schema_version"] = json!(1);
+    old["Inventory"]["revision"] = json!(3);
+    old["Inventory"]
+        .as_object_mut()
+        .unwrap()
+        .remove("identity_snapshot");
+    old["Inventory"]["identity_ledger"] = serde_json::to_value(original.ledger()).unwrap();
+    assert!(
+        consumer.accept(&serde_json::to_vec(&old).unwrap()).is_err(),
+        "newer legacy document regressed an accepted current identity"
+    );
+    assert_eq!(consumer.revision, 2);
+    assert_eq!(consumer.by_target("Bus1.Outputs.Kitchen").unwrap().id, id);
+    assert!(!consumer.accepts_state("Bus1.Outputs.Light1", "0123456789abcdef0123456789abcdef.1"));
+    // A fresh legacy consumer can still move forward to the new wire contract.
+    let mut legacy = Consumer::default();
+    old["Inventory"]["revision"] = json!(1);
+    legacy.accept(&serde_json::to_vec(&old).unwrap()).unwrap();
+    let before = legacy.by_target("Bus1.Outputs.Light1").unwrap().id;
+    legacy.accept(&next.state_bytes().unwrap()).unwrap();
+    assert_eq!(legacy.by_target("Bus1.Outputs.Kitchen").unwrap().id, before);
+}
+
+#[test]
+fn fresh_intent_after_a_contract_change_survives_later_compatible_moves() {
+    let model = initial();
+    let mut model = model
+        .edit(
+            1,
+            &[Edit::OutputColorRepresentation {
+                bus: 0,
+                address: 0,
+                representation: Some(mqtt_dali::config::ColorRepresentation::Rgbwaf),
+            }],
+        )
+        .unwrap();
+    let mut consumer = Consumer::default();
+    consumer.accept(&model.state_bytes().unwrap()).unwrap();
+    let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
+    consumer.set_intent("Bus1.Outputs.Light1", json!({"Brightness":0.7}));
+    for index in 0..80 {
+        model = rename(model, if index % 2 == 0 { "Kitchen" } else { "Light1" });
+    }
+    let restarted = Model::new(
+        serde_json::from_slice(&serde_json::to_vec(model.inventory()).unwrap()).unwrap(),
+    )
+    .unwrap();
+    consumer.accept(&restarted.state_bytes().unwrap()).unwrap();
+    let current = consumer.by_target("Bus1.Outputs.Light1").unwrap();
+    assert_eq!(current.id, id);
+    assert_eq!(
+        current.intent,
+        Some(json!({"Brightness":0.7})),
+        "compatible moves discarded fresh post-change intent"
+    );
+}

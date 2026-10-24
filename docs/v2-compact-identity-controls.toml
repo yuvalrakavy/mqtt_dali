@@ -37,3 +37,14 @@ replacement = "false"
 target = "command"
 argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","compact_identity","-E","test(a_checkpoint_cannot_reparent_an_existing_button_to_a_replacement_module)"]
 expect_text = "checkpoint attached old button to replacement parent"
+
+
+[[control]]
+name = "compatible_moves_keep_revoking_fresh_intent"
+guard = "fresh intent after an earlier contract change"
+file = "src/inventory/ledger.rs"
+anchor = "                    } else {\n                        old.intent_revision\n                    }"
+replacement = "                    } else if old.intent_revision > old.origin.revision {\n                        batch.revision\n                    } else {\n                        old.intent_revision\n                    }"
+target = "command"
+argv = ["cargo","nextest","run","--offline","--target","aarch64-apple-darwin","--test","compact_identity","-E","test(fresh_intent_after_a_contract_change_survives_later_compatible_moves)"]
+expect_text = "compatible moves discarded fresh post-change intent"

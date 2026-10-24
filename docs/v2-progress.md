@@ -5,14 +5,15 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
-Most recent accepted milestone: common DT1 emergency operations, emulator/UI
-support and retained relay/emergency type capabilities. Implementation
-`a9acfa5` plus `0438fea`, with browser-test/documentation corrections at
-`c52ef8b`, passes **860/860 native tests** and **124/124 frontend tests**.
-The complete linked phone/desktop Chrome workflow passes in189.102s; strict
-Clippy, Pi library/four-bin compile checks, wait lint, formatting, both asset
-checks, affected control plans and whitespace checks also pass. Physical
-hardware validation remains pending.
+Most recent verified milestone: compact current identity snapshots replace
+unbounded rename history. Native868/868 and frontend125/125 pass. The complete
+linked phone/desktop TCP Chrome workflow passes in172.294s. Five compact-identity
+mutation controls fail for their expected behavioral assertions. Strict v2
+production Clippy, all-bin Pi compile checks, changed-file formatting, asset
+consistency and whitespace checks pass. Physical hardware validation remains
+pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
+0438fea and c52ef8b. The compact slice is frozen at787c011 plus its review fix;
+one final confirming read of that correction remains.
 
 Current work: the owner-approved compact identity correction, followed by P8
 Store integration in `/Users/yuval/Documents/Projects/Store-t3`, branch
@@ -22,7 +23,7 @@ installation. It exposed unbounded history. The owner approved replacing it with
 current identity snapshots; all shared runtime limits remain unchanged.
 No household migration or physical hardware validation has occurred.
 
-## Compact identity correction — verification in progress
+## Compact identity correction — final confirming review
 
 Bridge wire schema2 now publishes only current Origin/projection/intent-barrier
 records, including parent Origin for input instances. Names remain public names.
@@ -34,13 +35,18 @@ Inventory remains the atomic writer's comparison basis until ordinary save.
 Focused checks pass:74/74 inventory/writer/consumer cases, including1200 real
 Model edits and offline/restart continuity, color-change-and-back revocation,
 checkpoint parent replacement, byte/count bounds and actual worker upgrade/save/
-uncertain recovery. The complete native suite passes866/866 (one opt-in browser
-case skipped there); frontend125/125. Four new mutation controls each fail for
-the expected behavioral reason (22.1s total). Strict v2 production Clippy and all
+uncertain recovery. The final complete native suite passes868/868 (one opt-in browser
+case skipped there); frontend125/125. Four original mutation controls fail for
+the expected behavioral reason (22.1s total); the review-added fresh-intent control
+also fails meaningfully (5.1s). Strict v2 production Clippy and all
 Pi-target library/bin compile checks pass; all-bin strict Clippy also encounters
 four pre-existing legacy harness warnings. Full linked phone/desktop TCP-browser
-verification is running; final review/acceptance remain before calling this slice
-complete. Logs `/tmp/dali-compact-{affected2,native-final,web,controls,production-clippy,pi,browser}.log`.
+verification passes1/1 in172.294s. Round1 source review found an example-consumer
+schema downgrade hole and a missing positive fresh-intent case. The downgrade
+regression was behavioral RED, then fixed; fresh intent after revocation is
+positively tested and its conditional ratcheting mutant is RED. Current legacy
+adversarial fixtures explicitly remain on schema1 so the new refusal cannot make
+them pass vacuously. One confirming review remains. Logs `/tmp/dali-compact-{affected2,native-final,web,controls,production-clippy,pi,browser}.log`.
 
 Two required fresh design readers (Astra/high and Sol/high, same GPT family)
 identified and resolved raw-file comparison, retained-vs-memory durability,
@@ -57,8 +63,8 @@ regression is behavioral RED then GREEN; all8 focused generation/identity cases
 pass. Existing drivers keep the default unfenced/no-identity behavior. The
 foundation spec and independent literal fixtures now use wire schema2 snapshots;
 actual DALI inventory creation remains behavioral RED before its implementation.
-The actual private MQTT/parser compact-snapshot probe is being verified with the
-unchanged10000-entry map cap. No budget choice remains pending.
+The actual private MQTT/parser compact-snapshot probe passes1/1 with the
+unchanged10000-entry map cap (`/tmp/dali-p8-compact-wire.log`,729ms body). No budget choice remains pending.
 
 Earlier foundation checks remain valid: literal Names (3 behavior,9 existing and5
 shared unit cases);57 carried real-broker cases plus the corrected orphan1/1
@@ -3482,7 +3488,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 | Store integration | In progress in Store-t3: compact snapshot correction and identity metadata checks; naming/generation/cleanup/retarget checks pass; no household migration | Inventory application, persisted migration, shared color/input/scene components and scene-first preset ordering |
+| P8 Store integration | In progress in Store-t3: compact snapshot correction and identity metadata checks; naming/generation/cleanup/retarget checks pass; no household migration | Inventory application, persisted migration, shared color/input/scene components and scene-first preset ordering |
 | P9 release/docs | Pending; Pi compile checks pass locally | Release cross-link/build, portable shared dependency publication, deployment/rollback guides and physical acceptance |
 
 No v2 release, production installation, live Store migration, push or merge has

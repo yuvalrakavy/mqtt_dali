@@ -34,6 +34,23 @@
     "verdict": "RED"
    }
   },
+  "compatible_moves_keep_revoking_fresh_intent": {
+   "last_real": {
+    "at": "2026-10-24T08:03:45Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": null,
+     "guard": "item:61744b3490109b41",
+     "row": "efb85092918b2219",
+     "test": null
+    },
+    "path": "command",
+    "secs": 5.1,
+    "sha": "787c011fcffa6f49ebc6f9dd6d09b3e7565339e8",
+    "verdict": "RED"
+   }
+  },
   "diagnostic_history_has_no_batch_bound": {
    "last_real": {
     "at": "2026-10-24T07:57:37Z",

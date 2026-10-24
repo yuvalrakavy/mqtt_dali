@@ -614,7 +614,7 @@ fn color_selection_consumer_keeps_identity_but_retires_old_intent_and_observatio
     let target = "Bus1.Outputs.Light1";
     let group = "Bus1.Groups.All";
     let mut consumer = Consumer::default();
-    consumer.accept(&first.state_bytes().unwrap()).unwrap();
+    consumer.accept(&legacy_state(&first)).unwrap();
     let id = consumer.by_target(target).unwrap().id;
     let group_before = consumer.by_target(group).unwrap().record.clone();
     consumer.set_intent(target, json!({"Brightness":0.2}));
@@ -669,7 +669,7 @@ fn color_selection_consumer_rejects_unrecorded_or_wrong_space_metadata() {
     malformed.push(unrelated);
     for document in malformed {
         let mut consumer = Consumer::default();
-        consumer.accept(&model().state_bytes().unwrap()).unwrap();
+        consumer.accept(&legacy_state(&model())).unwrap();
         let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
         assert!(
             consumer
@@ -694,7 +694,7 @@ fn color_selection_consumer_drops_intent_even_when_fixture_is_also_renamed() {
     current["identity_ledger"]["batches"][0]["transitions"][0]["to"]["target"] =
         json!("Bus1.Outputs.Kitchen");
     let mut consumer = Consumer::default();
-    consumer.accept(&model().state_bytes().unwrap()).unwrap();
+    consumer.accept(&legacy_state(&model())).unwrap();
     let id = consumer.by_target("Bus1.Outputs.Light1").unwrap().id;
     consumer.set_intent("Bus1.Outputs.Light1", json!({"ColorTemperature":3000}));
     consumer
