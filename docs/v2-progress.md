@@ -5,7 +5,7 @@ Base: `db6f39f63da75a0614eb8f1a3b274a163bc4b307`.
 The approved architecture and phase acceptance criteria are in
 `superpowers/specs/2026-10-21-dali-v2-design.md`.
 
-Most recent verified milestone: compact current identity snapshots replace
+Bridge validation carried forward: compact current identity snapshots replace
 unbounded rename history. **868/868 native tests** and **125/125 frontend tests** pass. The complete
 linked phone/desktop TCP Chrome workflow passes in172.294s. Five compact-identity
 mutation controls fail for their expected behavioral assertions. Strict v2
@@ -37,6 +37,31 @@ enforcement, followed by the remaining shared components and preset integration.
 Existing request defaults and public SDK structs remain compatible with other
 bridges; DALI-specific SDK request-age enforcement will be opt-in.
 No household migration or physical hardware validation has occurred.
+
+## 24 October — Store foundation correction and lane cleanup
+
+The Store foundation correction is confirmed locally: bounded histories, the
+30,000-entry map limit, bounded DALI inventory parsing, safe rename/replacement
+handling and preserved request expiry. P8 remains in progress; shared components
+and preset integration are still unfinished.
+
+Production correction: Store `aa78be4df`; final verification/test record:
+`5d1c8f1ca`. Checks pass: 135 DALI/shared MQTT cases, 19 final focused cases,
+42 shared keeper cases, 2 actual broker/process-restart scenarios, strict workspace
+Clippy and 15 data-lint rules. Eight practical/dense MQTT capacity phases also pass.
+The final source review approves with no serious findings; review coverage is
+same-family. The earlier 3,303 passing native cases are phase evidence, not a full
+pre-merge verdict. Nothing is merged or deployed, and hardware validation is pending.
+
+At the owner's request, the idle t3 lane was cleaned with `cargo clean --profile dev`.
+Its measured target-directory disk usage fell from 49 GB to 255 MB. Server logs,
+configuration and control files remain, the lane server is still running, and other
+lanes were untouched. Cargo's missing cache tag was restored after verifying its
+target directory. The next Rust build will be cold.
+
+Next: add opt-in BridgeKit request-age enforcement for DALI while preserving other
+bridges' defaults; then complete shared color/split-address RGB, input and opaque
+scene components, scene-first preset ordering, and release preparation.
 
 ## Compact identity correction — accepted locally
 
@@ -3578,8 +3603,8 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress: bounded history and inventory correction; 8 real-MQTT capacity phases pass; final foundation checks underway | Finish foundation review, bridge-side request-age enforcement, shared color/input/scene components and scene-first preset ordering |
-| P9 release/docs | Pending; Pi compile checks pass locally | Release cross-link/build, portable shared dependency publication, deployment/rollback guides and physical acceptance |
+| P8 Store integration | In progress: foundation correction confirmed locally; 8 capacity phases, 135 broader checks, 19 final focused checks, 42 keeper checks and 2 restart scenarios pass | Opt-in bridge-side request-age enforcement, shared color/input/scene components and scene-first preset ordering |
+| P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
 been performed. The legacy master checkout and v1 maintenance branch retain their
