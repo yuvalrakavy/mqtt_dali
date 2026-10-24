@@ -20,7 +20,22 @@ Current work: P8 Store integration after the accepted compact identity correctio
 contained two fixtures, one group and1200 past renames, not a large real
 installation. It exposed unbounded history. The owner approved replacing it with
 current identity snapshots, bounded histories and a shared 30,000-entry map limit.
-The explicit bounded inventory dispatch allowance is under real-MQTT verification.
+All eight practical/dense real-MQTT capacity phases pass. Store correction7e67422
+passed3303 native checks (11 skipped;1231.4s); the wrapper stopped before SDL so the
+review fixes could be applied. Three expiry regressions reproduced the original
+bugs;135 DALI/shared MQTT checks now pass, along with strict workspace Clippy.
+The corrected earlier-run/name-reuse test fails under its actual guard removal.
+The expiry correction is committed at Store `aa78be4df`; all19 final focused checks,
+42 shared keeper compatibility checks and15 data-lint rules pass. The single fresh
+confirming source reader approves with no S2+ findings (same-family coverage).
+An initially stale base test template was refreshed without rebuilding the full
+template catalog. Actual process-restart acceptance passes2/2: rename keeps the
+physical ID and request; replacement changes identity and refuses it. A one-sided
+expiry precision check was corrected only in the test; final acceptance passed.
+The foundation correction is confirmed locally. Next: opt-in bridge request-age
+enforcement, followed by the remaining shared components and preset integration.
+Existing request defaults and public SDK structs remain compatible with other
+bridges; DALI-specific SDK request-age enforcement will be opt-in.
 No household migration or physical hardware validation has occurred.
 
 ## Compact identity correction — accepted locally
@@ -57,6 +72,9 @@ Design `superpowers/specs/2026-10-24-dali-v2-compact-identity.md` supersedes the
 unbounded-history requirement. The512KiB State and4MiB config caps stay in force.
 
 ## P8 — Store foundation: compact snapshots
+
+The following compact-snapshot results are earlier checkpoints, before the approved
+map-budget/history correction. Current acceptance is summarized at the top of this file.
 
 The bridge compact-history correction is complete. Store integration in the owned
 Store-t3 lane now consumes schema2 current identity snapshots. Names remain public
@@ -120,7 +138,9 @@ test targets, using temporary copies; their source and dependency pins are uncha
 Two fresh source reviews found a cleanup wake ordering issue, now corrected, and
 the added sealed-batch regression passes with two effective mutation controls.
 Store uses a run token rather than retaining every locally touched topic, and
-retains imported-request identity only through its original expiry. The earlier 15 focused history/parser/review cases passed across the main run and
+retains finite imported-request identity through its original broker expiry.
+Review also requires preserving bounded protection for generic legacy requests
+without broker expiry, separately from their local handling timeout. The earlier 15 focused history/parser/review cases passed across the main run and
 the three-case fix rerun. The current correction/handler-integrity batch passes
 24/24, and the targeted core map/profile checks pass 28/28.
 
@@ -128,7 +148,7 @@ Actual producer payloads measure218,322 bytes/10,751 aggregate map entries for a
 large4-bus installation (256 outputs,48 input panels), and298,574 bytes/13,147
 entries for the dense all-groups case. Both fit the wire/map caps. Real MQTT
 dispatch exposed the1-million-operation ceiling; removing repeated group-reference
-validation was insufficient. An explicit inventory dispatch profile is being
+validation was insufficient. An explicit inventory dispatch profile is now
 implemented with 20 million operations for payloads<=512KiB, retaining the existing
 memory/call/command bounds. It covers the selected dispatch and nested evaluations,
 not just parsing. The first 4-million allowance was insufficient: measured validation alone uses
