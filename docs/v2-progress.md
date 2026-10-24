@@ -15,8 +15,7 @@ pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
 0438fea and c52ef8b. The compact slice is accepted locally at787c011 plus5c601e0;
 the final confirming source review approves both corrections.
 
-Current work: the owner-approved compact identity correction, followed by P8
-Store integration in `/Users/yuval/Documents/Projects/Store-t3`, branch
+Current work: P8 Store integration after the accepted compact identity correction in `/Users/yuval/Documents/Projects/Store-t3`, branch
 `feat/dali-v2-store`, based on Store `3c168f3ce`. The old synthetic324KB test
 contained two fixtures, one group and1200 past renames, not a large real
 installation. It exposed unbounded history. The owner approved replacing it with
@@ -58,34 +57,57 @@ unbounded-history requirement. The512KiB State and4MiB config caps stay in force
 
 ## P8 — Store foundation: compact snapshots
 
-Store request context now captures optional stable target-identity as well as
-mapping generation, and retains it through adoption/retarget. The new identity
-regression is behavioral RED then GREEN; all8 focused generation/identity cases
-pass. Existing drivers keep the default unfenced/no-identity behavior. The
-foundation spec and independent literal fixtures now use wire schema2 snapshots;
-actual DALI inventory creation remains behavioral RED before its implementation.
-The actual private MQTT/parser compact-snapshot probe passes1/1 with the
-unchanged10000-entry map cap (`/tmp/dali-p8-compact-wire.log`,729ms body). No budget choice remains pending.
+The bridge compact-history correction is complete. Store integration in the owned
+Store-t3 lane now consumes schema2 current identity snapshots. Names remain public
+names; private lifetimes preserve physical IDs and Home bindings across proved
+renames and address moves. Replacement lifetimes never inherit old requests.
+All shared runtime limits remain unchanged.
 
-Earlier foundation checks remain valid: literal Names (3 behavior,9 existing and5
-shared unit cases);57 carried real-broker cases plus the corrected orphan1/1
-Config-readiness regression; payload/conflict/exact-expiry retarget1/1; and1/1
-DALI directory conversion/class-path check. Sparse512KiB parser and actual MQTT
-probes, shared-trigger checks and the captured-basis atomic topology probe are
-design evidence, not full Store integration acceptance.
+The combined focused run passes **43/43**:32 DALI inventory/state/request/adoption
+cases,8 shared generation/lifetime cases and3 literal-name cases
+(`/tmp/dali-store-foundation-focused-final2.log`). It covers real Home bindings,
+address swaps, bus/input renames, same-name replacements, stale/invalid atomic
+refusal, fault/null observations, bounded early State, original-expiry retargeting,
+reviewed legacy joins/retirement and explicit epoch replacement. Actual bridge
+Model output supplies the fixtures. All7 mutation controls produce meaningful
+behavioral RED and restore source; final anchor check has zero rot.
 
-Inventory application, state caching/base controls, identity-preserving persisted
-migration, shared representation components/split-address RGB, input actions,
-opaque scene/preset integration and release preparation remain. Owner preset
-ordering stays hardware-scene-first, then individual overrides. The private demo
-preserves its five fixtures and exact configuration. The bridge serves generic
-MQTT consumers, independently of Store.
+All **8/8 native upgrade cases** pass together
+(`/tmp/dali-store-migration-bootstrap-final.log`,63.912s body). These cover actual
+existing-store load and template reset, preserved IDs/values/bindings including
+singleton-name collisions, interrupted-v25 recovery, rollback, generic legacy
+nonce conversion, Std-only readiness and unrelated modified-driver ordering.
+The existing migration regression selection passed31/31 in59.413s before the final
+bootstrap correction. Both boot ID lock files are unchanged.
 
-Workflow: focused Store generation tests use only the base template. Avoid broad
-keeper-triggered preparation of29 templates and unrelated repository formatting.
-Earlier formatter/template-generator noise was individually verified and restored;
-only intended source changes remain (new rebakes can recreate the base one-line
-config difference, which must be restored before commit).
+Real old-template testing exposed two bootstrap ordering failures: an all-owner
+refresh reached unrelated HDL catalog data too early; recursive dependency refresh
+could compile a dependent before Std installed its annotation APIs. Upgrade now
+refreshes present Std then Dali owners with dependency recursion disabled, using
+the existing reconciliation API. The formerly failing cold base-template path
+passes, followed by8/8 generation checks
+(`/tmp/dali-store-base-cold-bootstrap.log`,45.5s cold rebake). A fresh source reader
+confirmed this narrow fix; that read is not the final frozen-source review.
+
+The actual MQTT/server-restart acceptance passes **2/2**
+(`/tmp/dali-store-real-restart-acceptance2.log`): a renamed fixture keeps its
+physical ID and recovers its captured request on the new route with its remaining
+expiry; a replacement gets a new physical ID and refuses the old request. Old
+routes are retracted. The reproducible recipe uses disposable stores/unique roots,
+captures actual producer messages, and reseeds them after graceful test-store
+teardown to model a previous crashed publisher. It never touches household data.
+
+Earlier carried checks include57 real-broker kit cases plus the corrected orphan
+readiness1/1, literal naming9 existing +5 shared unit cases, and the actual compact
+MQTT/parser probe1/1 with the unchanged10000-entry map cap. The current foundation
+has not yet completed its final source review and derived pre-merge gate; it is
+not merged or deployed. Lint, documentation and that final review are in progress.
+
+Shared color components/split-address RGB equipment, input actions, opaque
+hardware-scene/preset integration and release preparation remain. Preset ordering
+stays hardware-scene-first, then individual overrides. The bridge serves generic
+MQTT consumers independently of Store. No physical hardware validation or
+household migration has occurred.
 
 ## P4 — combined emergency operations and retained type capabilities
 
@@ -3489,7 +3511,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress in Store-t3: compact snapshot correction and identity metadata checks; naming/generation/cleanup/retarget checks pass; no household migration | Inventory application, persisted migration, shared color/input/scene components and scene-first preset ordering |
+| P8 Store integration | In progress in Store-t3:43 focused cases,8 native migration cases and2 actual broker/restart scenarios pass; real Home bindings preserved; no household migration | Final foundation source review/gate, shared color/input/scene components and scene-first preset ordering |
 | P9 release/docs | Pending; Pi compile checks pass locally | Release cross-link/build, portable shared dependency publication, deployment/rollback guides and physical acceptance |
 
 No v2 release, production installation, live Store migration, push or merge has
