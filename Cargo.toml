@@ -2,7 +2,7 @@
 name = "mqtt_dali"
 version = "2.0.0-dev.0"
 edition = "2021"
-default-run = "mqtt_dali"
+default-run = "mqtt_dali_v2"
 
 build = "build.rs"
 

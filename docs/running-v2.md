@@ -17,7 +17,7 @@ explicit password; there is no shared default.
 Start one controller with an MQTT broker and its own writable config directory:
 
 ```sh
-mqtt_dali --instance Controller --broker 127.0.0.1:1883 \
+mqtt_dali_v2 --instance Controller --broker 127.0.0.1:1883 \
   --config /var/lib/mqtt_dali/dali.v2.json \
   --legacy-config /var/lib/mqtt_dali/dali.json \
   --uart /dev/serial0 --log-config /etc/mqtt_dali/logging.toml
@@ -28,7 +28,7 @@ use `--uart none`, supply the private PTY from `dali_hat_emulator`, or select a
 raw TCP HAT endpoint instead:
 
 ```sh
-mqtt_dali --instance Controller --broker 127.0.0.1:1883 \
+mqtt_dali_v2 --instance Controller --broker 127.0.0.1:1883 \
   --config ./dali.v2.json --legacy-config ./dali.json \
   --hat-tcp 127.0.0.1:5580 --uart-repeat-terminals 1
 ```
@@ -81,13 +81,19 @@ while a process is using the configuration. Only one process may own that
 configuration. Offline validation/import uses:
 
 ```sh
-mqtt_dali --check-config --name Controller \
+mqtt_dali_v2 --check-config --name Controller \
   --config ./dali.v2.json --legacy-config ./dali.json
 ```
 
-`mqtt_dali_v2` calls the same entry point. `mqtt_dali_v1` in this source tree is
-an automated legacy regression harness. Use the v1 maintenance branch/tag for
-the deployed legacy bridge and its original CLI/MQTT contract.
+The v2 executable is `mqtt_dali_v2`; v1 retains `mqtt_dali`. They can be
+installed in the same binary directory without replacing each other. The v2
+build does not produce an unversioned `mqtt_dali` executable. Build or install
+v2 explicitly with `--bin mqtt_dali_v2`; plain `cargo run` selects it by default.
+
+`mqtt_dali_v1` in this source tree is an automated legacy regression harness.
+Use the v1 maintenance branch/tag for the deployed legacy bridge and its
+original CLI/MQTT contract. Each version keeps its own configuration file; stop
+the current service before switching versions on the same physical HAT.
 
 BridgeKit owns signal handling, tracing-init, MQTT reconnects and bounded stop.
 SIGINT/SIGTERM requests shutdown. An owner that cannot actually finish produces

@@ -34,7 +34,7 @@ State payload destined for `DALI/State/<controller>/__inventory`. The property
 The literal [rename fixture](../tests/fixtures/inventory-v2-rename.json) is the
 wire example. The managed `service::DaliService` now publishes it through the
 pinned BridgeKit runtime; real FakeBroker integration tests consume that output.
-The canonical `mqtt_dali` executable runs the managed v2 service;
+The canonical `mqtt_dali_v2` executable runs the managed v2 service;
 `--check-config` remains an explicit offline operation. See
 [service development](service-development.md).
 

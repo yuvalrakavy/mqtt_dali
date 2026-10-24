@@ -524,7 +524,7 @@ async fn scene_operations_canonical_process_reads_and_recalls_standalone_hat() {
     let mut emulator = fixture.command().spawn().unwrap();
     let hat = ready(&mut emulator).await;
     let broker = FakeBroker::start().await;
-    let mut command = Process::new(env!("CARGO_BIN_EXE_mqtt_dali"));
+    let mut command = Process::new(env!("CARGO_BIN_EXE_mqtt_dali_v2"));
     command
         .current_dir(&fixture.0)
         .args([

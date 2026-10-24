@@ -38,7 +38,7 @@ impl Fixture {
         self.command_with_transport(broker, ["--uart", "none"])
     }
     fn command_with_transport(&self, broker: &FakeBroker, transport: [&str; 2]) -> Command {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_mqtt_dali"));
+        let mut command = Command::new(env!("CARGO_BIN_EXE_mqtt_dali_v2"));
         for (name, _) in std::env::vars_os() {
             let key = name.to_string_lossy();
             if key.starts_with("LOG_")

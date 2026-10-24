@@ -89,7 +89,7 @@ Do not infer the count from a firmware number or an emulator pass.
 For the bundled **emulator** scenario `basic-i4.json` (`one_terminal`), use:
 
 ```sh
-mqtt_dali --instance Controller --broker 127.0.0.1:1883 \
+mqtt_dali_v2 --instance Controller --broker 127.0.0.1:1883 \
   --config /tmp/dali-demo/dali.v2.json --legacy-config /tmp/dali-demo/dali.json \
   --uart /path/printed/by/emulator --uart-repeat-terminals 1
 ```

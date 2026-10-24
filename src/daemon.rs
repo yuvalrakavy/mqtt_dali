@@ -87,12 +87,12 @@ pub fn run() -> ExitCode {
         .map(|_| ())
     });
     if let Err(problem) = parsed {
-        let usage=format!("{}\nOffline: --check-config [--config <file>] [--legacy-config <file>] [--name <controller>]\n",config::usage("mqtt_dali","DALI",&declared));
+        let usage=format!("{}\nOffline: --check-config [--config <file>] [--legacy-config <file>] [--name <controller>]\n",config::usage("mqtt_dali_v2","DALI",&declared));
         let (descriptor, text, code) = match problem {
             Problem::Help => (libc::STDOUT_FILENO, usage, ExitCode::SUCCESS),
             Problem::Usage(message) => (
                 libc::STDERR_FILENO,
-                format!("mqtt_dali: {message}\n\n{usage}"),
+                format!("mqtt_dali_v2: {message}\n\n{usage}"),
                 ExitCode::from(2),
             ),
         };

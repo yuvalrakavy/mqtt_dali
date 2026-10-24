@@ -124,7 +124,8 @@ and `v2-managed-feedback-controls.toml`.
 This guide is for bridge contributors and embedders. The service library owns
 durable configuration, runtime routing, optional UART health, individual-output
 operations, selected-family DT8 MQTT controls and native input observations/actions. The canonical
-`mqtt_dali` executable now runs it through BridgeKit; `mqtt_dali_v2` is an alias.
+`mqtt_dali_v2` executable runs it through BridgeKit. The unversioned
+`mqtt_dali` executable is reserved for the maintained v1 bridge.
 `--check-config` remains an explicit offline operation. See
 [running the development daemon](running-v2.md). MQTT base fixture properties
 use [the output wire contract](mqtt-outputs.md). Optional authenticated HTTP status,

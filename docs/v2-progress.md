@@ -43,6 +43,23 @@ bindings and generic color preset values are also complete locally. Opaque hardw
 scenes and scene-first preset ordering are now complete locally as described below.
 No household migration or physical hardware validation has occurred.
 
+## 25 October — Separate v1/v2 executable names
+
+The owner requested side-by-side installation. V1 retains `mqtt_dali`; the v2
+executable and default Cargo run target are `mqtt_dali_v2`. The duplicate
+unversioned v2 entry point is removed. Cargo metadata confirms no `mqtt_dali`
+binary target in the v2 package. The crate name and MQTT/logging identities stay
+unchanged, and operational v1 builds continue from the maintained v1 branch/tag.
+
+Current startup/web/commissioning guides and process/emulator tests use the
+versioned executable. Separate v1/v2 configuration files remain in place. P9
+packaging must install only the explicitly selected v2 artifact; the existing
+legacy installer remains a v1 tool. Installation on a real Pi is still pending.
+
+Verification: Cargo metadata checks the exact binary set/default; all **35/35**
+existing configuration-startup, managed-process and HAT-emulator integration tests
+pass against `mqtt_dali_v2`. Native wire behavior and shared BridgeKit are unchanged.
+
 ## 25 October — P8 Store integration ready locally
 
 The approved behavior is implemented: opaque scene recalls complete before
@@ -3816,7 +3833,7 @@ no verification. Physical hardware validation remains outstanding.
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Ready locally: foundation, lifetime, shared color/presets, native inputs, DT7 and opaque scenes; mixed MQTT/TCP acceptance passes | P9 release work and physical HAT/fixture acceptance |
-| P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
+| P9 release/docs | In progress: v2 executable named mqtt_dali_v2 for side-by-side installation with v1 mqtt_dali | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
 been performed. The legacy master checkout and v1 maintenance branch retain their

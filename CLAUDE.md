@@ -27,8 +27,10 @@ owner and explicit status refresh. Nullable retained relay/emergency type facts
 come from bounded normal readback, independently of color selection. See
 `docs/emergency-lighting.md` and the combined native-completion specification;
 emulator clock/profile behavior is independent from the production codec.
-The default `mqtt_dali` now runs the managed v2 service through BridgeKit;
-`mqtt_dali_v2` is an alias. Both accept explicit `--check-config` to import v1
+The default `mqtt_dali_v2` runs the managed v2 service through BridgeKit.
+V2 does not build an unversioned `mqtt_dali` executable: that name remains with
+the maintained v1 branch/tag so both versions can be installed side by side.
+`mqtt_dali_v2` accepts explicit `--check-config` to import v1
 into separate `dali.v2.json` if absent, or validate existing v2 without MQTT/HAT
 or terminal setup. See `docs/running-v2.md`. The relocated `mqtt_dali_v1` is
 only a regression harness; operational v1 builds use the maintained v1 tag/branch.

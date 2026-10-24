@@ -11,7 +11,7 @@ Use one canonical browser origin and an explicit listener. For example, in Bash:
 ```sh
 read -r -s -p 'Web password: ' MQTT_DALI_WEB_PASSWORD
 export MQTT_DALI_WEB_PASSWORD
-mqtt_dali --instance Controller --broker 127.0.0.1:1883 \
+mqtt_dali_v2 --instance Controller --broker 127.0.0.1:1883 \
   --config /var/lib/mqtt_dali/dali.v2.json --uart /dev/serial0 \
   --web-bind 127.0.0.1:8080 --web-origin http://localhost:8080
 unset MQTT_DALI_WEB_PASSWORD

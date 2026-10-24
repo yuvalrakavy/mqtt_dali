@@ -1,7 +1,8 @@
 # v2 capability status
 
 This is v2 development status, not a release or certification statement.
-The canonical v2 executable runs BridgeKit with metadata and UART/TCP HAT health. No v2 physical HAT
+The canonical v2 executable `mqtt_dali_v2` runs BridgeKit with metadata and UART/TCP HAT health.
+V1 retains `mqtt_dali`, so the executable names can be installed side by side. No v2 physical HAT
 or fixture behavior has been validated. The v1 maintenance binary is separate.
 
 | Capability | Local implementation/evidence | Remaining work |
