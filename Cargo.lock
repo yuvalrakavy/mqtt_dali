@@ -767,7 +767,7 @@ checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 [[package]]
 name = "lock-order"
 version = "0.1.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=153d38051f5197b060fa4281efe6136cffee7419#153d38051f5197b060fa4281efe6136cffee7419"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf#ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf"
 dependencies = [
  "libc",
  "tokio",
@@ -832,7 +832,7 @@ dependencies = [
 [[package]]
 name = "mqtt-bridge-kit"
 version = "0.1.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=153d38051f5197b060fa4281efe6136cffee7419#153d38051f5197b060fa4281efe6136cffee7419"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf#ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf"
 dependencies = [
  "bytes",
  "lock-order",
@@ -846,7 +846,7 @@ dependencies = [
 [[package]]
 name = "mqtt-test-broker"
 version = "0.1.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=153d38051f5197b060fa4281efe6136cffee7419#153d38051f5197b060fa4281efe6136cffee7419"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf#ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf"
 dependencies = [
  "bytes",
  "rumqttc",
@@ -1839,7 +1839,7 @@ dependencies = [
 [[package]]
 name = "tracing-init"
 version = "0.2.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=153d38051f5197b060fa4281efe6136cffee7419#153d38051f5197b060fa4281efe6136cffee7419"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf#ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf"
 dependencies = [
  "bitflags",
  "futures-util",
@@ -1981,7 +1981,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "wait-lint"
 version = "0.1.0"
-source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=153d38051f5197b060fa4281efe6136cffee7419#153d38051f5197b060fa4281efe6136cffee7419"
+source = "git+http://github.com/yuvalrakavy/tracing-init.git?rev=ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf#ab8a2ba6fc2070562a85f1a1d7fd576a64f6cacf"
 dependencies = [
  "proc-macro2",
  "syn",

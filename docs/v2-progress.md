@@ -19,7 +19,8 @@ Current work: P8 Store integration after the accepted compact identity correctio
 `feat/dali-v2-store`, based on Store `3c168f3ce`. The old synthetic324KB test
 contained two fixtures, one group and1200 past renames, not a large real
 installation. It exposed unbounded history. The owner approved replacing it with
-current identity snapshots; all shared runtime limits remain unchanged.
+current identity snapshots, bounded histories and a shared 30,000-entry map limit.
+The explicit bounded inventory dispatch allowance is under real-MQTT verification.
 No household migration or physical hardware validation has occurred.
 
 ## Compact identity correction — accepted locally
@@ -110,12 +111,44 @@ preserving fixture IDs/Home bindings, and discard commands that cannot take
 effect within a few minutes (implementation uses a maximum180 seconds; retries
 and renames retain the original deadline).
 
-An actual maximum I4 producer fixture (4 buses,256 outputs,64 full groups, no
-rename history) is298581 bytes and13147 aggregate map entries. That exceeds the
-shared10000-entry parser budget despite fitting the512KiB wire cap. A direct
-runtime reproduction and the scope decision for that bounded current-topology
-case remain pending. The owner has been asked whether to raise the shared map
-budget or add a DALI-specific execution budget. No shared limit has changed.
+The owner approved a shared30,000-entry aggregate map cap, bounded histories and
+an explicit DALI inventory allowance. The map/parser regression cases pass.
+Retired State cleanup in BridgeKit is capped at1,024 entries/128KiB and retires
+at PUBACK; its 222 SDK/API/example tests pass. Public snapshot structs keep their
+existing shape. HDL, CoolMaster and Yamaha compile against the changed SDK, including
+test targets, using temporary copies; their source and dependency pins are unchanged.
+Two fresh source reviews found a cleanup wake ordering issue, now corrected, and
+the added sealed-batch regression passes with two effective mutation controls.
+Store uses a run token rather than retaining every locally touched topic, and
+retains imported-request identity only through its original expiry. The earlier 15 focused history/parser/review cases passed across the main run and
+the three-case fix rerun. The current correction/handler-integrity batch passes
+24/24, and the targeted core map/profile checks pass 28/28.
+
+Actual producer payloads measure218,322 bytes/10,751 aggregate map entries for a
+large4-bus installation (256 outputs,48 input panels), and298,574 bytes/13,147
+entries for the dense all-groups case. Both fit the wire/map caps. Real MQTT
+dispatch exposed the1-million-operation ceiling; removing repeated group-reference
+validation was insufficient. An explicit inventory dispatch profile is being
+implemented with 20 million operations for payloads<=512KiB, retaining the existing
+memory/call/command bounds. It covers the selected dispatch and nested evaluations,
+not just parsing. The first 4-million allowance was insufficient: measured validation alone uses
+2.63 million operations plus0.84 million for layout, before tree creation. Updates
+now reuse the validated plan rather than repeat validation. The bounded allowance
+is20million operations; all eight real-MQTT practical/dense create/update/rename/removal phases pass,
+including unchanged replay and a generation-fenced observation after each phase.
+No Pi CPU or memory performance claim has been made.
+
+BridgeKit cleanup is accepted locally at `ab8a2ba` after two source reviews and
+one confirming review. Its public API is unchanged; all 222 SDK/API/example cases,
+strict Clippy, three external consumer builds and seven effective controls are
+recorded. DALI alone now pins that public feature revision; its full native suite
+passes 868/868 with eight test processes. The unrestricted first run stopped at
+810 passes/two startup timeouts; all eight startup cases pass in isolation and
+the complete final run passes without changing any deadline. One opt-in browser
+case remains separately scoped. Strict production Clippy and all-bin Pi cross-compilation pass for the bump.
+The unchanged historical v1 regression harness retains four existing Clippy
+warnings when included in an all-bin strict lint; production v1 uses its
+maintained tag/branch. Other bridges retain their existing source and dependency pins.
 
 Shared color components/split-address RGB equipment, input actions, opaque
 hardware-scene/preset integration and release preparation remain. Preset ordering
@@ -3525,7 +3558,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress in Store-t3:43 focused cases,8 native migration cases and2 actual broker/restart scenarios pass; real Home bindings preserved; no household migration | Review corrections and parser-budget scope decision, shared color/input/scene components and scene-first preset ordering |
+| P8 Store integration | In progress: bounded history and inventory correction; 8 real-MQTT capacity phases pass; final foundation checks underway | Finish foundation review, bridge-side request-age enforcement, shared color/input/scene components and scene-first preset ordering |
 | P9 release/docs | Pending; Pi compile checks pass locally | Release cross-link/build, portable shared dependency publication, deployment/rollback guides and physical acceptance |
 
 No v2 release, production installation, live Store migration, push or merge has
