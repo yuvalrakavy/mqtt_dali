@@ -39,9 +39,32 @@ enforcement is now complete: DALI uses a 180-second ceiling, while other bridges
 retain their defaults and public SDK structs remain unchanged. Shared color
 components/equipment and split-address composition are now ready locally after
 the final review corrections at Store `170e3d777`. Native input components and DT7 Home
-bindings are also complete locally. Opaque hardware scenes and preset ordering
+bindings and generic color preset values are also complete locally. Opaque hardware scenes and preset ordering
 remain.
 No household migration or physical hardware validation has occurred.
+
+## 24 October — Color values in presets ready locally
+
+Generic room presets now record and restore selected RGB, RGBW/RGBWAF, Kelvin
+and xy values through the shared components. Split RGBW records parent selections
+and master brightness, not effective child levels. Deactivate preserves selected
+color; manual color-only changes clear Active. Unknown saved channels issue no
+color command; explicit old manifests keep their old contract until Record.
+The existing unset-manifest fallback is corrected without rewriting saved presets.
+
+Store source `e08d4a03e`, review record `ee4014cd6`: **8/8 color cases** and
+**28 existing preset regressions** pass; two real guard mutations fail their
+behavioral assertions; **15 lint rules** pass. Fresh depth and test-validity readers
+approve with no material findings (GPT-family only). No native code or shared
+BridgeKit runtime changed in this slice. Physical acceptance remains pending.
+
+Remaining P8: opaque hardware-scene recall, actual scene-before-override execution,
+and combined mixed-protocol acceptance. Scene design review found the ordinary
+same-value override case (current/preset70, scene20): it still must reassert70 even
+without a Store property change. The implementation plan is being revised before
+touching shared publication behavior. The user's explicit failed-scene policy
+question is pending; the recommendation is to report failure and apply the explicit
+individual values. An unanswered recall timeout discards waiting values.
 
 ## 24 October — Native inputs and DT7 ready locally
 
@@ -170,6 +193,8 @@ P8 can become **ready locally** once all of these boundaries are complete:
   Preserve color independently of power/master brightness and avoid double scaling
   or readback feedback loops. Preserve existing object identities/bindings when
   refining capabilities; ordinary dimmer compatibility is covered.
+- [x] Generic preset capture/restore for selected RGB/RGBWAF, Kelvin and xy,
+  split parent selections, unknown/legacy values and manual color-only drift.
 - [x] DT7 switching projection and matching on/off Home binding compatibility.
 - [x] Native input components and bindings: decoded button events, maintained
   switches, occupancy and supported sensor observations. Start unknown without
@@ -3756,7 +3781,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress: foundation, command lifetime, color, native inputs and DT7 complete | Opaque hardware scenes and scene-first mixed presets; combined acceptance |
+| P8 Store integration | In progress: foundation, command lifetime, color/presets, native inputs and DT7 complete | Opaque hardware scenes and scene-first mixed presets; combined acceptance |
 | P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
