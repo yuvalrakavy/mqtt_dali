@@ -36,10 +36,38 @@ physical ID and request; replacement changes identity and refuses it. A one-side
 expiry precision check was corrected only in the test; final acceptance passed.
 The foundation correction is confirmed locally. Opt-in BridgeKit request-lifetime
 enforcement is now complete: DALI uses a 180-second ceiling, while other bridges
-retain their defaults and public SDK structs remain unchanged. Next: shared color
-components/equipment and split-address composition, followed by native inputs and
-opaque hardware scenes in presets.
+retain their defaults and public SDK structs remain unchanged. Shared color
+components/equipment and split-address composition now pass the focused integration
+checks and actual MQTT/TCP-emulator path; their final fault-injection/source review
+is running at Store `896ab2213`. Next are native input components and opaque
+hardware scenes in presets.
 No household migration or physical hardware validation has occurred.
+
+## 24 October — Store color binding checks pass
+
+The shared color slice passes **108/108 scoped Store checks** and the actual
+Home → binding → MQTT → canonical bridge → TCP HAT emulator path. RGB, RGBW,
+RGBWAF, Kelvin and xy equipment use matching shared components; independent
+RGB/RGBW equipment uses three/four output or group bindings. Final fault-injection
+checks and fresh source review are running; this is not full P8 acceptance.
+
+Store commit `896ab2213` preserves color/master brightness through split-channel
+power off/on and prevents cached child brightness from switching a fixture merely
+on rebinding. Expired unknown color values clear through Home bindings. Normal
+DALI native-step rounding confirms actual readback; other bridges retain exact
+comparison by default. Replaying an unchanged inventory upgrades the preceding
+plain output/group projection without changing IDs, Home bindings or revisions.
+Both boot ID lock files and the wire format are unchanged.
+
+The emulator reports native RGB `[127,64,254]`, independent group levels
+`[102,51,25,76]`, and actual Home green `64/254`; master brightness stays `0.4`
+through off/on. Group operations invalidate cached bus observations, so the
+polling-disabled test explicitly refreshes the final fixture state. All15 source
+lint rules pass. No physical HAT, household migration or deployment is claimed.
+
+Remaining P8 work: final color controls/review, native button/switch/sensor
+components, opaque hardware-scene equipment, scene-first mixed-preset ordering and
+combined acceptance. PanelScript UI implementation remains outside this effort.
 
 ## 24 October — Command lifetime complete; P8 readiness checklist
 
@@ -3659,7 +3687,7 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | In progress: foundation and opt-in request lifetime complete locally; identity, migration, bounded-memory and expiry checks pass | Shared color/split-address equipment, native input components, opaque scenes and scene-first presets; end-to-end bindings and scoped compatibility checks |
+| P8 Store integration | In progress: foundation and request lifetime complete; 108 color/binding checks and linked emulator path pass; final color review running | Finish color review; native input components, opaque hardware scenes and scene-first mixed presets; combined acceptance |
 | P9 release/docs | Pending | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
 
 No v2 release, production installation, live Store migration, push or merge has
