@@ -84,9 +84,10 @@ Build log: `/tmp/dali-config-launch-arm-release.log`; verification report:
 
 ## Remaining release and deployment work
 
-The owner must choose the project license before a public open-source release.
-MIT is recommended to match the shared SDK; no project license was invented.
-Dependency license texts are already included.
+The owner selected MIT on 26 October 2026, matching the shared SDK. The root
+`LICENSE` and Cargo metadata record the choice. New release archives include the
+project license alongside existing dependency license texts. Public release
+approval remains separate.
 
 Actual Linux/systemd activation, physical ATX I4 completion/timing profiles,
 fixture interoperability and live Logmon delivery still need deployment acceptance.

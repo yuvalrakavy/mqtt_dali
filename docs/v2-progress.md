@@ -19,11 +19,18 @@ the final confirming source review approves both corrections.
 
 Current state: **P9 release candidate ready locally**. The ARMv7 package is refreshed
 through configuration-link source `03b289b`; the earlier native candidate remains at `7eb906c`.
-P8 Store integration and configuration launch are merged and pushed at Store `67d1507d5`. Project license
-choice is pending before public release; physical I4/Pi service activation and
+P8 Store integration and configuration launch are merged and pushed at Store `67d1507d5`.
+The owner selected MIT for v2 on 26 October; publication approval is pending. Physical I4/Pi service activation and
 live Logmon delivery require deployment acceptance. Both bridge master and Store
 main are merged and pushed, with feature branches also backed up. No household
 migration, release tag, package publication or physical bridge deployment has occurred.
+
+## 26 October — MIT license selected
+
+The owner approved MIT for the public v2 release, matching BridgeKit. The root
+`LICENSE`, Cargo metadata and README record this choice. Existing release tooling
+includes the license in new archives. Public release and hardware deployment
+remain separate acceptance steps.
 
 ## 25 October — Authenticated configuration links ready
 
@@ -96,7 +103,7 @@ unchanged in P9.
 
 See [P9 acceptance, artifacts and remaining limits](p9-acceptance.md) for source
 revision, checksums, review corrections and verification commands/logs. Remaining:
-owner license selection (MIT recommended), publication approval, real Linux/systemd
+publication approval, real Linux/systemd
 and physical HAT/fixture acceptance. These are separate from local candidate readiness.
 
 ## 25 October — Separate v1/v2 executable names
@@ -3889,7 +3896,7 @@ no verification. Physical hardware validation remains outstanding.
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Merged/pushed at Store7f4342bd2: foundation, lifetime, shared color/presets, native inputs, DT7 and opaque scenes; mixed MQTT/TCP acceptance passes | P9 release work and physical HAT/fixture acceptance |
-| P9 release/docs | Ready locally as a release candidate at7eb906c: clean native/ARM archives, verified installer, v2 service, install/rollback/Logmon guides; package acceptance and final review pass | Owner license choice/publication decision; real Linux/systemd, physical HAT/fixture and live Logmon acceptance |
+| P9 release/docs | Ready locally as a release candidate at7eb906c: clean native/ARM archives, verified installer, v2 service, install/rollback/Logmon guides; package acceptance and final review pass | Publication decision (MIT selected); real Linux/systemd, physical HAT/fixture and live Logmon acceptance |
 
 No v2 release, production installation or live household migration has been
 performed. Bridge master and Store main are merged/pushed; see the current

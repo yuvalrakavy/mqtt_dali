@@ -63,7 +63,8 @@ with a new directory for a second build of the same identity.
 target, Cargo.lock digest, commit timestamp and each payload file's digest/mode.
 `THIRD_PARTY_NOTICES.txt` includes supplied Rust dependency license/notice texts
 (including build/test dependencies); `licenses/preact.txt` covers embedded browser
-code. Project licensing still requires the owner's explicit choice before publication.
+code. The project uses the MIT license, declared in Cargo metadata and included
+as `LICENSE` in each new archive.
 `SHA256SUMS` covers the payload and manifest; a sidecar covers the whole archive.
 The build sets `SOURCE_DATE_EPOCH` to the source commit timestamp. Archive order,
 timestamps and ownership are normalized. Identical build inputs yield a
@@ -105,5 +106,5 @@ Record actual results and remaining limits in [the progress tracker](v2-progress
 Real Linux/systemd activation and physical I4/fixture acceptance remain separate
 deployment checks; emulation cannot establish either one.
 
-Publication requires the owner's release/license decision, reviewed release notes,
+Publication requires the owner's release decision, reviewed release notes,
 checksums and artifacts. Physical limitations must remain explicit in those notes.

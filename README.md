@@ -37,3 +37,8 @@ The [progress tracker](docs/v2-progress.md) records the evidence and remaining w
 The web UI is disabled by default and has no default password. A broker, UART
 access and appropriate DALI power/hardware are deployment prerequisites. No
 installer changes networking, enables a Pi UART, or programs fixtures.
+
+## License
+
+Licensed under the [MIT License](LICENSE). Third-party dependencies retain their
+own licenses; release archives include their notices and supplied license texts.
