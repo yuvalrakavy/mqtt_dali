@@ -1,6 +1,7 @@
 # Running the v2 development daemon
 
-This is an unfinished development version. Its current executable serves saved
+This is a development release candidate. For packaged service installation, see
+[installation and rollback](installation.md). Its executable serves saved
 inventory and metadata edits through BridgeKit, checks ATX I4 UART health and
 supports [live bus setup](bus-setup.md),
 [explicit saved-fixture removal](remove-from-list.md),
@@ -10,17 +11,17 @@ supports [live bus setup](bus-setup.md),
 [one-at-a-time unaddressed output/input assignment](commissioning.md).
 An [optional authenticated web interface](web-access.md) serves protected saved
 inventory/live status, configuration and commissioning screens, including full
-reassignment and lost-address recovery. Remaining capabilities are still in
-development. Web is disabled by default and requires an
+reassignment and lost-address recovery. See the [support matrix](support-matrix.md)
+for implemented capabilities and explicit limits. Web is disabled by default and requires an
 explicit password; there is no shared default.
 
 Start one controller with an MQTT broker and its own writable config directory:
 
 ```sh
 mqtt_dali_v2 --instance Controller --broker 127.0.0.1:1883 \
-  --config /var/lib/mqtt_dali/dali.v2.json \
-  --legacy-config /var/lib/mqtt_dali/dali.json \
-  --uart /dev/serial0 --log-config /etc/mqtt_dali/logging.toml
+  --config /var/lib/mqtt_dali_v2/dali.v2.json \
+  --legacy-config /var/lib/mqtt_dali_v2/dali.json \
+  --uart /dev/serial0 --log-config /etc/mqtt_dali_v2/logging.toml
 ```
 
 The saved controller name must match `--instance`. To develop without hardware,
@@ -101,7 +102,7 @@ a failed/incomplete stop; a supervisor may restart it. UART and metadata ownersh
 continue through broker outages. UART health uses only Version/bus-status queries
 and the conservative unverified repeat policy. Individual PowerState/Brightness
 operations use owned physical jobs and actual readback; see the
-[MQTT output guide](mqtt-outputs.md). Further capability paths remain in progress.
+[MQTT output guide](mqtt-outputs.md) and the support matrix for other capabilities.
 
 Startup and reconnects wait for **250 ms of actual UART silence** before sending
 initialization queries. Change this with `--uart-quiet-ms 1..5000`. Every raw
@@ -127,6 +128,7 @@ v5 traceparent metadata follows requests through worker and metadata queues.
 Tests use only isolated loopback brokers, PTYs and a local OTLP collector;
 they do not establish live Logmon delivery or physical I4 compatibility.
 
-The shared dependency commit is currently local to the development branch.
-Publish it and complete release validation before promising a reproducible fresh
-clone or deploying v2. No install/deployment scripts are switched by this slice.
+The shared SDK is pinned to a published HTTPS Git revision; see
+[release builds](release.md). Use the versioned [v2 installer](installation.md)
+for service installation. Legacy install scripts remain v1-only. Physical I4
+acceptance and actual service activation remain deployment checks.

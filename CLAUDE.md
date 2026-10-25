@@ -22,6 +22,11 @@ See `docs/inventory-contract.md` and the compact identity specification.
 
 The `feat/dali-v2` worktree is developing the approved migration in phases. Current
 scope, verification and remaining work are recorded in `docs/v2-progress.md`.
+P9 release tooling is `scripts/release.py`; it builds only the versioned bridge
+and emulator, with locked HTTPS SDK sources. See `docs/release.md` and
+`docs/installation.md` for build/install/rollback contracts. Package tests use
+`python3 -m unittest discover -s tests -p test_release.py`; staged installation
+must never invoke host account/systemd operations. Legacy installers remain v1-only.
 Common DT1 emergency read/settings/test operations use the existing physical
 owner and explicit status refresh. Nullable retained relay/emergency type facts
 come from bounded normal readback, independently of color selection. See

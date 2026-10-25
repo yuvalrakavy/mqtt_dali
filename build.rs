@@ -1,4 +1,5 @@
 fn main() {
+    println!("cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH");
     // Keep the build timestamp current for application inputs. Cargo's default
     // package-wide scan also reruns this for docs and external browser scripts,
     // rewriting built.rs and needlessly relinking every native test binary.

@@ -1,0 +1,13 @@
+# Portable service default: console output is captured by journald.
+[logging]
+destination = "c"
+level = "info"
+on_destination_error = "skip"
+
+# For Logmon, change destination to "cgo" and set the actual collector addresses.
+[logging.gelf]
+address = "127.0.0.1:12201"
+
+[logging.otel]
+endpoint = "http://127.0.0.1:4318"
+transport = "http"

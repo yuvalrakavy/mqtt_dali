@@ -4,3 +4,5 @@ src/.DS_Store
 .DS_Store
 *.ledger.json.lock
 /web/node_modules/
+/dist/
+__pycache__/

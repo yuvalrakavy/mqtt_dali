@@ -1,0 +1,25 @@
+#!/bin/sh
+# Arguments are built as separate words. Never source or eval environment values.
+set -eu
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+: "${MQTT_DALI_INSTANCE:?Set MQTT_DALI_INSTANCE in bridge.env}"
+: "${MQTT_DALI_BROKER:?Set MQTT_DALI_BROKER in bridge.env}"
+set -- "$here/../bin/mqtt_dali_v2" \
+    --instance "$MQTT_DALI_INSTANCE" --broker "$MQTT_DALI_BROKER" \
+    --root "${MQTT_DALI_ROOT:-DALI}" \
+    --config "${MQTT_DALI_CONFIG:-/var/lib/mqtt_dali_v2/dali.v2.json}" \
+    --legacy-config "${MQTT_DALI_LEGACY_CONFIG:-/var/lib/mqtt_dali_v2/dali.json}" \
+    --log-config "${MQTT_DALI_LOG_CONFIG:-/etc/mqtt_dali_v2/logging.toml}" \
+    --uart-repeat-terminals "${MQTT_DALI_REPEAT_TERMINALS:-unverified}"
+if [ -n "${MQTT_DALI_HAT_TCP:-}" ]; then
+    set -- "$@" --hat-tcp "$MQTT_DALI_HAT_TCP"
+else
+    set -- "$@" --uart "${MQTT_DALI_UART:-/dev/serial0}"
+fi
+if [ -n "${MQTT_DALI_WEB_BIND:-}" ]; then
+    : "${MQTT_DALI_WEB_ORIGIN:?Web access needs MQTT_DALI_WEB_ORIGIN}"
+    : "${MQTT_DALI_WEB_PASSWORD:?Web access needs an explicit MQTT_DALI_WEB_PASSWORD}"
+    export MQTT_DALI_WEB_PASSWORD
+    set -- "$@" --web-bind "$MQTT_DALI_WEB_BIND" --web-origin "$MQTT_DALI_WEB_ORIGIN"
+fi
+exec "$@"

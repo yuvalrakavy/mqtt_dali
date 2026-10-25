@@ -1,0 +1,23 @@
+# Managed by mqtt_dali_v2 installer
+[Unit]
+Description=MQTT DALI v2 bridge
+After=network.target
+
+[Service]
+Type=simple
+User=mqtt-dali-v2
+Group=mqtt-dali-v2
+SupplementaryGroups=dialout
+WorkingDirectory=/var/lib/mqtt_dali_v2
+EnvironmentFile=/etc/mqtt_dali_v2/bridge.env
+ExecStart=/opt/mqtt_dali_v2/current/libexec/start
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

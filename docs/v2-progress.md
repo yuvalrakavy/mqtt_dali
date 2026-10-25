@@ -17,31 +17,38 @@ pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
 0438fea and c52ef8b. The compact slice is accepted locally at787c011 plus5c601e0;
 the final confirming source review approves both corrections.
 
-Current work: P8 Store integration after the accepted compact identity correction in `/Users/yuval/Documents/Projects/Store-t3`, branch
-`feat/dali-v2-store`, based on Store `3c168f3ce`. The old synthetic324KB test
-contained two fixtures, one group and1200 past renames, not a large real
-installation. It exposed unbounded history. The owner approved replacing it with
-current identity snapshots, bounded histories and a shared 30,000-entry map limit.
-All eight practical/dense real-MQTT capacity phases pass. Store correction7e67422
-passed3303 native checks (11 skipped;1231.4s); the wrapper stopped before SDL so the
-review fixes could be applied. Three expiry regressions reproduced the original
-bugs;135 DALI/shared MQTT checks now pass, along with strict workspace Clippy.
-The corrected earlier-run/name-reuse test fails under its actual guard removal.
-The expiry correction is committed at Store `aa78be4df`; all19 final focused checks,
-42 shared keeper compatibility checks and15 data-lint rules pass. The single fresh
-confirming source reader approves with no S2+ findings (same-family coverage).
-An initially stale base test template was refreshed without rebuilding the full
-template catalog. Actual process-restart acceptance passes2/2: rename keeps the
-physical ID and request; replacement changes identity and refuses it. A one-sided
-expiry precision check was corrected only in the test; final acceptance passed.
-The foundation correction is confirmed locally. Opt-in BridgeKit request-lifetime
-enforcement is now complete: DALI uses a 180-second ceiling, while other bridges
-retain their defaults and public SDK structs remain unchanged. Shared color
-components/equipment and split-address composition are now ready locally after
-the final review corrections at Store `170e3d777`. Native input components and DT7 Home
-bindings and generic color preset values are also complete locally. Opaque hardware
-scenes and scene-first preset ordering are now complete locally as described below.
-No household migration or physical hardware validation has occurred.
+Current work: P9 release packaging and documentation. P8 Store integration is
+ready locally at Store `d2f5fee1d`; no Store or shared BridgeKit source changes are
+part of P9. Physical I4/Pi service activation, household migration, publication
+and deployment have not occurred.
+
+## 25 October — P9 package acceptance and final review
+
+The versioned archive builder, verified/config-preserving installer, optional
+systemd unit and environment launcher are implemented. V1 `mqtt_dali` stays
+separate from `mqtt_dali_v2`; old installers remain v1-only. Install does not
+enable/start/restart services or change networking/UART configuration. Current
+installation, backup/import/upgrade/rollback and release-build guides are added.
+
+All **18/18** package/launcher tests pass, including staged fresh/upgrade/rollback,
+unrelated-path refusal, private config preservation, source/payload/architecture
+checks and literal secret handling. Mocked Linux command tests permit only
+account creation and daemon-reload; they do not claim actual systemd execution.
+The full native suite passes **869/869** (one opt-in browser test skipped), strict
+production Clippy passes, and both unchanged embedded-asset checks pass.
+
+Native and ARMv7 musl release builds cross-link. The Pi executable is ELF32 ARM
+EABI5 hard-float with no dynamic section. Actual extracted native package smoke
+passes against a private broker/TCP emulator: both embedded UIs, protected API,
+MQTT inventory/control, authenticated output operation, physical-model readback,
+MQTT State and bounded stop. No real UART/broker/service was used. The SDK exact
+pin is available remotely and all dependency URLs/lock sources now use HTTPS;
+Rust1.99.0 and build timestamp inputs are pinned. Third-party texts are packaged.
+
+Remaining before local P9 acceptance: frozen source/mutation review and clean-clone
+locked archive builds. Project license selection is awaiting the owner. Public
+publication and actual Linux/systemd/HAT acceptance remain separate decisions/checks.
+Evidence: /tmp/dali-p9-{python-final2,native-tests,clippy,arm-release,smoke-first}.log.
 
 ## 25 October — Separate v1/v2 executable names
 
@@ -3833,7 +3840,7 @@ no verification. Physical hardware validation remains outstanding.
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Ready locally: foundation, lifetime, shared color/presets, native inputs, DT7 and opaque scenes; mixed MQTT/TCP acceptance passes | P9 release work and physical HAT/fixture acceptance |
-| P9 release/docs | In progress: v2 executable named mqtt_dali_v2 for side-by-side installation with v1 mqtt_dali | Release cross-link/build, SDK release pinning, deployment/rollback guides and physical acceptance; Pi compile checks already pass locally |
+| P9 release/docs | In progress: versioned archives, verified installer, separate v2 service, install/rollback guides; native/ARM release builds and packaged MQTT/TCP/web acceptance pass | Final frozen review, clean-clone build and owner license choice; actual Linux/systemd and physical acceptance remain |
 
 No v2 release, production installation, live Store migration, push or merge has
 been performed. The legacy master checkout and v1 maintenance branch retain their
