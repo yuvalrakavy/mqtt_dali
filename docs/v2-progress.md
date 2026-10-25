@@ -18,12 +18,11 @@ pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
 the final confirming source review approves both corrections.
 
 Current state: **P9 release candidate ready locally**, accepted source `7eb906c`.
-P8 Store integration is ready locally at Store `d2f5fee1d`. Project license choice
-is pending before public release; physical I4/Pi service activation and live Logmon
-delivery require deployment acceptance. The bridge is merged into master and
-pushed to origin; Store integration is backed up on its feature branch and is
-being checked against current main. No household migration, tag, release
-publication or service deployment has occurred.
+P8 Store integration is merged and pushed at Store `7f4342bd2`. Project license
+choice is pending before public release; physical I4/Pi service activation and
+live Logmon delivery require deployment acceptance. Both bridge master and Store
+main are merged and pushed, with feature branches also backed up. No household
+migration, release tag, package publication or physical bridge deployment has occurred.
 
 ## 25 October — Merge and off-machine backup
 
@@ -32,11 +31,14 @@ now contains the reviewed v2 work through56e2acd. The original operational v1
 tip db6f39f is preserved and pushed as `maintenance/v1`; its binaries/configuration
 and existing tag remain available. The complete v2 feature branch is also pushed.
 
-Store's completed P8 branch is backed up as `origin/feat/dali-v2-store`. Current
-main merged into it automatically except for two appended retrospective entries,
-which were both retained. Integration checks are underway before landing Store
-main. No release tag, license choice or physical service activation is implied
-by these source backups.
+Store main and `origin/main` now include P8 at `7f4342bd2`; the final feature
+branch is also backed up as `origin/feat/dali-v2-store`. Integration with current
+main retained both appended retrospective entries. All 24 scoped native checks,
+382 DSL compatibility checks and 15 data-lint rules pass. One predecessor-schema
+test fixture was updated for newer Presets color classes; production code was
+unchanged by that correction. Template-cache retries and verification details
+are recorded in Store's hardware-scenes verification note. No release tag,
+license choice or physical service activation is implied by these source backups.
 
 ## 25 October — P9 release candidate ready locally
 
@@ -3856,12 +3858,13 @@ no verification. Physical hardware validation remains outstanding.
 | P5 commissioning | Discovery/assignment, bus setup, saved removal, groups/patterns/verification, Blink/Stop, scenes/private settings, full reassignment, lost-address adoption and individual clearing with saved-identity retention accepted locally | Remaining capability workflows |
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
-| P8 Store integration | Ready locally: foundation, lifetime, shared color/presets, native inputs, DT7 and opaque scenes; mixed MQTT/TCP acceptance passes | P9 release work and physical HAT/fixture acceptance |
+| P8 Store integration | Merged/pushed at Store7f4342bd2: foundation, lifetime, shared color/presets, native inputs, DT7 and opaque scenes; mixed MQTT/TCP acceptance passes | P9 release work and physical HAT/fixture acceptance |
 | P9 release/docs | Ready locally as a release candidate at7eb906c: clean native/ARM archives, verified installer, v2 service, install/rollback/Logmon guides; package acceptance and final review pass | Owner license choice/publication decision; real Linux/systemd, physical HAT/fixture and live Logmon acceptance |
 
 No v2 release, production installation or live household migration has been
-performed. Bridge source is merged/pushed; see the current backup entry above. The legacy master checkout and v1 maintenance branch retain their
-existing application source.
+performed. Bridge master and Store main are merged/pushed; see the current
+backup entry above. The pushed `maintenance/v1` branch preserves the operational
+v1 source; bridge master now contains v2.
 
 ## 23 October — UI corrections and Blink active-color restoration
 
