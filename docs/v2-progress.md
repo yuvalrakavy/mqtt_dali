@@ -24,6 +24,23 @@ live Logmon delivery require deployment acceptance. Both bridge master and Store
 main are merged and pushed, with feature branches also backed up. No household
 migration, release tag, package publication or physical bridge deployment has occurred.
 
+## 25 October — Authenticated configuration links (in progress)
+
+Approved addition: advertise the controller configuration page over MQTT and let
+Store Admin UI request a fresh authenticated link. The bridge uses random
+single-use credentials, two-minute expiry, a sixteen-token bound and the existing
+cookie/CSRF session. Password login stays available. Token fragments are removed
+before exchange; authenticated URLs are neither retained MQTT state nor saved
+configuration. No shared BridgeKit code changes.
+
+The initial HTTP regression failed before implementation. All43 scoped bridge
+HTTP/authentication checks now pass, including actual correlated MQTT issuance,
+expiry, replay rejection and normal cookie/CSRF/logout behavior. The Admin UI
+component and its exact-page URL validation test compile/pass; data lint reports
+15 rules with no findings. Store correlation tests and the actual native bridge
+to Admin UI browser acceptance are running in the owned t3 lane. Remaining:
+complete those checks, review the delta, document and push the addition.
+
 ## 25 October — Merge and off-machine backup
 
 The owner authorized merging and pushing as off-machine backup. Bridge master

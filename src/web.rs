@@ -6,6 +6,8 @@ mod assets;
 mod auth;
 mod handlers;
 mod jobs;
+mod launch;
+pub(crate) use launch::Launch;
 pub(crate) mod server;
 mod transport;
 pub(crate) use server::Server;

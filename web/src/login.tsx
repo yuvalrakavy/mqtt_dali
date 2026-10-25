@@ -2,10 +2,14 @@ import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { TargetedInputEvent } from 'preact';
 import './login.css';
+const launchToken=(()=>{const hash=location.hash;history.replaceState(null,'',location.pathname+location.search);return /^#token=[0-9a-f]{64}$/.test(hash)?hash.slice(7):null;})();
 function Login(){
   const [identity,setIdentity]=useState({controller:'DALI controller',version:'',build_utc:''});
   const [password,setPassword]=useState(''),[shown,setShown]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
   useEffect(()=>{const abort=new AbortController();fetch('/api/identity',{signal:abort.signal,credentials:'same-origin'}).then(r=>{if(!r.ok)throw new Error();return r.json();}).then(setIdentity).catch(()=>{if(!abort.signal.aborted)setError('Controller identity is unavailable.');});return()=>abort.abort();},[]);
+  useEffect(()=>{if(!launchToken)return;setBusy(true);const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
+    fetch('/api/launch',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:launchToken}),signal:abort.signal}).then(response=>{if(!response.ok)throw new Error();location.replace('/');}).catch(()=>{setError('This configuration link is invalid or expired. Open a new link from Admin UI or sign in below.');setBusy(false);}).finally(()=>clearTimeout(timer));
+    return()=>{abort.abort();clearTimeout(timer);};},[]);
   async function submit(event:Event){event.preventDefault();if(busy||!password)return;setBusy(true);setError('');const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
     try {const response=await fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({password}),signal:abort.signal});
       if(!response.ok){const body=await response.json();throw new Error(body.error??'Sign-in failed.');}

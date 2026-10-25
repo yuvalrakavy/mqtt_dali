@@ -1,27 +1,27 @@
 use super::{
-    auth::{Access, Refusal, COOKIE},
+    auth::{Access, COOKIE, Refusal},
     server::State,
 };
 use crate::service::{Hardware, Phase, PreparationError, PreparedCommand, Snapshot};
 use axum::{
+    Json, Router,
     extract::{DefaultBodyLimit, Path, Request, State as AxumState},
-    http::{header, HeaderMap, HeaderValue, Method, StatusCode},
+    http::{HeaderMap, HeaderValue, Method, StatusCode, header},
     middleware::{self, Next},
     response::{
-        sse::{Event, Sse},
         IntoResponse, Redirect, Response,
+        sse::{Event, Sse},
     },
     routing::{get, post},
-    Json, Router,
 };
-use futures_util::{stream, Stream};
+use futures_util::{Stream, stream};
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::{convert::Infallible, sync::Arc, time::Duration};
 use subtle::ConstantTimeEq;
 use tokio::{
-    sync::{watch, OwnedSemaphorePermit},
-    time::{timeout, Instant},
+    sync::{OwnedSemaphorePermit, watch},
+    time::{Instant, timeout},
 };
 use tracing::Instrument;
 
@@ -54,6 +54,7 @@ pub(super) fn router(state: Arc<State>) -> Router {
         .route("/assets/login.js", get(super::assets::login_js))
         .route("/assets/login.css", get(super::assets::login_css))
         .route("/api/login", post(login))
+        .route("/api/launch", post(launch))
         .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
         .merge(protected)
         .layer(DefaultBodyLimit::max(8192))
@@ -206,6 +207,37 @@ async fn login(
         cookie(&headers).as_deref(),
         Instant::now(),
     );
+    login_response(&state, result, "invalid password")
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LaunchCredential {
+    token: String,
+}
+async fn launch(
+    AxumState(state): AxumState<Arc<State>>,
+    headers: HeaderMap,
+    body: Result<Json<LaunchCredential>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    if !origin(&headers, &state) {
+        return error(StatusCode::FORBIDDEN, "request origin is invalid");
+    }
+    let Ok(Json(body)) = body else {
+        return error(StatusCode::BAD_REQUEST, "invalid launch JSON");
+    };
+    // WAIT: web-auth
+    let result = state
+        .auth
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .redeem_launch(&body.token, cookie(&headers).as_deref(), Instant::now());
+    login_response(&state, result, "configuration link is invalid or expired")
+}
+fn login_response(
+    state: &State,
+    result: Result<(String, Access), Refusal>,
+    invalid: &'static str,
+) -> Response {
     match result {
         Ok((token, access)) => {
             state
@@ -214,10 +246,10 @@ async fn login(
             let mut response = Json(json!({"csrf":access.csrf})).into_response();
             response
                 .headers_mut()
-                .insert(header::SET_COOKIE, set_cookie(&state, &token, false));
+                .insert(header::SET_COOKIE, set_cookie(state, &token, false));
             response
         }
-        Err(Refusal::Password) => error(StatusCode::UNAUTHORIZED, "invalid password"),
+        Err(Refusal::Password) => error(StatusCode::UNAUTHORIZED, invalid),
         Err(Refusal::Capacity) => error(StatusCode::TOO_MANY_REQUESTS, "too many active sessions"),
         Err(Refusal::Rate) => {
             let mut response = error(StatusCode::TOO_MANY_REQUESTS, "too many login attempts");
@@ -315,13 +347,13 @@ async fn command(
     ) {
         Ok(prepared) => prepared,
         Err(PreparationError::Invalid) => {
-            return error(StatusCode::BAD_REQUEST, "invalid command or parameters")
+            return error(StatusCode::BAD_REQUEST, "invalid command or parameters");
         }
         Err(PreparationError::Conflict) => {
             return error(
                 StatusCode::CONFLICT,
                 "configuration or selection changed; refresh before retrying",
-            )
+            );
         }
     };
     if state.stop.is_cancelled() {

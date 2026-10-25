@@ -16,6 +16,7 @@ struct Owner {
     reporter: Option<Reporter>,
     // Only a confirmed durable candidate may retry the exact original CAS.
     pending: Option<Arc<Model>>,
+    configuration_url: Option<String>,
 }
 struct AdmissionGuard(ServiceHandle, watch::Sender<Option<Snapshot>>);
 impl Drop for AdmissionGuard {
@@ -93,10 +94,16 @@ impl DaliService {
 }
 impl Owner {
     fn publish_inventory(&self, cause: Option<&RequestContext>) {
-        let values = serde_json::from_slice::<mqtt_bridge_kit::PropertyMap>(
+        let mut values = serde_json::from_slice::<mqtt_bridge_kit::PropertyMap>(
             &self.model.state_bytes().expect("preflighted model"),
         )
         .expect("inventory State is an object");
+        values.insert(
+            "ConfigurationUrl".into(),
+            self.configuration_url
+                .clone()
+                .map_or(serde_json::Value::Null, serde_json::Value::String),
+        );
         self.reporter
             .as_ref()
             .expect("attached reporter")
@@ -345,7 +352,7 @@ impl Owner {
                     AssignmentOutcome::NoFreeAddress,
                     self.model.inventory().revision,
                     None,
-                )))
+                )));
             }
             Some(Step::NoCandidate) => {
                 return Ok(Advance::Done(commissioning::report(
@@ -356,13 +363,13 @@ impl Owner {
                     },
                     self.model.inventory().revision,
                     None,
-                )))
+                )));
             }
             Some(Step::Found { address, random }) => (address, random),
             _ => {
                 return Err(ServiceError::Rejected(
                     "search did not yield a candidate".into(),
-                ))
+                ));
             }
         };
         let saved = self
@@ -523,6 +530,7 @@ impl ProcessService for DaliService {
             return Err(error);
         }
         let mut owner = Owner {
+            configuration_url: self.handle.configuration_url(),
             store,
             model,
             table,

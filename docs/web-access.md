@@ -21,8 +21,9 @@ The password is exact, nonempty and at most 1024 UTF-8 bytes. Leading/trailing
 whitespace is significant. `--web-password` also works and overrides the environment,
 but a CLI secret is visible in the operating system's process arguments; prefer
 operator-owned service environment configuration. The bridge consumes the CLI
-secret before constructing shared runtime settings and never logs it. Passwords
-and web settings are not written into the DALI inventory or MQTT retained data.
+secret before constructing shared runtime settings and never logs it. Passwords, password verifiers and authenticated links are never written into the
+DALI inventory or retained MQTT data. When enabled, the public configuration-page
+URL is advertised separately from the inventory.
 An environment password alone does not enable a listener.
 
 Bind takes a numeric IP and nonzero port. Origin takes `http://host[:port]` or
@@ -39,6 +40,32 @@ proxy supplies its certificate and access policy; this bridge does not trust
 Forwarded/X-Forwarded-* headers or derive authority from them. HTTPS origin enables
 Secure cookies. Direct plain HTTP is intended for a trusted local deployment;
 it does not encrypt credentials. No direct-TLS certificate implementation is claimed.
+
+## Open configuration from Admin UI
+
+When Store receives the bridge's public page address, select the controller under
+Devices → DALI. Its property pane offers **Open controller UI**. Press it to open
+an authenticated configuration tab without typing the bridge password. If the
+browser blocks the tab, use the explicit link shown beside the button. An expired
+link can be replaced by pressing the button again; password sign-in remains available.
+The configured `--web-origin` must be reachable from the browser, including a phone.
+
+For other MQTT consumers, `State/{controller}/__inventory` advertises
+`ConfigurationUrl` beside `Inventory`, or null when HTTP is disabled. Send the
+controller-only `get_configuration_link` command with no parameters, the current
+controller `target-generation`, a response topic and correlation data. The ordinary
+non-retained reply has `value:{url,expires_in_ms:120000}`. Store uses
+`ConfigurationReply/{controller}` for its response topic; consumers may choose their own.
+The URL has a random 256-bit `#token=...` fragment. The login script removes it
+immediately and POSTs it to `/api/launch` at the configured Origin. A successful
+exchange consumes the token and establishes the normal cookie/CSRF session.
+
+Each link works once and expires after two minutes; restarting the bridge revokes
+unused links. At most sixteen pending credentials exist. Authenticated links are
+not retained MQTT messages, saved settings, browser storage or log fields. MQTT
+permission to request a link grants configuration access, so grant that command
+only to trusted consumers. This does not require a Store server: the bridge's
+normal password login and any conforming MQTT consumer use the same web interface.
 
 ## Session and request contract
 
@@ -67,6 +94,7 @@ All responses are no-store and carry content/frame restrictions.
 | GET `/api/identity` | Public controller, version and build UTC JSON only |
 | GET `/login`, `/assets/login.js`, `/assets/login.css` | Public sign-in page and its embedded assets |
 | GET `/`, `/buses/{0..3}`, `/buses/{0..3}/groups`, `/buses/{0..3}/scenes`, `/settings`, `/diagnostics`, `/assets/app.js`, `/assets/app.css` | Cookie; protected browser application and assets |
+| POST `/api/launch` | Origin + strict JSON `{"token":"..."}`; single-use launch exchange; sets the normal cookie and returns CSRF |
 | POST `/api/login` | Origin + strict JSON `{"password":"..."}`; sets cookie, returns `{"csrf":"..."}` |
 | GET `/api/session` | Cookie; CSRF and remaining idle/absolute milliseconds; no activity renewal |
 | POST `/api/session/activity` | Cookie + Origin + CSRF; 204 on accepted user activity |

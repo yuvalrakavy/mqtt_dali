@@ -30,6 +30,7 @@ impl DeviceDriver for DaliProxy {
     fn info(&self) -> DriverInfo {
         DriverInfo {
             commands: [
+                "get_configuration_link",
                 "blink",
                 "stop_blink",
                 "create_group",
@@ -153,6 +154,9 @@ impl DeviceDriver for DaliProxy {
                 Self::output_route(&snapshot, target, context, true)?;
                 state::intent(values, colour::configured(&snapshot, target))?;
                 Ok(())
+            }
+            RequestKind::Command(call) if call.command == "get_configuration_link" => {
+                self.validate_configuration_link(target, call, context)
             }
             RequestKind::Command(call) => {
                 let snapshot = self
@@ -284,6 +288,14 @@ impl DeviceDriver for DaliProxy {
         call: &CommandCall,
         context: &RequestContext,
     ) -> Result<Option<Value>, OpError> {
+        if call.command == "get_configuration_link" {
+            self.validate_configuration_link(target, call, context)?;
+            return self
+                .handle
+                .configuration_link()
+                .map(Some)
+                .map_err(OpError::Rejected);
+        }
         let snapshot = self
             .handle
             .snapshot()
@@ -709,6 +721,28 @@ impl DeviceDriver for DaliProxy {
 }
 
 impl DaliProxy {
+    fn validate_configuration_link(
+        &self,
+        target: Option<&str>,
+        call: &CommandCall,
+        context: &RequestContext,
+    ) -> Result<(), OpError> {
+        if target.is_some() || !call.params.is_empty() {
+            return Err(OpError::Rejected(
+                "configuration links require the controller and no parameters".into(),
+            ));
+        }
+        let snapshot = self.snapshot()?;
+        if context.generation() != Some(routing::generations(&snapshot.model).instance.as_str()) {
+            return Err(OpError::Rejected(
+                "missing or retired controller generation".into(),
+            ));
+        }
+        if self.handle.configuration_url().is_none() {
+            return Err(OpError::Rejected("web access is disabled".into()));
+        }
+        Ok(())
+    }
     fn output_budget(snapshot: &Snapshot, target: &str, colour_write: bool) -> Duration {
         let known_colour = snapshot.outputs.get(target).is_some_and(|sample| {
             sample.colour.is_some()
@@ -752,7 +786,11 @@ impl DaliProxy {
         }
         Ok(snapshot)
     }
-    fn inventory(snapshot: &Snapshot, cause: &RequestContext) -> Result<ContextualState, OpError> {
+    fn inventory(
+        &self,
+        snapshot: &Snapshot,
+        cause: &RequestContext,
+    ) -> Result<ContextualState, OpError> {
         let token = routing::generations(&snapshot.model).instance;
         if cause.generation().is_some_and(|value| value != token) {
             return Err(OpError::Rejected("retired controller generation".into()));
@@ -760,9 +798,15 @@ impl DaliProxy {
         let context = RequestContext::new(token)
             .map_err(OpError::Unusable)?
             .with_traceparent(cause.traceparent());
-        let values =
+        let mut values: PropertyMap =
             serde_json::from_slice(&snapshot.model.state_bytes().map_err(OpError::Unusable)?)
                 .map_err(|error| OpError::Unusable(error.to_string()))?;
+        values.insert(
+            "ConfigurationUrl".into(),
+            self.handle
+                .configuration_url()
+                .map_or(Value::Null, Value::String),
+        );
         Ok(ContextualState::new(
             TargetState::new("__inventory", values),
             context,
@@ -774,9 +818,9 @@ impl DaliProxy {
         cause: &RequestContext,
     ) -> Result<Vec<ContextualState>, OpError> {
         match scope {
-            Scope::Any => Ok(vec![Self::inventory(&self.snapshot()?, cause)?]),
+            Scope::Any => Ok(vec![self.inventory(&self.snapshot()?, cause)?]),
             Scope::Target(target) if target == "__inventory" => {
-                Ok(vec![Self::inventory(&self.snapshot()?, cause)?])
+                Ok(vec![self.inventory(&self.snapshot()?, cause)?])
             }
             Scope::Target(target) => {
                 let snapshot = self.snapshot()?;
@@ -850,7 +894,7 @@ impl DaliProxy {
     }
     async fn read_all(&mut self, cause: &RequestContext) -> Result<Vec<ContextualState>, OpError> {
         let snapshot = self.snapshot()?;
-        let inventory = Self::inventory(&snapshot, cause)?;
+        let inventory = self.inventory(&snapshot, cause)?;
         let table = routing::generations(&snapshot.model);
         let mut targets: Vec<(String,ReadKind)> = snapshot.model.projections().into_iter()
             .filter(|value| matches!(value.location, crate::inventory::Location::Output { bus, .. } | crate::inventory::Location::InputInstance { bus, .. } | crate::inventory::Location::Group { bus, .. }
@@ -2284,7 +2328,7 @@ fn parse_metadata(
                 _ => {
                     return Err(OpError::Unsupported(
                         "output, input module or scene required".into(),
-                    ))
+                    ));
                 }
             };
             (params.expected_revision, edit)

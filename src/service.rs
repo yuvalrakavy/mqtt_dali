@@ -6,8 +6,8 @@ use crate::{
 use mqtt_bridge_kit::{RequestContext, TargetGenerations};
 use std::sync::Arc;
 use tokio::{
-    sync::{broadcast, mpsc, oneshot, watch, OwnedSemaphorePermit, Semaphore},
-    time::{timeout_at, Instant},
+    sync::{OwnedSemaphorePermit, Semaphore, broadcast, mpsc, oneshot, watch},
+    time::{Instant, timeout_at},
 };
 
 pub mod commissioning;
@@ -29,7 +29,7 @@ mod routing;
 pub mod scene_settings;
 pub mod scenes;
 pub use proxy::DaliProxy;
-pub(crate) use proxy::{projected_states, PreparationError, PreparedCommand};
+pub(crate) use proxy::{PreparationError, PreparedCommand, projected_states};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Phase {
@@ -264,6 +264,7 @@ pub struct ServiceHandle {
     state: watch::Receiver<Option<Snapshot>>,
     updates: broadcast::Sender<Snapshot>,
     input_events: broadcast::Sender<input::Notice>,
+    web_launch: Arc<std::sync::Mutex<Option<crate::web::Launch>>>,
     permit: Arc<Semaphore>,
     identification: watch::Receiver<Option<identification::Claim>>,
     #[cfg(test)]
@@ -385,6 +386,7 @@ impl DaliService {
             state: read,
             updates: broadcast::channel(16).0,
             input_events: broadcast::channel(input::EVENT_CAPACITY).0,
+            web_launch: Arc::default(),
             permit: Arc::new(Semaphore::new(1)),
             identification: identification_read,
             #[cfg(test)]
@@ -416,6 +418,27 @@ impl DaliService {
     }
 }
 impl ServiceHandle {
+    pub(crate) fn configuration_url(&self) -> Option<String> {
+        // WAIT: web-auth
+        self.web_launch
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .and_then(crate::web::Launch::url)
+    }
+    pub(crate) fn configuration_link(&self) -> Result<serde_json::Value, String> {
+        // WAIT: web-auth
+        self.web_launch
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .ok_or("web access is disabled")?
+            .issue()
+    }
+    pub(crate) fn set_web_launch(&self, launch: crate::web::Launch) {
+        // WAIT: web-auth
+        *self.web_launch.lock().unwrap_or_else(|p| p.into_inner()) = Some(launch);
+    }
     /// Owned snapshot. After notification lag, resnapshot instead of replaying edits.
     pub fn snapshot(&self) -> Option<Snapshot> {
         self.state.borrow().clone()

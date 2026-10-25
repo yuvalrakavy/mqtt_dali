@@ -1,6 +1,7 @@
 use super::{
+    Settings,
     auth::{Auth, Policy},
-    handlers, jobs, transport, Settings,
+    handlers, jobs, transport,
 };
 use crate::service::ServiceHandle;
 use std::{
@@ -10,9 +11,9 @@ use std::{
 };
 use tokio::{
     net::TcpListener,
-    sync::{watch, Semaphore},
+    sync::{Semaphore, watch},
     task::JoinHandle,
-    time::{timeout_at, Instant},
+    time::{Instant, timeout_at},
 };
 use tokio_util::sync::CancellationToken;
 
@@ -109,6 +110,7 @@ impl Server {
                 }
             }
         });
+        state.handle.set_web_launch(super::Launch::new(&state));
         tracing::info!(listen_address=%address,"Web access enabled");
         Ok(Self {
             task: Some(task),

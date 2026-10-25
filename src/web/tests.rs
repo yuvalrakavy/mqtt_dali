@@ -16,6 +16,7 @@ use tokio::{
 mod assets;
 mod browser;
 mod jobs;
+mod launch;
 
 #[test]
 fn web_settings_validate_credentials_and_canonical_origin_without_resources() {

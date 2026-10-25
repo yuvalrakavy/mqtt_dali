@@ -47,6 +47,7 @@ pub(super) struct Auth {
     policy: Policy,
     sessions: BTreeMap<String, Session>,
     attempts: VecDeque<Instant>,
+    launches: BTreeMap<[u8; 32], Instant>,
 }
 fn random_secret() -> String {
     let bytes: [u8; 32] = rand::random();
@@ -59,6 +60,7 @@ impl Auth {
             policy,
             sessions: BTreeMap::new(),
             attempts: VecDeque::new(),
+            launches: BTreeMap::new(),
         }
     }
     fn expiry(policy: Policy, session: &Session) -> Instant {
@@ -70,6 +72,13 @@ impl Auth {
         previous: Option<&str>,
         now: Instant,
     ) -> Result<(String, Access), Refusal> {
+        self.check_attempt(now)?;
+        if password.len() > 1024 || !bool::from(self.password.ct_eq(&digest(password))) {
+            return Err(Refusal::Password);
+        }
+        self.create_session(previous, now)
+    }
+    fn check_attempt(&mut self, now: Instant) -> Result<(), Refusal> {
         while self
             .attempts
             .front()
@@ -81,9 +90,37 @@ impl Auth {
             return Err(Refusal::Rate);
         }
         self.attempts.push_back(now);
-        if password.len() > 1024 || !bool::from(self.password.ct_eq(&digest(password))) {
+        Ok(())
+    }
+    pub fn issue_launch(&mut self, now: Instant) -> Result<String, Refusal> {
+        self.launches.retain(|_, expiry| now < *expiry);
+        if self.launches.len() >= 16 {
+            return Err(Refusal::Capacity);
+        }
+        let token = random_secret();
+        self.launches
+            .insert(digest(&token), now + Duration::from_secs(120));
+        Ok(token)
+    }
+    pub fn redeem_launch(
+        &mut self,
+        token: &str,
+        previous: Option<&str>,
+        now: Instant,
+    ) -> Result<(String, Access), Refusal> {
+        self.check_attempt(now)?;
+        self.launches.retain(|_, expiry| now < *expiry);
+        if token.len() != 64 || self.launches.remove(&digest(token)).is_none() {
             return Err(Refusal::Password);
         }
+        // A credential is consumed even when all browser session slots are occupied.
+        self.create_session(previous, now)
+    }
+    fn create_session(
+        &mut self,
+        previous: Option<&str>,
+        now: Instant,
+    ) -> Result<(String, Access), Refusal> {
         let policy = self.policy;
         self.sessions
             .retain(|_, session| now < Self::expiry(policy, session));

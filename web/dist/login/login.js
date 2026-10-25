@@ -413,7 +413,11 @@ function $(t, n, r, i, a, o) {
 	return (a || o) && (u.__source = a, u.__self = o), e.vnode && e.vnode(u), u;
 }
 // src/login.tsx
-function me() {
+var me = (() => {
+	let e = location.hash;
+	return history.replaceState(null, "", location.pathname + location.search), /^#token=[0-9a-f]{64}$/.test(e) ? e.slice(7) : null;
+})();
+function he() {
 	let [e, t] = X({
 		controller: "DALI controller",
 		version: "",
@@ -430,6 +434,24 @@ function me() {
 		}).then(t).catch(() => {
 			e.signal.aborted || l("Controller identity is unavailable.");
 		}), () => e.abort();
+	}, []), oe(() => {
+		if (!me) return;
+		s(!0);
+		let e = new AbortController(), t = setTimeout(() => e.abort(), 8e3);
+		return fetch("/api/launch", {
+			method: "POST",
+			credentials: "same-origin",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ token: me }),
+			signal: e.signal
+		}).then((e) => {
+			if (!e.ok) throw Error();
+			location.replace("/");
+		}).catch(() => {
+			l("This configuration link is invalid or expired. Open a new link from Admin UI or sign in below."), s(!1);
+		}).finally(() => clearTimeout(t)), () => {
+			e.abort(), clearTimeout(t);
+		};
 	}, []);
 	async function u(e) {
 		if (e.preventDefault(), o || !n) return;
@@ -556,4 +578,4 @@ function me() {
 		]
 	});
 }
-F(/* @__PURE__ */ $(me, {}), document.getElementById("root"));
+F(/* @__PURE__ */ $(he, {}), document.getElementById("root"));
