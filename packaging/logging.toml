@@ -4,10 +4,21 @@ destination = "c"
 level = "info"
 on_destination_error = "skip"
 
-# For Logmon, change destination to "cgo" and set the actual collector addresses.
+[logging.console]
+ansi = false
+
+# BridgeKit always creates these sinks; filter them off for the portable default.
+# It creates an empty rotating file below the service state directory's logs/.
+[logging.file]
+level = "off"
+rotation = "d:3"
+
+# For Logmon, set this level to info and the actual GELF collector address.
 [logging.gelf]
+level = "off"
 address = "127.0.0.1:12201"
 
+# Add o to logging.destination to enable OTLP traces; set the actual endpoint.
 [logging.otel]
 endpoint = "http://127.0.0.1:4318"
 transport = "http"

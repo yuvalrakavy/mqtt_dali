@@ -1,0 +1,71 @@
+# P9 installer/release/launcher guard controls. Python-only; no host installation.
+
+[[control]]
+name = "staging_escape"
+file = "packaging/install.py"
+anchor = "if os.path.commonpath((str(root), str(resolved))) != str(root):"
+replacement = "if False:"
+target = "command"
+files = ["tests/test_release.py"]
+argv = ["python3", "tests/test_release.py", "-k", "test_staging_symlink_escape_refused_without_external_writes"]
+expect_text = "ValueError not raised"
+
+[[control]]
+name = "configuration_overwrite"
+file = "packaging/install.py"
+anchor = "            os.link(temporary, path)"
+replacement = "            os.replace(temporary, path)"
+target = "command"
+files = ["tests/test_release.py"]
+argv = ["python3", "tests/test_release.py", "-k", "test_staged_install_upgrade_rollback_preserve_configuration_and_v1"]
+expect_text = "private custom configuration"
+
+[[control]]
+name = "unrelated_leaf"
+file = "packaging/install.py"
+anchor = "    if not path.is_symlink():\n        raise ValueError('Refusing to replace an unrelated file: ' + str(path))"
+replacement = "    if not path.is_symlink():\n        return"
+target = "command"
+files = ["tests/test_release.py"]
+argv = ["python3", "tests/test_release.py", "-k", "test_unrelated_destination_conflicts_precede_all_changes"]
+expect_text = "ValueError not raised"
+
+[[control]]
+name = "payload_checksum"
+file = "packaging/install.py"
+anchor = "        if record['mode'] not in (0o644, 0o755) or stat.S_IMODE(path.stat().st_mode) != record['mode'] or digest(path) != record['sha256']:"
+replacement = "        if record['mode'] not in (0o644, 0o755) or stat.S_IMODE(path.stat().st_mode) != record['mode']:"
+target = "command"
+files = ["tests/test_release.py"]
+argv = ["python3", "tests/test_release.py", "-k", "test_corrupt_payload_refused_before_destination_writes"]
+expect_text = "ValueError not raised"
+
+[[control]]
+name = "dirty_source"
+file = "scripts/release.py"
+anchor = "    if dirty and not allow_dirty:"
+replacement = "    if False:"
+target = "command"
+files = ["tests/test_release.py"]
+argv = ["python3", "tests/test_release.py", "-k", "test_build_metadata_refuses_dirty_source_and_mismatched_sdk"]
+expect_text = "ValueError not raised"
+
+[[control]]
+name = "compiler_pin"
+file = "scripts/release.py"
+anchor = "    if 'release: ' + toolchain not in rustc.splitlines():"
+replacement = "    if False:"
+target = "command"
+files = ["tests/test_release.py"]
+argv = ["python3", "tests/test_release.py", "-k", "test_build_metadata_refuses_dirty_source_and_mismatched_sdk"]
+expect_text = "ValueError not raised"
+
+[[control]]
+name = "tcp_uart_conflict"
+file = "packaging/start"
+anchor = "    set -- \"$@\" --hat-tcp \"$MQTT_DALI_HAT_TCP\""
+replacement = "    set -- \"$@\" --hat-tcp \"$MQTT_DALI_HAT_TCP\" --uart /dev/serial0"
+target = "command"
+files = ["tests/test_release.py"]
+argv = ["python3", "tests/test_release.py", "-k", "test_tcp_omits_uart_and_password_stays_out_of_argv"]
+expect_text = "'--uart' unexpectedly found"

@@ -82,6 +82,7 @@ class ReleaseTests(unittest.TestCase):
         for name in ('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml'):
             shutil.copyfile(ROOT / name, self.source / name)
         dirty = False
+        compiler = "1.99.0"
 
         def run(arguments, root, environment=None):
             if arguments[:2] == ['git', 'status']:
@@ -91,7 +92,7 @@ class ReleaseTests(unittest.TestCase):
             if arguments[:2] == ['git', 'show']:
                 return '1000'
             if arguments == ['rustc', '-Vv']:
-                return 'rustc 1.99.0\nrelease: 1.99.0'
+                return 'rustc ' + compiler + '\nrelease: ' + compiler
             self.fail(str(arguments))
 
         with mock.patch.object(release, 'run', side_effect=run):
@@ -99,6 +100,10 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(data['source_commit'], 'a'*40)
             self.assertEqual(data['source_date_epoch'], 1000)
             self.assertFalse(data['dirty'])
+            compiler = '1.98.0'
+            with self.assertRaisesRegex(ValueError, 'must match pinned toolchain'):
+                release.source_metadata(self.source)
+            compiler = '1.99.0'
             dirty = True
             with self.assertRaisesRegex(ValueError, 'must be clean'):
                 release.source_metadata(self.source)

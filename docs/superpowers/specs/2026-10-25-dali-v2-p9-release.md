@@ -121,3 +121,21 @@ containment, and refusal of unrelated destination leaves before any host change.
 TCP selection omits UART, launcher values remain literal, and config/password
 handling and private-umask read permissions have tests. SDK source pin stays
 unchanged. Review record: /tmp/dali-p9-design-review.md (GPT-family coverage).
+
+## Implementation checks before final source review
+
+The independent mutation reader exercised seven guards. Six initially failed as
+expected; the pinned-compiler guard exposed a missing wrong-version assertion.
+That test is added. All seven recorded controls now fail for behavioral assertions;
+the control plan reports no stale anchors. Table: docs/v2-release-controls.toml.
+
+Actual clean-clone native and ARM archives build at d98c445. The first packaged
+smoke passed, while a later run exposed harness sequencing: native level changes
+before MQTT request completion, so an immediate exclusive web operation can be
+Busy. The runner now waits for confirmed MQTT State before submitting the next
+operation, and waits for final MQTT State before checking its result.
+
+BridgeKit pins file/GELF sink creation in its logging bootstrap. The portable
+config filters those two sinks off and enables console/journal records; an empty
+rotating file is still created. Logmon opt-in is documented with destination
+levels and OTLP endpoint. No shared SDK source or other bridge behavior changes.

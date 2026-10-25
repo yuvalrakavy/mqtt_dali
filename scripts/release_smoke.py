@@ -157,6 +157,12 @@ def main():
                 return data['result']['buses'][0]['outputs'][0]['level']
 
             wait_for(lambda: level() == 127, 'MQTT command reaching native fixture')
+            state_command = ['mosquitto_sub', *mqtt, '-C', '1', '-W', '3',
+                             '-t', root + '/State/' + controller + '/' + target]
+            # Physical mutation precedes request retirement/readback publication.
+            # Wait for completion before starting another exclusive operation.
+            wait_for(lambda: json.loads(run(state_command)).get('Brightness') == 0.5,
+                     'MQTT confirmed brightness readback')
             command = dict(generation=generation, target=target, command='apply_output',
                            params=dict(values=dict(PowerState=False)))
             status, _, body = http(endpoint, 'POST', '/api/jobs', json.dumps(command), authenticated)
@@ -173,14 +179,16 @@ def main():
 
             wait_for(completed, 'authenticated output job completion')
             assert level() == 0, 'Web command did not reach native fixture'
-            state = json.loads(run(['mosquitto_sub', *mqtt, '-C', '1', '-W', '3',
-                                    '-t', root + '/State/' + controller + '/' + target]))
-            assert state['PowerState'] is False, state
+            wait_for(lambda: json.loads(run(state_command)).get('PowerState') is False,
+                     'MQTT confirmed power readback')
             bridge.terminate()
             assert bridge.wait(timeout=10) == 0, 'Bridge shutdown failed'
             assert not listening(web_port), 'Bridge retained listener after shutdown'
             emulator.terminate()
             assert emulator.wait(timeout=5) == 0, 'Emulator shutdown failed'
+            # BridgeKit creates file/GELF sinks by policy; the portable default
+            # filters both off, leaving journald/console as the active destination.
+            assert all(path.stat().st_size == 0 for path in (temp / 'logs').glob('*')), 'Portable logging wrote local log records'
             for log in logs:
                 log.flush()
                 assert secret not in Path(log.name).read_text(), 'Web password appeared in a process log'

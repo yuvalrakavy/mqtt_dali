@@ -1,0 +1,124 @@
+{
+ "rows": {
+  "compiler_pin": {
+   "last_real": {
+    "at": "2026-10-25T03:25:22Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:111a29e6c35fd821",
+     "guard": "file:cba5718157813b54",
+     "row": "6cb95d124bea4fd4",
+     "test": "test:8acf4e8211679b60"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "d98c445c00bd4146ecdbab0dd7d70854b87e02c9",
+    "verdict": "RED"
+   }
+  },
+  "configuration_overwrite": {
+   "last_real": {
+    "at": "2026-10-25T03:25:22Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:2e49657f7d323d2c",
+     "guard": "file:9b52523a12f2dec5",
+     "row": "6baa8bc29b8812ea",
+     "test": "test:8acf4e8211679b60"
+    },
+    "path": "command",
+    "secs": 0.2,
+    "sha": "d98c445c00bd4146ecdbab0dd7d70854b87e02c9",
+    "verdict": "RED"
+   }
+  },
+  "dirty_source": {
+   "last_real": {
+    "at": "2026-10-25T03:25:22Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:111a29e6c35fd821",
+     "guard": "file:cba5718157813b54",
+     "row": "2b495625a99c15b9",
+     "test": "test:8acf4e8211679b60"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "d98c445c00bd4146ecdbab0dd7d70854b87e02c9",
+    "verdict": "RED"
+   }
+  },
+  "payload_checksum": {
+   "last_real": {
+    "at": "2026-10-25T03:25:22Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:2e49657f7d323d2c",
+     "guard": "file:9b52523a12f2dec5",
+     "row": "85662e4de9cfb961",
+     "test": "test:8acf4e8211679b60"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "d98c445c00bd4146ecdbab0dd7d70854b87e02c9",
+    "verdict": "RED"
+   }
+  },
+  "staging_escape": {
+   "last_real": {
+    "at": "2026-10-25T03:25:21Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:2e49657f7d323d2c",
+     "guard": "file:9b52523a12f2dec5",
+     "row": "f263a3d4a3eb54ec",
+     "test": "test:8acf4e8211679b60"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "d98c445c00bd4146ecdbab0dd7d70854b87e02c9",
+    "verdict": "RED"
+   }
+  },
+  "tcp_uart_conflict": {
+   "last_real": {
+    "at": "2026-10-25T03:25:22Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:426b9ae168b095bf",
+     "guard": "file:3f302b3942484afd",
+     "row": "ea8d58ff05ae969a",
+     "test": "test:8acf4e8211679b60"
+    },
+    "path": "command",
+    "secs": 0.2,
+    "sha": "d98c445c00bd4146ecdbab0dd7d70854b87e02c9",
+    "verdict": "RED"
+   }
+  },
+  "unrelated_leaf": {
+   "last_real": {
+    "at": "2026-10-25T03:25:22Z",
+    "dirty": true,
+    "expected": "RED",
+    "fingerprints": {
+     "files": "files:2e49657f7d323d2c",
+     "guard": "file:9b52523a12f2dec5",
+     "row": "199e158bef8a1cd7",
+     "test": "test:8acf4e8211679b60"
+    },
+    "path": "command",
+    "secs": 0.1,
+    "sha": "d98c445c00bd4146ecdbab0dd7d70854b87e02c9",
+    "verdict": "RED"
+   }
+  }
+ },
+ "version": 1
+}

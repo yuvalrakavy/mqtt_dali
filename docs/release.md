@@ -61,6 +61,9 @@ with a new directory for a second build of the same identity.
 
 `release.json` records source commit, dirty status, SDK revision, Rust toolchain,
 target, Cargo.lock digest, commit timestamp and each payload file's digest/mode.
+`THIRD_PARTY_NOTICES.txt` includes supplied Rust dependency license/notice texts
+(including build/test dependencies); `licenses/preact.txt` covers embedded browser
+code. Project licensing still requires the owner's explicit choice before publication.
 `SHA256SUMS` covers the payload and manifest; a sidecar covers the whole archive.
 The build sets `SOURCE_DATE_EPOCH` to the source commit timestamp. Archive order,
 timestamps and ownership are normalized. Identical build inputs yield a

@@ -45,8 +45,10 @@ MQTT State and bounded stop. No real UART/broker/service was used. The SDK exact
 pin is available remotely and all dependency URLs/lock sources now use HTTPS;
 Rust1.99.0 and build timestamp inputs are pinned. Third-party texts are packaged.
 
-Remaining before local P9 acceptance: frozen source/mutation review and clean-clone
-locked archive builds. Project license selection is awaiting the owner. Public
+All seven release guard controls now fail for their expected assertions; anchors
+are current. Clean-clone native and ARM locked archive builds pass at d98c445.
+Remaining before local P9 acceptance: final frozen source review and the updated
+packaged smoke on the final source. Project license selection is awaiting the owner. Public
 publication and actual Linux/systemd/HAT acceptance remain separate decisions/checks.
 Evidence: /tmp/dali-p9-{python-final2,native-tests,clippy,arm-release,smoke-first}.log.
 

@@ -121,7 +121,9 @@ policy, not a documented maximum execution delay or a transaction identifier;
 the ATX same-bus reply ambiguity and physical I4 validation remain explicit limits.
 
 Select logging with `--log-config`; `RUST_LOG` controls filtering, and
-`LOG_DESTINATION` overrides destinations. The repository logging.toml contains
+`LOG_DESTINATION` selects unpinned destinations; BridgeKit keeps its required
+file/GELF sinks. Their per-destination levels can filter them off, as in the
+[portable service config](installation.md#logging-and-logmon). The repository logging.toml contains
 site-specific GELF/OTLP addresses: configure them for your installation. Logging
 destinations are lossy and startup skips unavailable destinations. Optional MQTT
 v5 traceparent metadata follows requests through worker and metadata queues.

@@ -32,7 +32,7 @@ creates a version directory under `/opt/mqtt_dali_v2/releases`, selects it throu
 | `/usr/local/bin/mqtt_dali_v2` | Bridge executable through `current` |
 | `/usr/local/bin/dali_hat_emulator` | Independent emulator executable through `current` |
 | `/etc/mqtt_dali_v2/bridge.env` | Service settings, initially mode 0600 |
-| `/etc/mqtt_dali_v2/logging.toml` | Logging destinations, initially console/journal |
+| `/etc/mqtt_dali_v2/logging.toml` | Logging destinations, console/journal active by default |
 | `/var/lib/mqtt_dali_v2` | State directory owned by `mqtt-dali-v2` |
 | `/etc/systemd/system/mqtt_dali_v2.service` | Optional systemd service |
 
@@ -93,6 +93,23 @@ The initial controller is empty unless imported below. Use the protected browser
 to set up a bus and discover/assign fixtures. Saved inventory does not prove a
 device is currently present. The binary's `--check-config` validates/imports
 configuration without opening a UART, MQTT connection or web listener.
+
+## Logging and Logmon
+
+The packaged config enables console output, captured by journald. BridgeKit also
+creates file and GELF sinks by policy; their per-destination level is `off` in
+the portable config. An empty rotating file can exist in the state directory's
+`logs/`. To keep local log records, set `[logging.file] level = "info"`; the
+default retains three daily files. Configure storage/retention for your installation.
+
+For Logmon, set `[logging.gelf] level = "info"` and its collector `address`;
+add `o` to `[logging] destination` (for example `"co"`) and configure
+`[logging.otel] endpoint` for traces. The bridge uses tracing-init; valid incoming
+MQTT trace context continues into managed operations. The log service identity
+stays `mqtt_dali` for compatibility. `RUST_LOG` configures filtering, but destination
+selection cannot disable BridgeKit's explicitly required file/GELF sinks; use
+their per-destination levels. Sink failures do not stop bridge operation. Actual
+delivery to your Logmon instance is a deployment check.
 
 ## Import existing v1 configuration
 
