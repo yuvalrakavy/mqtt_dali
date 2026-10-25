@@ -37,7 +37,7 @@ cargo run --manifest-path wait-lint/Cargo.toml -- --root <mqtt_dali> --src src -
 | `web-jobs-loop` | acyclic | bounded command mailbox, owned service futures or stop | Parent stop independently ends the idle loop and synchronously drops all reply receivers/permits. At most four requests/futures retain their original 2/3/4/6/8/10/15/18-second service deadlines. No per-job task survives the Server task; unexpected loop end fails that owner. |
 | `web-job-request` | bounded | one prepared typed service operation | Keeps the captured absolute 2/3/4/6/8/10/15/18-second deadline through nonwaiting service admission and bounded reply. On expiry retain a safe failure/uncertain outcome; parent stop drops this future and its reply receiver. No deadline renewal or retry. |
 | `web-bind` | bounded | optional HTTP listener startup | Inside the original five-second service opening ceiling, before proxy readiness. On expiry reject and drop the listener; close the config owner on failure. No listener exists when web is disabled. |
-| `web-auth` | acyclic | bounded session/rate mutex | Holds at most 16 sessions and 10 attempt timestamps for synchronous checks/updates only. No await, Reporter call or service operation occurs under the guard; no other lock is taken. |
+| `web-auth` | acyclic | bounded session/rate mutex | Holds at most 16 sessions, 16 pending launch credentials and 10 attempt timestamps for synchronous checks/updates only. No await, Reporter call or service operation occurs under the guard; no other lock is taken. |
 | `web-accept` | acyclic | Axum/Tokio accepting a TCP client | Owns only the optional listener; no service caller waits for it. Parent cancellation drops accept through the server signal. At most 64 accepted IO wrappers retain permits; excess connections close. Each wrapper's pending polls also wake on forced cancellation. |
 | `web-serve` | acyclic | optional HTTP server lifetime / join notification | Service loop selects cancellation independently. An absent/completed server branch stays dormant; an unexpected server end fails the service. Graceful stop signals Axum and SSE, then bounded close collects the server and actual IO ownership. No secret or session lock spans these waits. |
 | `web-handler` | bounded | HTTP handler/body extraction | At most five seconds per admitted handler; at most 32 handlers and 8 KiB bodies. On expiry return 408 and release admission. Streaming response bodies use separate stream/connection limits and stop/expiry cancellation. |
@@ -275,6 +275,11 @@ v2-store-open src/config_store.rs ConfigStore::open_with
 v2-store-request src/config_store.rs ConfigStore::submit
 v2-store-worker src/config_store/worker.rs run
 web-accept src/web/transport.rs <Listener as Listener>::accept
+web-auth src/service.rs ServiceHandle::configuration_url
+web-auth src/service.rs ServiceHandle::configuration_link
+web-auth src/service.rs ServiceHandle::set_web_launch
+web-auth src/web/launch.rs Launch::issue
+web-auth src/web/handlers.rs launch
 web-auth src/web/handlers.rs access
 web-auth src/web/handlers.rs activity
 web-auth src/web/handlers.rs command

@@ -420,20 +420,23 @@ impl DaliService {
 impl ServiceHandle {
     pub(crate) fn configuration_url(&self) -> Option<String> {
         // WAIT: web-auth
-        self.web_launch
+        let launch = self
+            .web_launch
             .lock()
             .unwrap_or_else(|p| p.into_inner())
-            .as_ref()
-            .and_then(crate::web::Launch::url)
+            .clone();
+        launch.and_then(|launch| launch.url())
     }
     pub(crate) fn configuration_link(&self) -> Result<serde_json::Value, String> {
         // WAIT: web-auth
-        self.web_launch
+        let launch = self
+            .web_launch
             .lock()
             .unwrap_or_else(|p| p.into_inner())
-            .as_ref()
-            .ok_or("web access is disabled")?
-            .issue()
+            .clone()
+            .ok_or("web access is disabled")?;
+        // Release the registry before entering the authentication owner.
+        launch.issue()
     }
     pub(crate) fn set_web_launch(&self, launch: crate::web::Launch) {
         // WAIT: web-auth

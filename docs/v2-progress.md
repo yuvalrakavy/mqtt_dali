@@ -18,28 +18,36 @@ pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
 the final confirming source review approves both corrections.
 
 Current state: **P9 release candidate ready locally**, accepted source `7eb906c`.
-P8 Store integration is merged and pushed at Store `7f4342bd2`. Project license
+P8 Store integration and configuration launch are merged and pushed at Store `67d1507d5`. Project license
 choice is pending before public release; physical I4/Pi service activation and
 live Logmon delivery require deployment acceptance. Both bridge master and Store
 main are merged and pushed, with feature branches also backed up. No household
 migration, release tag, package publication or physical bridge deployment has occurred.
 
-## 25 October — Authenticated configuration links (in progress)
+## 25 October — Authenticated configuration links ready
 
-Approved addition: advertise the controller configuration page over MQTT and let
-Store Admin UI request a fresh authenticated link. The bridge uses random
-single-use credentials, two-minute expiry, a sixteen-token bound and the existing
-cookie/CSRF session. Password login stays available. Token fragments are removed
-before exchange; authenticated URLs are neither retained MQTT state nor saved
-configuration. No shared BridgeKit code changes.
+The controller advertises `ConfigurationUrl` beside its retained inventory.
+Store Admin UI's **Open controller UI** button requests a fresh authenticated link
+over MQTT and opens a new tab. Credentials are random, single-use, valid for two
+minutes and bounded to16 pending links. The login page removes the fragment before
+exchanging it for the normal cookie/CSRF session. Password login remains available.
+Shared BridgeKit and durable inventory identity are unchanged.
 
-The initial HTTP regression failed before implementation. All43 scoped bridge
-HTTP/authentication checks now pass, including actual correlated MQTT issuance,
-expiry, replay rejection and normal cookie/CSRF/logout behavior. The Admin UI
-component and its exact-page URL validation test compile/pass; data lint reports
-15 rules with no findings. Store correlation tests and the actual native bridge
-to Admin UI browser acceptance are running in the owned t3 lane. Remaining:
-complete those checks, review the delta, document and push the addition.
+All752 bridge library tests and43 scoped HTTP/authentication checks pass, as do
+97 Admin UI host tests,26 scoped Store checks and15 data-lint rules. Actual native
+bridge/MQTT/Chrome acceptance passes on desktop and a fresh390px detail view, with
+no token left in the address bar and no opener. Three targeted guard-removal tests
+fail for their intended assertions. Production Clippy and ARMv7 checks pass.
+The final review correction suppresses credential replies on the alternate Event
+route before generic diagnostics; a fresh reader confirms it. Reviews were all
+GPT-family. The Store verification note records scope and evidence.
+
+Bridge implementation starts at40499b5; Store integration starts at2bb730a5f,
+with the privacy correction at566cff27e. Store main is merged/pushed at67d1507d5;
+bridge master and the v2 feature branch carry this completed addition. Final
+authentication plus wait-registry checks pass44/44. Earlier P9 archives at7eb906c
+predate this addition; no new release tag,
+package publication or physical deployment is implied.
 
 ## 25 October — Merge and off-machine backup
 
