@@ -17,42 +17,40 @@ pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
 0438fea and c52ef8b. The compact slice is accepted locally at787c011 plus5c601e0;
 the final confirming source review approves both corrections.
 
-Current work: P9 release packaging and documentation. P8 Store integration is
-ready locally at Store `d2f5fee1d`; no Store or shared BridgeKit source changes are
-part of P9. Physical I4/Pi service activation, household migration, publication
-and deployment have not occurred.
+Current state: **P9 release candidate ready locally**, accepted source `7eb906c`.
+P8 Store integration is ready locally at Store `d2f5fee1d`. Project license choice
+is pending before public release; physical I4/Pi service activation and live Logmon
+delivery require deployment acceptance. No household migration, merge, tag, push,
+publication or deployment has occurred.
 
-## 25 October — P9 package acceptance and final review
+## 25 October — P9 release candidate ready locally
 
-The versioned archive builder, verified/config-preserving installer, optional
-systemd unit and environment launcher are implemented. V1 `mqtt_dali` stays
-separate from `mqtt_dali_v2`; old installers remain v1-only. Install does not
-enable/start/restart services or change networking/UART configuration. Current
-installation, backup/import/upgrade/rollback and release-build guides are added.
+Native and Pi ARMv7 musl archives are built from clean source and available in
+`dist/p9/`, with manifests, checksums and third-party notices. The versioned
+installer preserves private config/state, supports upgrade/rollback, rejects
+corrupt/unrelated destinations and never enables/starts/restarts a service.
+V1 `mqtt_dali` remains separate from `mqtt_dali_v2`. Installation, v1 import,
+backup/rollback and Logmon/build instructions are complete.
 
-All **20/20** package/launcher tests pass, including staged fresh/upgrade/rollback,
-unrelated-path refusal, private config preservation, source/payload/architecture
-checks and literal secret handling. Mocked Linux command tests permit only
-account creation and daemon-reload; they do not claim actual systemd execution.
-The full native suite passes **869/869** (one opt-in browser test skipped), strict
-production Clippy passes, and both unchanged embedded-asset checks pass.
+**20/20 package tests**, **869/869 native Rust tests** (one opt-in browser check
+skipped), strict production Clippy and both asset checks pass. All **seven** guard
+controls fail for their intended assertions; anchors are current. Depth review,
+the breadth correction and one confirming source review are complete. All
+review models were GPT-family; execution evidence is author-run.
 
-Native and ARMv7 musl release builds cross-link. The Pi executable is ELF32 ARM
-EABI5 hard-float with no dynamic section. Actual extracted native package smoke
-passes against a private broker/TCP emulator: both embedded UIs, protected API,
-MQTT inventory/control, authenticated output operation, physical-model readback,
-MQTT State and bounded stop. No real UART/broker/service was used. The SDK exact
-pin is available remotely and all dependency URLs/lock sources now use HTTPS;
-Rust1.99.0 and build timestamp inputs are pinned. Third-party texts are packaged.
+Clean-clone locked native/ARM release builds pass with the published HTTPS SDK
+pin unchanged. Actual extracted native archive installer and MQTT/TCP HAT/web
+smoke pass twice. Fixture-model changes and retained MQTT State confirm output
+operations; unauthorized APIs fail, shutdown is bounded and secrets/local log
+records remain absent. Running version/build matches source metadata. Repacking
+the real native inputs produces an identical archive hash. Both Pi executables
+have no dynamic section or undefined symbols. Shared SDK and Store code are
+unchanged in P9.
 
-All seven release guard controls now fail for their expected assertions; anchors
-are current. Clean-clone native and ARM locked archive builds pass at d98c445.
-Depth review passes. Both breadth-review failure-boundary findings have
-failing-first regressions and fixes: optimized Python is refused, and a failed
-systemd reload preserves the previous binary. Remaining before local P9 acceptance:
-one confirming source read and regenerated final clean packages/smoke. Project license selection is awaiting the owner. Public
-publication and actual Linux/systemd/HAT acceptance remain separate decisions/checks.
-Evidence: /tmp/dali-p9-{python-final2,native-tests,clippy,arm-release,smoke-first}.log.
+See [P9 acceptance, artifacts and remaining limits](p9-acceptance.md) for source
+revision, checksums, review corrections and verification commands/logs. Remaining:
+owner license selection (MIT recommended), publication approval, real Linux/systemd
+and physical HAT/fixture acceptance. These are separate from local candidate readiness.
 
 ## 25 October — Separate v1/v2 executable names
 
@@ -3844,7 +3842,7 @@ no verification. Physical hardware validation remains outstanding.
 | P6 authenticated HTTP | Session/status, command jobs, scalar observation/apply and native/job SSE accepted | Remaining P4/P5 actions |
 | P7 browser UI | Current-backend screens accepted locally: phone/desktop workflows, restored checks and both sequential source gates pass | Remaining P4/P5 workflows as their backends are implemented |
 | P8 Store integration | Ready locally: foundation, lifetime, shared color/presets, native inputs, DT7 and opaque scenes; mixed MQTT/TCP acceptance passes | P9 release work and physical HAT/fixture acceptance |
-| P9 release/docs | In progress: versioned archives, verified installer, separate v2 service, install/rollback guides; native/ARM release builds and packaged MQTT/TCP/web acceptance pass | Final frozen review, clean-clone build and owner license choice; actual Linux/systemd and physical acceptance remain |
+| P9 release/docs | Ready locally as a release candidate at7eb906c: clean native/ARM archives, verified installer, v2 service, install/rollback/Logmon guides; package acceptance and final review pass | Owner license choice/publication decision; real Linux/systemd, physical HAT/fixture and live Logmon acceptance |
 
 No v2 release, production installation, live Store migration, push or merge has
 been performed. The legacy master checkout and v1 maintenance branch retain their
