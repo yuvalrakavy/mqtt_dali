@@ -20,8 +20,23 @@ the final confirming source review approves both corrections.
 Current state: **P9 release candidate ready locally**, accepted source `7eb906c`.
 P8 Store integration is ready locally at Store `d2f5fee1d`. Project license choice
 is pending before public release; physical I4/Pi service activation and live Logmon
-delivery require deployment acceptance. No household migration, merge, tag, push,
-publication or deployment has occurred.
+delivery require deployment acceptance. The bridge is merged into master and
+pushed to origin; Store integration is backed up on its feature branch and is
+being checked against current main. No household migration, tag, release
+publication or service deployment has occurred.
+
+## 25 October — Merge and off-machine backup
+
+The owner authorized merging and pushing as off-machine backup. Bridge master
+now contains the reviewed v2 work through56e2acd. The original operational v1
+tip db6f39f is preserved and pushed as `maintenance/v1`; its binaries/configuration
+and existing tag remain available. The complete v2 feature branch is also pushed.
+
+Store's completed P8 branch is backed up as `origin/feat/dali-v2-store`. Current
+main merged into it automatically except for two appended retrospective entries,
+which were both retained. Integration checks are underway before landing Store
+main. No release tag, license choice or physical service activation is implied
+by these source backups.
 
 ## 25 October — P9 release candidate ready locally
 
@@ -3844,8 +3859,8 @@ no verification. Physical hardware validation remains outstanding.
 | P8 Store integration | Ready locally: foundation, lifetime, shared color/presets, native inputs, DT7 and opaque scenes; mixed MQTT/TCP acceptance passes | P9 release work and physical HAT/fixture acceptance |
 | P9 release/docs | Ready locally as a release candidate at7eb906c: clean native/ARM archives, verified installer, v2 service, install/rollback/Logmon guides; package acceptance and final review pass | Owner license choice/publication decision; real Linux/systemd, physical HAT/fixture and live Logmon acceptance |
 
-No v2 release, production installation, live Store migration, push or merge has
-been performed. The legacy master checkout and v1 maintenance branch retain their
+No v2 release, production installation or live household migration has been
+performed. Bridge source is merged/pushed; see the current backup entry above. The legacy master checkout and v1 maintenance branch retain their
 existing application source.
 
 ## 23 October — UI corrections and Blink active-color restoration

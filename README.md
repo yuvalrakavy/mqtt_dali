@@ -5,7 +5,7 @@ password-protected web UI, and control lights or consume DALI-2 input events.
 The broker can serve any compatible consumer; a Store server is optional.
 
 V2 uses BridgeKit MQTT and tracing-init. Its executable is **`mqtt_dali_v2`**.
-The maintained legacy release uses **`mqtt_dali`** and its original MQTT interface.
+The maintained legacy branch `maintenance/v1` uses **`mqtt_dali`** and its original MQTT interface.
 The two install side by side, with separate configuration files. Only one may
 own a physical HAT at a time.
 
