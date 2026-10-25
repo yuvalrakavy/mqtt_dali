@@ -17,7 +17,8 @@ pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
 0438fea and c52ef8b. The compact slice is accepted locally at787c011 plus5c601e0;
 the final confirming source review approves both corrections.
 
-Current state: **P9 release candidate ready locally**, accepted source `7eb906c`.
+Current state: **P9 release candidate ready locally**. The ARMv7 package is refreshed
+through configuration-link source `03b289b`; the earlier native candidate remains at `7eb906c`.
 P8 Store integration and configuration launch are merged and pushed at Store `67d1507d5`. Project license
 choice is pending before public release; physical I4/Pi service activation and
 live Logmon delivery require deployment acceptance. Both bridge master and Store
@@ -45,9 +46,13 @@ GPT-family. The Store verification note records scope and evidence.
 Bridge implementation starts at40499b5; Store integration starts at2bb730a5f,
 with the privacy correction at566cff27e. Store main is merged/pushed at67d1507d5;
 bridge master and the v2 feature branch carry this completed addition. Final
-authentication plus wait-registry checks pass44/44. Earlier P9 archives at7eb906c
-predate this addition; no new release tag,
-package publication or physical deployment is implied.
+authentication plus wait-registry checks pass44/44. A new ARMv7 musl archive
+built from clean source03b289b includes this addition. Archive/payload checksums,
+static ARM executable checks and staged installation pass, preserving an existing
+v1 executable. The earlier native archive at7eb906c predates this addition.
+See [the package acceptance record](p9-acceptance.md#configuration-link-armv7-refresh)
+for the new artifact and checksum. No new release tag, package publication or
+physical deployment is implied.
 
 ## 25 October — Merge and off-machine backup
 

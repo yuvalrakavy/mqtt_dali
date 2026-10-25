@@ -62,6 +62,26 @@ completion and changed portable logging from invalid `level="off"` to supported
 `filter="off"`. BridgeKit source and other bridge defaults/pins are unchanged.
 The runtime empty-log assertion verifies the portable filter behavior.
 
+## Configuration-link ARMv7 refresh
+
+The updated Raspberry Pi archive includes authenticated configuration links from
+clean source `03b289bb5bf40f7f51258a5957b8c1e6cc730b67`:
+
+- File: `dist/p9/mqtt_dali_v2-2.0.0-dev.0-03b289bb5bf4-armv7-unknown-linux-musleabihf.tar.gz`
+- Size: 9,989,770 bytes.
+- SHA-256: `eef5e109be86e399d1dc29ce78871721a81526f896641c6cae9a5277969385fe`.
+
+The locked, offline optimized build succeeds with the pinned Rust1.99.0 compiler.
+The archive sidecar and every packaged payload checksum pass. Both executables
+are static ELF32 ARM EABI5, with no interpreter, dynamic section or undefined
+symbols. The extracted installer stages successfully, keeps private configuration
+permissions and preserves an existing v1 executable. No ARM binary was executed
+on the development Mac; physical Pi/HAT and systemd acceptance remain pending.
+The earlier native archive above remains at its original source revision.
+
+Build log: `/tmp/dali-config-launch-arm-release.log`; verification report:
+`/tmp/dali-config-launch-arm-verification.json`.
+
 ## Remaining release and deployment work
 
 The owner must choose the project license before a public open-source release.
