@@ -82,6 +82,25 @@ The earlier native archive above remains at its original source revision.
 Build log: `/tmp/dali-config-launch-arm-release.log`; verification report:
 `/tmp/dali-config-launch-arm-verification.json`.
 
+## MIT-licensed ARMv7 refresh
+
+The 26 October archive supersedes the earlier ARMv7 candidate for installation:
+
+- Source: `38204b554d7ded7f5e9c4e0e4e90146d08a309b9` (clean).
+- File: `dist/p9/mqtt_dali_v2-2.0.0-dev.0-38204b554d7d-armv7-unknown-linux-musleabihf.tar.gz`.
+- Size: 9,990,674 bytes.
+- SHA-256: `5bc96444c7be6c28316505ae8313a8364a1c8b2dd5410a8cba1d6747dcc9d2e9`.
+
+All20 existing package/installer tests pass; Cargo metadata declares MIT. The
+locked offline optimized build passes. The extracted project license exactly
+matches the approved root `LICENSE` and is covered by the manifest and checksums.
+Archive/payload checksums, static ELF32 ARM checks and staged installation pass,
+preserving an existing v1 executable and private config permissions. No physical
+Pi/HAT execution or service activation was performed.
+
+Logs: `/tmp/dali-mit-package-tests.log`, `/tmp/dali-mit-arm-release.log` and
+`/tmp/dali-mit-arm-verification.json`.
+
 ## Remaining release and deployment work
 
 The owner selected MIT on 26 October 2026, matching the shared SDK. The root

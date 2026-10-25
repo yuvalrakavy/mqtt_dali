@@ -18,7 +18,7 @@ pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
 the final confirming source review approves both corrections.
 
 Current state: **P9 release candidate ready locally**. The ARMv7 package is refreshed
-through configuration-link source `03b289b`; the earlier native candidate remains at `7eb906c`.
+through MIT-licensed source `38204b5`; the earlier native candidate remains at `7eb906c`.
 P8 Store integration and configuration launch are merged and pushed at Store `67d1507d5`.
 The owner selected MIT for v2 on 26 October; publication approval is pending. Physical I4/Pi service activation and
 live Logmon delivery require deployment acceptance. Both bridge master and Store
@@ -29,8 +29,11 @@ migration, release tag, package publication or physical bridge deployment has oc
 
 The owner approved MIT for the public v2 release, matching BridgeKit. The root
 `LICENSE`, Cargo metadata and README record this choice. Existing release tooling
-includes the license in new archives. Public release and hardware deployment
-remain separate acceptance steps.
+includes the license in new archives. All20 package/installer tests pass. A clean
+ARMv7 release at38204b5 includes the exact approved license, with verified payload
+checksums, static executables and successful staged installation preserving v1.
+The archive and checksum are recorded in [P9 acceptance](p9-acceptance.md#mit-licensed-armv7-refresh).
+Public release and hardware deployment remain separate acceptance steps.
 
 ## 25 October — Authenticated configuration links ready
 
