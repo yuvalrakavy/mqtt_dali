@@ -208,11 +208,13 @@ def install(package, root):
         import grp
         import pwd
         grp.getgrnam('dialout')
-        if shutil.which('systemctl') is None or shutil.which('useradd') is None:
-            raise ValueError('systemctl and useradd are required')
+        if shutil.which('systemctl') is None:
+            raise ValueError('systemctl is required')
         try:
             account = pwd.getpwnam('mqtt-dali-v2')
         except KeyError:
+            if shutil.which('useradd') is None:
+                raise ValueError('useradd is required to create the missing service account')
             subprocess.run(['useradd', '--system', '--user-group', '--home-dir', '/var/lib/mqtt_dali_v2',
                             '--shell', '/usr/sbin/nologin', 'mqtt-dali-v2'], check=True)
             account = pwd.getpwnam('mqtt-dali-v2')
@@ -258,11 +260,12 @@ def install(package, root):
     state.chmod(0o750)
     if live:
         os.chown(state, account.pw_uid, account.pw_gid)
+    # Reload can fail even when systemctl exists. Keep the old selection until it succeeds.
+    if live:
+        subprocess.run(['systemctl', 'daemon-reload'], check=True)
     for path, target in links.items():
         switch_link(path, target)
     switch_link(current, '/opt/mqtt_dali_v2/releases/' + manifest['release_id'])
-    if live:
-        subprocess.run(['systemctl', 'daemon-reload'], check=True)
     return {'release_id': manifest['release_id'], 'root': str(root), 'service_started': False,
             'configuration': str(config), 'state': str(state)}
 

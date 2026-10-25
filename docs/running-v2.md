@@ -122,7 +122,7 @@ the ATX same-bus reply ambiguity and physical I4 validation remain explicit limi
 
 Select logging with `--log-config`; `RUST_LOG` controls filtering, and
 `LOG_DESTINATION` selects unpinned destinations; BridgeKit keeps its required
-file/GELF sinks. Their per-destination levels can filter them off, as in the
+file/GELF sinks. Their per-destination filters can turn off records, as in the
 [portable service config](installation.md#logging-and-logmon). The repository logging.toml contains
 site-specific GELF/OTLP addresses: configure them for your installation. Logging
 destinations are lossy and startup skips unavailable destinations. Optional MQTT

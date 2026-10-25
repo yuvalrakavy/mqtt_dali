@@ -178,7 +178,7 @@ class ReleaseTests(unittest.TestCase):
                 mocks.enter_context(mock.patch.object(installer.platform, 'machine', return_value='armv7l'))
                 mocks.enter_context(mock.patch.object(installer.os, 'geteuid', return_value=0))
                 mocks.enter_context(mock.patch.object(installer, 'destination', side_effect=lambda _, name: original_destination(root, name)))
-                mocks.enter_context(mock.patch.object(installer.shutil, 'which', return_value='/mock/tool'))
+                mocks.enter_context(mock.patch.object(installer.shutil, 'which', side_effect=lambda tool: '/mock/tool' if missing or tool == 'systemctl' else None))
                 mocks.enter_context(mock.patch.object(grp, 'getgrnam', return_value=SimpleNamespace(gr_gid=1200)))
                 mocks.enter_context(mock.patch.object(pwd, 'getpwnam', side_effect=[KeyError('absent'), account] if missing else None, return_value=account))
                 chown = mocks.enter_context(mock.patch.object(installer.os, 'chown'))
@@ -209,6 +209,38 @@ class ReleaseTests(unittest.TestCase):
                 installer.install(package, '/')
             commands.assert_not_called()
         self.assertFalse(root.exists())
+
+
+    def test_smoke_refuses_python_optimization_before_starting_processes(self):
+        import sys
+        result = subprocess.run([sys.executable, '-O', str(ROOT / 'scripts/release_smoke.py'), str(self.source)],
+                                env={'PATH': '/nonexistent'}, capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('Python optimization disables acceptance assertions', result.stderr)
+
+    def test_failed_systemd_reload_keeps_previous_binary_selected(self):
+        import grp
+        import pwd
+        from types import SimpleNamespace
+        package, _ = self.package()
+        root = (self.base / 'linux-reload').resolve()
+        installer.install(package, root)
+        current = root / 'opt/mqtt_dali_v2/current'
+        original = os.readlink(current)
+        updated, _ = self.package('c'*40)
+        original_destination = installer.destination
+        with mock.patch.object(installer.platform, 'system', return_value='Linux'), \
+             mock.patch.object(installer.platform, 'machine', return_value='armv7l'), \
+             mock.patch.object(installer.os, 'geteuid', return_value=0), \
+             mock.patch.object(installer.os, 'chown'), \
+             mock.patch.object(installer, 'destination', side_effect=lambda _, name: original_destination(root, name)), \
+             mock.patch.object(installer.shutil, 'which', return_value='/mock/tool'), \
+             mock.patch.object(grp, 'getgrnam', return_value=SimpleNamespace(gr_gid=1200)), \
+             mock.patch.object(pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=1200, pw_gid=1200)), \
+             mock.patch.object(installer.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, ['systemctl', 'daemon-reload'])):
+            with self.assertRaises(subprocess.CalledProcessError):
+                installer.install(updated, '/')
+        self.assertEqual(os.readlink(current), original, 'failed reload selected a new binary')
 
 
     def test_private_umask_still_leaves_release_readable_by_service_account(self):

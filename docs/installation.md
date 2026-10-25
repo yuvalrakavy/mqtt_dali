@@ -4,7 +4,8 @@ These instructions are for a Raspberry Pi operator with a running MQTT broker
 and an ATX HAT. Use a v2 archive for your operating system architecture. ARMv7
 musl is the 32-bit Pi target; a 64-bit OS needs an AArch64 Linux build. The
 installer checks architecture before changing the installation. Python 3.9 or
-later, systemd, `useradd`, and the `dialout` group are required for installation.
+later, systemd and the `dialout` group are required for installation. `useradd` is
+required when the service account does not already exist.
 
 V1 retains `mqtt_dali`. V2 installs `mqtt_dali_v2` and a separate service, config
 and state directory. The existing `raspberry-install*.sh` scripts belong to v1;
@@ -41,7 +42,8 @@ managed executable/link/unit paths cause refusal instead of replacement. The
 installer creates a non-root `mqtt-dali-v2` account if absent; an existing account
 must have its own matching primary group. The unit adds `dialout` access for UART.
 The installer runs `daemon-reload` but **does not enable, start, or restart** the
-bridge. Reinstalling the identical package is supported.
+bridge. If daemon-reload fails, the previous binary selection remains in place;
+the copied release can be retained for retry. Reinstalling the identical package is supported.
 
 To inspect installation without host changes, use `python3 install.py --root
 /tmp/dali-stage`. This stages production paths below that directory, without
@@ -97,18 +99,18 @@ configuration without opening a UART, MQTT connection or web listener.
 ## Logging and Logmon
 
 The packaged config enables console output, captured by journald. BridgeKit also
-creates file and GELF sinks by policy; their per-destination level is `off` in
+creates file and GELF sinks by policy; their per-destination filter is `off` in
 the portable config. An empty rotating file can exist in the state directory's
-`logs/`. To keep local log records, set `[logging.file] level = "info"`; the
+`logs/`. To keep local log records, set `[logging.file] filter = "info"`; the
 default retains three daily files. Configure storage/retention for your installation.
 
-For Logmon, set `[logging.gelf] level = "info"` and its collector `address`;
+For Logmon, set `[logging.gelf] filter = "info"` and its collector `address`;
 add `o` to `[logging] destination` (for example `"co"`) and configure
 `[logging.otel] endpoint` for traces. The bridge uses tracing-init; valid incoming
 MQTT trace context continues into managed operations. The log service identity
 stays `mqtt_dali` for compatibility. `RUST_LOG` configures filtering, but destination
 selection cannot disable BridgeKit's explicitly required file/GELF sinks; use
-their per-destination levels. Sink failures do not stop bridge operation. Actual
+their per-destination filters. Sink failures do not stop bridge operation. Actual
 delivery to your Logmon instance is a deployment check.
 
 ## Import existing v1 configuration

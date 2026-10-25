@@ -94,7 +94,8 @@ then stops only its own processes:
 python3 scripts/release_smoke.py /path/to/extracted/package
 ```
 
-It requires the Mosquitto broker and CLI tools on PATH. Run it with a package for
+It requires the Mosquitto broker and CLI tools on PATH, and refuses optimized
+Python (`-O`/`PYTHONOPTIMIZE`) so acceptance assertions cannot disappear. Run it with a package for
 the current host. It creates private temporary state rather than touching a real
 UART, deployed broker, service, or household configuration.
 

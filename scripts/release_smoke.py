@@ -45,6 +45,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('package', type=Path)
     args = parser.parse_args()
+    if not __debug__:
+        parser.error('Python optimization disables acceptance assertions; run without -O/PYTHONOPTIMIZE')
     package = args.package.resolve(strict=True)
     for tool in ('mosquitto', 'mosquitto_pub', 'mosquitto_sub'):
         if not shutil.which(tool):

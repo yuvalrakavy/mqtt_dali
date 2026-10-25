@@ -1,7 +1,6 @@
 # Portable service default: console output is captured by journald.
 [logging]
 destination = "c"
-level = "info"
 on_destination_error = "skip"
 
 [logging.console]
@@ -10,12 +9,12 @@ ansi = false
 # BridgeKit always creates these sinks; filter them off for the portable default.
 # It creates an empty rotating file below the service state directory's logs/.
 [logging.file]
-level = "off"
+filter = "off"
 rotation = "d:3"
 
-# For Logmon, set this level to info and the actual GELF collector address.
+# For Logmon, change this filter to info and the actual GELF collector address.
 [logging.gelf]
-level = "off"
+filter = "off"
 address = "127.0.0.1:12201"
 
 # Add o to logging.destination to enable OTLP traces; set the actual endpoint.

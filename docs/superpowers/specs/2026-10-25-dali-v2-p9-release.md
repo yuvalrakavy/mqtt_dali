@@ -138,4 +138,26 @@ operation, and waits for final MQTT State before checking its result.
 BridgeKit pins file/GELF sink creation in its logging bootstrap. The portable
 config filters those two sinks off and enables console/journal records; an empty
 rotating file is still created. Logmon opt-in is documented with destination
-levels and OTLP endpoint. No shared SDK source or other bridge behavior changes.
+filters and OTLP endpoint. No shared SDK source or other bridge behavior changes.
+
+Final package execution caught the portable config's `level="off"` mistake:
+SDK levels are tracing::Level (which excludes OFF), not EnvFilter directives.
+Use `filter="off"` for file/GELF, remove the top-level level so RUST_LOG remains
+effective for console, and validate empty local logs with the actual binary.
+This is a package configuration correction; the shared SDK is unchanged.
+
+## Final source review correction
+
+Depth review approved185e5dc with no S2+ finding. Breadth review found two S2
+failure-boundary issues. Both have failing-first regressions and are fixed:
+optimized Python is refused before smoke resources start, and systemd reload
+must succeed before selecting current. An existing valid account no longer needs
+useradd installed. Both new regressions failed for their intended assertions;
+all20 package tests now pass. The portable filter correction above also passed
+an actual native binary probe with empty local log files. The single confirming
+review covers this entire correction delta. GPT-family source review only.
+
+The lower-severity smoke observation about a three-second Mosquitto subscription
+timeout is retained as a strict acceptance limit: command failures fail closed
+rather than becoming successful results. The private broker check is deliberately
+bounded; it does not promise eventual acceptance after a slow broker response.

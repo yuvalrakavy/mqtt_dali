@@ -30,7 +30,7 @@ separate from `mqtt_dali_v2`; old installers remain v1-only. Install does not
 enable/start/restart services or change networking/UART configuration. Current
 installation, backup/import/upgrade/rollback and release-build guides are added.
 
-All **18/18** package/launcher tests pass, including staged fresh/upgrade/rollback,
+All **20/20** package/launcher tests pass, including staged fresh/upgrade/rollback,
 unrelated-path refusal, private config preservation, source/payload/architecture
 checks and literal secret handling. Mocked Linux command tests permit only
 account creation and daemon-reload; they do not claim actual systemd execution.
@@ -47,8 +47,10 @@ Rust1.99.0 and build timestamp inputs are pinned. Third-party texts are packaged
 
 All seven release guard controls now fail for their expected assertions; anchors
 are current. Clean-clone native and ARM locked archive builds pass at d98c445.
-Remaining before local P9 acceptance: final frozen source review and the updated
-packaged smoke on the final source. Project license selection is awaiting the owner. Public
+Depth review passes. Both breadth-review failure-boundary findings have
+failing-first regressions and fixes: optimized Python is refused, and a failed
+systemd reload preserves the previous binary. Remaining before local P9 acceptance:
+one confirming source read and regenerated final clean packages/smoke. Project license selection is awaiting the owner. Public
 publication and actual Linux/systemd/HAT acceptance remain separate decisions/checks.
 Evidence: /tmp/dali-p9-{python-final2,native-tests,clippy,arm-release,smoke-first}.log.
 
