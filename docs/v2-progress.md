@@ -27,12 +27,22 @@ migration, release tag, package publication or physical bridge deployment has oc
 
 ## 5 November — DALI health integration
 
-The bridge projects a retained, controller-generation-fenced `__bus_health`
-snapshot from its existing ATX observations. The emulator covers an empty bus,
-power loss and recovery, status-code decoding, disabled ports and HAT loss.
-Fixture status still uses the existing background reads and MQTT fields.
-Store's shared `LightHealth` binding, `BusHealth` consumer and Behavior examples
-are tracked separately; the bridge snapshot can be used without Store.
+Fixture and bus health passed end-to-end verification with Store, MQTT and the
+TCP HAT emulator. A simulated lamp failure reached the bound Home light and
+triggered a HomeTouch message. Power loss on an empty bus triggered its own
+Behavior. Both updated automatically and cleared on recovery.
+
+The bridge publishes a retained `__bus_health` snapshot tied to the current
+inventory generation. It reuses existing ATX observations and works with any
+MQTT consumer. Store's one-way `LightHealth` binding clears on unbind or loss
+of the shared property. The emulator also verified on/off, dimming, DT8 color
+and invalidation after controller shutdown.
+
+The bridge health code is on `feat/dali-v2` at `a94730d` and Store is on
+`feat/dali-health` at `0d14f5611`. The bridge passed 62 proxy tests and ARMv7
+compile checks. Store passed 69 binding and DALI regression tests and 141
+native transaction tests, with three ignored. Main-branch integration and
+physical hardware validation remain pending for this addition.
 
 ## 26 October — MIT license selected
 
