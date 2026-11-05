@@ -17,8 +17,8 @@ pending. The prior DT1/native capability milestone remains accepted at a9acfa5,
 0438fea and c52ef8b. The compact slice is accepted locally at787c011 plus5c601e0;
 the final confirming source review approves both corrections.
 
-Current state: **P9 release candidate ready locally**. The ARMv7 package is refreshed
-through MIT-licensed source `38204b5`; the earlier native candidate remains at `7eb906c`.
+Current state: **P9 release candidate ready locally**. The ARMv7 package includes
+DALI health from source `ac5f4ce`; the earlier native candidate remains at `7eb906c`.
 P8 Store integration and configuration launch are merged and pushed at Store `67d1507d5`.
 The owner selected MIT for v2 on 26 October; publication approval is pending. Physical I4/Pi service activation and
 live Logmon delivery require deployment acceptance. Both bridge master and Store
@@ -38,11 +38,21 @@ MQTT consumer. Store's one-way `LightHealth` binding clears on unbind or loss
 of the shared property. The emulator also verified on/off, dimming, DT8 color
 and invalidation after controller shutdown.
 
-The bridge health code is on `feat/dali-v2` at `a94730d` and Store is on
-`feat/dali-health` at `0d14f5611`. The bridge passed 62 proxy tests and ARMv7
-compile checks. Store passed 69 binding and DALI regression tests and 141
-native transaction tests, with three ignored. Main-branch integration and
-physical hardware validation remain pending for this addition.
+The health changes are merged and pushed on bridge `master` at `ac5f4ce`
+and Store `main` at `320809753`. The bridge passed 62 proxy tests and 20
+packaging tests. Store passed 69 binding and DALI regression tests and 141
+native transaction tests, with three ignored. The landing lint fixes passed
+strict Store server Clippy, data lint, and six focused regression tests.
+
+The Pi archive is
+`dist/p9/mqtt_dali_v2-2.0.0-dev.0-ac5f4ce3cfe0-armv7-unknown-linux-musleabihf.tar.gz`.
+It is 9,998,280 bytes with SHA-256
+`b6b6a8dff8493f5bc736358548c23efeec99d4d534b47b37ff89fc8e5be53064`.
+Archive and payload checksums passed. Both executables are static ARMv7
+hard-float binaries. A staged installation preserved the v1 executable.
+The package provides bus and fixture telemetry. Use the matching Store
+revision for the health properties and Behaviors. Physical Pi and HAT
+validation remain pending.
 
 ## 26 October — MIT license selected
 
