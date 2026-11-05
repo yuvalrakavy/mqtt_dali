@@ -5,6 +5,7 @@ use crate::service::tests::{context, start, wait_for, Fixture};
 use mqtt_test_broker::{FakeBroker, SendOptions};
 use serde_json::json;
 use std::time::Duration;
+mod bus_health;
 mod colour;
 mod commissioning;
 mod discovery;

@@ -25,6 +25,15 @@ live Logmon delivery require deployment acceptance. Both bridge master and Store
 main are merged and pushed, with feature branches also backed up. No household
 migration, release tag, package publication or physical bridge deployment has occurred.
 
+## 5 November — DALI health integration
+
+The bridge projects a retained, controller-generation-fenced `__bus_health`
+snapshot from its existing ATX observations. The emulator covers an empty bus,
+power loss and recovery, status-code decoding, disabled ports and HAT loss.
+Fixture status still uses the existing background reads and MQTT fields.
+Store's shared `LightHealth` binding, `BusHealth` consumer and Behavior examples
+are tracked separately; the bridge snapshot can be used without Store.
+
 ## 26 October — MIT license selected
 
 The owner approved MIT for the public v2 release, matching BridgeKit. The root

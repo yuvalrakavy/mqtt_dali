@@ -1,5 +1,7 @@
 use super::*;
 
+pub(super) const BUS_HEALTH_TARGET: &str = "__bus_health";
+
 pub(super) fn generations(model: &Model) -> TargetGenerations {
     let inventory = model.inventory();
     let instance = format!("{}.{}", inventory.inventory_epoch, inventory.revision);
@@ -14,6 +16,7 @@ pub(super) fn generations(model: &Model) -> TargetGenerations {
         })
         .collect::<std::collections::BTreeMap<_, _>>();
     targets.insert("__inventory".into(), instance.clone());
+    targets.insert(BUS_HEALTH_TARGET.into(), instance.clone());
     TargetGenerations { instance, targets }
 }
 pub(super) fn admit(

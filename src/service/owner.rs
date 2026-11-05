@@ -34,6 +34,27 @@ impl Drop for AdmissionGuard {
 }
 impl DaliService {
     fn update_snapshot(&self, model: Arc<Model>, phase: Phase) -> Snapshot {
+        let hardware = self
+            .handle
+            .snapshot()
+            .map_or(Hardware::NotStarted, |previous| {
+                let mut hardware = previous.hardware;
+                if let Hardware::Ready { buses, .. } = &mut hardware {
+                    // The first snapshot of a newly enabled port can precede Hat::sync_model.
+                    // An unsolicited or fallback sample from its old lifetime is not current.
+                    buses.retain(|sample| {
+                        let enabled = |model: &Model| {
+                            model
+                                .inventory()
+                                .buses
+                                .iter()
+                                .any(|bus| bus.bus == sample.bus && bus.enabled)
+                        };
+                        !enabled(&model) || enabled(&previous.model)
+                    });
+                }
+                hardware
+            });
         let snapshot = Snapshot {
             feedbacks: input::feedback::cache::retained(
                 &model,
@@ -80,10 +101,7 @@ impl DaliService {
                 .borrow()
                 .as_ref()
                 .map(|claim| claim.status.clone()),
-            hardware: self
-                .handle
-                .snapshot()
-                .map_or(Hardware::NotStarted, |snapshot| snapshot.hardware),
+            hardware,
             version: env!("CARGO_PKG_VERSION"),
             build_utc: build_info::BUILT_TIME_UTC,
         };

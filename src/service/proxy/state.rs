@@ -58,6 +58,64 @@ pub(super) fn lifecycle(snapshot: &Snapshot, bus: u8) -> bool {
             if buses.iter().any(|value| value.bus == bus && value.status == 2))
 }
 
+/// Controller-level live metadata. It never borrows fixture presence or the
+/// hardware owner's fallback query of an unconfigured port as bus evidence.
+pub(super) fn bus_health(snapshot: &Snapshot) -> ContextualState {
+    let inventory = snapshot.model.inventory();
+    let mut configured: Vec<_> = inventory.buses.iter().collect();
+    configured.sort_unstable_by_key(|bus| bus.bus);
+    let rows = configured
+        .into_iter()
+        .map(|bus| {
+            let (health, code) = if !bus.enabled {
+                ("disabled", None)
+            } else if matches!(snapshot.phase, Phase::Stopping | Phase::Closed) {
+                ("unavailable", None)
+            } else {
+                match &snapshot.hardware {
+                    Hardware::Ready { buses, .. } => {
+                        let code = buses
+                            .iter()
+                            .find(|sample| sample.bus == bus.bus)
+                            .map(|sample| sample.status);
+                        (
+                            match code {
+                                Some(0) => "no_bus_power",
+                                Some(1) => "short_to_positive",
+                                Some(2) => "ok",
+                                _ => "unknown",
+                            },
+                            code,
+                        )
+                    }
+                    Hardware::Unavailable { .. } | Hardware::Closed | Hardware::ResetRequired => {
+                        ("unavailable", None)
+                    }
+                    Hardware::NotStarted
+                    | Hardware::Connecting
+                    | Hardware::Initializing
+                    | Hardware::Resynchronizing
+                    | Hardware::WaitingLateReply { .. } => ("unknown", None),
+                }
+            };
+            serde_json::json!({"BusNumber": bus.bus, "Health": health, "StatusCode": code})
+        })
+        .collect();
+    let context = RequestContext::new(format!(
+        "{}.{}",
+        inventory.inventory_epoch, inventory.revision
+    ))
+    .expect("validated controller token")
+    .with_traceparent(None);
+    ContextualState::new(
+        TargetState::new(
+            routing::BUS_HEALTH_TARGET,
+            PropertyMap::from_iter([("Buses".into(), Value::Array(rows))]),
+        ),
+        context,
+    )
+}
+
 pub(super) fn projections(snapshot: &Snapshot) -> Vec<ContextualState> {
     let table = routing::generations(&snapshot.model);
     let mut states: Vec<_> = snapshot
@@ -202,7 +260,7 @@ impl Watcher {
         loop {
             let snapshot = self.snapshots.borrow_and_update().clone();
             if let Some(snapshot) = snapshot {
-                for state in projections(&snapshot) {
+                for state in std::iter::once(bus_health(&snapshot)).chain(projections(&snapshot)) {
                     // The driver also reports on this worker. Only the SDK owns
                     // the publication cache; a helper-local skip cache can miss
                     // a physical return after a newer driver report.

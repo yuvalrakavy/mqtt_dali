@@ -136,6 +136,9 @@ impl DeviceDriver for DaliProxy {
         if target == Some("__inventory") {
             return Err(OpError::Unsupported("inventory is read-only".into()));
         }
+        if target == Some(routing::BUS_HEALTH_TARGET) {
+            return Err(OpError::Unsupported("bus health is read-only".into()));
+        }
         match kind {
             RequestKind::Apply(values) => {
                 let target =
@@ -822,6 +825,14 @@ impl DaliProxy {
             Scope::Target(target) if target == "__inventory" => {
                 Ok(vec![self.inventory(&self.snapshot()?, cause)?])
             }
+            Scope::Target(target) if target == routing::BUS_HEALTH_TARGET => {
+                let state = state::bus_health(&self.snapshot()?);
+                if cause.generation().is_some() && cause.generation() != state.context.generation()
+                {
+                    return Err(OpError::Rejected("retired controller generation".into()));
+                }
+                Ok(vec![state])
+            }
             Scope::Target(target) => {
                 let snapshot = self.snapshot()?;
                 if group::is_group(&snapshot, &target) {
@@ -1413,7 +1424,9 @@ impl PreparedCommand {
     ) -> Result<Self, PreparationError> {
         let table = routing::generations(&snapshot.model);
         let token = match target.as_deref() {
-            Some("__inventory") => return Err(PreparationError::Invalid),
+            Some("__inventory" | routing::BUS_HEALTH_TARGET) => {
+                return Err(PreparationError::Invalid)
+            }
             Some(target) => table
                 .targets
                 .get(target)

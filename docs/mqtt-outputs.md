@@ -291,3 +291,23 @@ DT7 relay capabilities and native thresholds; see [fixture settings](gear-settin
 Unknown support remains null. These capability replies do not change retained
 output components or scalar property names. Actual PowerState/Brightness continue
 to describe contact0/254; virtual limits/thresholds are configuration values.
+
+## Bus health
+
+`DALI/State/<controller>/__bus_health` is a separate retained, read-only State
+target. Its `target-generation` is the current controller inventory epoch and
+revision. Each snapshot replaces the previous one and contains one row per
+configured bus (up to four), including buses without fixtures. For example:
+
+```json
+{"Buses":[{"BusNumber":0,"Health":"ok","StatusCode":2},
+          {"BusNumber":1,"Health":"no_bus_power","StatusCode":0}]}
+```
+
+`BusNumber` is the zero-based HAT port. `StatusCode` is the HAT's status nibble
+or null. A current `0`, `1` or `2` means `no_bus_power`, `short_to_positive` or
+`ok`, respectively. Other codes are `unknown` and keep the raw code. An enabled
+bus without a current sample is `unknown`; a failed HAT link is `unavailable`.
+A disabled bus is `disabled` and its raw code is null. Gate retained readings
+by controller liveness and the matching accepted inventory. This observation
+uses the existing HAT health path and does not send extra queries.
